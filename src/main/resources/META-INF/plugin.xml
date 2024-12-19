@@ -5,11 +5,14 @@
     <vendor>oberdiah</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.oberdiah.deepcomplexity.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <fileBasedIndex implementation="com.github.oberdiah.deepcomplexity.indexes.PrimaryIndex"/>
     </extensions>
 
     <applicationListeners>
