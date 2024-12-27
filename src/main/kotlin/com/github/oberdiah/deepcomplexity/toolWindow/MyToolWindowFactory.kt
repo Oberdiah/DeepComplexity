@@ -33,10 +33,10 @@ class MyToolWindowFactory : ToolWindowFactory {
             val textArea = JBTextArea(MyBundle.message("randomLabel", "?"))
 
             add(textArea)
-            add(JButton("Reload Indices").apply {
+            add(JButton("Reload Indices!").apply {
                 addActionListener {
                     FileBasedIndex.getInstance().requestRebuild(PRIMARY_INDEX_ID)
-                    println("Reloading Indices !")
+                    println("Reloading Indices :)")
                 }
             })
 

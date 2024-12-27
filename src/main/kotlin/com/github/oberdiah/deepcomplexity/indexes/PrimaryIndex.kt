@@ -9,7 +9,6 @@ import com.intellij.util.io.DataExternalizer
 import com.intellij.util.io.EnumeratorStringDescriptor
 import com.intellij.util.io.KeyDescriptor
 import org.jetbrains.annotations.NonNls
-import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.uast.UFile
 import org.jetbrains.uast.toUElement
 import java.io.DataInput

@@ -139,14 +139,25 @@ tasks {
     runIde {
         autoReload = true
         jvmArgumentProviders += CommandLineArgumentProvider {
-            listOf("-Dintellij.idea.indices.debug=true", "-Dintellij.idea.indices.debug.extra.sanity=true")
+            listOf(
+                "-Dintellij.idea.indices.debug=true",
+                "-Dintellij.idea.indices.debug.extra.sanity=true",
+                // Add debug logging for plugin loading
+                "-Didea.log.debug.categories=#com.intellij.ide.plugins"
+            )
         }
     }
 
     prepareSandbox {
         doFirst {
-            val directory = File("idea-sandbox\\IC-2023.3.8\\plugins\\DeepComplexity\\lib")
-            directory.deleteRecursively()
+            val directory = File("build\\idea-sandbox\\IC-2023.3.8\\plugins\\DeepComplexity\\lib")
+            if (directory.exists()) {
+                directory.listFiles()?.forEach { file ->
+                    if (!file.isDirectory) {
+                        file.delete()
+                    }
+                }
+            }
         }
     }
 }

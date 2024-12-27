@@ -21,4 +21,9 @@ class MyProjectService(project: Project) {
 
 //        println("Added file to index: ${file.allClasses().firstOrNull()?.name}")
     }
+
+    // Effectively the entry point for the entire plugin.
+    fun processFile(file: UFile) {
+        
+    }
 }
