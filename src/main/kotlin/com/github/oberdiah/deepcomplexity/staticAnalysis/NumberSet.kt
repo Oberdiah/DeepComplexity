@@ -1,5 +1,9 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.ADDITION
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.MULTIPLICATION
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.DD_NEGATIVE_INFINITY
@@ -10,40 +14,58 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMinValue
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.numberToDD
 import org.apache.commons.numbers.core.DD
 import kotlin.reflect.KClass
 
-class NumberSet(private val clazz: KClass<Any>) : MoldableSet<DD> {
+class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
     private val ranges = mutableListOf<MoldableRange>()
+
+    companion object {
+        inline fun <reified T : Number> singleValue(v: T): NumberSet {
+            return fromRange(numberToDD(v), numberToDD(v), T::class)
+        }
+
+        fun singleValue(v: DD, clazz: KClass<*>): NumberSet {
+            return fromRange(v, v, clazz)
+        }
+
+        inline fun <reified T : Number> fromRange(start: T, end: T): NumberSet {
+            return fromRange(numberToDD(start), numberToDD(end), T::class)
+        }
+
+        fun fromRange(start: DD, end: DD, clazz: KClass<*>): NumberSet {
+            return NumberSet(clazz).apply {
+                ranges.add(MoldableRange(start, end))
+            }
+        }
+    }
 
     override fun contains(other: DD): Boolean {
         return ranges.any { it.contains(other) }
     }
 
-    override fun getClass(): KClass<Any> {
+    override fun getClass(): KClass<*> {
         return clazz
     }
 
-    fun multiplication(other: NumberSet): NumberSet {
+    fun binaryOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet {
         val newSet = NumberSet(clazz)
         for (range in ranges) {
             for (otherRange in other.ranges) {
-                newSet.ranges.addAll(range.multiplication(otherRange, clazz))
+                val values = when (operation) {
+                    ADDITION -> range.addition(otherRange, clazz)
+                    MULTIPLICATION -> range.multiplication(otherRange, clazz)
+                }
+                newSet.ranges.addAll(values)
             }
         }
         newSet.mergeAndDeduplicate()
         return newSet
     }
 
-    fun addition(other: NumberSet): NumberSet {
-        val newSet = NumberSet(clazz)
-        for (range in ranges) {
-            for (otherRange in other.ranges) {
-                newSet.ranges.addAll(range.addition(otherRange, clazz))
-            }
-        }
-        newSet.mergeAndDeduplicate()
-        return newSet
+    fun comparisonOperation(other: NumberSet, operation: ComparisonOperation): BooleanSet {
+        TODO()
     }
 
     private fun mergeAndDeduplicate() {
@@ -75,7 +97,7 @@ class NumberSet(private val clazz: KClass<Any>) : MoldableSet<DD> {
         /**
          * Returns the possible range of values that could be obtained when adding this range to the other.
          */
-        fun addition(other: MoldableRange, clazz: KClass<Any>): Iterable<MoldableRange> {
+        fun addition(other: MoldableRange, clazz: KClass<*>): Iterable<MoldableRange> {
             return resolvePotentialOverflow(
                 start.min(other.start),
                 end.max(other.end),
@@ -83,7 +105,7 @@ class NumberSet(private val clazz: KClass<Any>) : MoldableSet<DD> {
             )
         }
 
-        fun multiplication(other: MoldableRange, clazz: KClass<Any>): Iterable<MoldableRange> {
+        fun multiplication(other: MoldableRange, clazz: KClass<*>): Iterable<MoldableRange> {
             val a = start.multiply(other.start)
             val b = start.multiply(other.end)
             val c = end.multiply(other.start)
@@ -95,7 +117,7 @@ class NumberSet(private val clazz: KClass<Any>) : MoldableSet<DD> {
             )
         }
 
-        private fun resolvePotentialOverflow(min: DD, max: DD, clazz: KClass<Any>): Iterable<MoldableRange> {
+        private fun resolvePotentialOverflow(min: DD, max: DD, clazz: KClass<*>): Iterable<MoldableRange> {
             val minValue = clazz.getMinValue()
             val maxValue = clazz.getMaxValue()
 
@@ -145,19 +167,4 @@ class NumberSet(private val clazz: KClass<Any>) : MoldableSet<DD> {
             }
         }
     }
-}
-
-/**
- * This is the set of possible values an expression can take.
- */
-interface MoldableSet<T> {
-    /**
-     * The class of the elements in the set.
-     *
-     * T may not be equal to the class e.g. in the case of numbers,
-     * T is a DD but the class is Int, Double, etc.
-     */
-    fun getClass(): KClass<Any>
-
-    fun contains(other: T): Boolean
 }

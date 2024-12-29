@@ -4,8 +4,8 @@ import org.apache.commons.numbers.core.DD
 import kotlin.reflect.KClass
 
 object Utilities {
-    val DD_POSITIVE_INFINITY = DD.of(Double.POSITIVE_INFINITY)
-    val DD_NEGATIVE_INFINITY = DD.of(Double.NEGATIVE_INFINITY)
+    val DD_POSITIVE_INFINITY: DD = DD.of(Double.POSITIVE_INFINITY)
+    val DD_NEGATIVE_INFINITY: DD = DD.of(Double.NEGATIVE_INFINITY)
 
     operator fun DD.compareTo(other: DD): Int {
         // First compare the high parts
@@ -26,7 +26,19 @@ object Utilities {
         return if (this > other) this else other
     }
 
-    fun KClass<Any>.getMaxValue(): DD {
+    fun numberToDD(value: Number): DD {
+        when (value) {
+            is Byte -> return DD.of(value.toInt())
+            is Short -> return DD.of(value.toInt())
+            is Int -> return DD.of(value)
+            is Long -> return DD.of(value)
+            is Float -> return DD.of(value.toDouble())
+            is Double -> return DD.of(value)
+        }
+        throw IllegalArgumentException("Unsupported type for number conversion")
+    }
+
+    fun KClass<*>.getMaxValue(): DD {
         when (this) {
             Byte::class -> return DD.of(Byte.MAX_VALUE.toInt())
             Short::class -> return DD.of(Short.MAX_VALUE.toInt())
@@ -38,7 +50,7 @@ object Utilities {
         throw IllegalArgumentException("Unsupported type for max value")
     }
 
-    fun KClass<Any>.getMinValue(): DD {
+    fun KClass<*>.getMinValue(): DD {
         when (this) {
             Byte::class -> return DD.of(Byte.MIN_VALUE.toInt())
             Short::class -> return DD.of(Short.MIN_VALUE.toInt())
@@ -53,7 +65,7 @@ object Utilities {
     /**
      * The length of the set of possible values of this type.
      */
-    fun KClass<Any>.getSetSize(): DD {
+    fun KClass<*>.getSetSize(): DD {
         when (this) {
             Byte::class -> return DD.of(Byte.MAX_VALUE.toInt() - Byte.MIN_VALUE.toInt())
             Short::class -> return DD.of(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt())
