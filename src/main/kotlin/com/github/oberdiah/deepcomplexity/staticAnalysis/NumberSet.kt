@@ -112,18 +112,28 @@ class NumberSet(private val clazz: KClass<Any>) : MoldableSet<DD> {
 
                 ALLOW -> {
                     // Check if we're overflowing and if we are, we must split the range.
-                    // If we're overflowing in both directions we don't need to split again.
-                    
+                    // If we're overflowing in both directions we can just return the full range.
+
                     if (min < minValue && max > maxValue) {
                         return listOf(MoldableRange(minValue, maxValue))
                     } else if (min < minValue) {
                         val wrappedMin = min.add(clazz.getSetSize())
+                        if (wrappedMin < minValue) {
+                            // We're overflowing so much in a single direction
+                            // that the overflow will cover the full range anyway.
+                            return listOf(MoldableRange(minValue, maxValue))
+                        }
                         return listOf(
                             MoldableRange(wrappedMin, maxValue),
                             MoldableRange(minValue, max)
                         )
                     } else if (max > maxValue) {
                         val wrappedMax = max.subtract(clazz.getSetSize())
+                        if (wrappedMax > maxValue) {
+                            // We're overflowing so much in a single direction
+                            // that the overflow will cover the full range anyway.
+                            return listOf(MoldableRange(minValue, maxValue))
+                        }
                         return listOf(
                             MoldableRange(minValue, wrappedMax),
                             MoldableRange(min, maxValue)
