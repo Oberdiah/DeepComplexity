@@ -1,7 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import org.apache.commons.numbers.core.DD
@@ -36,7 +34,7 @@ class BinaryNumberExpression(
     }
 }
 
-class Constant(val value: DD, val clazz: KClass<*>) : Expression<NumberSet> {
+class ConstantNumber(val value: DD, val clazz: KClass<*>) : Expression<NumberSet> {
     override fun evaluate(): NumberSet {
         return NumberSet.singleValue(value, clazz)
     }

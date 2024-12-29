@@ -29,15 +29,6 @@ enum class BooleanSet : MoldableSet<Boolean> {
         override fun with(other: Boolean): BooleanSet {
             return BOTH
         }
-    },
-    NEITHER {
-        override fun contains(other: Boolean): Boolean {
-            return false
-        }
-
-        override fun with(other: Boolean): BooleanSet {
-            return if (other) TRUE else FALSE
-        }
     };
 
     abstract fun with(other: Boolean): BooleanSet

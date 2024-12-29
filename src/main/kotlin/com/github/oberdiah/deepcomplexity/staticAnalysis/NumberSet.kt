@@ -4,6 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.ADDITION
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.MULTIPLICATION
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation.*
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.DD_NEGATIVE_INFINITY
@@ -19,6 +20,10 @@ import org.apache.commons.numbers.core.DD
 import kotlin.reflect.KClass
 
 class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
+    /**
+     * These ranges are always sorted and never overlap.
+     * They must also always be non-empty.
+     */
     private val ranges = mutableListOf<MoldableRange>()
 
     companion object {
@@ -65,7 +70,46 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
     }
 
     fun comparisonOperation(other: NumberSet, operation: ComparisonOperation): BooleanSet {
-        TODO()
+        val mySmallestPossibleValue = ranges[0].start
+        val myLargestPossibleValue = ranges[ranges.size - 1].end
+        val otherSmallestPossibleValue = other.ranges[0].start
+        val otherLargestPossibleValue = other.ranges[other.ranges.size - 1].end
+
+        when (operation) {
+            LESS_THAN -> {
+                if (myLargestPossibleValue < otherSmallestPossibleValue) {
+                    return BooleanSet.TRUE
+                } else if (mySmallestPossibleValue >= otherLargestPossibleValue) {
+                    return BooleanSet.FALSE
+                }
+            }
+
+            LESS_THAN_OR_EQUAL -> {
+                if (myLargestPossibleValue <= otherSmallestPossibleValue) {
+                    return BooleanSet.TRUE
+                } else if (mySmallestPossibleValue > otherLargestPossibleValue) {
+                    return BooleanSet.FALSE
+                }
+            }
+
+            GREATER_THAN -> {
+                if (mySmallestPossibleValue > otherLargestPossibleValue) {
+                    return BooleanSet.TRUE
+                } else if (myLargestPossibleValue <= otherSmallestPossibleValue) {
+                    return BooleanSet.FALSE
+                }
+            }
+
+            GREATER_THAN_OR_EQUAL -> {
+                if (mySmallestPossibleValue >= otherLargestPossibleValue) {
+                    return BooleanSet.TRUE
+                } else if (myLargestPossibleValue < otherSmallestPossibleValue) {
+                    return BooleanSet.FALSE
+                }
+            }
+        }
+
+        return BooleanSet.BOTH
     }
 
     private fun mergeAndDeduplicate() {
@@ -82,6 +126,9 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
             }
         }
         newRanges.add(currentRange)
+
+        assert(newRanges.size >= 1)
+
         ranges.clear()
         ranges.addAll(newRanges)
     }
