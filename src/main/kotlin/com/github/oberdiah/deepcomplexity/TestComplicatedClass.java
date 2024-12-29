@@ -32,7 +32,7 @@ public class TestComplicatedClass {
 	 * ((inpCountingUp + 1) % 2 == 0) ? (inpCountingUp + 1) * inpIncomingData : (inpPlayGround)
 	 * }
 	 * $retVal = {
-	 * outCountingUp > 5
+	 * ((inpCountingUp + 1) % 2 == 0) ? -(inpCountingUp + 1) : (inpCountingUp + 1) > 5
 	 * }
 	 */
 	public boolean doFoo(

@@ -1,9 +1,10 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.intellij.psi.*
 import org.jetbrains.uast.UMethod
 
 object MethodProcessing {
-    fun processMethod(method: UMethod) {
+    fun processMethod(method: PsiMethod) {
         // The key about this parsing operation is we want to be able to do it in O(n) time
         // where n is the size of the project.
 
@@ -13,17 +14,14 @@ object MethodProcessing {
         // A variable can be a return value, an input value, a local variable, anything that allows data to flow
         // through it. We'll call these 'moldables'
 
-        val inputs = getMethodInputs(method)
-        val outputs = getMethodOutputs(method)
+        val inputs = mutableListOf<PsiElement>()
+        val outputs = mutableListOf<PsiElement>()
 
-        // Search the methods and figure out how these inputs relate to these outputs.
-    }
+        // All parameters are guaranteed inputs
+        inputs.addAll(method.parameterList.parameters)
 
-    fun getMethodInputs(method: UMethod): List<Moldable> {
-        return listOf()
-    }
+        method.body?.let { body ->
 
-    fun getMethodOutputs(method: UMethod): List<Moldable> {
-        return listOf()
+        }
     }
 }
