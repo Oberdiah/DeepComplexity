@@ -1,5 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.intellij.psi.PsiType
+import com.intellij.psi.PsiTypes
 import org.apache.commons.numbers.core.DD
 import kotlin.reflect.KClass
 
@@ -36,6 +38,20 @@ object Utilities {
             is Double -> return DD.of(value)
         }
         throw IllegalArgumentException("Unsupported type for number conversion")
+    }
+
+    fun psiTypeToKClass(type: PsiType): KClass<*>? {
+        when (type) {
+            PsiTypes.byteType() -> return Byte::class
+            PsiTypes.shortType() -> return Short::class
+            PsiTypes.intType() -> return Int::class
+            PsiTypes.longType() -> return Long::class
+            PsiTypes.floatType() -> return Float::class
+            PsiTypes.doubleType() -> return Double::class
+            PsiTypes.booleanType() -> return Boolean::class
+            PsiTypes.charType() -> return Char::class
+        }
+        return null
     }
 
     fun KClass<*>.getMaxValue(): DD {

@@ -1,5 +1,7 @@
 package com.github.oberdiah.deepcomplexity;
 
+import org.jetbrains.annotations.Contract;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,30 +24,44 @@ public class TestComplicatedClass {
 	private final List<Integer> myList = new ArrayList<>();
 	
 	/**
-	 * Inputs: inpCountingUp, inpIncomingData.
-	 * Outputs: outCountingUp, outPlayGround, $retVal.
+	 * Start out:
 	 * <p>
-	 * outCountingUp = {
-	 * ((inpCountingUp + 1) % 2 == 0) ? -(inpCountingUp + 1) : (inpCountingUp + 1)
+	 * Square brackets mean an unknown.
+	 * <p>
+	 * vars: {
+	 * VAR[incomingData]
 	 * }
-	 * outPlayGround = {
-	 * ((inpCountingUp + 1) % 2 == 0) ? (inpCountingUp + 1) * inpIncomingData : (inpPlayGround)
+	 * <p>
+	 * Line 2:
+	 * <p>
+	 * vars: {
+	 * incomingData = VAR[incomingData],
+	 * bar = VAR[playGround]
+	 * countingUp = VAR[countingUp] + 1
 	 * }
-	 * $retVal = {
-	 * ((inpCountingUp + 1) % 2 == 0) ? -(inpCountingUp + 1) : (inpCountingUp + 1) > 5
+	 * <p>
+	 * Line 4:
+	 * <p>
+	 * vars: {
+	 * incomingData = VAR[incomingData],
+	 * bar = VAR[playGround],
+	 * countingUp = VAR[countingUp] + 1
+	 * playGround = (VAR[countingUp] + 1) * VAR[incomingData]
 	 * }
 	 */
-	public boolean doFoo(
-			int incomingData
-	) {
-		countingUp++;
+	public boolean doFoo(int incomingData) {
+		int foo = 0;
+		int bar = playGround;
+		countingUp += 1;
 		
 		if (countingUp % 2 == 0) {
 			playGround = countingUp * incomingData;
 			countingUp = -countingUp;
+			bar += countingUp;
+			foo += 3;
 		}
 		
-		return countingUp > 5;
+		return countingUp + bar * 2 + foo > 5;
 	}
 	
 	public List<Integer> whatIsNext() {
@@ -63,6 +79,8 @@ public class TestComplicatedClass {
 		}
 		
 		List<Integer> nextList = complexClass.whatIsNext();
+		
+		Integer.getInteger("foo");
 		
 		for (int foo : nextList) {
 			complexClass.doFoo(foo);

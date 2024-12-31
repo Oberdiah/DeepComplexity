@@ -31,6 +31,12 @@ enum class BooleanSet : MoldableSet<Boolean> {
         }
     };
 
+    companion object {
+        fun fromBoolean(value: Boolean): BooleanSet {
+            return if (value) TRUE else FALSE
+        }
+    }
+
     abstract fun with(other: Boolean): BooleanSet
 
     override fun getClass(): KClass<*> {

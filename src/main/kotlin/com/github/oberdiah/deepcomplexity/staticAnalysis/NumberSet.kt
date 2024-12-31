@@ -24,7 +24,7 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
      * These ranges are always sorted and never overlap.
      * They must also always be non-empty.
      */
-    private val ranges = mutableListOf<MoldableRange>()
+    private val ranges = mutableListOf<NumberRange>()
 
     companion object {
         inline fun <reified T : Number> singleValue(v: T): NumberSet {
@@ -41,7 +41,7 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
 
         fun fromRange(start: DD, end: DD, clazz: KClass<*>): NumberSet {
             return NumberSet(clazz).apply {
-                ranges.add(MoldableRange(start, end))
+                ranges.add(NumberRange(start, end))
             }
         }
     }
@@ -114,12 +114,12 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
 
     private fun mergeAndDeduplicate() {
         ranges.sortWith { a, b -> a.start.compareTo(b.start) }
-        val newRanges = mutableListOf<MoldableRange>()
+        val newRanges = mutableListOf<NumberRange>()
         var currentRange = ranges[0]
         for (i in 1 until ranges.size) {
             val nextRange = ranges[i]
             if (currentRange.end >= nextRange.start) {
-                currentRange = MoldableRange(currentRange.start, nextRange.end)
+                currentRange = NumberRange(currentRange.start, nextRange.end)
             } else {
                 newRanges.add(currentRange)
                 currentRange = nextRange
@@ -136,7 +136,7 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
     /**
      * The start may be equal to the end.
      */
-    private inner class MoldableRange(val start: DD, val end: DD) {
+    private inner class NumberRange(val start: DD, val end: DD) {
         fun contains(other: DD): Boolean {
             return start <= other && other <= end
         }
@@ -144,7 +144,7 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
         /**
          * Returns the possible range of values that could be obtained when adding this range to the other.
          */
-        fun addition(other: MoldableRange, clazz: KClass<*>): Iterable<MoldableRange> {
+        fun addition(other: NumberRange, clazz: KClass<*>): Iterable<NumberRange> {
             return resolvePotentialOverflow(
                 start.min(other.start),
                 end.max(other.end),
@@ -152,7 +152,7 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
             )
         }
 
-        fun multiplication(other: MoldableRange, clazz: KClass<*>): Iterable<MoldableRange> {
+        fun multiplication(other: NumberRange, clazz: KClass<*>): Iterable<NumberRange> {
             val a = start.multiply(other.start)
             val b = start.multiply(other.end)
             val c = end.multiply(other.start)
@@ -164,19 +164,19 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
             )
         }
 
-        private fun resolvePotentialOverflow(min: DD, max: DD, clazz: KClass<*>): Iterable<MoldableRange> {
+        private fun resolvePotentialOverflow(min: DD, max: DD, clazz: KClass<*>): Iterable<NumberRange> {
             val minValue = clazz.getMinValue()
             val maxValue = clazz.getMaxValue()
 
             if (clazz == Double::class || clazz == Float::class) {
                 val biggest = if (max > maxValue) DD_POSITIVE_INFINITY else max
                 val smallest = if (min < minValue) DD_NEGATIVE_INFINITY else min
-                return listOf(MoldableRange(smallest, biggest))
+                return listOf(NumberRange(smallest, biggest))
             }
 
             when (Settings.overflowBehaviour) {
                 CLAMP -> {
-                    return listOf(MoldableRange(min.max(minValue), max.min(maxValue)))
+                    return listOf(NumberRange(min.max(minValue), max.min(maxValue)))
                 }
 
                 ALLOW -> {
@@ -184,31 +184,31 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
                     // If we're overflowing in both directions we can just return the full range.
 
                     if (min < minValue && max > maxValue) {
-                        return listOf(MoldableRange(minValue, maxValue))
+                        return listOf(NumberRange(minValue, maxValue))
                     } else if (min < minValue) {
                         val wrappedMin = min.add(clazz.getSetSize())
                         if (wrappedMin < minValue) {
                             // We're overflowing so much in a single direction
                             // that the overflow will cover the full range anyway.
-                            return listOf(MoldableRange(minValue, maxValue))
+                            return listOf(NumberRange(minValue, maxValue))
                         }
                         return listOf(
-                            MoldableRange(wrappedMin, maxValue),
-                            MoldableRange(minValue, max)
+                            NumberRange(wrappedMin, maxValue),
+                            NumberRange(minValue, max)
                         )
                     } else if (max > maxValue) {
                         val wrappedMax = max.subtract(clazz.getSetSize())
                         if (wrappedMax > maxValue) {
                             // We're overflowing so much in a single direction
                             // that the overflow will cover the full range anyway.
-                            return listOf(MoldableRange(minValue, maxValue))
+                            return listOf(NumberRange(minValue, maxValue))
                         }
                         return listOf(
-                            MoldableRange(minValue, wrappedMax),
-                            MoldableRange(min, maxValue)
+                            NumberRange(minValue, wrappedMax),
+                            NumberRange(min, maxValue)
                         )
                     } else {
-                        return listOf(MoldableRange(min, max))
+                        return listOf(NumberRange(min, max))
                     }
                 }
             }

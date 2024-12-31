@@ -16,6 +16,7 @@
     </extensions>
 
     <applicationListeners>
-        <listener class="com.github.oberdiah.deepcomplexity.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener class="com.github.oberdiah.deepcomplexity.listeners.MyApplicationActivationListener"
+                  topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
 </idea-plugin>

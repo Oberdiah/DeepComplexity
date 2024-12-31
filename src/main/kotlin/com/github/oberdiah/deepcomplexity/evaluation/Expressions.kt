@@ -2,8 +2,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import org.apache.commons.numbers.core.DD
-import kotlin.reflect.KClass
+import com.intellij.psi.PsiElement
 
 interface Expression<T : MoldableSet<*>> {
     fun evaluate(): T
@@ -34,9 +33,10 @@ class BinaryNumberExpression(
     }
 }
 
-class ConstantNumber(val value: DD, val clazz: KClass<*>) : Expression<NumberSet> {
-    override fun evaluate(): NumberSet {
-        return NumberSet.singleValue(value, clazz)
+// Element is either PsiLocalVariable, PsiParameter, or PsiField
+class IncomingVariable(val element: PsiElement) : Expression<MoldableSet<Any>> {
+    override fun evaluate(): MoldableSet<Any> {
+        throw NotImplementedError()
     }
 }
 

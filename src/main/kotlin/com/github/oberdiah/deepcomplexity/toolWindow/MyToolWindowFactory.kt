@@ -1,19 +1,21 @@
 package com.github.oberdiah.deepcomplexity.toolWindow
 
-import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.ToolWindow
-import com.intellij.openapi.wm.ToolWindowFactory
-import com.intellij.ui.components.JBPanel
-import com.intellij.ui.content.ContentFactory
 import com.github.oberdiah.deepcomplexity.MyBundle
 import com.github.oberdiah.deepcomplexity.indexes.PRIMARY_INDEX_ID
 import com.github.oberdiah.deepcomplexity.services.MyProjectService
+import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
+import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ToolWindow
+import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiMethod
+import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.content.ContentFactory
 import com.intellij.util.indexing.FileBasedIndex
-import com.sun.java.accessibility.util.AWTEventMonitor.addActionListener
 import javax.swing.JButton
 
 
@@ -40,7 +42,7 @@ class MyToolWindowFactory : ToolWindowFactory {
                 }
             })
 
-            add(JButton("Scan").apply {
+            add(JButton("Scan method").apply {
                 addActionListener {
                     val fileEditorManager = FileEditorManager.getInstance(toolWindow.project)
 
@@ -48,13 +50,16 @@ class MyToolWindowFactory : ToolWindowFactory {
                     val selectedTextEditor = fileEditorManager.selectedTextEditor
                     val currentFile = selectedTextEditor?.virtualFile
 
-                    if (currentFile != null) {
-                        val textBuffer = StringBuilder()
+                    selectedTextEditor?.let { editor ->
+                        val psiFile = PsiDocumentManager.getInstance(toolWindow.project)
+                            .getPsiFile(editor.document)
 
+                        val offset = editor.caretModel.offset
+                        val element = psiFile?.findElementAt(offset)
 
-                        textArea.text = textBuffer.toString()
-                    } else {
-                        textArea.text = "No file selected!"
+                        if (element != null && element.parent is PsiMethod) {
+                            MethodProcessing.processMethod(element.parent as PsiMethod)
+                        }
                     }
                 }
             })
