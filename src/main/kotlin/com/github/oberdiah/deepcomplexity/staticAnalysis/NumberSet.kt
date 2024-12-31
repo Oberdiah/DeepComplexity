@@ -54,7 +54,7 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
         return clazz
     }
 
-    fun binaryOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet {
+    fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet {
         val newSet = NumberSet(clazz)
         for (range in ranges) {
             for (otherRange in other.ranges) {

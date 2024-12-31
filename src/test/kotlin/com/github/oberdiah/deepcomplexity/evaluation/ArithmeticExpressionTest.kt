@@ -4,7 +4,7 @@ import org.junit.Test
 
 import org.junit.Assert.*
 
-class BinaryNumberExpressionTest {
+class ArithmeticExpressionTest {
     @Test
     fun convert() {
 
