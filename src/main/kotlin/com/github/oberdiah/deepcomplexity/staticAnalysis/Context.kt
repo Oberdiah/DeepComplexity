@@ -15,17 +15,17 @@ import com.intellij.psi.*
 class Context {
     // Psi Element is where the variable is defined —
     // either PsiLocalVariable, PsiParameter, or PsiField
-    private val variables = mutableMapOf<PsiElement, VariableContext<MoldableSet>>()
+    private val variables = mutableMapOf<PsiElement, VariableContext>()
 
     override fun toString(): String {
         return variables.toString()
     }
 
-    fun getVar(element: PsiElement): VariableContext<MoldableSet> {
+    fun getVar(element: PsiElement): VariableContext {
         return variables[element] ?: VariableContext(UnresolvedVariable(element))
     }
 
-    fun assignVar(element: PsiElement, expression: Expression<MoldableSet>) {
+    fun assignVar(element: PsiElement, expression: Expression) {
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
                 variables[element] = VariableContext(expression)
@@ -54,7 +54,7 @@ class Context {
      * Expression is equal to whatever we've built up so far for
      * this variable up to this point.
      */
-    class VariableContext<out T : MoldableSet>(val expression: Expression<T>) {
+    class VariableContext(val expression: Expression) {
         override fun toString(): String {
             return expression.toString()
         }

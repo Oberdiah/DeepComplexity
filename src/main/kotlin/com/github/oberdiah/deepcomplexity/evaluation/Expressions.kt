@@ -8,8 +8,16 @@ import com.intellij.psi.PsiField
 import com.intellij.psi.PsiLocalVariable
 import com.intellij.psi.PsiParameter
 
-sealed interface Expression<out T : MoldableSet> {
-    fun evaluate(): T
+sealed interface Expression {
+    fun evaluate(): MoldableSet
+}
+
+sealed interface NumberExpression : Expression {
+    override fun evaluate(): NumberSet
+}
+
+sealed interface BooleanExpression : Expression {
+    override fun evaluate(): BooleanSet
 }
 
 enum class BinaryNumberOperation {
@@ -27,10 +35,10 @@ enum class ComparisonOperation {
 }
 
 class ArithmeticExpression(
-    val lhs: Expression<NumberSet>,
-    val rhs: Expression<NumberSet>,
+    val lhs: NumberExpression,
+    val rhs: NumberExpression,
     val operation: BinaryNumberOperation
-) : Expression<NumberSet> {
+) : NumberExpression {
     override fun evaluate(): NumberSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()
@@ -42,7 +50,7 @@ class ArithmeticExpression(
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we don't yet know the value of, but would
 // if we stepped out far enough.
-class UnresolvedVariable(val element: PsiElement) : Expression<MoldableSet> {
+class UnresolvedVariable(val element: PsiElement) : Expression {
     init {
         if (!(element is PsiLocalVariable || element is PsiParameter || element is PsiField)) {
             throw IllegalArgumentException("Element must be a PsiLocalVariable, PsiParameter, or PsiFiel0d (got ${element::class})")
@@ -55,10 +63,10 @@ class UnresolvedVariable(val element: PsiElement) : Expression<MoldableSet> {
 }
 
 class ComparisonExpression(
-    val lhs: Expression<NumberSet>,
-    val rhs: Expression<NumberSet>,
+    val lhs: NumberExpression,
+    val rhs: NumberExpression,
     val comparison: ComparisonOperation
-) : Expression<BooleanSet> {
+) : BooleanExpression {
     override fun evaluate(): BooleanSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()

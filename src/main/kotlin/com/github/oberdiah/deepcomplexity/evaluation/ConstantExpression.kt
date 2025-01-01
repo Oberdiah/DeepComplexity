@@ -5,9 +5,9 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
-class ConstantExpression<out T : MoldableSet>(private val singleElementSet: T) : Expression<T> {
+class ConstantExpression<out T : MoldableSet>(private val singleElementSet: T) : Expression {
     companion object {
-        fun fromAny(value: Any): Expression<MoldableSet> {
+        fun fromAny(value: Any): Expression {
             return ConstantExpression(
                 when (value) {
                     is Boolean -> BooleanSet.fromBoolean(value)

@@ -82,26 +82,25 @@ object MethodProcessing {
                         }
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
-                            // todo
-//                            val rhs = buildExpressionFromPsi(rExpression, context)
-//                            val lhs = context.getVar(line.lExpression).expression
-//
-//                            context.assignVar(
-//                                line.lExpression,
-//                                ArithmeticExpression(
-//                                    lhs,
-//                                    rhs,
-//                                    when (line.operationSign) {
-//                                        JavaTokenType.PLUSEQ -> BinaryNumberOperation.ADDITION
-//                                        JavaTokenType.MINUSEQ -> BinaryNumberOperation.SUBTRACTION
-//                                        JavaTokenType.ASTERISKEQ -> BinaryNumberOperation.MULTIPLICATION
-//                                        JavaTokenType.DIVEQ -> BinaryNumberOperation.DIVISION
-//                                        else -> throw IllegalArgumentException(
-//                                            "As-yet unsupported assignment operation: ${line.operationSign}"
-//                                        )
-//                                    }
-//                                )
-//                            )
+                            val rhs = buildExpressionFromPsi(rExpression, context) as NumberExpression
+                            val lhs = context.getVar(line.lExpression).expression as NumberExpression
+
+                            context.assignVar(
+                                line.lExpression,
+                                ArithmeticExpression(
+                                    lhs,
+                                    rhs,
+                                    when (line.operationSign) {
+                                        JavaTokenType.PLUSEQ -> BinaryNumberOperation.ADDITION
+                                        JavaTokenType.MINUSEQ -> BinaryNumberOperation.SUBTRACTION
+                                        JavaTokenType.ASTERISKEQ -> BinaryNumberOperation.MULTIPLICATION
+                                        JavaTokenType.DIVEQ -> BinaryNumberOperation.DIVISION
+                                        else -> throw IllegalArgumentException(
+                                            "As-yet unsupported assignment operation: ${line.operationSign}"
+                                        )
+                                    }
+                                )
+                            )
                         }
 
                         else -> {
@@ -133,7 +132,7 @@ object MethodProcessing {
      *
      * Nothing in here should be declaring variables.
      */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expression<MoldableSet> {
+    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expression {
         when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: TODO("Not implemented yet")
