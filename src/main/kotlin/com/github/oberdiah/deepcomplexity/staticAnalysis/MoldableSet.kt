@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * This is the set of possible values an expression can take.
  */
-interface MoldableSet<T> {
+sealed interface MoldableSet {
     /**
      * The class of the elements in the set.
      *
@@ -13,6 +13,4 @@ interface MoldableSet<T> {
      * T is a DD but the class is Int, Double, etc.
      */
     fun getClass(): KClass<*>
-
-    fun contains(other: T): Boolean
 }

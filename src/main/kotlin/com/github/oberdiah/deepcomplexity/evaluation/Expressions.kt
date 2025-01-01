@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.PsiElement
@@ -7,13 +8,15 @@ import com.intellij.psi.PsiField
 import com.intellij.psi.PsiLocalVariable
 import com.intellij.psi.PsiParameter
 
-interface Expression<T : MoldableSet<*>> {
+sealed interface Expression<out T : MoldableSet> {
     fun evaluate(): T
 }
 
 enum class BinaryNumberOperation {
     ADDITION,
+    SUBTRACTION,
     MULTIPLICATION,
+    DIVISION,
 }
 
 enum class ComparisonOperation {
@@ -39,17 +42,14 @@ class ArithmeticExpression(
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we don't yet know the value of, but would
 // if we stepped out far enough.
-class UnresolvedVariable(private val element: PsiElement) : Expression<MoldableSet<Any>> {
-    companion object {
-        fun UnresolvedVariable(element: PsiElement): UnresolvedVariable {
-            if (!(element is PsiLocalVariable || element is PsiParameter || element is PsiField)) {
-                throw IllegalArgumentException("Element must be a PsiLocalVariable, PsiParameter, or PsiField")
-            }
-            return UnresolvedVariable(element)
+class UnresolvedVariable(val element: PsiElement) : Expression<MoldableSet> {
+    init {
+        if (!(element is PsiLocalVariable || element is PsiParameter || element is PsiField)) {
+            throw IllegalArgumentException("Element must be a PsiLocalVariable, PsiParameter, or PsiFiel0d (got ${element::class})")
         }
     }
 
-    override fun evaluate(): MoldableSet<Any> {
+    override fun evaluate(): MoldableSet {
         throw NotImplementedError()
     }
 }
@@ -58,8 +58,8 @@ class ComparisonExpression(
     val lhs: Expression<NumberSet>,
     val rhs: Expression<NumberSet>,
     val comparison: ComparisonOperation
-) : Expression<MoldableSet<Boolean>> {
-    override fun evaluate(): MoldableSet<Boolean> {
+) : Expression<BooleanSet> {
+    override fun evaluate(): BooleanSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()
 

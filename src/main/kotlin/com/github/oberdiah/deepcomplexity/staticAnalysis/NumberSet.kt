@@ -1,8 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.ADDITION
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.MULTIPLICATION
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation.*
 import com.github.oberdiah.deepcomplexity.settings.Settings
@@ -16,10 +15,11 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.numberToDD
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.toStr
 import org.apache.commons.numbers.core.DD
 import kotlin.reflect.KClass
 
-class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
+class NumberSet(private val clazz: KClass<*>) : MoldableSet {
     /**
      * These ranges are always sorted and never overlap.
      * They must also always be non-empty.
@@ -46,7 +46,13 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
         }
     }
 
-    override fun contains(other: DD): Boolean {
+    override fun toString(): String {
+        return ranges.joinToString(", ") {
+            "[${it.start.toStr()}, ${it.end.toStr()}]"
+        }
+    }
+
+    fun contains(other: DD): Boolean {
         return ranges.any { it.contains(other) }
     }
 
@@ -60,7 +66,10 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
             for (otherRange in other.ranges) {
                 val values = when (operation) {
                     ADDITION -> range.addition(otherRange, clazz)
+                    SUBTRACTION -> range.subtraction(otherRange, clazz)
                     MULTIPLICATION -> range.multiplication(otherRange, clazz)
+                    DIVISION -> range.division(otherRange, clazz)
+
                 }
                 newSet.ranges.addAll(values)
             }
@@ -141,13 +150,18 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
             return start <= other && other <= end
         }
 
-        /**
-         * Returns the possible range of values that could be obtained when adding this range to the other.
-         */
         fun addition(other: NumberRange, clazz: KClass<*>): Iterable<NumberRange> {
             return resolvePotentialOverflow(
-                start.min(other.start),
-                end.max(other.end),
+                start.add(other.start),
+                end.add(other.end),
+                clazz
+            )
+        }
+
+        fun subtraction(other: NumberRange, clazz: KClass<*>): Iterable<NumberRange> {
+            return resolvePotentialOverflow(
+                start.subtract(other.start),
+                end.subtract(other.end),
                 clazz
             )
         }
@@ -157,6 +171,18 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<DD> {
             val b = start.multiply(other.end)
             val c = end.multiply(other.start)
             val d = end.multiply(other.end)
+            return resolvePotentialOverflow(
+                a.min(b).min(c).min(d),
+                a.max(b).max(c).max(d),
+                clazz
+            )
+        }
+
+        fun division(other: NumberRange, clazz: KClass<*>): Iterable<NumberRange> {
+            val a = start.divide(other.start)
+            val b = start.divide(other.end)
+            val c = end.divide(other.start)
+            val d = end.divide(other.end)
             return resolvePotentialOverflow(
                 a.min(b).min(c).min(d),
                 a.max(b).max(c).max(d),

@@ -2,7 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import kotlin.reflect.KClass
 
-enum class BooleanSet : MoldableSet<Boolean> {
+enum class BooleanSet : MoldableSet {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
@@ -38,6 +38,7 @@ enum class BooleanSet : MoldableSet<Boolean> {
     }
 
     abstract fun with(other: Boolean): BooleanSet
+    abstract fun contains(other: Boolean): Boolean
 
     override fun getClass(): KClass<*> {
         return Boolean::class

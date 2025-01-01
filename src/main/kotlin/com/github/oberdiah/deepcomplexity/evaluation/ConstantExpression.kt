@@ -5,24 +5,26 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
-class ConstantExpression<T>(private val singleElementSet: MoldableSet<T>) : Expression<MoldableSet<T>> {
+class ConstantExpression<out T : MoldableSet>(private val singleElementSet: T) : Expression<T> {
     companion object {
-        fun fromAny(value: Any): ConstantExpression<*> {
-            return when (value) {
-                is Boolean -> ConstantExpression(BooleanSet.fromBoolean(value))
-                is Byte -> ConstantExpression(NumberSet.singleValue(value))
-                is Short -> ConstantExpression(NumberSet.singleValue(value))
-                is Int -> ConstantExpression(NumberSet.singleValue(value))
-                is Long -> ConstantExpression(NumberSet.singleValue(value))
-                is Float -> ConstantExpression(NumberSet.singleValue(value))
-                is Double -> ConstantExpression(NumberSet.singleValue(value))
-                is String -> ConstantExpression(GenericSet.singleValue(value))
-                else -> ConstantExpression(GenericSet.singleValue(value))
-            }
+        fun fromAny(value: Any): Expression<MoldableSet> {
+            return ConstantExpression(
+                when (value) {
+                    is Boolean -> BooleanSet.fromBoolean(value)
+                    is Byte -> NumberSet.singleValue(value)
+                    is Short -> NumberSet.singleValue(value)
+                    is Int -> NumberSet.singleValue(value)
+                    is Long -> NumberSet.singleValue(value)
+                    is Float -> NumberSet.singleValue(value)
+                    is Double -> NumberSet.singleValue(value)
+                    is String -> GenericSet.singleValue(value)
+                    else -> GenericSet.singleValue(value)
+                }
+            )
         }
     }
 
-    override fun evaluate(): MoldableSet<T> {
+    override fun evaluate(): T {
         return singleElementSet
     }
 }

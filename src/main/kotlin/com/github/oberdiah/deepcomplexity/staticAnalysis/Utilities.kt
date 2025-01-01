@@ -28,6 +28,10 @@ object Utilities {
         return if (this > other) this else other
     }
 
+    fun DD.toStr(): String {
+        return this.bigDecimalValue().toPlainString()
+    }
+
     fun numberToDD(value: Number): DD {
         when (value) {
             is Byte -> return DD.of(value.toInt())
