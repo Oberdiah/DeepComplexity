@@ -13,4 +13,10 @@ sealed interface MoldableSet {
      * T is a DD but the class is Int, Double, etc.
      */
     fun getClass(): KClass<*>
+
+    companion object {
+        fun psiClassToMoldableSetClass() {
+
+        }
+    }
 }

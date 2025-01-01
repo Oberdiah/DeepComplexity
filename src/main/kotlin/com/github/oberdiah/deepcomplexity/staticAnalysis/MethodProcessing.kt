@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.weisj.jsvg.T
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.intellij.psi.*
 
 object MethodProcessing {
@@ -82,15 +82,21 @@ object MethodProcessing {
                         }
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
-                            val rhs = buildExpressionFromPsi(rExpression, context) as NumberExpression
-                            val lhs = context.getVar(line.lExpression).expression as NumberExpression
+                            val resolvedLhs = line.lExpression.resolveIfNeeded()
+                            val lhs = context.getVar(resolvedLhs).expression.attemptCastTo<NumberSet>() ?: TODO(
+                                "Failed to cast to NumberSet: ${line.lExpression.text}"
+                            )
+
+                            val rhs = buildExpressionFromPsi(rExpression, context).attemptCastTo<NumberSet>() ?: TODO(
+                                "Failed to cast to NumberSet: ${rExpression.text}"
+                            )
 
                             context.assignVar(
-                                line.lExpression,
+                                resolvedLhs,
                                 ArithmeticExpression(
                                     lhs,
                                     rhs,
-                                    when (line.operationSign) {
+                                    when (line.operationSign.tokenType) {
                                         JavaTokenType.PLUSEQ -> BinaryNumberOperation.ADDITION
                                         JavaTokenType.MINUSEQ -> BinaryNumberOperation.SUBTRACTION
                                         JavaTokenType.ASTERISKEQ -> BinaryNumberOperation.MULTIPLICATION
@@ -132,7 +138,7 @@ object MethodProcessing {
      *
      * Nothing in here should be declaring variables.
      */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expression {
+    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expression<MoldableSet> {
         when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: TODO("Not implemented yet")
@@ -140,14 +146,7 @@ object MethodProcessing {
             }
 
             is PsiReferenceExpression -> {
-                val variable = psi.resolve()
-                if (variable != null) {
-                    return context.getVar(variable).expression
-                } else {
-                    TODO(
-                        "Variable not found ${psi.text}"
-                    )
-                }
+                return context.getVar(psi.resolveIfNeeded()).expression
             }
         }
         TODO("As-yet unsupported PsiExpression type ${psi::class}")

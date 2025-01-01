@@ -1,5 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiReferenceExpression
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import org.apache.commons.numbers.core.DD
@@ -56,6 +58,15 @@ object Utilities {
             PsiTypes.charType() -> return Char::class
         }
         return null
+    }
+
+    fun PsiElement.resolveIfNeeded(): PsiElement {
+        if (this is PsiReferenceExpression) {
+            return this.resolve() ?: TODO(
+                "Variable couldn't be resolved (${element.text})"
+            )
+        }
+        return this
     }
 
     fun KClass<*>.getMaxValue(): DD {

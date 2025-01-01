@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.Expression
-import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedVariable
+import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression
 import com.intellij.psi.*
 
 
@@ -22,10 +22,20 @@ class Context {
     }
 
     fun getVar(element: PsiElement): VariableContext {
-        return variables[element] ?: VariableContext(UnresolvedVariable(element))
+        when (element) {
+            is PsiLocalVariable, is PsiParameter, is PsiField -> {
+                return variables[element] ?: VariableContext(UnresolvedExpression.fromElement(element))
+            }
+
+            else -> {
+                TODO("As-yet unsupported PsiElement type (${element::class}) for variable declaration")
+            }
+        }
     }
 
-    fun assignVar(element: PsiElement, expression: Expression) {
+    fun assignVar(element: PsiElement, expression: Expression<MoldableSet>) {
+        assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField)
+
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
                 variables[element] = VariableContext(expression)
@@ -54,7 +64,7 @@ class Context {
      * Expression is equal to whatever we've built up so far for
      * this variable up to this point.
      */
-    class VariableContext(val expression: Expression) {
+    class VariableContext(val expression: Expression<MoldableSet>) {
         override fun toString(): String {
             return expression.toString()
         }
