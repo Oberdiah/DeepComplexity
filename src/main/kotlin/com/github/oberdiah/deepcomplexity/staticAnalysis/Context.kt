@@ -15,11 +15,35 @@ import com.intellij.psi.*
 class Context {
     // Psi Element is where the variable is defined —
     // either PsiLocalVariable, PsiParameter, or PsiField
-    private val variables = mutableMapOf<PsiElement, VariableContext>()
+    private val variables = mutableMapOf<PsiElement, Expression<*>>()
 
     override fun toString(): String {
         val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
         return "Context: {\n$variablesString\n}"
+    }
+
+    fun applyContextUnder(condition: Expression<BooleanSet>, trueCtx: Context, falseCtx: Context) {
+        val currentKeys = variables.keys
+        val trueKeys = trueCtx.variables.keys
+        val falseKeys = falseCtx.variables.keys
+
+        val allKeys = currentKeys.union(trueKeys).union(falseKeys)
+
+        for (key in allKeys) {
+            val trueVar = trueCtx.variables[key]
+            val falseVar = falseCtx.variables[key]
+            val myVar = variables[key]
+
+            val trueModified = trueVar != null && trueVar != myVar
+            val falseModified = falseVar != null && falseVar != myVar
+
+            if (!trueModified && !falseModified) {
+                // No need to do anything
+                continue
+            }
+
+
+        }
     }
 
     fun shallowClone(): Context {
@@ -28,10 +52,10 @@ class Context {
         return newContext
     }
 
-    fun getVar(element: PsiElement): VariableContext {
+    fun getVar(element: PsiElement): Expression<*> {
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                return variables[element] ?: VariableContext(UnresolvedExpression.fromElement(element))
+                return variables[element] ?: UnresolvedExpression.fromElement(element)
             }
 
             else -> {
@@ -40,12 +64,12 @@ class Context {
         }
     }
 
-    fun assignVar(element: PsiElement, expression: Expression<MoldableSet>) {
+    fun assignVar(element: PsiElement, expression: Expression<*>) {
         assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField)
 
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                variables[element] = VariableContext(expression)
+                variables[element] = expression
             }
 
             is PsiReferenceExpression -> {
@@ -55,7 +79,7 @@ class Context {
                     "Variable couldn't be resolved (${element.text})"
                 )
 
-                variables[variable] = VariableContext(expression)
+                variables[variable] = expression
             }
 
             else -> {
@@ -63,17 +87,6 @@ class Context {
                     "As-yet unsupported PsiElement type (${element::class}) for variable declaration"
                 )
             }
-        }
-    }
-
-    /**
-     * Expression is a converter from the values coming in with what's going out.
-     * Expression is equal to whatever we've built up so far for
-     * this variable up to this point.
-     */
-    class VariableContext(val expression: Expression<MoldableSet>) {
-        override fun toString(): String {
-            return expression.toString()
         }
     }
 }

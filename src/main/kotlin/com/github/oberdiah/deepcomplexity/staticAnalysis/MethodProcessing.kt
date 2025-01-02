@@ -5,7 +5,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.Binary
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.intellij.psi.*
-import com.intellij.psi.impl.source.tree.PsiWhiteSpaceImpl
 
 object MethodProcessing {
     fun processMethod(method: PsiMethod) {
@@ -78,7 +77,7 @@ object MethodProcessing {
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
-                            val lhs = context.getVar(resolvedLhs).expression.attemptCastTo<NumberSet>() ?: TODO(
+                            val lhs = context.getVar(resolvedLhs).attemptCastTo<NumberSet>() ?: TODO(
                                 "Failed to cast to NumberSet: ${psi.lExpression.text}"
                             )
 
@@ -109,11 +108,15 @@ object MethodProcessing {
             }
 
             is PsiIfStatement -> {
-                val condition = buildExpressionFromPsi(psi.condition ?: TODO("Not dealing with nulls yet"), context)
+                val condition = buildExpressionFromPsi(
+                    psi.condition ?: TODO("Not dealing with nulls yet"),
+                    context
+                ).attemptCastTo<BooleanSet>() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
                 val thenBranch = psi.thenBranch ?: TODO("Not dealing with nulls yet")
-                val thenBranchContext = context.shallowClone()
-                processPsiElement(thenBranch, thenBranchContext)
-                println(thenBranchContext)
+                val trueBranchContext = context.shallowClone()
+                processPsiElement(thenBranch, trueBranchContext)
+                val falseBranchContext = context
+                context.applyContextUnder(condition, trueBranchContext, falseBranchContext)
             }
 
             is PsiMethodCallExpression -> {
@@ -139,7 +142,7 @@ object MethodProcessing {
      *
      * Nothing in here should be declaring variables.
      */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expression<MoldableSet> {
+    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expression<*> {
         when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: TODO("Not implemented yet")
@@ -147,7 +150,7 @@ object MethodProcessing {
             }
 
             is PsiReferenceExpression -> {
-                return context.getVar(psi.resolveIfNeeded()).expression
+                return context.getVar(psi.resolveIfNeeded())
             }
 
             is PsiBinaryExpression -> {

@@ -59,6 +59,10 @@ public class TestComplicatedClass {
 			countingUp = -countingUp;
 			bar += countingUp;
 			foo += 3;
+		} else if (playGround < 3) {
+			foo += 4;
+		} else {
+			bar += 5;
 		}
 		
 		return countingUp + bar * 2 + foo > 5;

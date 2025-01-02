@@ -19,7 +19,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.toStr
 import org.apache.commons.numbers.core.DD
 import kotlin.reflect.KClass
 
-class NumberSet(private val clazz: KClass<*>) : MoldableSet {
+class NumberSet(private val clazz: KClass<*>) : MoldableSet<NumberSet> {
     /**
      * These ranges are always sorted and never overlap.
      * They must also always be non-empty.

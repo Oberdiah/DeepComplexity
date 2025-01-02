@@ -2,7 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import kotlin.reflect.KClass
 
-class GenericSet<T>(private val clazz: KClass<*>, private val value: T) : MoldableSet {
+class GenericSet<T>(private val clazz: KClass<*>, private val value: T) : MoldableSet<GenericSet<T>> {
     companion object {
         inline fun <reified T> singleValue(value: T): GenericSet<T> {
             return GenericSet(T::class, value)

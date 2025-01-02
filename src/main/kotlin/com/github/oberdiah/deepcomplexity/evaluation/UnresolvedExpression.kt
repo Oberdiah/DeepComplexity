@@ -15,9 +15,9 @@ import kotlin.reflect.KClass
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we don't yet know the value of, but would
 // if we stepped out far enough.
-class UnresolvedExpression<T : MoldableSet> private constructor(
+class UnresolvedExpression<T : MoldableSet<T>> private constructor(
     val element: PsiElement,
-    val underlyingSetClass: KClass<T>
+    val underlyingSetClass: KClass<*>
 ) : Expression<T>(underlyingSetClass) {
     var underlyingSet: T? = null
 
@@ -35,18 +35,20 @@ class UnresolvedExpression<T : MoldableSet> private constructor(
                 (element as? PsiVariable)?.type
                     ?: throw IllegalArgumentException("Element must be a PsiVariable (got ${element::class})")
 
-            return when (type) {
+            val clazz: KClass<*> = when (type) {
                 PsiTypes.byteType(),
                 PsiTypes.shortType(),
                 PsiTypes.intType(),
                 PsiTypes.longType(),
                 PsiTypes.floatType(),
                 PsiTypes.doubleType(),
-                    -> UnresolvedExpression(element, NumberSet::class)
+                    -> NumberSet::class
 
-                PsiTypes.booleanType() -> UnresolvedExpression(element, BooleanSet::class)
-                else -> UnresolvedExpression(element, GenericSet::class)
+                PsiTypes.booleanType() -> BooleanSet::class
+                else -> GenericSet::class
             }
+
+            return UnresolvedExpression(element, clazz)
         }
     }
 }
