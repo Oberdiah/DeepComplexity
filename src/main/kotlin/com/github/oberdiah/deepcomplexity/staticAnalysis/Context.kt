@@ -18,7 +18,8 @@ class Context {
     private val variables = mutableMapOf<PsiElement, VariableContext>()
 
     override fun toString(): String {
-        return variables.toString()
+        val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
+        return "Context: {\n$variablesString\n}"
     }
 
     fun shallowClone(): Context {

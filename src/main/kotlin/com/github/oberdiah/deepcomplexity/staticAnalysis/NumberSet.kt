@@ -47,6 +47,10 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet {
     }
 
     override fun toString(): String {
+        if (ranges.size == 1 && ranges[0].start == ranges[0].end) {
+            return ranges[0].start.toStr()
+        }
+
         return ranges.joinToString(", ") {
             "[${it.start.toStr()}, ${it.end.toStr()}]"
         }

@@ -4,10 +4,12 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.weisj.jsvg.T
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import com.intellij.psi.PsiVariable
+import com.jetbrains.rd.util.string.printToString
 import kotlin.reflect.KClass
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
@@ -18,6 +20,14 @@ class UnresolvedExpression<T : MoldableSet> private constructor(
     val underlyingSetClass: KClass<T>
 ) : Expression<T>(underlyingSetClass) {
     var underlyingSet: T? = null
+
+    override fun evaluate(): T {
+        throw NotImplementedError()
+    }
+
+    override fun toString(): String {
+        return element.toString()
+    }
 
     companion object {
         fun fromElement(element: PsiElement): UnresolvedExpression<*> {
@@ -38,9 +48,5 @@ class UnresolvedExpression<T : MoldableSet> private constructor(
                 else -> UnresolvedExpression(element, GenericSet::class)
             }
         }
-    }
-
-    override fun evaluate(): T {
-        throw NotImplementedError()
     }
 }

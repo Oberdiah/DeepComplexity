@@ -6,6 +6,14 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 class ConstantExpression<T : MoldableSet>(private val singleElementSet: T) : Expression<T>(singleElementSet::class) {
+    override fun toString(): String {
+        return singleElementSet.toString()
+    }
+
+    override fun evaluate(): T {
+        return singleElementSet
+    }
+
     companion object {
         fun fromAny(value: Any): Expression<MoldableSet> {
             // When adding to this it is likely you'll also want to add to UnresolvedExpression.fromElement
@@ -22,9 +30,5 @@ class ConstantExpression<T : MoldableSet>(private val singleElementSet: T) : Exp
             }
             return ConstantExpression(q)
         }
-    }
-
-    override fun evaluate(): T {
-        return singleElementSet
     }
 }

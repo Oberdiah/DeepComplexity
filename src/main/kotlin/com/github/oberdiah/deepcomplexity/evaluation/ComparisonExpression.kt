@@ -17,11 +17,24 @@ class ComparisonExpression(
         return lhs.comparisonOperation(rhs, comparison)
     }
 
+    override fun toString(): String {
+        return "($lhs $comparison $rhs)"
+    }
+
     enum class ComparisonOperation {
         LESS_THAN,
         LESS_THAN_OR_EQUAL,
         GREATER_THAN,
         GREATER_THAN_OR_EQUAL;
+
+        override fun toString(): String {
+            return when (this) {
+                LESS_THAN -> "<"
+                LESS_THAN_OR_EQUAL -> "<="
+                GREATER_THAN -> ">"
+                GREATER_THAN_OR_EQUAL -> ">="
+            }
+        }
 
         companion object {
             fun fromJavaTokenType(tokenType: IElementType): ComparisonOperation? {

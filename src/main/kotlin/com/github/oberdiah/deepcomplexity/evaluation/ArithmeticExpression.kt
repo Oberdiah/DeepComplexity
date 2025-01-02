@@ -16,11 +16,24 @@ class ArithmeticExpression(
         return lhs.arithmeticOperation(rhs, operation)
     }
 
+    override fun toString(): String {
+        return "($lhs $operation $rhs)"
+    }
+
     enum class BinaryNumberOperation {
         ADDITION,
         SUBTRACTION,
         MULTIPLICATION,
         DIVISION;
+
+        override fun toString(): String {
+            return when (this) {
+                ADDITION -> "+"
+                SUBTRACTION -> "-"
+                MULTIPLICATION -> "*"
+                DIVISION -> "/"
+            }
+        }
 
         companion object {
             fun fromJavaTokenType(tokenType: IElementType): BinaryNumberOperation? {
