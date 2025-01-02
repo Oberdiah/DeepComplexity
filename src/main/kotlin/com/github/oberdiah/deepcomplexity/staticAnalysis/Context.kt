@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
 import com.github.oberdiah.deepcomplexity.evaluation.ExprRetBool
+import com.github.oberdiah.deepcomplexity.evaluation.IfExpression
 import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression
 import com.intellij.psi.*
 
@@ -31,19 +32,18 @@ class Context {
         val allKeys = currentKeys.union(trueKeys).union(falseKeys)
 
         for (key in allKeys) {
-            val trueVar = trueCtx.variables[key]
-            val falseVar = falseCtx.variables[key]
-            val myVar = variables[key]
+            val trueVar = trueCtx.variables[key] ?: getVar(key)
+            val falseVar = falseCtx.variables[key] ?: getVar(key)
 
-            val trueModified = trueVar != null && trueVar != myVar
-            val falseModified = falseVar != null && falseVar != myVar
+            val trueModified = trueVar != variables[key]
+            val falseModified = falseVar != variables[key]
 
             if (!trueModified && !falseModified) {
                 // No need to do anything
                 continue
             }
 
-
+            variables[key] = IfExpression(trueVar, falseVar, condition)
         }
     }
 
@@ -56,7 +56,7 @@ class Context {
     fun getVar(element: PsiElement): Expr {
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                return variables[element] ?: UnresolvedExpression(element)
+                return variables[element] ?: UnresolvedExpression.fromElement(element)
             }
 
             else -> {

@@ -14,8 +14,14 @@ sealed interface Expr {
 
 sealed interface ExprRetNum : Expr {
     override fun evaluate(): NumberSet
+    override fun getSetClass(): KClass<*> {
+        return NumberSet::class
+    }
 }
 
 sealed interface ExprRetBool : Expr {
     override fun evaluate(): BooleanSet
+    override fun getSetClass(): KClass<*> {
+        return BooleanSet::class
+    }
 }
