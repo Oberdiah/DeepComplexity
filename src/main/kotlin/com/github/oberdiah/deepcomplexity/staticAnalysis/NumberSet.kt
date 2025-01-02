@@ -19,7 +19,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.toStr
 import org.apache.commons.numbers.core.DD
 import kotlin.reflect.KClass
 
-class NumberSet(private val clazz: KClass<*>) : MoldableSet<NumberSet> {
+class NumberSet(private val clazz: KClass<*>) : MoldableSet {
     /**
      * These ranges are always sorted and never overlap.
      * They must also always be non-empty.
@@ -64,7 +64,7 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<NumberSet> {
         return clazz
     }
 
-    override fun union(other: NumberSet): NumberSet {
+    override fun union(other: MoldableSet): MoldableSet {
         TODO("Not yet implemented")
     }
 

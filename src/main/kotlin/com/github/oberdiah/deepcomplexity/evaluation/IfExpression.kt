@@ -1,20 +1,19 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import kotlin.reflect.KClass
 
-class IfExpression<T : MoldableSet<T>>(
-    val trueExpr: Expression<T>,
-    val falseExpr: Expression<T>,
-    val condition: Expression<BooleanSet>,
-) : Expression<T> {
+class IfExpression(
+    val trueExpr: Expr,
+    val falseExpr: Expr,
+    val condition: ExprRetBool,
+) : Expr {
     override fun getSetClass(): KClass<*> {
         return trueExpr.getSetClass()
     }
 
-    override fun evaluate(): T {
+    override fun evaluate(): MoldableSet {
         val condition = condition.evaluate()
         return when (condition) {
             TRUE -> trueExpr.evaluate()

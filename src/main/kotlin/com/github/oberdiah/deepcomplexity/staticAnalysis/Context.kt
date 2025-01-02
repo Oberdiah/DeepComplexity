@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.Expression
+import com.github.oberdiah.deepcomplexity.evaluation.Expr
+import com.github.oberdiah.deepcomplexity.evaluation.ExprRetBool
 import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression
 import com.intellij.psi.*
 
@@ -15,14 +16,14 @@ import com.intellij.psi.*
 class Context {
     // Psi Element is where the variable is defined —
     // either PsiLocalVariable, PsiParameter, or PsiField
-    private val variables = mutableMapOf<PsiElement, Expression<*>>()
+    private val variables = mutableMapOf<PsiElement, Expr>()
 
     override fun toString(): String {
         val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
         return "Context: {\n\t$variablesString\n}"
     }
 
-    fun applyContextUnder(condition: Expression<BooleanSet>, trueCtx: Context, falseCtx: Context) {
+    fun applyContextUnder(condition: ExprRetBool, trueCtx: Context, falseCtx: Context) {
         val currentKeys = variables.keys
         val trueKeys = trueCtx.variables.keys
         val falseKeys = falseCtx.variables.keys
@@ -52,7 +53,7 @@ class Context {
         return newContext
     }
 
-    fun getVar(element: PsiElement): Expression<*> {
+    fun getVar(element: PsiElement): Expr {
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
                 return variables[element] ?: UnresolvedExpression(element)
@@ -64,12 +65,12 @@ class Context {
         }
     }
 
-    fun assignVar(element: PsiElement, expression: Expression<*>) {
+    fun assignVar(element: PsiElement, expr: Expr) {
         assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField)
 
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                variables[element] = expression
+                variables[element] = expr
             }
 
             is PsiReferenceExpression -> {
@@ -79,7 +80,7 @@ class Context {
                     "Variable couldn't be resolved (${element.text})"
                 )
 
-                variables[variable] = expression
+                variables[variable] = expr
             }
 
             else -> {

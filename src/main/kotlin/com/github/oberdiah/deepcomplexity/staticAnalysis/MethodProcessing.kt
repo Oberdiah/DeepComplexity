@@ -77,11 +77,11 @@ object MethodProcessing {
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
-                            val lhs = context.getVar(resolvedLhs).attemptCastTo<NumberSet>() ?: TODO(
+                            val lhs = context.getVar(resolvedLhs).asRetNum() ?: TODO(
                                 "Failed to cast to NumberSet: ${psi.lExpression.text}"
                             )
 
-                            val rhs = buildExpressionFromPsi(rExpression, context).attemptCastTo<NumberSet>() ?: TODO(
+                            val rhs = buildExpressionFromPsi(rExpression, context).asRetNum() ?: TODO(
                                 "Failed to cast to NumberSet: ${rExpression.text}"
                             )
 
@@ -111,7 +111,7 @@ object MethodProcessing {
                 val condition = buildExpressionFromPsi(
                     psi.condition ?: TODO("Not dealing with nulls yet"),
                     context
-                ).attemptCastTo<BooleanSet>() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
+                ).asRetBool() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
                 val thenBranch = psi.thenBranch ?: TODO("Not dealing with nulls yet")
                 val trueBranchContext = context.shallowClone()
                 processPsiElement(thenBranch, trueBranchContext)
@@ -142,7 +142,7 @@ object MethodProcessing {
      *
      * Nothing in here should be declaring variables.
      */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expression<*> {
+    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expr {
         when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: TODO("Not implemented yet")
@@ -157,10 +157,10 @@ object MethodProcessing {
                 val lhsOperand = psi.lOperand
                 val rhsOperand = psi.rOperand ?: TODO("Not handling nulls yet")
 
-                val lhs = buildExpressionFromPsi(lhsOperand, context).attemptCastTo<NumberSet>()
+                val lhs = buildExpressionFromPsi(lhsOperand, context).asRetNum()
                     ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text}")
 
-                val rhs = buildExpressionFromPsi(rhsOperand, context).attemptCastTo<NumberSet>()
+                val rhs = buildExpressionFromPsi(rhsOperand, context).asRetNum()
                     ?: TODO("Failed to cast to NumberSet: ${rhsOperand.text}")
 
                 val tokenType = psi.operationSign.tokenType

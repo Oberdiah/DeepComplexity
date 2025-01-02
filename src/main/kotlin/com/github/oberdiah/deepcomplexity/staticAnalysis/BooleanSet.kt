@@ -2,18 +2,10 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import kotlin.reflect.KClass
 
-enum class BooleanSet : MoldableSet<BooleanSet> {
+enum class BooleanSet : MoldableSet {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
-        }
-
-        override fun union(other: BooleanSet): BooleanSet {
-            return when (other) {
-                TRUE -> TRUE
-                FALSE -> BOTH
-                BOTH -> BOTH
-            }
         }
 
         override fun with(other: Boolean): BooleanSet {
@@ -25,14 +17,6 @@ enum class BooleanSet : MoldableSet<BooleanSet> {
             return !other
         }
 
-        override fun union(other: BooleanSet): BooleanSet {
-            return when (other) {
-                TRUE -> BOTH
-                FALSE -> FALSE
-                BOTH -> BOTH
-            }
-        }
-
         override fun with(other: Boolean): BooleanSet {
             return if (other) BOTH else FALSE
         }
@@ -40,10 +24,6 @@ enum class BooleanSet : MoldableSet<BooleanSet> {
     BOTH {
         override fun contains(other: Boolean): Boolean {
             return true
-        }
-
-        override fun union(other: BooleanSet): BooleanSet {
-            return BOTH
         }
 
         override fun with(other: Boolean): BooleanSet {
@@ -59,6 +39,15 @@ enum class BooleanSet : MoldableSet<BooleanSet> {
 
     abstract fun with(other: Boolean): BooleanSet
     abstract fun contains(other: Boolean): Boolean
+
+    override fun union(other: MoldableSet): MoldableSet {
+        return when (other) {
+            TRUE -> if (this == FALSE) BOTH else TRUE
+            FALSE -> if (this == TRUE) BOTH else FALSE
+            BOTH -> BOTH
+            else -> throw IllegalArgumentException("Cannot union $this with $other")
+        }
+    }
 
     override fun getClass(): KClass<*> {
         return Boolean::class

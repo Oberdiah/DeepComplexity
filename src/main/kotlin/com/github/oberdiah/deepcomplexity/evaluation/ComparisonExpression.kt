@@ -7,10 +7,10 @@ import com.intellij.psi.tree.IElementType
 import kotlin.reflect.KClass
 
 class ComparisonExpression(
-    val lhs: Expression<NumberSet>,
-    val rhs: Expression<NumberSet>,
+    val lhs: ExprRetNum,
+    val rhs: ExprRetNum,
     val comparison: ComparisonOperation
-) : Expression<BooleanSet> {
+) : ExprRetBool {
     override fun getSetClass(): KClass<*> {
         return BooleanSet::class
     }

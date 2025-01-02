@@ -6,10 +6,10 @@ import com.intellij.psi.tree.IElementType
 import kotlin.reflect.KClass
 
 class ArithmeticExpression(
-    val lhs: Expression<NumberSet>,
-    val rhs: Expression<NumberSet>,
+    val lhs: ExprRetNum,
+    val rhs: ExprRetNum,
     val operation: BinaryNumberOperation
-) : Expression<NumberSet> {
+) : ExprRetNum {
     override fun getSetClass(): KClass<*> {
         return NumberSet::class
     }
