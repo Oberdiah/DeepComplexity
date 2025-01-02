@@ -4,10 +4,15 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import kotlin.reflect.KClass
 
-class ConstantExpression<T : MoldableSet<T>>(private val singleElementSet: T) : Expression<T>(singleElementSet::class) {
+class ConstantExpression<T : MoldableSet<T>>(private val singleElementSet: T) : Expression<T> {
     override fun toString(): String {
         return singleElementSet.toString()
+    }
+
+    override fun getSetClass(): KClass<*> {
+        return singleElementSet::class
     }
 
     override fun evaluate(): T {

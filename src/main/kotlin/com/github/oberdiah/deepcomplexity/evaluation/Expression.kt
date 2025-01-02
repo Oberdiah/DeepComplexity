@@ -3,13 +3,16 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import kotlin.reflect.KClass
 
-sealed class Expression<T : MoldableSet<T>>(val setClazz: KClass<*>) {
-    abstract fun evaluate(): T
+sealed interface Expression<T : MoldableSet<T>> {
+    fun getSetClass(): KClass<*>
 
-    inline fun <reified R : MoldableSet<R>> attemptCastTo(): Expression<R>? {
-        if (setClazz == R::class) {
-            return this as Expression<R>
-        }
-        return null
+    fun evaluate(): T
+}
+
+inline fun <reified R : MoldableSet<R>> Expression<*>.attemptCastTo(): Expression<R>? {
+    if (getSetClass() == R::class) {
+        @Suppress("UNCHECKED_CAST")
+        return this as Expression<R>
     }
+    return null
 }

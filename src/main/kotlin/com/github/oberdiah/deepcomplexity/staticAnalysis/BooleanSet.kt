@@ -8,6 +8,14 @@ enum class BooleanSet : MoldableSet<BooleanSet> {
             return other
         }
 
+        override fun union(other: BooleanSet): BooleanSet {
+            return when (other) {
+                TRUE -> TRUE
+                FALSE -> BOTH
+                BOTH -> BOTH
+            }
+        }
+
         override fun with(other: Boolean): BooleanSet {
             return if (other) TRUE else BOTH
         }
@@ -17,6 +25,14 @@ enum class BooleanSet : MoldableSet<BooleanSet> {
             return !other
         }
 
+        override fun union(other: BooleanSet): BooleanSet {
+            return when (other) {
+                TRUE -> BOTH
+                FALSE -> FALSE
+                BOTH -> BOTH
+            }
+        }
+
         override fun with(other: Boolean): BooleanSet {
             return if (other) BOTH else FALSE
         }
@@ -24,6 +40,10 @@ enum class BooleanSet : MoldableSet<BooleanSet> {
     BOTH {
         override fun contains(other: Boolean): Boolean {
             return true
+        }
+
+        override fun union(other: BooleanSet): BooleanSet {
+            return BOTH
         }
 
         override fun with(other: Boolean): BooleanSet {

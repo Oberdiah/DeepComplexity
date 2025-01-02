@@ -64,6 +64,10 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet<NumberSet> {
         return clazz
     }
 
+    override fun union(other: NumberSet): NumberSet {
+        TODO("Not yet implemented")
+    }
+
     fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet {
         val newSet = NumberSet(clazz)
         for (range in ranges) {

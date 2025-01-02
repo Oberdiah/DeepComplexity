@@ -3,12 +3,17 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
+import kotlin.reflect.KClass
 
 class ArithmeticExpression(
     val lhs: Expression<NumberSet>,
     val rhs: Expression<NumberSet>,
     val operation: BinaryNumberOperation
-) : Expression<NumberSet>(NumberSet::class) {
+) : Expression<NumberSet> {
+    override fun getSetClass(): KClass<*> {
+        return NumberSet::class
+    }
+
     override fun evaluate(): NumberSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()

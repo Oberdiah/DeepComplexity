@@ -19,7 +19,7 @@ class Context {
 
     override fun toString(): String {
         val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
-        return "Context: {\n$variablesString\n}"
+        return "Context: {\n\t$variablesString\n}"
     }
 
     fun applyContextUnder(condition: Expression<BooleanSet>, trueCtx: Context, falseCtx: Context) {
@@ -55,7 +55,7 @@ class Context {
     fun getVar(element: PsiElement): Expression<*> {
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                return variables[element] ?: UnresolvedExpression.fromElement(element)
+                return variables[element] ?: UnresolvedExpression(element)
             }
 
             else -> {

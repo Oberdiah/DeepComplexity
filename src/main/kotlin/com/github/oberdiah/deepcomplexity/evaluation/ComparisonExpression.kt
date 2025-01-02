@@ -4,12 +4,17 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
+import kotlin.reflect.KClass
 
 class ComparisonExpression(
     val lhs: Expression<NumberSet>,
     val rhs: Expression<NumberSet>,
     val comparison: ComparisonOperation
-) : Expression<BooleanSet>(BooleanSet::class) {
+) : Expression<BooleanSet> {
+    override fun getSetClass(): KClass<*> {
+        return BooleanSet::class
+    }
+
     override fun evaluate(): BooleanSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()

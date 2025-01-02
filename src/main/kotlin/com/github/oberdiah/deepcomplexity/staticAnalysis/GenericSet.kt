@@ -2,10 +2,10 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import kotlin.reflect.KClass
 
-class GenericSet<T>(private val clazz: KClass<*>, private val value: T) : MoldableSet<GenericSet<T>> {
+class GenericSet<T>(private val clazz: KClass<*>, private val values: Set<T>) : MoldableSet<GenericSet<T>> {
     companion object {
         inline fun <reified T> singleValue(value: T): GenericSet<T> {
-            return GenericSet(T::class, value)
+            return GenericSet(T::class, setOf(value))
         }
     }
 
@@ -13,7 +13,11 @@ class GenericSet<T>(private val clazz: KClass<*>, private val value: T) : Moldab
         return clazz
     }
 
+    override fun union(other: GenericSet<T>): GenericSet<T> {
+        return GenericSet(clazz, values.union(other.values))
+    }
+
     fun contains(other: T): Boolean {
-        return other == value
+        return values.contains(other)
     }
 }

@@ -9,7 +9,11 @@ class IfExpression<T : MoldableSet<T>>(
     val trueExpr: Expression<T>,
     val falseExpr: Expression<T>,
     val condition: Expression<BooleanSet>,
-) : Expression<T>(trueExpr.setClazz) {
+) : Expression<T> {
+    override fun getSetClass(): KClass<*> {
+        return trueExpr.getSetClass()
+    }
+
     override fun evaluate(): T {
         val condition = condition.evaluate()
         return when (condition) {
