@@ -21,6 +21,12 @@ class Context {
         return variables.toString()
     }
 
+    fun shallowClone(): Context {
+        val newContext = Context()
+        newContext.variables.putAll(variables)
+        return newContext
+    }
+
     fun getVar(element: PsiElement): VariableContext {
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {

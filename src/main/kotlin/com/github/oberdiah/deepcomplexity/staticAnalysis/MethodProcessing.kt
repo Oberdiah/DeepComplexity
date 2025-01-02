@@ -1,8 +1,11 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.intellij.psi.*
+import com.intellij.psi.impl.source.tree.PsiWhiteSpaceImpl
 
 object MethodProcessing {
     fun processMethod(method: PsiMethod) {
@@ -13,42 +16,34 @@ object MethodProcessing {
         // we parameterize over.
 
         val context = Context()
-
         method.body?.let { body ->
-//            val flow = ControlFlowFactory
-//                .getControlFlow(
-//                    body,
-//                    AllVariablesControlFlowPolicy.getInstance(),
-//                    ControlFlowOptions.create(true, true, false)
-//                )
-
-            processBody(body, context)
+            processPsiElement(body, context)
         }
-
         println(context)
     }
 
-    private fun processBody(
-        body: PsiCodeBlock,
-        context: Context
-    ) {
-        for (line in body.children) {
-            processPsiElement(line, context)
-        }
-    }
-
     private fun processPsiElement(
-        line: PsiElement,
+        psi: PsiElement,
         context: Context
     ) {
-        when (line) {
+        when (psi) {
+            is PsiBlockStatement -> {
+                processPsiElement(psi.codeBlock, context)
+            }
+
+            is PsiCodeBlock -> {
+                for (line in psi.children) {
+                    processPsiElement(line, context)
+                }
+            }
+
             is PsiExpressionStatement -> {
-                processPsiElement(line.expression, context)
+                processPsiElement(psi.expression, context)
             }
 
             is PsiDeclarationStatement -> {
                 // Handled similar to assignment expression
-                line.declaredElements.forEach { element ->
+                psi.declaredElements.forEach { element ->
                     if (element is PsiLocalVariable) {
                         val rExpression = element.initializer
                         if (rExpression != null) {
@@ -71,20 +66,20 @@ object MethodProcessing {
             }
 
             is PsiAssignmentExpression -> {
-                line.rExpression?.let { rExpression ->
-                    val opSign = line.operationSign
+                psi.rExpression?.let { rExpression ->
+                    val opSign = psi.operationSign
                     when (opSign.tokenType) {
                         JavaTokenType.EQ -> {
                             context.assignVar(
-                                line.lExpression,
+                                psi.lExpression.resolveIfNeeded(),
                                 buildExpressionFromPsi(rExpression, context)
                             )
                         }
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
-                            val resolvedLhs = line.lExpression.resolveIfNeeded()
+                            val resolvedLhs = psi.lExpression.resolveIfNeeded()
                             val lhs = context.getVar(resolvedLhs).expression.attemptCastTo<NumberSet>() ?: TODO(
-                                "Failed to cast to NumberSet: ${line.lExpression.text}"
+                                "Failed to cast to NumberSet: ${psi.lExpression.text}"
                             )
 
                             val rhs = buildExpressionFromPsi(rExpression, context).attemptCastTo<NumberSet>() ?: TODO(
@@ -96,40 +91,46 @@ object MethodProcessing {
                                 ArithmeticExpression(
                                     lhs,
                                     rhs,
-                                    when (line.operationSign.tokenType) {
-                                        JavaTokenType.PLUSEQ -> BinaryNumberOperation.ADDITION
-                                        JavaTokenType.MINUSEQ -> BinaryNumberOperation.SUBTRACTION
-                                        JavaTokenType.ASTERISKEQ -> BinaryNumberOperation.MULTIPLICATION
-                                        JavaTokenType.DIVEQ -> BinaryNumberOperation.DIVISION
-                                        else -> throw IllegalArgumentException(
-                                            "As-yet unsupported assignment operation: ${line.operationSign}"
+                                    BinaryNumberOperation.fromJavaTokenType(psi.operationSign.tokenType)
+                                        ?: throw IllegalArgumentException(
+                                            "As-yet unsupported assignment operation: ${psi.operationSign}"
                                         )
-                                    }
                                 )
                             )
                         }
 
                         else -> {
                             TODO(
-                                "As-yet unsupported assignment operation: ${line.operationSign}"
+                                "As-yet unsupported assignment operation: ${psi.operationSign}"
                             )
                         }
                     }
                 }
             }
 
-            is PsiMethodCallExpression -> {
-                // We're not thinking about methods yet.
+            is PsiIfStatement -> {
+                val condition = buildExpressionFromPsi(psi.condition ?: TODO("Not dealing with nulls yet"), context)
+                val thenBranch = psi.thenBranch ?: TODO("Not dealing with nulls yet")
+                val thenBranchContext = context.shallowClone()
+                processPsiElement(thenBranch, thenBranchContext)
+                println(thenBranchContext)
             }
 
-            is PsiIfStatement -> {
-                // This is a conditional statement
+            is PsiMethodCallExpression -> {
+                // We're not thinking about methods yet.
             }
 
             is PsiReturnStatement -> {
 
             }
 
+            is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
+                // Ignore whitespace, comments, etc.
+            }
+
+            else -> {
+                println("WARN: Unsupported PsiElement type: ${psi::class} (${psi.text})")
+            }
         }
     }
 
@@ -148,7 +149,29 @@ object MethodProcessing {
             is PsiReferenceExpression -> {
                 return context.getVar(psi.resolveIfNeeded()).expression
             }
+
+            is PsiBinaryExpression -> {
+                val lhsOperand = psi.lOperand
+                val rhsOperand = psi.rOperand ?: TODO("Not handling nulls yet")
+
+                val lhs = buildExpressionFromPsi(lhsOperand, context).attemptCastTo<NumberSet>()
+                    ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text}")
+
+                val rhs = buildExpressionFromPsi(rhsOperand, context).attemptCastTo<NumberSet>()
+                    ?: TODO("Failed to cast to NumberSet: ${rhsOperand.text}")
+
+                val tokenType = psi.operationSign.tokenType
+
+                val comparisonOperation = ComparisonOperation.fromJavaTokenType(tokenType)
+                val binaryNumberOperation = BinaryNumberOperation.fromJavaTokenType(tokenType)
+
+                return when {
+                    comparisonOperation != null -> ComparisonExpression(lhs, rhs, comparisonOperation)
+                    binaryNumberOperation != null -> ArithmeticExpression(lhs, rhs, binaryNumberOperation)
+                    else -> TODO("Unsupported binary operation: ${psi.operationSign}")
+                }
+            }
         }
-        TODO("As-yet unsupported PsiExpression type ${psi::class}")
+        TODO("As-yet unsupported PsiExpression type ${psi::class} (${psi.text})")
     }
 }

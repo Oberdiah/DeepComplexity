@@ -1,0 +1,38 @@
+package com.github.oberdiah.deepcomplexity.evaluation
+
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.intellij.psi.JavaTokenType
+import com.intellij.psi.tree.IElementType
+
+class ComparisonExpression(
+    val lhs: Expression<NumberSet>,
+    val rhs: Expression<NumberSet>,
+    val comparison: ComparisonOperation
+) : Expression<BooleanSet>(BooleanSet::class) {
+    override fun evaluate(): BooleanSet {
+        val lhs = lhs.evaluate()
+        val rhs = rhs.evaluate()
+
+        return lhs.comparisonOperation(rhs, comparison)
+    }
+
+    enum class ComparisonOperation {
+        LESS_THAN,
+        LESS_THAN_OR_EQUAL,
+        GREATER_THAN,
+        GREATER_THAN_OR_EQUAL;
+
+        companion object {
+            fun fromJavaTokenType(tokenType: IElementType): ComparisonOperation? {
+                return when (tokenType) {
+                    JavaTokenType.LT -> LESS_THAN
+                    JavaTokenType.LE -> LESS_THAN_OR_EQUAL
+                    JavaTokenType.GT -> GREATER_THAN
+                    JavaTokenType.GE -> GREATER_THAN_OR_EQUAL
+                    else -> null
+                }
+            }
+        }
+    }
+}

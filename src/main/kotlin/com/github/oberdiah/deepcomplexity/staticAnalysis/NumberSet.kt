@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation.*
+import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation
+import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation.*
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation.*
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.DD_NEGATIVE_INFINITY

@@ -54,7 +54,7 @@ public class TestComplicatedClass {
 		int bar = playGround;
 		countingUp += 1;
 		
-		if (countingUp % 2 == 0) {
+		if (countingUp > 2) { // countingUp % 2 == 0
 			playGround = countingUp * incomingData;
 			countingUp = -countingUp;
 			bar += countingUp;
