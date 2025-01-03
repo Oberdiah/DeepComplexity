@@ -113,20 +113,23 @@ object MethodProcessing {
                     psi.condition ?: throw ExpressionIncompleteException(),
                     context
                 ).asRetBool() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
+
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                val trueBranchDiff = Context()
-                processPsiElement(trueBranch, trueBranchDiff)
-                val trueBranchContext = Context.stack(context, trueBranchDiff)
+                val trueBranchContext = Context()
+                processPsiElement(trueBranch, trueBranchContext)
 
                 val elseBranch = psi.elseBranch
                 if (elseBranch == null) {
-                    // No need for a false branch if we're only dealing with the main one
-                    context.applyIf(condition, trueBranchContext, context)
+                    context.stack(Context.combine(trueBranchContext, Context()) { a, b ->
+                        IfExpression(a, b, condition)
+                    })
                 } else {
-                    val falseBranchDiff = Context()
-                    processPsiElement(elseBranch, falseBranchDiff)
-                    val falseBranchContext = Context.stack(context, falseBranchDiff)
-                    context.applyIf(condition, trueBranchContext, falseBranchContext)
+                    val falseBranchContext = Context()
+                    processPsiElement(elseBranch, falseBranchContext)
+
+                    context.stack(Context.combine(trueBranchContext, falseBranchContext) { a, b ->
+                        IfExpression(a, b, condition)
+                    })
                 }
             }
 

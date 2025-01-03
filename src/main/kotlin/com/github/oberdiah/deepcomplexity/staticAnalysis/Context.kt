@@ -1,8 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.ExprRetBool
-import com.github.oberdiah.deepcomplexity.evaluation.IfExpression
 import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression
 import com.intellij.psi.*
 
@@ -23,7 +21,7 @@ class Context {
      * An unresolved expression represents the state of that element on entering this context.
      * It can be the case that an element is in both unresolved expressions and variables.
      * That does not mean we can resolve the unresolved expression.
-     * Unresolved's must be resolved by an earlier context.
+     * Unresolveds must be resolved by an earlier context.
      *
      * For example:
      *
@@ -37,36 +35,33 @@ class Context {
      * ```
      *
      * In the above, it would be incorrect to resolve `y` to `10`.
+     *
+     * It is a list because when we combine contexts both contexts may have independently found
+     * the same unresolved expression and we need to be able to update them all when we resolve them.
      */
-    private val allUnresolvedExpressions = mutableMapOf<PsiElement, UnresolvedExpression.Unresolved>()
+    private val allUnresolvedExpressions = mutableMapOf<PsiElement, MutableList<UnresolvedExpression.Unresolved>>()
 
     companion object {
         /**
-         * Stacks the later context on top of the earlier one.
+         * Combines two contexts at the same 'point in time' e.g. a branching if statement.
+         * This does not and cannot resolve any unresolved expressions as these two statements
+         * are independent of each other.
          *
-         * That is, any undefined variables in the later context will be taken from the earlier context
-         * when possible.
+         * You must define how to resolve conflicts.
+         * It cannot be the case that both a and b are null in the callback.
          */
-        fun stack(earlier: Context, later: Context): Context {
+        fun combine(a: Context, b: Context, how: (a: Expr, b: Expr) -> Expr): Context {
             val resultingContext = Context()
+            resultingContext.addAllUnresolved(a)
+            resultingContext.addAllUnresolved(b)
 
-            // First, resolve what we can.
-            for ((key, value) in later.allUnresolvedExpressions) {
-                val resolved = earlier.variables[key]
-                if (resolved != null) {
-                    value.resolvedExpr = resolved
-                } else {
-                    resultingContext.allUnresolvedExpressions[key] = value
-                }
+            val allKeys = a.variables.keys + b.variables.keys
+
+            for (key in allKeys) {
+                val aVal = a.variables[key] ?: resultingContext.getVar(key)
+                val bVal = b.variables[key] ?: resultingContext.getVar(key)
+                resultingContext.variables[key] = how(aVal, bVal)
             }
-
-            // Earlier unresolveds cannot be resolved by a later context.
-            resultingContext.allUnresolvedExpressions.putAll(earlier.allUnresolvedExpressions)
-
-
-            resultingContext.variables.putAll(earlier.variables)
-            // Later variables overwrite earlier variables
-            resultingContext.variables.putAll(later.variables)
 
             return resultingContext
         }
@@ -77,32 +72,37 @@ class Context {
         return "Context: {\n\t$variablesString\n}"
     }
 
-    fun applyIf(condition: ExprRetBool, trueCtx: Context, falseCtx: Context) {
-        val currentKeys = variables.keys
-        val trueKeys = trueCtx.variables.keys
-        val falseKeys = falseCtx.variables.keys
-
-        val allKeys = currentKeys.union(trueKeys).union(falseKeys)
-
-        for (key in allKeys) {
-            val trueVar = trueCtx.variables[key] ?: getVar(key)
-            val falseVar = falseCtx.variables[key] ?: getVar(key)
-
-            val trueModified = trueVar != variables[key]
-            val falseModified = falseVar != variables[key]
-
-            if (!trueModified && !falseModified) {
-                // No need to do anything
-                continue
+    /**
+     * Stacks the later context on top of this one.
+     *
+     * That is, any undefined variables in the later context will be taken from this
+     * when possible.
+     */
+    fun stack(later: Context) {
+        // First, resolve what we can.
+        for ((key, values) in later.allUnresolvedExpressions) {
+            val resolved = variables[key]
+            if (resolved != null) {
+                for (value in values) {
+                    value.resolvedExpr = resolved
+                }
+            } else {
+                allUnresolvedExpressions.getOrPut(key) { mutableListOf() }.addAll(values)
             }
-
-            variables[key] = IfExpression(trueVar, falseVar, condition)
         }
+        // Later's variables overwrite ours if they exist as they're more recent.
+        variables.putAll(later.variables)
     }
 
     private fun getUnresolved(element: PsiElement): Expr {
         return allUnresolvedExpressions.getOrPut(element) {
-            UnresolvedExpression.fromElement(element)
+            mutableListOf(UnresolvedExpression.fromElement(element))
+        }.first() // It really shouldn't matter which we use.
+    }
+
+    private fun addAllUnresolved(other: Context) {
+        for ((key, values) in other.allUnresolvedExpressions) {
+            allUnresolvedExpressions.getOrPut(key) { mutableListOf() }.addAll(values)
         }
     }
 
