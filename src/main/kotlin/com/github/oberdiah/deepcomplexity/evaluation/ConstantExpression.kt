@@ -27,6 +27,10 @@ object ConstantExpression {
         override fun toString(): String {
             return singleElementSet.toString()
         }
+
+        override fun getUnresolved(): Set<UnresolvedExpression.Unresolved> {
+            return setOf()
+        }
     }
 
     class ConstExprNum(singleElementSet: NumberSet) : ConstExpr<NumberSet>(singleElementSet), ExprRetNum {
@@ -41,13 +45,9 @@ object ConstantExpression {
         }
     }
 
-    class ConstExprGeneric<T>(singleElementSet: GenericSet<T>) : ConstExpr<GenericSet<T>>(singleElementSet) {
-        override fun evaluate(): MoldableSet {
+    class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), ExprRetGeneric {
+        override fun evaluate(): GenericSet {
             return singleElementSet
-        }
-
-        override fun getSetClass(): KClass<*> {
-            return GenericSet::class
         }
     }
 }

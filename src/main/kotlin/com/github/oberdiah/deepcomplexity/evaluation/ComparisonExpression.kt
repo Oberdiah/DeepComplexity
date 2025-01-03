@@ -15,6 +15,10 @@ class ComparisonExpression(
         return BooleanSet::class
     }
 
+    override fun getUnresolved(): Set<UnresolvedExpression.Unresolved> {
+        return lhs.getUnresolved() + rhs.getUnresolved()
+    }
+
     override fun evaluate(): BooleanSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()

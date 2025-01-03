@@ -84,7 +84,7 @@ class Context {
             val resolved = variables[key]
             if (resolved != null) {
                 for (value in values) {
-                    value.resolvedExpr = resolved
+                    value.setResolvedExpr(resolved)
                 }
             } else {
                 allUnresolvedExpressions.getOrPut(key) { mutableListOf() }.addAll(values)

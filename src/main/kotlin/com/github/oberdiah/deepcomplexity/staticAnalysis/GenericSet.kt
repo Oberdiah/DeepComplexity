@@ -2,25 +2,27 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import kotlin.reflect.KClass
 
-class GenericSet<T>(private val clazz: KClass<*>, private val values: Set<T>) : MoldableSet {
+interface GenericSet : MoldableSet {
     companion object {
-        inline fun <reified T> singleValue(value: T): GenericSet<T> {
-            return GenericSet(T::class, setOf(value))
+        inline fun <reified T> singleValue(value: T): GenericSetImpl<T> {
+            return GenericSetImpl(T::class, setOf(value))
         }
     }
 
-    override fun getClass(): KClass<*> {
-        return clazz
-    }
-
-    override fun union(other: MoldableSet): MoldableSet {
-        if (other !is GenericSet<*>) {
-            throw IllegalArgumentException("Cannot union with a different set type")
+    class GenericSetImpl<T>(private val clazz: KClass<*>, private val values: Set<T>) : GenericSet {
+        override fun getClass(): KClass<*> {
+            return clazz
         }
-        return GenericSet(clazz, values.union(other.values))
-    }
 
-    fun contains(other: T): Boolean {
-        return values.contains(other)
+        override fun union(other: MoldableSet): MoldableSet {
+            if (other !is GenericSetImpl<*>) {
+                throw IllegalArgumentException("Cannot union with a different set type")
+            }
+            return GenericSetImpl(clazz, values.union(other.values))
+        }
+
+        fun contains(other: T): Boolean {
+            return values.contains(other)
+        }
     }
 }

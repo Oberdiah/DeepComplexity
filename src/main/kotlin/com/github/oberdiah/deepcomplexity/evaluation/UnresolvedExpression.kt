@@ -34,46 +34,52 @@ object UnresolvedExpression {
         }
     }
 
-    abstract class Unresolved(val element: PsiElement) : Expr {
-        abstract var resolvedExpr: Expr?
+    interface Unresolved : Expr {
+        fun setResolvedExpr(expr: Expr)
+    }
+
+    abstract class UnresolvedImpl<T>(val element: PsiElement) : Unresolved {
+        protected var resolvedExpr: T? = null
 
         override fun toString(): String {
             return if (resolvedExpr != null) resolvedExpr.toString() else element.toString()
         }
+
+        override fun getUnresolved(): Set<Unresolved> {
+            return setOf(this)
+        }
     }
 
-    class UnresolvedBool(element: PsiElement) : Unresolved(element), ExprRetBool {
-        override var resolvedExpr: Expr? = null
-            set(value) {
-                field = (value as? ExprRetBool)
-                    ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
-            }
+    class UnresolvedBool(element: PsiElement) : UnresolvedImpl<ExprRetBool>(element), ExprRetBool {
+        override fun setResolvedExpr(expr: Expr) {
+            resolvedExpr = (expr as? ExprRetBool)
+                ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
+        }
 
         override fun evaluate(): BooleanSet {
-            return (resolvedExpr as ExprRetBool?)?.evaluate() ?: throw IllegalStateException("Unresolved expression")
-        }
-    }
-
-    class UnresolvedNumber(element: PsiElement) : Unresolved(element), ExprRetNum {
-        override var resolvedExpr: Expr? = null
-            set(value) {
-                field = (value as? ExprRetNum)
-                    ?: throw IllegalArgumentException("Resolved expression must be a number expression")
-            }
-
-        override fun evaluate(): NumberSet {
-            return (resolvedExpr as ExprRetNum?)?.evaluate() ?: throw IllegalStateException("Unresolved expression")
-        }
-    }
-
-    class UnresolvedGeneric(element: PsiElement) : Unresolved(element) {
-        override var resolvedExpr: Expr? = null
-        override fun evaluate(): MoldableSet {
             return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
         }
+    }
 
-        override fun getSetClass(): KClass<*> {
-            return GenericSet::class
+    class UnresolvedNumber(element: PsiElement) : UnresolvedImpl<ExprRetNum>(element), ExprRetNum {
+        override fun setResolvedExpr(expr: Expr) {
+            resolvedExpr = (expr as? ExprRetNum)
+                ?: throw IllegalArgumentException("Resolved expression must be a number expression")
+        }
+
+        override fun evaluate(): NumberSet {
+            return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
+        }
+    }
+
+    class UnresolvedGeneric(element: PsiElement) : UnresolvedImpl<ExprRetGeneric>(element), ExprRetGeneric {
+        override fun setResolvedExpr(expr: Expr) {
+            resolvedExpr = (expr as? ExprRetGeneric)
+                ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
+        }
+
+        override fun evaluate(): GenericSet {
+            return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
         }
     }
 }

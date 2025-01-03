@@ -14,6 +14,10 @@ class ArithmeticExpression(
         return NumberSet::class
     }
 
+    override fun getUnresolved(): Set<UnresolvedExpression.Unresolved> {
+        return lhs.getUnresolved() + rhs.getUnresolved()
+    }
+
     override fun evaluate(): NumberSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()
