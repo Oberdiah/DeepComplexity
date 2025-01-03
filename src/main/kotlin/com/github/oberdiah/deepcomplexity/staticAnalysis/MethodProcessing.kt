@@ -112,11 +112,18 @@ object MethodProcessing {
                     psi.condition ?: TODO("Not dealing with nulls yet"),
                     context
                 ).asRetBool() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
-                val thenBranch = psi.thenBranch ?: TODO("Not dealing with nulls yet")
+                val trueBranch = psi.thenBranch ?: TODO("Not dealing with nulls yet")
                 val trueBranchContext = context.shallowClone()
-                processPsiElement(thenBranch, trueBranchContext)
-                val falseBranchContext = context
-                context.applyContextUnder(condition, trueBranchContext, falseBranchContext)
+                processPsiElement(trueBranch, trueBranchContext)
+                val elseBranch = psi.elseBranch
+                if (elseBranch == null) {
+                    // No need for a false branch if we're only dealing with the main one
+                    context.applyContextUnder(condition, trueBranchContext, context)
+                } else {
+                    val falseBranchContext = context.shallowClone()
+                    processPsiElement(elseBranch, falseBranchContext)
+                    context.applyContextUnder(condition, trueBranchContext, falseBranchContext)
+                }
             }
 
             is PsiMethodCallExpression -> {

@@ -23,32 +23,6 @@ public class TestComplicatedClass {
 	
 	private final List<Integer> myList = new ArrayList<>();
 	
-	/**
-	 * Start out:
-	 * <p>
-	 * Square brackets mean an unknown.
-	 * <p>
-	 * vars: {
-	 * VAR[incomingData]
-	 * }
-	 * <p>
-	 * Line 2:
-	 * <p>
-	 * vars: {
-	 * incomingData = VAR[incomingData],
-	 * bar = VAR[playGround]
-	 * countingUp = VAR[countingUp] + 1
-	 * }
-	 * <p>
-	 * Line 4:
-	 * <p>
-	 * vars: {
-	 * incomingData = VAR[incomingData],
-	 * bar = VAR[playGround],
-	 * countingUp = VAR[countingUp] + 1
-	 * playGround = (VAR[countingUp] + 1) * VAR[incomingData]
-	 * }
-	 */
 	public boolean doFoo(int incomingData) {
 		int foo = 0;
 		int bar = playGround;
