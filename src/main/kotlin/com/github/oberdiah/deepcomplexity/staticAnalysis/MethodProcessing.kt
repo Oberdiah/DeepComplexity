@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
+import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.intellij.psi.*
 
@@ -109,20 +110,23 @@ object MethodProcessing {
 
             is PsiIfStatement -> {
                 val condition = buildExpressionFromPsi(
-                    psi.condition ?: TODO("Not dealing with nulls yet"),
+                    psi.condition ?: throw ExpressionIncompleteException(),
                     context
                 ).asRetBool() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
-                val trueBranch = psi.thenBranch ?: TODO("Not dealing with nulls yet")
-                val trueBranchContext = context.shallowClone()
-                processPsiElement(trueBranch, trueBranchContext)
+                val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
+                val trueBranchDiff = Context()
+                processPsiElement(trueBranch, trueBranchDiff)
+                val trueBranchContext = Context.stack(context, trueBranchDiff)
+
                 val elseBranch = psi.elseBranch
                 if (elseBranch == null) {
                     // No need for a false branch if we're only dealing with the main one
-                    context.applyContextUnder(condition, trueBranchContext, context)
+                    context.applyIf(condition, trueBranchContext, context)
                 } else {
-                    val falseBranchContext = context.shallowClone()
-                    processPsiElement(elseBranch, falseBranchContext)
-                    context.applyContextUnder(condition, trueBranchContext, falseBranchContext)
+                    val falseBranchDiff = Context()
+                    processPsiElement(elseBranch, falseBranchDiff)
+                    val falseBranchContext = Context.stack(context, falseBranchDiff)
+                    context.applyIf(condition, trueBranchContext, falseBranchContext)
                 }
             }
 
@@ -152,7 +156,7 @@ object MethodProcessing {
     private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expr {
         when (psi) {
             is PsiLiteralExpression -> {
-                val value = psi.value ?: TODO("Not implemented yet")
+                val value = psi.value ?: throw ExpressionIncompleteException()
                 return ConstantExpression.fromAny(value)
             }
 
@@ -162,7 +166,7 @@ object MethodProcessing {
 
             is PsiBinaryExpression -> {
                 val lhsOperand = psi.lOperand
-                val rhsOperand = psi.rOperand ?: TODO("Not handling nulls yet")
+                val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()
 
                 val lhs = buildExpressionFromPsi(lhsOperand, context).asRetNum()
                     ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text}")

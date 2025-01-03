@@ -23,6 +23,6 @@ class IfExpression(
     }
 
     override fun toString(): String {
-        return "if ($condition) $trueExpr else $falseExpr"
+        return "($condition ? $trueExpr : $falseExpr)"
     }
 }

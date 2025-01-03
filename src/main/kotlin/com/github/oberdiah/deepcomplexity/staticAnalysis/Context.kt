@@ -19,12 +19,65 @@ class Context {
     // either PsiLocalVariable, PsiParameter, or PsiField
     private val variables = mutableMapOf<PsiElement, Expr>()
 
+    /**
+     * An unresolved expression represents the state of that element on entering this context.
+     * It can be the case that an element is in both unresolved expressions and variables.
+     * That does not mean we can resolve the unresolved expression.
+     * Unresolved's must be resolved by an earlier context.
+     *
+     * For example:
+     *
+     * ```
+     * int x = 5;
+     *
+     * fun foo() {
+     *     int y = x;
+     *     x = 10;
+     * }
+     * ```
+     *
+     * In the above, it would be incorrect to resolve `y` to `10`.
+     */
+    private val allUnresolvedExpressions = mutableMapOf<PsiElement, UnresolvedExpression.Unresolved>()
+
+    companion object {
+        /**
+         * Stacks the later context on top of the earlier one.
+         *
+         * That is, any undefined variables in the later context will be taken from the earlier context
+         * when possible.
+         */
+        fun stack(earlier: Context, later: Context): Context {
+            val resultingContext = Context()
+
+            // First, resolve what we can.
+            for ((key, value) in later.allUnresolvedExpressions) {
+                val resolved = earlier.variables[key]
+                if (resolved != null) {
+                    value.resolvedExpr = resolved
+                } else {
+                    resultingContext.allUnresolvedExpressions[key] = value
+                }
+            }
+
+            // Earlier unresolveds cannot be resolved by a later context.
+            resultingContext.allUnresolvedExpressions.putAll(earlier.allUnresolvedExpressions)
+
+
+            resultingContext.variables.putAll(earlier.variables)
+            // Later variables overwrite earlier variables
+            resultingContext.variables.putAll(later.variables)
+
+            return resultingContext
+        }
+    }
+
     override fun toString(): String {
         val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
         return "Context: {\n\t$variablesString\n}"
     }
 
-    fun applyContextUnder(condition: ExprRetBool, trueCtx: Context, falseCtx: Context) {
+    fun applyIf(condition: ExprRetBool, trueCtx: Context, falseCtx: Context) {
         val currentKeys = variables.keys
         val trueKeys = trueCtx.variables.keys
         val falseKeys = falseCtx.variables.keys
@@ -47,16 +100,16 @@ class Context {
         }
     }
 
-    fun shallowClone(): Context {
-        val newContext = Context()
-        newContext.variables.putAll(variables)
-        return newContext
+    private fun getUnresolved(element: PsiElement): Expr {
+        return allUnresolvedExpressions.getOrPut(element) {
+            UnresolvedExpression.fromElement(element)
+        }
     }
 
     fun getVar(element: PsiElement): Expr {
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                return variables[element] ?: UnresolvedExpression.fromElement(element)
+                return variables[element] ?: getUnresolved(element)
             }
 
             else -> {

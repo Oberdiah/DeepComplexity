@@ -23,6 +23,15 @@ public class TestComplicatedClass {
 	
 	private final List<Integer> myList = new ArrayList<>();
 	
+	public int doBar(int incomingData) {
+		for (int i = 0; i < incomingData; i++) {
+			playGround += 1;
+			countingUp += playGround;
+		}
+		
+		return countingUp;
+	}
+	
 	public boolean doFoo(int incomingData) {
 		int foo = 0;
 		int bar = playGround;
