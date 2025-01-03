@@ -14,8 +14,8 @@ class ArithmeticExpression(
         return NumberSet::class
     }
 
-    override fun getUnresolved(): Set<UnresolvedExpression.Unresolved> {
-        return lhs.getUnresolved() + rhs.getUnresolved()
+    override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+        return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }
 
     override fun evaluate(): NumberSet {

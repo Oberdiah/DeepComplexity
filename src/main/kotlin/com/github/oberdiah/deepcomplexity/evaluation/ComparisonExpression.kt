@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 import kotlin.reflect.KClass
@@ -15,8 +14,8 @@ class ComparisonExpression(
         return BooleanSet::class
     }
 
-    override fun getUnresolved(): Set<UnresolvedExpression.Unresolved> {
-        return lhs.getUnresolved() + rhs.getUnresolved()
+    override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+        return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }
 
     override fun evaluate(): BooleanSet {

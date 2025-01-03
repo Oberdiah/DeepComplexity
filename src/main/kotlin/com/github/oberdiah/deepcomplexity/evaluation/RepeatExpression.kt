@@ -7,8 +7,8 @@ class RepeatExpression(
     val numRepeats: ExprRetNum,
     val exprToRepeat: Expr,
 ) : Expr {
-    override fun getUnresolved(): Set<UnresolvedExpression.Unresolved> {
-        return numRepeats.getUnresolved() + exprToRepeat.getUnresolved()
+    override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+        return numRepeats.getCurrentlyUnresolved() + exprToRepeat.getCurrentlyUnresolved()
     }
 
     override fun getSetClass(): KClass<*> {

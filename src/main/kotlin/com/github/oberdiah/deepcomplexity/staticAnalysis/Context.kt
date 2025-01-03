@@ -13,33 +13,14 @@ import com.intellij.psi.*
  * have the states specified
  */
 class Context {
+    /**
+     * Set to false when a destructive operation is called on this context.
+     */
+    private var alive = true
+
     // Psi Element is where the variable is defined —
     // either PsiLocalVariable, PsiParameter, or PsiField
     private val variables = mutableMapOf<PsiElement, Expr>()
-
-    /**
-     * An unresolved expression represents the state of that element on entering this context.
-     * It can be the case that an element is in both unresolved expressions and variables.
-     * That does not mean we can resolve the unresolved expression.
-     * Unresolveds must be resolved by an earlier context.
-     *
-     * For example:
-     *
-     * ```
-     * int x = 5;
-     *
-     * fun foo() {
-     *     int y = x;
-     *     x = 10;
-     * }
-     * ```
-     *
-     * In the above, it would be incorrect to resolve `y` to `10`.
-     *
-     * It is a list because when we combine contexts both contexts may have independently found
-     * the same unresolved expression and we need to be able to update them all when we resolve them.
-     */
-    private val allUnresolvedExpressions = mutableMapOf<PsiElement, MutableList<UnresolvedExpression.Unresolved>>()
 
     companion object {
         /**
@@ -49,11 +30,13 @@ class Context {
          *
          * You must define how to resolve conflicts.
          * It cannot be the case that both a and b are null in the callback.
+         *
+         * a and b must not be used again after this operation.
          */
         fun combine(a: Context, b: Context, how: (a: Expr, b: Expr) -> Expr): Context {
+            assert(a.alive && b.alive)
+
             val resultingContext = Context()
-            resultingContext.addAllUnresolved(a)
-            resultingContext.addAllUnresolved(b)
 
             val allKeys = a.variables.keys + b.variables.keys
 
@@ -63,13 +46,38 @@ class Context {
                 resultingContext.variables[key] = how(aVal, bVal)
             }
 
+            resultingContext.migrateUnresolvedFrom(a)
+            resultingContext.migrateUnresolvedFrom(b)
+
+            a.alive = false
+            b.alive = false
+
             return resultingContext
         }
     }
 
+    /**
+     * Migrates all unresolved referencing the other context to this one.
+     * We need to take other as an argument as migrating over all unresolved vars would
+     * likely break stuff.
+     *
+     * This is needed if you find yourself wanting to move variables from one context to another
+     * without stacking (the typical operation).
+     */
+    private fun migrateUnresolvedFrom(other: Context) {
+        for (value in variables.values) {
+            value.getCurrentlyUnresolved().forEach {
+                if (it.getKey().context == other) {
+                    it.getKey().context = this
+                }
+            }
+        }
+    }
+
     override fun toString(): String {
+        val deadStr = if (alive) "" else " (dead)"
         val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
-        return "Context: {\n\t$variablesString\n}"
+        return "Context$deadStr: {\n\t$variablesString\n}"
     }
 
     /**
@@ -79,37 +87,31 @@ class Context {
      * when possible.
      */
     fun stack(later: Context) {
+        assert(alive && later.alive)
+
         // First, resolve what we can.
-        for ((key, values) in later.allUnresolvedExpressions) {
-            val resolved = variables[key]
-            if (resolved != null) {
-                for (value in values) {
-                    value.setResolvedExpr(resolved)
+        for (value in later.variables.values) {
+            val allUnresolved = value.getCurrentlyUnresolved()
+            for (unresolved in allUnresolved) {
+                val resolvedKey = unresolved.getKey()
+                if (resolvedKey.context == later) {
+                    val resolved = variables[resolvedKey.element]
+                    if (resolved != null) {
+                        unresolved.setResolvedExpr(resolved)
+                    }
                 }
-            } else {
-                allUnresolvedExpressions.getOrPut(key) { mutableListOf() }.addAll(values)
             }
         }
+
         // Later's variables overwrite ours if they exist as they're more recent.
         variables.putAll(later.variables)
     }
 
-    private fun getUnresolved(element: PsiElement): Expr {
-        return allUnresolvedExpressions.getOrPut(element) {
-            mutableListOf(UnresolvedExpression.fromElement(element))
-        }.first() // It really shouldn't matter which we use.
-    }
-
-    private fun addAllUnresolved(other: Context) {
-        for ((key, values) in other.allUnresolvedExpressions) {
-            allUnresolvedExpressions.getOrPut(key) { mutableListOf() }.addAll(values)
-        }
-    }
-
     fun getVar(element: PsiElement): Expr {
+        assert(alive)
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                return variables[element] ?: getUnresolved(element)
+                return variables[element] ?: UnresolvedExpression.fromElement(element, this)
             }
 
             else -> {
@@ -119,6 +121,7 @@ class Context {
     }
 
     fun assignVar(element: PsiElement, expr: Expr) {
+        assert(alive)
         assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField)
 
         when (element) {

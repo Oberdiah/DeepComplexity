@@ -28,7 +28,7 @@ object ConstantExpression {
             return singleElementSet.toString()
         }
 
-        override fun getUnresolved(): Set<UnresolvedExpression.Unresolved> {
+        override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
             return setOf()
         }
     }

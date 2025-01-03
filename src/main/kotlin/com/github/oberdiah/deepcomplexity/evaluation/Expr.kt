@@ -8,7 +8,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
 sealed interface Expr {
-    fun getUnresolved(): Set<Unresolved>
+    fun getCurrentlyUnresolved(): Set<Unresolved>
     fun getSetClass(): KClass<*>
     fun evaluate(): MoldableSet
     fun asRetNum(): ExprRetNum? = this as? ExprRetNum

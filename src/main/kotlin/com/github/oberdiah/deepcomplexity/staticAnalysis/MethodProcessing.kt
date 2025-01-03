@@ -127,7 +127,6 @@ object MethodProcessing {
                 } else {
                     val falseBranchContext = Context()
                     processPsiElement(elseBranch, falseBranchContext)
-
                     context.stack(Context.combine(trueBranchContext, falseBranchContext) { a, b ->
                         IfExpression(a, b, condition)
                     })
