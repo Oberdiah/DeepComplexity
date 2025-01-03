@@ -23,9 +23,20 @@ public class TestComplicatedClass {
 	
 	private final List<Integer> myList = new ArrayList<>();
 	
+	/**
+	 * Expected final expression tree:
+	 * <p>
+	 * playGround = min($playGround + $incomingData, 6)
+	 * countingUp = // Give up on this one (Maybe a range?)
+	 */
 	public int doBar(int incomingData) {
 		for (int i = 0; i < incomingData; i++) {
 			playGround += 1;
+			
+			if (playGround > 5) {
+				break;
+			}
+			
 			countingUp += playGround;
 		}
 		
@@ -39,7 +50,7 @@ public class TestComplicatedClass {
 		
 		if (countingUp > 2) { // countingUp % 2 == 0
 			playGround = countingUp * incomingData;
-			countingUp = -countingUp;
+			countingUp = 0 - countingUp;
 			bar += countingUp;
 			foo += 3;
 		} else if (playGround < 3) {

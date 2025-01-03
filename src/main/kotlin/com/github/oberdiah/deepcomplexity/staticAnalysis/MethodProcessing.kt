@@ -4,6 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
+import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.intellij.psi.*
 
@@ -131,6 +132,36 @@ object MethodProcessing {
                         IfExpression(a, b, condition)
                     })
                 }
+            }
+
+            is PsiForStatement -> {
+                val forContext = Context()
+                val initialization = psi.initialization
+                if (initialization != null) {
+                    processPsiElement(initialization, forContext)
+                }
+
+                val condition = psi.condition
+                val conditionExpr = if (condition != null) {
+                    buildExpressionFromPsi(condition, forContext).asRetBool()
+                        ?: throw IllegalArgumentException("Failed to cast to BooleanSet: ${condition.text}")
+                } else {
+                    ConstantExpression.ConstExprBool(BooleanSet.fromBoolean(true))
+                }
+
+                val bodyContext = Context()
+                val body = psi.body
+                if (body != null) {
+                    processPsiElement(body, bodyContext)
+                }
+                val update = psi.update
+                if (update != null) {
+                    processPsiElement(update, bodyContext)
+                }
+
+                LoopEvaluation.processLoopContext(bodyContext, conditionExpr)
+
+                TODO("Not finished this yet")
             }
 
             is PsiMethodCallExpression -> {
