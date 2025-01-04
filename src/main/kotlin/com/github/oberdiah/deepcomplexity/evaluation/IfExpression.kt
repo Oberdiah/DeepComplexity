@@ -9,7 +9,7 @@ class IfExpression(
     val falseExpr: Expr,
     val condition: ExprRetBool,
 ) : Expr {
-    override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return trueExpr.getCurrentlyUnresolved() + falseExpr.getCurrentlyUnresolved() + condition.getCurrentlyUnresolved()
     }
 

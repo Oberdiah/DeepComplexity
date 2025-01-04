@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression
+import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.intellij.psi.*
 import kotlinx.collections.immutable.toImmutableMap
 
@@ -57,7 +57,7 @@ class Context {
         }
     }
 
-    fun applyConstraints(constraints: Map<UnresolvedExpression.Unresolved, Expr>) {
+    fun applyConstraints(constraints: Map<VariableExpression, Expr>) {
         return TODO()
     }
 
@@ -103,7 +103,7 @@ class Context {
         assert(alive)
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
-                return variables[element] ?: UnresolvedExpression.fromElement(element, this)
+                return variables[element] ?: VariableExpression.fromElement(element, this)
             }
 
             else -> {

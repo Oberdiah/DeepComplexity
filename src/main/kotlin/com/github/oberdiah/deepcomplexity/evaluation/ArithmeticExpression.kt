@@ -1,18 +1,15 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation.*
-import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression.Unresolved
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
-import kotlin.reflect.KClass
 
 class ArithmeticExpression(
     val lhs: ExprRetNum,
     val rhs: ExprRetNum,
     val operation: BinaryNumberOperation
 ) : ExprRetNum {
-    override fun getCurrentlyUnresolved(): Set<Unresolved> {
+    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }
 

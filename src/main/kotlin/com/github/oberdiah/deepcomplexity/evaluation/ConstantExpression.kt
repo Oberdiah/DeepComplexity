@@ -2,14 +2,11 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import com.github.weisj.jsvg.T
-import kotlin.reflect.KClass
 
 object ConstantExpression {
     fun fromAny(value: Any): Expr {
-        // When adding to this it is likely you'll also want to add to UnresolvedExpression.fromElement
+        // When adding to this it is likely you'll also want to add to Unresolved.fromElement
         return when (value) {
             is Boolean -> ConstExprBool(BooleanSet.fromBoolean(value))
             is Byte -> ConstExprNum(NumberSet.singleValue(value))
@@ -28,7 +25,7 @@ object ConstantExpression {
             return singleElementSet.toString()
         }
 
-        override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+        override fun getCurrentlyUnresolved(): Set<VariableExpression> {
             return setOf()
         }
     }
@@ -44,7 +41,7 @@ object ConstantExpression {
             return singleElementSet
         }
 
-        override fun getConstraints(): Map<UnresolvedExpression.Unresolved, Expr> {
+        override fun getConstraints(): Map<VariableExpression, Expr> {
             return mapOf()
         }
     }

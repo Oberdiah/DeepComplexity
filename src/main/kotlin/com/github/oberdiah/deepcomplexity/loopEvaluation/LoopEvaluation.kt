@@ -2,7 +2,6 @@ package com.github.oberdiah.deepcomplexity.loopEvaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation.*
-import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression.Unresolved
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 
 object LoopEvaluation {
@@ -51,8 +50,8 @@ object LoopEvaluation {
         // Note: Currently x = (x * 2) * 2 is not handled with this but it could be with some
         // re-arranging/preparation in the pipeline somewhere
 
-        val lhsIsUnresolved = expr.lhs is Unresolved
-        val rhsIsUnresolved = expr.rhs is Unresolved
+        val lhsIsUnresolved = expr.lhs is VariableExpression
+        val rhsIsUnresolved = expr.rhs is VariableExpression
 
         if (!lhsIsUnresolved && !rhsIsUnresolved) {
             // We can only deal with surface-level unresolved expressions

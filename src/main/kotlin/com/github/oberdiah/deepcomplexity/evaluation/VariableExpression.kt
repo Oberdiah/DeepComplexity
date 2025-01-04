@@ -1,62 +1,64 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
-import com.github.weisj.jsvg.T
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import com.intellij.psi.PsiVariable
-import kotlin.reflect.KClass
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
-// This represents a variable which we don't yet know the value of, but would
-// if we stepped out far enough.
-object UnresolvedExpression {
-    fun fromElement(element: PsiElement, context: Context): Unresolved {
-        val type: PsiType =
-            (element as? PsiVariable)?.type
-                ?: throw IllegalArgumentException("Element must be a PsiVariable (got ${element::class})")
+// This represents a variable which we may or may not know the value of.
+interface VariableExpression : Expr {
+    fun setResolvedExpr(expr: Expr)
 
-        val key = UnresolvedKey(element, context)
+    /**
+     * Whether we have a concrete expression for this yet or it's just a placeholder.
+     */
+    fun isResolved(): Boolean
+    fun getKey(): VariableKey
 
-        return when (type) {
-            PsiTypes.byteType(),
-            PsiTypes.shortType(),
-            PsiTypes.intType(),
-            PsiTypes.longType(),
-            PsiTypes.floatType(),
-            PsiTypes.doubleType(),
-                -> UnresolvedNumber(key)
+    companion object {
+        fun fromElement(element: PsiElement, context: Context): VariableExpression {
+            val type: PsiType =
+                (element as? PsiVariable)?.type
+                    ?: throw IllegalArgumentException("Element must be a PsiVariable (got ${element::class})")
 
-            PsiTypes.booleanType() -> UnresolvedBool(key)
-            else -> UnresolvedGeneric(key)
+            val key = VariableKey(element, context)
+
+            return when (type) {
+                PsiTypes.byteType(),
+                PsiTypes.shortType(),
+                PsiTypes.intType(),
+                PsiTypes.longType(),
+                PsiTypes.floatType(),
+                PsiTypes.doubleType(),
+                    -> VariableNumber(key)
+
+                PsiTypes.booleanType() -> VariableBool(key)
+                else -> VariableGeneric(key)
+            }
+        }
+
+        fun onTheFlyUnresolvedNumber(): VariableNumber {
+            return VariableNumber(null)
+        }
+
+        fun onTheFlyUnresolvedBool(): VariableBool {
+            return VariableBool(null)
+        }
+
+        fun onTheFlyUnresolvedGeneric(): VariableGeneric {
+            return VariableGeneric(null)
         }
     }
 
-    fun onTheFlyUnresolvedNumber(): UnresolvedNumber {
-        return UnresolvedNumber(null)
-    }
-
-    fun onTheFlyUnresolvedBool(): UnresolvedBool {
-        return UnresolvedBool(null)
-    }
-
-    fun onTheFlyUnresolvedGeneric(): UnresolvedGeneric {
-        return UnresolvedGeneric(null)
-    }
 
     /**
      * An unresolved expression needs both its context and the element to correctly resolve it.
      */
-    data class UnresolvedKey(val element: PsiElement, var context: Context)
+    data class VariableKey(val element: PsiElement, var context: Context)
 
-    interface Unresolved : Expr {
-        fun setResolvedExpr(expr: Expr)
-        fun isResolved(): Boolean
-        fun getKey(): UnresolvedKey
-    }
-
-    abstract class UnresolvedImpl<T>(private val key: UnresolvedKey?) : Unresolved {
+    abstract class VariableImpl<T>(private val key: VariableKey?) : VariableExpression {
         protected var resolvedExpr: T? = null
 
         override fun toString(): String {
@@ -68,18 +70,18 @@ object UnresolvedExpression {
             return resolvedExpr != null
         }
 
-        override fun getKey(): UnresolvedKey {
+        override fun getKey(): VariableKey {
             if (key == null)
                 throw IllegalStateException("Unresolved expression was created on-the-fly, cannot grab its key.")
             return key
         }
 
-        override fun getCurrentlyUnresolved(): Set<Unresolved> {
+        override fun getCurrentlyUnresolved(): Set<VariableExpression> {
             return if (isResolved()) setOf() else setOf(this)
         }
     }
 
-    class UnresolvedBool(key: UnresolvedKey?) : UnresolvedImpl<ExprRetBool>(key),
+    class VariableBool(key: VariableKey?) : VariableImpl<ExprRetBool>(key),
         ExprRetBool {
         override fun setResolvedExpr(expr: Expr) {
             resolvedExpr = (expr as? ExprRetBool)
@@ -90,12 +92,12 @@ object UnresolvedExpression {
             return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
         }
 
-        override fun getConstraints(): Map<Unresolved, Expr> {
+        override fun getConstraints(): Map<VariableExpression, Expr> {
             return resolvedExpr?.getConstraints() ?: mapOf(this to this)
         }
     }
 
-    class UnresolvedNumber(key: UnresolvedKey?) : UnresolvedImpl<ExprRetNum>(key),
+    class VariableNumber(key: VariableKey?) : VariableImpl<ExprRetNum>(key),
         ExprRetNum {
         override fun setResolvedExpr(expr: Expr) {
             resolvedExpr = (expr as? ExprRetNum)
@@ -107,7 +109,7 @@ object UnresolvedExpression {
         }
     }
 
-    class UnresolvedGeneric(key: UnresolvedKey?) : UnresolvedImpl<ExprRetGeneric>(key),
+    class VariableGeneric(key: VariableKey?) : VariableImpl<ExprRetGeneric>(key),
         ExprRetGeneric {
         override fun setResolvedExpr(expr: Expr) {
             resolvedExpr = (expr as? ExprRetGeneric)

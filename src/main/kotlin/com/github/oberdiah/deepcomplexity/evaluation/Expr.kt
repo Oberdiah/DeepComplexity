@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression.Unresolved
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
@@ -8,7 +7,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
 sealed interface Expr {
-    fun getCurrentlyUnresolved(): Set<Unresolved>
+    fun getCurrentlyUnresolved(): Set<VariableExpression>
     fun getSetClass(): KClass<*>
     fun evaluate(): MoldableSet
     fun asRetNum(): ExprRetNum? = this as? ExprRetNum
@@ -32,7 +31,7 @@ sealed interface ExprRetBool : Expr {
      * Returns, for every unresolved we depend on, an expression that when evaluated would return the set
      * of all values that would result in the condition being true.
      */
-    fun getConstraints(): Map<Unresolved, Expr>
+    fun getConstraints(): Map<VariableExpression, Expr>
 }
 
 sealed interface ExprRetGeneric : Expr {

@@ -3,14 +3,13 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
-import kotlin.reflect.KClass
 
 class ComparisonExpression(
     val lhs: ExprRetNum,
     val rhs: ExprRetNum,
     val comparison: ComparisonOperation
 ) : ExprRetBool {
-    override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }
 
@@ -21,8 +20,8 @@ class ComparisonExpression(
         return lhs.comparisonOperation(rhs, comparison)
     }
 
-    override fun getConstraints(): Map<UnresolvedExpression.Unresolved, Expr> {
-        val constraints = mutableMapOf<UnresolvedExpression.Unresolved, Expr>()
+    override fun getConstraints(): Map<VariableExpression, Expr> {
+        val constraints = mutableMapOf<VariableExpression, Expr>()
 
         for (unresolved in getCurrentlyUnresolved()) {
             val expr = TODO()

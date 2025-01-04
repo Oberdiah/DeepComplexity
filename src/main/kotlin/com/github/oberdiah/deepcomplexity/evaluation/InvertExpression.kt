@@ -7,11 +7,11 @@ class InvertExpression(val expr: ExprRetBool) : ExprRetBool {
         return expr.evaluate().invert() as BooleanSet
     }
 
-    override fun getConstraints(): Map<UnresolvedExpression.Unresolved, Expr> {
+    override fun getConstraints(): Map<VariableExpression, Expr> {
         return expr.getConstraints().mapValues { (_, expr) -> InvertExpression(expr as ExprRetBool) }
     }
 
-    override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return expr.getCurrentlyUnresolved()
     }
 }

@@ -14,7 +14,7 @@ class ConstraintExpression(
         return expr.intersect(constraint)
     }
 
-    override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
+    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return exprToConstrain.getCurrentlyUnresolved() + constraints.getCurrentlyUnresolved()
     }
 
