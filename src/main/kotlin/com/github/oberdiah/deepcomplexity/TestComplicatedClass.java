@@ -23,14 +23,53 @@ public class TestComplicatedClass {
 	
 	private final List<Integer> myList = new ArrayList<>();
 	
+	public int blackBox() {
+		return 0;
+	}
+	
+	public void testConstraints() {
+		{
+			int x = blackBox();
+			// Knowing y is always positive is quite straightforward.
+			int y = easyConstrainExample(x);
+		}
+		
+		int q = blackBox();
+		{
+			// x = $q
+			int x = q;
+			// y = $q
+			int y = x;
+			// Knowing z is always positive is much harder.
+			// I think we need a list of unlinked constraints
+			
+			// Expected final expression tree:
+			// z = $return = q > $0 ? $q : 0
+			int z = hardConstrainExample(x, y);
+		}
+	}
+	
 	/**
 	 * Expected final expression tree:
 	 * <p>
-	 * return = $incomingData > 0 ? $incomingData : 0
+	 * $return = $incomingData > 0 ? constrain($incomingData, >0) : 0
 	 */
-	public int constrainExample(int incomingData) {
+	public int easyConstrainExample(int incomingData) {
 		if (incomingData > 0) {
 			return incomingData;
+		} else {
+			return 0;
+		}
+	}
+	
+	/**
+	 * Expected final expression tree:
+	 * <p>
+	 * $return = $incomingData > 0 ? $incomingData2 : 0
+	 */
+	public int hardConstrainExample(int incomingData, int incomingData2) {
+		if (incomingData > 0) {
+			return incomingData2;
 		} else {
 			return 0;
 		}

@@ -61,6 +61,9 @@ interface VariableExpression : Expr {
     abstract class VariableImpl<T>(private val key: VariableKey?) : VariableExpression {
         protected var resolvedExpr: T? = null
 
+        // Applied as an intersection to our evaluation.
+        var constraints: Expr = GaveUpExpression(this)
+
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
             return if (isResolved()) resolvedExpr.toString() else key.element.toString()
@@ -89,7 +92,8 @@ interface VariableExpression : Expr {
         }
 
         override fun evaluate(): BooleanSet {
-            return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
+            return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
+                .intersect(constraints.evaluate()) as BooleanSet
         }
 
         override fun getConstraints(): Map<VariableExpression, Expr> {
@@ -105,7 +109,8 @@ interface VariableExpression : Expr {
         }
 
         override fun evaluate(): NumberSet {
-            return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
+            return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
+                .intersect(constraints.evaluate()) as NumberSet
         }
     }
 
@@ -117,7 +122,8 @@ interface VariableExpression : Expr {
         }
 
         override fun evaluate(): GenericSet {
-            return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
+            return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
+                .intersect(constraints.evaluate()) as GenericSet
         }
     }
 }
