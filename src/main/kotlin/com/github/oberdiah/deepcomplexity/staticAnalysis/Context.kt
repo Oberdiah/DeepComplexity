@@ -57,6 +57,10 @@ class Context {
         }
     }
 
+    fun applyConstraints(constraints: Map<UnresolvedExpression.Unresolved, Expr>) {
+        return TODO()
+    }
+
     override fun toString(): String {
         val deadStr = if (alive) "" else " (dead)"
         val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }

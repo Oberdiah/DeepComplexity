@@ -26,6 +26,19 @@ public class TestComplicatedClass {
 	/**
 	 * Expected final expression tree:
 	 * <p>
+	 * return = $incomingData > 0 ? $incomingData : 0
+	 */
+	public int constrainExample(int incomingData) {
+		if (incomingData > 0) {
+			return incomingData;
+		} else {
+			return 0;
+		}
+	}
+	
+	/**
+	 * Expected final expression tree:
+	 * <p>
 	 * playGround = $playGround + $incomingData
 	 * countingUp = // Give up on this one (Maybe a range?)
 	 */

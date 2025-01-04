@@ -72,6 +72,14 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet {
         TODO("Not yet implemented")
     }
 
+    override fun intersect(other: MoldableSet): MoldableSet {
+        TODO("Not yet implemented")
+    }
+
+    override fun invert(): MoldableSet {
+        TODO("Not yet implemented")
+    }
+
     fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet {
         val newSet = NumberSet(clazz)
         for (range in ranges) {

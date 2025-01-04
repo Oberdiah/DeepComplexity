@@ -21,6 +21,20 @@ interface GenericSet : MoldableSet {
             return GenericSetImpl(clazz, values.union(other.values))
         }
 
+        override fun intersect(other: MoldableSet): MoldableSet {
+            if (other !is GenericSetImpl<*>) {
+                throw IllegalArgumentException("Cannot intersect with a different set type")
+            }
+            return GenericSetImpl(clazz, values.intersect(other.values))
+        }
+
+        override fun invert(): MoldableSet {
+            TODO(
+                "Not yet implemented. It's definitely possible, " +
+                        "but requires a new InvertedGenericSet class and I've not bothered yet."
+            )
+        }
+
         fun contains(other: T): Boolean {
             return values.contains(other)
         }

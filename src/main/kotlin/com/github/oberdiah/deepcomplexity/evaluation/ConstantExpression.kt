@@ -43,6 +43,10 @@ object ConstantExpression {
         override fun evaluate(): BooleanSet {
             return singleElementSet
         }
+
+        override fun getConstraints(): Map<UnresolvedExpression.Unresolved, Expr> {
+            return mapOf()
+        }
     }
 
     class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), ExprRetGeneric {

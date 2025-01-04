@@ -23,6 +23,7 @@ class IfExpression(
             TRUE -> trueExpr.evaluate()
             FALSE -> falseExpr.evaluate()
             BOTH -> trueExpr.evaluate().union(falseExpr.evaluate())
+            NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
         }
     }
 

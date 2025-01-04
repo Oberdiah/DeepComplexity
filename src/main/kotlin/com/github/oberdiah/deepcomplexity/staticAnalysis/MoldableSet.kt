@@ -11,4 +11,6 @@ sealed interface MoldableSet {
      */
     fun getClass(): KClass<*>
     fun union(other: MoldableSet): MoldableSet
+    fun intersect(other: MoldableSet): MoldableSet
+    fun invert(): MoldableSet
 }

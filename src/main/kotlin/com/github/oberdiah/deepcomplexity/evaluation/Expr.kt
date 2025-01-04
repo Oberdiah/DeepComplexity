@@ -27,6 +27,12 @@ sealed interface ExprRetBool : Expr {
     override fun getSetClass(): KClass<*> {
         return BooleanSet::class
     }
+
+    /**
+     * Returns, for every unresolved we depend on, an expression that when evaluated would return the set
+     * of all values that would result in the condition being true.
+     */
+    fun getConstraints(): Map<Unresolved, Expr>
 }
 
 sealed interface ExprRetGeneric : Expr {

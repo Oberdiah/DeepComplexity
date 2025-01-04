@@ -8,8 +8,12 @@ enum class BooleanSet : MoldableSet {
             return other
         }
 
-        override fun with(other: Boolean): BooleanSet {
-            return if (other) TRUE else BOTH
+        override fun addToSet(other: Boolean): BooleanSet {
+            return if (!other) BOTH else this
+        }
+
+        override fun removeFromSet(other: Boolean): BooleanSet {
+            return if (other) NEITHER else this
         }
     },
     FALSE {
@@ -17,8 +21,12 @@ enum class BooleanSet : MoldableSet {
             return !other
         }
 
-        override fun with(other: Boolean): BooleanSet {
-            return if (other) BOTH else FALSE
+        override fun addToSet(other: Boolean): BooleanSet {
+            return if (other) BOTH else this
+        }
+
+        override fun removeFromSet(other: Boolean): BooleanSet {
+            return if (!other) NEITHER else this
         }
     },
     BOTH {
@@ -26,8 +34,25 @@ enum class BooleanSet : MoldableSet {
             return true
         }
 
-        override fun with(other: Boolean): BooleanSet {
+        override fun addToSet(other: Boolean): BooleanSet {
             return BOTH
+        }
+
+        override fun removeFromSet(other: Boolean): BooleanSet {
+            return if (other) FALSE else TRUE
+        }
+    },
+    NEITHER {
+        override fun contains(other: Boolean): Boolean {
+            return false
+        }
+
+        override fun addToSet(other: Boolean): BooleanSet {
+            return if (other) TRUE else FALSE
+        }
+
+        override fun removeFromSet(other: Boolean): BooleanSet {
+            return NEITHER
         }
     };
 
@@ -37,17 +62,41 @@ enum class BooleanSet : MoldableSet {
         }
     }
 
-    abstract fun with(other: Boolean): BooleanSet
-    abstract fun contains(other: Boolean): Boolean
-
-    override fun union(other: MoldableSet): MoldableSet {
-        return when (other) {
-            TRUE -> if (this == FALSE) BOTH else TRUE
-            FALSE -> if (this == TRUE) BOTH else FALSE
-            BOTH -> BOTH
-            else -> throw IllegalArgumentException("Cannot union $this with $other")
+    override fun invert(): MoldableSet {
+        // This is a set invert, not a boolean invert
+        return when (this) {
+            TRUE -> FALSE
+            FALSE -> TRUE
+            BOTH -> NEITHER
+            NEITHER -> BOTH
         }
     }
+
+    override fun intersect(other: MoldableSet): MoldableSet {
+        // Set intersection
+        return when (other) {
+            TRUE -> this.removeFromSet(false)
+            FALSE -> this.removeFromSet(true)
+            BOTH -> this
+            NEITHER -> NEITHER
+            else -> throw IllegalArgumentException("Cannot intersect with $other")
+        }
+    }
+
+    override fun union(other: MoldableSet): MoldableSet {
+        // Set union
+        return when (other) {
+            TRUE -> this.addToSet(true)
+            FALSE -> this.addToSet(false)
+            BOTH -> BOTH
+            NEITHER -> this
+            else -> throw IllegalArgumentException("Cannot union with $other")
+        }
+    }
+
+    abstract fun addToSet(other: Boolean): BooleanSet
+    abstract fun removeFromSet(other: Boolean): BooleanSet
+    abstract fun contains(other: Boolean): Boolean
 
     override fun getClass(): KClass<*> {
         return Boolean::class

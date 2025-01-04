@@ -89,6 +89,10 @@ object UnresolvedExpression {
         override fun evaluate(): BooleanSet {
             return resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression")
         }
+
+        override fun getConstraints(): Map<Unresolved, Expr> {
+            return resolvedExpr?.getConstraints() ?: mapOf(this to this)
+        }
     }
 
     class UnresolvedNumber(key: UnresolvedKey?) : UnresolvedImpl<ExprRetNum>(key),
