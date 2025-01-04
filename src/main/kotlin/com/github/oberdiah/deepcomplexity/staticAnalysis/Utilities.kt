@@ -31,6 +31,10 @@ object Utilities {
     }
 
     fun DD.toStr(): String {
+        if (!this.isFinite) {
+            return if (this == DD_POSITIVE_INFINITY) "∞" else "-∞"
+        }
+
         return this.bigDecimalValue().toPlainString()
     }
 
@@ -106,5 +110,9 @@ object Utilities {
             Long::class -> return DD.of(Long.MAX_VALUE).subtract(DD.of(Long.MIN_VALUE))
         }
         throw IllegalArgumentException("Unsupported type for zero value")
+    }
+
+    inline fun <R> R?.orElse(block: () -> R): R {
+        return this ?: block()
     }
 }

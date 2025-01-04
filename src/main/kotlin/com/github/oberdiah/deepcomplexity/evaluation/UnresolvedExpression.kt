@@ -33,6 +33,18 @@ object UnresolvedExpression {
         }
     }
 
+    fun onTheFlyUnresolvedNumber(): UnresolvedNumber {
+        return UnresolvedNumber(null)
+    }
+
+    fun onTheFlyUnresolvedBool(): UnresolvedBool {
+        return UnresolvedBool(null)
+    }
+
+    fun onTheFlyUnresolvedGeneric(): UnresolvedGeneric {
+        return UnresolvedGeneric(null)
+    }
+
     /**
      * An unresolved expression needs both its context and the element to correctly resolve it.
      */
@@ -44,10 +56,11 @@ object UnresolvedExpression {
         fun getKey(): UnresolvedKey
     }
 
-    abstract class UnresolvedImpl<T>(private val key: UnresolvedKey) : Unresolved {
+    abstract class UnresolvedImpl<T>(private val key: UnresolvedKey?) : Unresolved {
         protected var resolvedExpr: T? = null
 
         override fun toString(): String {
+            if (key == null) return "Unresolved (on-the-fly)"
             return if (isResolved()) resolvedExpr.toString() else key.element.toString()
         }
 
@@ -56,6 +69,8 @@ object UnresolvedExpression {
         }
 
         override fun getKey(): UnresolvedKey {
+            if (key == null)
+                throw IllegalStateException("Unresolved expression was created on-the-fly, cannot grab its key.")
             return key
         }
 
@@ -64,7 +79,7 @@ object UnresolvedExpression {
         }
     }
 
-    class UnresolvedBool(key: UnresolvedKey) : UnresolvedImpl<ExprRetBool>(key),
+    class UnresolvedBool(key: UnresolvedKey?) : UnresolvedImpl<ExprRetBool>(key),
         ExprRetBool {
         override fun setResolvedExpr(expr: Expr) {
             resolvedExpr = (expr as? ExprRetBool)
@@ -76,7 +91,7 @@ object UnresolvedExpression {
         }
     }
 
-    class UnresolvedNumber(key: UnresolvedKey) : UnresolvedImpl<ExprRetNum>(key),
+    class UnresolvedNumber(key: UnresolvedKey?) : UnresolvedImpl<ExprRetNum>(key),
         ExprRetNum {
         override fun setResolvedExpr(expr: Expr) {
             resolvedExpr = (expr as? ExprRetNum)
@@ -88,7 +103,7 @@ object UnresolvedExpression {
         }
     }
 
-    class UnresolvedGeneric(key: UnresolvedKey) : UnresolvedImpl<ExprRetGeneric>(key),
+    class UnresolvedGeneric(key: UnresolvedKey?) : UnresolvedImpl<ExprRetGeneric>(key),
         ExprRetGeneric {
         override fun setResolvedExpr(expr: Expr) {
             resolvedExpr = (expr as? ExprRetGeneric)

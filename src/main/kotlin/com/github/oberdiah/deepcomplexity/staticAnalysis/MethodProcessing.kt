@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.Binary
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.intellij.psi.*
 
@@ -134,33 +135,26 @@ object MethodProcessing {
             }
 
             is PsiForStatement -> {
-                val forContext = Context()
                 val initialization = psi.initialization
                 if (initialization != null) {
-                    processPsiElement(initialization, forContext)
-                }
-
-                val condition = psi.condition
-                val conditionExpr = if (condition != null) {
-                    buildExpressionFromPsi(condition, forContext).asRetBool()
-                        ?: throw IllegalArgumentException("Failed to cast to BooleanSet: ${condition.text}")
-                } else {
-                    ConstantExpression.ConstExprBool(BooleanSet.fromBoolean(true))
+                    processPsiElement(initialization, context)
                 }
 
                 val bodyContext = Context()
-                val body = psi.body
-                if (body != null) {
-                    processPsiElement(body, bodyContext)
-                }
-                val update = psi.update
-                if (update != null) {
-                    processPsiElement(update, bodyContext)
+
+                psi.body?.let { processPsiElement(it, bodyContext) }
+                psi.update?.let { processPsiElement(it, bodyContext) }
+
+                val conditionExpr = psi.condition?.let { condition ->
+                    buildExpressionFromPsi(condition, bodyContext).asRetBool()
+                        ?: throw IllegalArgumentException("Failed to cast to BooleanSet: ${condition.text}")
+                }.orElse {
+                    ConstantExpression.ConstExprBool(BooleanSet.fromBoolean(true))
                 }
 
                 LoopEvaluation.processLoopContext(bodyContext, conditionExpr)
 
-                TODO("Not finished this yet")
+                context.stack(bodyContext)
             }
 
             is PsiMethodCallExpression -> {
