@@ -10,10 +10,6 @@ class ComparisonExpression(
     val rhs: ExprRetNum,
     val comparison: ComparisonOperation
 ) : ExprRetBool {
-    override fun getSetClass(): KClass<*> {
-        return BooleanSet::class
-    }
-
     override fun getCurrentlyUnresolved(): Set<UnresolvedExpression.Unresolved> {
         return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }

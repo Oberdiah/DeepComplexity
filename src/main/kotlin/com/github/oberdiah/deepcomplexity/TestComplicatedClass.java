@@ -26,17 +26,12 @@ public class TestComplicatedClass {
 	/**
 	 * Expected final expression tree:
 	 * <p>
-	 * playGround = min($playGround + $incomingData, 6)
+	 * playGround = $playGround + $incomingData
 	 * countingUp = // Give up on this one (Maybe a range?)
 	 */
 	public int doBar(int incomingData) {
 		for (int i = 0; i < incomingData; i++) {
 			playGround += 1;
-			
-			if (playGround > 5) {
-				break;
-			}
-			
 			countingUp += playGround;
 		}
 		

@@ -44,6 +44,10 @@ class NumberSet(private val clazz: KClass<*>) : MoldableSet {
                 ranges.add(NumberRange(start, end))
             }
         }
+
+        fun gaveUp(): NumberSet {
+            return fromRange(DD_NEGATIVE_INFINITY, DD_POSITIVE_INFINITY, Double::class)
+        }
     }
 
     override fun toString(): String {

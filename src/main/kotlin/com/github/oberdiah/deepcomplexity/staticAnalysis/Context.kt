@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
 import com.github.oberdiah.deepcomplexity.evaluation.UnresolvedExpression
 import com.intellij.psi.*
+import kotlinx.collections.immutable.toImmutableMap
 
 
 /**
@@ -56,28 +57,15 @@ class Context {
         }
     }
 
-    /**
-     * Migrates all unresolved referencing the other context to this one.
-     * We need to take other as an argument as migrating over all unresolved vars would
-     * likely break stuff.
-     *
-     * This is needed if you find yourself wanting to move variables from one context to another
-     * without stacking (the typical operation).
-     */
-    private fun migrateUnresolvedFrom(other: Context) {
-        for (value in variables.values) {
-            value.getCurrentlyUnresolved().forEach {
-                if (it.getKey().context == other) {
-                    it.getKey().context = this
-                }
-            }
-        }
-    }
-
     override fun toString(): String {
         val deadStr = if (alive) "" else " (dead)"
         val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
         return "Context$deadStr: {\n\t$variablesString\n}"
+    }
+
+    fun getVariables(): Map<PsiElement, Expr> {
+        assert(alive)
+        return variables.toImmutableMap()
     }
 
     /**
@@ -143,6 +131,24 @@ class Context {
                 TODO(
                     "As-yet unsupported PsiElement type (${element::class}) for variable declaration"
                 )
+            }
+        }
+    }
+
+    /**
+     * Migrates all unresolved referencing the other context to this one.
+     * We need to take other as an argument as migrating over all unresolved vars would
+     * likely break stuff.
+     *
+     * This is needed if you find yourself wanting to move variables from one context to another
+     * without stacking (the typical operation).
+     */
+    private fun migrateUnresolvedFrom(other: Context) {
+        for (value in variables.values) {
+            value.getCurrentlyUnresolved().forEach {
+                if (it.getKey().context == other) {
+                    it.getKey().context = this
+                }
             }
         }
     }
