@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression.BooleanOperation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
@@ -62,14 +63,14 @@ interface VariableExpression : IExpr {
     /**
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
      */
-    abstract class VariableImpl<T>(private val key: VariableKey?) : VariableExpression {
-        protected var resolvedExpr: T? = null
+    abstract class VariableImpl<T : IExpr>(private val key: VariableKey?) : VariableExpression {
+        protected var resolved: T? = null
 
         // Applied as an intersection to our evaluation.
         var constraint: IExpr = GaveUpExpression(this)
 
         // Kept around so we can check it again in future for constraints as it evolves.
-        var condition: IExprRetBool? = null
+        val conditions = mutableListOf<IExprRetBool>()
 
         override fun addCondition(condition: IExprRetBool, context: Context) {
             // This is very important. We only want to accept conditions that apply to us.
@@ -77,31 +78,42 @@ interface VariableExpression : IExpr {
                 return
             }
 
-            this.condition = condition
+            this.conditions.add(condition)
+
             checkConstraints()
         }
 
         override fun checkConstraints() {
-            val condition = this.condition ?: return
+            val resolvedExpr = this.resolved
+            if (resolvedExpr == null) {
+                check(key)
+            } else {
+                for (variable in resolvedExpr.getVariables(false)) {
+                    check(variable.getKey())
+                }
+            }
+        }
 
-            // Do the complicated work of converting from the condition to a constraint.
-
-            // If the constraint doesn't contain us, it doesn't concern us :)
-            if (condition.getVariables(false).any { it.getKey() == key }) {
-                constraint = condition // This is completely wrong, just a POC.
-                println("Woo got here! ${condition}, ${key?.element}")
+        private fun check(variableKey: VariableKey?) {
+            for (condition in conditions) {
+                // Do the complicated work of converting from the condition to a constraint.
+                // If the constraint doesn't contain us, it doesn't concern us :)
+                if (condition.getVariables(false).any { it.getKey() == variableKey }) {
+                    constraint = condition // This is completely wrong, just a POC.
+                    println("Woo got here! ${condition}, ${variableKey?.element}")
+                }
             }
         }
 
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
             val constraintStr = if (constraint is GaveUpExpression) "" else "[${constraint}]"
-            val mainExprStr = if (isResolved()) resolvedExpr.toString() else key.element.toString()
+            val mainExprStr = if (isResolved()) resolved.toString() else key.element.toString()
             return mainExprStr + constraintStr
         }
 
         override fun isResolved(): Boolean {
-            return resolvedExpr != null
+            return resolved != null
         }
 
         override fun getKey(): VariableKey {
@@ -111,7 +123,10 @@ interface VariableExpression : IExpr {
         }
 
         override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-            val vars = condition?.getVariables(resolved).orEmpty()
+            val vars = mutableSetOf<VariableExpression>()
+            for (condition in conditions) {
+                vars.addAll(condition.getVariables(resolved))
+            }
 
             return if ((isResolved() && resolved) || (!isResolved() && !resolved)) {
                 vars + this
@@ -124,29 +139,29 @@ interface VariableExpression : IExpr {
     class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),
         IExprRetBool {
         override fun setResolvedExpr(expr: IExpr) {
-            resolvedExpr = (expr as? IExprRetBool)
+            resolved = (expr as? IExprRetBool)
                 ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
         }
 
         override fun evaluate(): BooleanSet {
-            return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
+            return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
                 .intersect(constraint.evaluate()) as BooleanSet
         }
 
         override fun getConstraints(): Map<VariableExpression, IExpr> {
-            return resolvedExpr?.getConstraints() ?: mapOf(this to this)
+            return resolved?.getConstraints() ?: mapOf(this to this)
         }
     }
 
     class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),
         IExprRetNum {
         override fun setResolvedExpr(expr: IExpr) {
-            resolvedExpr = (expr as? IExprRetNum)
+            resolved = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
 
         override fun evaluate(): NumberSet {
-            return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
+            return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
                 .intersect(constraint.evaluate()) as NumberSet
         }
     }
@@ -154,12 +169,12 @@ interface VariableExpression : IExpr {
     class VariableGeneric(key: VariableKey?) : VariableImpl<IExprRetGeneric>(key),
         IExprRetGeneric {
         override fun setResolvedExpr(expr: IExpr) {
-            resolvedExpr = (expr as? IExprRetGeneric)
+            resolved = (expr as? IExprRetGeneric)
                 ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
         }
 
         override fun evaluate(): GenericSet {
-            return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
+            return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
                 .intersect(constraint.evaluate()) as GenericSet
         }
     }

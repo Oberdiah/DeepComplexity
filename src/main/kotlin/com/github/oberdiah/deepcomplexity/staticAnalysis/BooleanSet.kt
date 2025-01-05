@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression
 import kotlin.reflect.KClass
 
 enum class BooleanSet : IMoldableSet {
@@ -91,6 +92,28 @@ enum class BooleanSet : IMoldableSet {
             BOTH -> BOTH
             NEITHER -> this
             else -> throw IllegalArgumentException("Cannot union with $other")
+        }
+    }
+
+    fun booleanOperation(other: BooleanSet, operation: BooleanExpression.BooleanOperation): BooleanSet {
+        return when (operation) {
+            BooleanExpression.BooleanOperation.AND -> {
+                when (this) {
+                    TRUE -> other
+                    FALSE -> if (other == NEITHER) NEITHER else FALSE
+                    BOTH -> if (other == NEITHER) NEITHER else BOTH
+                    NEITHER -> NEITHER
+                }
+            }
+
+            BooleanExpression.BooleanOperation.OR -> {
+                when (this) {
+                    TRUE -> if (other == NEITHER) NEITHER else TRUE
+                    FALSE -> other
+                    BOTH -> if (other == NEITHER) NEITHER else BOTH
+                    NEITHER -> NEITHER
+                }
+            }
         }
     }
 

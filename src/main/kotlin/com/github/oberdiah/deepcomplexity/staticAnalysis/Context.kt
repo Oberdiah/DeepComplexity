@@ -100,7 +100,7 @@ class Context {
 
         // Finally, let's re-check our conditions in case we have any new ones that can apply.
         for (value in variables.values) {
-            for (unresolved in value.getVariables(false)) {
+            for (unresolved in value.getVariables(true)) {
                 unresolved.checkConstraints()
             }
         }
