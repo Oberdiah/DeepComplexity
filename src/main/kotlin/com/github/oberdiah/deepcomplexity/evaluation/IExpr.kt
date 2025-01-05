@@ -9,7 +9,6 @@ sealed interface IExpr {
     fun evaluate(): IMoldableSet
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
     fun asRetBool(): IExprRetBool? = this as? IExprRetBool
-    fun deepClone(): IExpr
 
     /**
      * When you add a condition you need to provide a context that that condition applies within, as

@@ -24,10 +24,6 @@ class GaveUpExpression(private val weWouldCallIfWeKnewWhatToDo: IExpr) : IExpr {
         }
     }
 
-    override fun deepClone(): IExpr {
-        return GaveUpExpression(weWouldCallIfWeKnewWhatToDo.deepClone())
-    }
-
     override fun toString(): String {
         return "X"
     }

@@ -19,8 +19,4 @@ class UnionExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
     override fun toString(): String {
         return "($lhs ∪ $rhs)"
     }
-
-    override fun deepClone(): IExpr {
-        return UnionExpression(lhs.deepClone(), rhs.deepClone())
-    }
 }

@@ -134,10 +134,6 @@ interface VariableExpression : IExpr {
                 vars - this
             }
         }
-
-        override fun deepClone(): IExpr {
-            return this
-        }
     }
 
     class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),

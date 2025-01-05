@@ -18,8 +18,4 @@ class InvertExpression(val expr: IExprRetBool) : IExprRetBool {
     override fun toString(): String {
         return "!$expr"
     }
-
-    override fun deepClone(): IExpr {
-        return InvertExpression(expr.deepClone() as IExprRetBool)
-    }
 }
