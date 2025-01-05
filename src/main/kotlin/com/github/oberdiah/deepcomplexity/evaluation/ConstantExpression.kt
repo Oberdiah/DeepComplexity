@@ -28,6 +28,10 @@ object ConstantExpression {
         override fun getVariables(resolved: Boolean): Set<VariableExpression> {
             return setOf()
         }
+
+        override fun deepClone(): IExpr {
+            return this
+        }
     }
 
     class ConstExprNum(singleElementSet: NumberSet) : ConstExpr<NumberSet>(singleElementSet), IExprRetNum {

@@ -13,6 +13,10 @@ class ComparisonExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
+    override fun deepClone(): IExpr {
+        return ComparisonExpression(lhs.deepClone() as IExprRetNum, rhs.deepClone() as IExprRetNum, comparison)
+    }
+
     override fun evaluate(): BooleanSet {
         val lhs = lhs.evaluate()
         val rhs = rhs.evaluate()

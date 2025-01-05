@@ -22,4 +22,8 @@ class RepeatExpression(
     override fun toString(): String {
         return "[repeat $numRepeats times] { $exprToRepeat }"
     }
+
+    override fun deepClone(): IExpr {
+        return RepeatExpression(numRepeats.deepClone() as IExprRetNum, exprToRepeat.deepClone())
+    }
 }
