@@ -118,24 +118,18 @@ object MethodProcessing {
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 val trueBranchContext = Context()
-                processPsiElement(trueBranch, trueBranchContext)
+                val falseBranchContext = Context()
 
-                val elseBranch = psi.elseBranch
-                if (elseBranch == null) {
-                    context.stack(Context.combine(trueBranchContext, Context()) { a, b ->
-                        a.addCondition(condition)
-                        b.addCondition(InvertExpression(condition))
+                processPsiElement(trueBranch, trueBranchContext)
+                psi.elseBranch?.let { processPsiElement(it, falseBranchContext) }
+
+                context.stack(
+                    Context.combine(trueBranchContext, falseBranchContext) { a, b ->
+                        a.addCondition(condition, trueBranchContext)
+                        b.addCondition(InvertExpression(condition), falseBranchContext)
                         IfExpression(a, b, condition)
-                    })
-                } else {
-                    val falseBranchContext = Context()
-                    processPsiElement(elseBranch, falseBranchContext)
-                    context.stack(Context.combine(trueBranchContext, falseBranchContext) { a, b ->
-                        a.addCondition(condition)
-                        b.addCondition(InvertExpression(condition))
-                        IfExpression(a, b, condition)
-                    })
-                }
+                    }
+                )
             }
 
             is PsiForStatement -> {

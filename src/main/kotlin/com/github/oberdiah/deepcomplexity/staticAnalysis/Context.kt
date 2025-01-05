@@ -86,6 +86,7 @@ class Context {
                 if (resolvedKey.context == later) {
                     val resolved = variables[resolvedKey.element]
                     if (resolved != null) {
+//                        resolvedKey.context = this
                         unresolved.setResolvedExpr(resolved)
                     }
                 }
@@ -96,6 +97,13 @@ class Context {
         variables.putAll(later.variables)
         // Any variables that are still unresolved need to be migrated.
         migrateUnresolvedFrom(later)
+
+        // Finally, let's re-check our conditions in case we have any new ones that can apply.
+        for (value in variables.values) {
+            for (unresolved in value.getCurrentlyUnresolved()) {
+                unresolved.checkConstraints()
+            }
+        }
     }
 
     fun getVar(element: PsiElement): IExpr {
@@ -144,7 +152,6 @@ class Context {
      * likely break stuff.
      *
      * This is needed if you find yourself wanting to move variables from one context to another
-     * (the typical operation).
      */
     private fun migrateUnresolvedFrom(other: Context) {
         for (value in variables.values) {

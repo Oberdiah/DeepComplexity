@@ -16,6 +16,7 @@ interface VariableExpression : IExpr {
      */
     fun isResolved(): Boolean
     fun getKey(): VariableKey
+    fun checkConstraints()
 
     companion object {
         fun fromElement(element: PsiElement, context: Context): VariableExpression {
@@ -58,20 +59,45 @@ interface VariableExpression : IExpr {
      */
     data class VariableKey(val element: PsiElement, var context: Context)
 
+    /**
+     * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
+     */
     abstract class VariableImpl<T>(private val key: VariableKey?) : VariableExpression {
         protected var resolvedExpr: T? = null
 
         // Applied as an intersection to our evaluation.
-        var constraints: IExpr = GaveUpExpression(this)
+        var constraint: IExpr = GaveUpExpression(this)
 
-        override fun addCondition(condition: IExprRetBool) {
-            // Do the immensely complicated work of converting from this to a constraint.
-            constraints = condition // This is completely wrong, just a POC.
+        // Kept around so we can check it again in future for constraints as it evolves.
+        var condition: IExprRetBool? = null
+
+        override fun addCondition(condition: IExprRetBool, context: Context) {
+            // This is very important. We only want to accept conditions that apply to us.
+            if (key == null || context != key.context) {
+                return
+            }
+
+            this.condition = condition
+            checkConstraints()
+        }
+
+        override fun checkConstraints() {
+            val condition = this.condition ?: return
+
+            // Do the complicated work of converting from the condition to a constraint.
+
+            // If the constraint doesn't contain us, it doesn't concern us :)
+            if (condition.getCurrentlyUnresolved().any { it.getKey() == key }) {
+                constraint = condition // This is completely wrong, just a POC.
+                println("Woo got here! ${condition}, ${key?.element}")
+            }
         }
 
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
-            return (if (isResolved()) resolvedExpr.toString() else key.element.toString())// + "[${constraints}]"
+            val constraintStr = if (constraint is GaveUpExpression) "" else "[${constraint}]"
+            val mainExprStr = if (isResolved()) resolvedExpr.toString() else key.element.toString()
+            return mainExprStr + constraintStr
         }
 
         override fun isResolved(): Boolean {
@@ -85,7 +111,11 @@ interface VariableExpression : IExpr {
         }
 
         override fun getCurrentlyUnresolved(): Set<VariableExpression> {
-            return if (isResolved()) setOf() else setOf(this)
+            return if (isResolved()) {
+                condition?.getCurrentlyUnresolved().orEmpty() - this
+            } else {
+                condition?.getCurrentlyUnresolved().orEmpty() + this
+            }
         }
     }
 
@@ -98,7 +128,7 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(): BooleanSet {
             return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
-                .intersect(constraints.evaluate()) as BooleanSet
+                .intersect(constraint.evaluate()) as BooleanSet
         }
 
         override fun getConstraints(): Map<VariableExpression, IExpr> {
@@ -115,7 +145,7 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(): NumberSet {
             return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
-                .intersect(constraints.evaluate()) as NumberSet
+                .intersect(constraint.evaluate()) as NumberSet
         }
     }
 
@@ -128,7 +158,7 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(): GenericSet {
             return (resolvedExpr?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
-                .intersect(constraints.evaluate()) as GenericSet
+                .intersect(constraint.evaluate()) as GenericSet
         }
     }
 }

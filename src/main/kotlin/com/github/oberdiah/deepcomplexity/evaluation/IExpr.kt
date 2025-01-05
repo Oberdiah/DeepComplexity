@@ -1,9 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import kotlin.reflect.KClass
 
 sealed interface IExpr {
@@ -13,9 +10,13 @@ sealed interface IExpr {
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
     fun asRetBool(): IExprRetBool? = this as? IExprRetBool
 
-    fun addCondition(condition: IExprRetBool) {
+    /**
+     * When you add a condition you need to provide a context that that condition applies within, as
+     * an IExpr won't just have variables under a single context.
+     */
+    fun addCondition(condition: IExprRetBool, context: Context) {
         for (unresolved in getCurrentlyUnresolved()) {
-            unresolved.addCondition(condition)
+            unresolved.addCondition(condition, context)
         }
     }
 }
