@@ -16,6 +16,10 @@ class IntersectExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
         return lhs.evaluate().intersect(rhs.evaluate())
     }
 
+    override fun deepClone(): IExpr {
+        return IntersectExpression(lhs.deepClone(), rhs.deepClone())
+    }
+
     override fun toString(): String {
         return "($lhs ∩ $rhs)"
     }

@@ -9,6 +9,10 @@ class IfExpression(
     val falseExpr: IExpr,
     val condition: IExprRetBool,
 ) : IExpr {
+    override fun deepClone(): IExpr {
+        return IfExpression(trueExpr.deepClone(), falseExpr.deepClone(), condition.deepClone() as IExprRetBool)
+    }
+
     override fun getVariables(resolved: Boolean): Set<VariableExpression> {
         return trueExpr.getVariables(resolved) + falseExpr.getVariables(resolved) + condition.getVariables(resolved)
     }
