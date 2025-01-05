@@ -11,8 +11,8 @@ class InvertExpression(val expr: IExprRetBool) : IExprRetBool {
         return expr.getConstraints().mapValues { (_, expr) -> InvertExpression(expr as IExprRetBool) }
     }
 
-    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
-        return expr.getCurrentlyUnresolved()
+    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
+        return expr.getVariables(resolved)
     }
 
     override fun toString(): String {

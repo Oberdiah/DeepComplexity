@@ -9,8 +9,8 @@ class ArithmeticExpression(
     val rhs: IExprRetNum,
     val operation: BinaryNumberOperation
 ) : IExprRetNum {
-    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
-        return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
+    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
+        return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
     override fun evaluate(): NumberSet {

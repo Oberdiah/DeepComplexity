@@ -7,7 +7,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
 class GaveUpExpression(private val weWouldCallIfWeKnewWhatToDo: IExpr) : IExpr {
-    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
+    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
         return setOf()
     }
 

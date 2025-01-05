@@ -9,8 +9,8 @@ class IfExpression(
     val falseExpr: IExpr,
     val condition: IExprRetBool,
 ) : IExpr {
-    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
-        return trueExpr.getCurrentlyUnresolved() + falseExpr.getCurrentlyUnresolved() + condition.getCurrentlyUnresolved()
+    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
+        return trueExpr.getVariables(resolved) + falseExpr.getVariables(resolved) + condition.getVariables(resolved)
     }
 
     override fun getSetClass(): KClass<*> {

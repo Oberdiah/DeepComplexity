@@ -25,7 +25,7 @@ object ConstantExpression {
             return singleElementSet.toString()
         }
 
-        override fun getCurrentlyUnresolved(): Set<VariableExpression> {
+        override fun getVariables(resolved: Boolean): Set<VariableExpression> {
             return setOf()
         }
     }

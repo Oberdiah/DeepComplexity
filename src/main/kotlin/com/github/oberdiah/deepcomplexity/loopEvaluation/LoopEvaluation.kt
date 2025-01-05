@@ -12,7 +12,7 @@ object LoopEvaluation {
         val allElements = context.getVariables().keys
         for ((key, expr) in context.getVariables()) {
             // Unresolved expressions not in this context are of no interest to us — they can't affect this loop.
-            val allUnresolved = expr.getCurrentlyUnresolved()
+            val allUnresolved = expr.getVariables(false)
                 .filter { it.getKey().element in allElements }
 
             if (allUnresolved.isEmpty()) continue

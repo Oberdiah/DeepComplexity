@@ -4,8 +4,8 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import kotlin.reflect.KClass
 
 class UnionExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
-    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
-        return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
+    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
+        return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
     override fun getSetClass(): KClass<*> {

@@ -80,7 +80,7 @@ class Context {
 
         // First, resolve what we can.
         for (value in later.variables.values) {
-            val allUnresolved = value.getCurrentlyUnresolved()
+            val allUnresolved = value.getVariables(false)
             for (unresolved in allUnresolved) {
                 val resolvedKey = unresolved.getKey()
                 if (resolvedKey.context == later) {
@@ -100,7 +100,7 @@ class Context {
 
         // Finally, let's re-check our conditions in case we have any new ones that can apply.
         for (value in variables.values) {
-            for (unresolved in value.getCurrentlyUnresolved()) {
+            for (unresolved in value.getVariables(false)) {
                 unresolved.checkConstraints()
             }
         }
@@ -155,7 +155,7 @@ class Context {
      */
     private fun migrateUnresolvedFrom(other: Context) {
         for (value in variables.values) {
-            value.getCurrentlyUnresolved().forEach {
+            value.getVariables(false).forEach {
                 if (it.getKey().context == other) {
                     it.getKey().context = this
                 }

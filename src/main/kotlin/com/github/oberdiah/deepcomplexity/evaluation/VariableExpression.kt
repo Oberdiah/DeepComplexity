@@ -87,7 +87,7 @@ interface VariableExpression : IExpr {
             // Do the complicated work of converting from the condition to a constraint.
 
             // If the constraint doesn't contain us, it doesn't concern us :)
-            if (condition.getCurrentlyUnresolved().any { it.getKey() == key }) {
+            if (condition.getVariables(false).any { it.getKey() == key }) {
                 constraint = condition // This is completely wrong, just a POC.
                 println("Woo got here! ${condition}, ${key?.element}")
             }
@@ -110,11 +110,13 @@ interface VariableExpression : IExpr {
             return key
         }
 
-        override fun getCurrentlyUnresolved(): Set<VariableExpression> {
-            return if (isResolved()) {
-                condition?.getCurrentlyUnresolved().orEmpty() - this
+        override fun getVariables(resolved: Boolean): Set<VariableExpression> {
+            val vars = condition?.getVariables(resolved).orEmpty()
+
+            return if ((isResolved() && resolved) || (!isResolved() && !resolved)) {
+                vars + this
             } else {
-                condition?.getCurrentlyUnresolved().orEmpty() + this
+                vars - this
             }
         }
     }

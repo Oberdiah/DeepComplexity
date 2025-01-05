@@ -9,8 +9,8 @@ class ComparisonExpression(
     val rhs: IExprRetNum,
     val comparison: ComparisonOperation
 ) : IExprRetBool {
-    override fun getCurrentlyUnresolved(): Set<VariableExpression> {
-        return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
+    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
+        return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
     override fun evaluate(): BooleanSet {
@@ -23,7 +23,7 @@ class ComparisonExpression(
     override fun getConstraints(): Map<VariableExpression, IExpr> {
         val constraints = mutableMapOf<VariableExpression, IExpr>()
 
-        for (unresolved in getCurrentlyUnresolved()) {
+        for (unresolved in getVariables(false)) {
             val expr = TODO()
 
             constraints[unresolved] = expr

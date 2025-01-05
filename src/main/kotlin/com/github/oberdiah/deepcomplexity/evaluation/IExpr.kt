@@ -4,7 +4,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import kotlin.reflect.KClass
 
 sealed interface IExpr {
-    fun getCurrentlyUnresolved(): Set<VariableExpression>
+    fun getVariables(resolved: Boolean): Set<VariableExpression>
     fun getSetClass(): KClass<*>
     fun evaluate(): IMoldableSet
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
@@ -15,7 +15,7 @@ sealed interface IExpr {
      * an IExpr won't just have variables under a single context.
      */
     fun addCondition(condition: IExprRetBool, context: Context) {
-        for (unresolved in getCurrentlyUnresolved()) {
+        for (unresolved in getVariables(false)) {
             unresolved.addCondition(condition, context)
         }
     }
