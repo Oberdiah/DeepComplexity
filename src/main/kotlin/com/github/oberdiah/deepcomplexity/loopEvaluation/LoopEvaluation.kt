@@ -8,7 +8,7 @@ object LoopEvaluation {
     /**
      * Given the context for the loop body, and the condition, figure out our new context.
      */
-    fun processLoopContext(context: Context, condition: ExprRetBool) {
+    fun processLoopContext(context: Context, condition: IExprRetBool) {
         val allElements = context.getVariables().keys
         for ((key, expr) in context.getVariables()) {
             // Unresolved expressions not in this context are of no interest to us — they can't affect this loop.
@@ -46,7 +46,7 @@ object LoopEvaluation {
         }
     }
 
-    private fun repeatArithmeticExpression(expr: ArithmeticExpression, condition: ExprRetBool): ArithmeticExpression? {
+    private fun repeatArithmeticExpression(expr: ArithmeticExpression, condition: IExprRetBool): ArithmeticExpression? {
         // Note: Currently x = (x * 2) * 2 is not handled with this but it could be with some
         // re-arranging/preparation in the pipeline somewhere
 

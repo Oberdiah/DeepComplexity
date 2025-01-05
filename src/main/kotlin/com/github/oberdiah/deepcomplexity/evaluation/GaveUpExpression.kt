@@ -2,11 +2,11 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
-class GaveUpExpression(private val weWouldCallIfWeKnewWhatToDo: Expr) : Expr {
+class GaveUpExpression(private val weWouldCallIfWeKnewWhatToDo: IExpr) : IExpr {
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return setOf()
     }
@@ -15,7 +15,7 @@ class GaveUpExpression(private val weWouldCallIfWeKnewWhatToDo: Expr) : Expr {
         return weWouldCallIfWeKnewWhatToDo.getSetClass()
     }
 
-    override fun evaluate(): MoldableSet {
+    override fun evaluate(): IMoldableSet {
         return when (weWouldCallIfWeKnewWhatToDo.getSetClass()) {
             NumberSet::class -> NumberSet.gaveUp()
             BooleanSet::class -> BooleanSet.BOTH

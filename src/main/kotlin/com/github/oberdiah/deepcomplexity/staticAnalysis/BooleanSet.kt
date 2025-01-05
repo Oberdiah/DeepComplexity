@@ -2,7 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import kotlin.reflect.KClass
 
-enum class BooleanSet : MoldableSet {
+enum class BooleanSet : IMoldableSet {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
@@ -62,7 +62,7 @@ enum class BooleanSet : MoldableSet {
         }
     }
 
-    override fun invert(): MoldableSet {
+    override fun invert(): IMoldableSet {
         // This is a set invert, not a boolean invert
         return when (this) {
             TRUE -> FALSE
@@ -72,7 +72,7 @@ enum class BooleanSet : MoldableSet {
         }
     }
 
-    override fun intersect(other: MoldableSet): MoldableSet {
+    override fun intersect(other: IMoldableSet): IMoldableSet {
         // Set intersection
         return when (other) {
             TRUE -> this.removeFromSet(false)
@@ -83,7 +83,7 @@ enum class BooleanSet : MoldableSet {
         }
     }
 
-    override fun union(other: MoldableSet): MoldableSet {
+    override fun union(other: IMoldableSet): IMoldableSet {
         // Set union
         return when (other) {
             TRUE -> this.addToSet(true)

@@ -184,7 +184,7 @@ object MethodProcessing {
      *
      * Nothing in here should be declaring variables.
      */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Expr {
+    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): IExpr {
         when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()

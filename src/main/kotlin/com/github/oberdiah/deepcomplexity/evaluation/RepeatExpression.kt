@@ -1,12 +1,12 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import kotlin.reflect.KClass
 
 class RepeatExpression(
-    val numRepeats: ExprRetNum,
-    val exprToRepeat: Expr,
-) : Expr {
+    val numRepeats: IExprRetNum,
+    val exprToRepeat: IExpr,
+) : IExpr {
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return numRepeats.getCurrentlyUnresolved() + exprToRepeat.getCurrentlyUnresolved()
     }
@@ -15,7 +15,7 @@ class RepeatExpression(
         return exprToRepeat.getSetClass()
     }
 
-    override fun evaluate(): MoldableSet {
+    override fun evaluate(): IMoldableSet {
         TODO("Not yet implemented")
     }
 

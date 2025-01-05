@@ -5,10 +5,10 @@ import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 
 class ArithmeticExpression(
-    val lhs: ExprRetNum,
-    val rhs: ExprRetNum,
+    val lhs: IExprRetNum,
+    val rhs: IExprRetNum,
     val operation: BinaryNumberOperation
-) : ExprRetNum {
+) : IExprRetNum {
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }

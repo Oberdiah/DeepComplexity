@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import kotlin.reflect.KClass
 
-class IntersectExpression(val lhs: Expr, val rhs: Expr) : Expr {
+class IntersectExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }
@@ -12,7 +12,7 @@ class IntersectExpression(val lhs: Expr, val rhs: Expr) : Expr {
         return lhs.getSetClass()
     }
 
-    override fun evaluate(): MoldableSet {
+    override fun evaluate(): IMoldableSet {
         return lhs.evaluate().intersect(rhs.evaluate())
     }
 

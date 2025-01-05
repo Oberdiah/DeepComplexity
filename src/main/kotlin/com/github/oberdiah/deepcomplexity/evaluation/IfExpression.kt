@@ -1,14 +1,14 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.MoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import kotlin.reflect.KClass
 
 class IfExpression(
-    val trueExpr: Expr,
-    val falseExpr: Expr,
-    val condition: ExprRetBool,
-) : Expr {
+    val trueExpr: IExpr,
+    val falseExpr: IExpr,
+    val condition: IExprRetBool,
+) : IExpr {
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return trueExpr.getCurrentlyUnresolved() + falseExpr.getCurrentlyUnresolved() + condition.getCurrentlyUnresolved()
     }
@@ -17,7 +17,7 @@ class IfExpression(
         return trueExpr.getSetClass()
     }
 
-    override fun evaluate(): MoldableSet {
+    override fun evaluate(): IMoldableSet {
         val condition = condition.evaluate()
         return when (condition) {
             TRUE -> trueExpr.evaluate()

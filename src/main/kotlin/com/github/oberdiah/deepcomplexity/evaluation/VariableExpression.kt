@@ -8,8 +8,8 @@ import com.intellij.psi.PsiVariable
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
-interface VariableExpression : Expr {
-    fun setResolvedExpr(expr: Expr)
+interface VariableExpression : IExpr {
+    fun setResolvedExpr(expr: IExpr)
 
     /**
      * Whether we have a concrete expression for this yet or it's just a placeholder.
@@ -62,9 +62,9 @@ interface VariableExpression : Expr {
         protected var resolvedExpr: T? = null
 
         // Applied as an intersection to our evaluation.
-        var constraints: Expr = GaveUpExpression(this)
+        var constraints: IExpr = GaveUpExpression(this)
 
-        override fun addCondition(condition: ExprRetBool) {
+        override fun addCondition(condition: IExprRetBool) {
             // Do the immensely complicated work of converting from this to a constraint.
             constraints = condition // This is completely wrong, just a POC.
         }
@@ -89,10 +89,10 @@ interface VariableExpression : Expr {
         }
     }
 
-    class VariableBool(key: VariableKey?) : VariableImpl<ExprRetBool>(key),
-        ExprRetBool {
-        override fun setResolvedExpr(expr: Expr) {
-            resolvedExpr = (expr as? ExprRetBool)
+    class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),
+        IExprRetBool {
+        override fun setResolvedExpr(expr: IExpr) {
+            resolvedExpr = (expr as? IExprRetBool)
                 ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
         }
 
@@ -101,15 +101,15 @@ interface VariableExpression : Expr {
                 .intersect(constraints.evaluate()) as BooleanSet
         }
 
-        override fun getConstraints(): Map<VariableExpression, Expr> {
+        override fun getConstraints(): Map<VariableExpression, IExpr> {
             return resolvedExpr?.getConstraints() ?: mapOf(this to this)
         }
     }
 
-    class VariableNumber(key: VariableKey?) : VariableImpl<ExprRetNum>(key),
-        ExprRetNum {
-        override fun setResolvedExpr(expr: Expr) {
-            resolvedExpr = (expr as? ExprRetNum)
+    class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),
+        IExprRetNum {
+        override fun setResolvedExpr(expr: IExpr) {
+            resolvedExpr = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
 
@@ -119,10 +119,10 @@ interface VariableExpression : Expr {
         }
     }
 
-    class VariableGeneric(key: VariableKey?) : VariableImpl<ExprRetGeneric>(key),
-        ExprRetGeneric {
-        override fun setResolvedExpr(expr: Expr) {
-            resolvedExpr = (expr as? ExprRetGeneric)
+    class VariableGeneric(key: VariableKey?) : VariableImpl<IExprRetGeneric>(key),
+        IExprRetGeneric {
+        override fun setResolvedExpr(expr: IExpr) {
+            resolvedExpr = (expr as? IExprRetGeneric)
                 ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
         }
 

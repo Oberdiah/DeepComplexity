@@ -2,7 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import kotlin.reflect.KClass
 
-interface GenericSet : MoldableSet {
+interface GenericSet : IMoldableSet {
     companion object {
         inline fun <reified T> singleValue(value: T): GenericSetImpl<T> {
             return GenericSetImpl(T::class, setOf(value))
@@ -14,21 +14,21 @@ interface GenericSet : MoldableSet {
             return clazz
         }
 
-        override fun union(other: MoldableSet): MoldableSet {
+        override fun union(other: IMoldableSet): IMoldableSet {
             if (other !is GenericSetImpl<*>) {
                 throw IllegalArgumentException("Cannot union with a different set type")
             }
             return GenericSetImpl(clazz, values.union(other.values))
         }
 
-        override fun intersect(other: MoldableSet): MoldableSet {
+        override fun intersect(other: IMoldableSet): IMoldableSet {
             if (other !is GenericSetImpl<*>) {
                 throw IllegalArgumentException("Cannot intersect with a different set type")
             }
             return GenericSetImpl(clazz, values.intersect(other.values))
         }
 
-        override fun invert(): MoldableSet {
+        override fun invert(): IMoldableSet {
             TODO(
                 "Not yet implemented. It's definitely possible, " +
                         "but requires a new InvertedGenericSet class and I've not bothered yet."

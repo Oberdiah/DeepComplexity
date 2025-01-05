@@ -5,10 +5,10 @@ import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 
 class ComparisonExpression(
-    val lhs: ExprRetNum,
-    val rhs: ExprRetNum,
+    val lhs: IExprRetNum,
+    val rhs: IExprRetNum,
     val comparison: ComparisonOperation
-) : ExprRetBool {
+) : IExprRetBool {
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return lhs.getCurrentlyUnresolved() + rhs.getCurrentlyUnresolved()
     }
@@ -20,8 +20,8 @@ class ComparisonExpression(
         return lhs.comparisonOperation(rhs, comparison)
     }
 
-    override fun getConstraints(): Map<VariableExpression, Expr> {
-        val constraints = mutableMapOf<VariableExpression, Expr>()
+    override fun getConstraints(): Map<VariableExpression, IExpr> {
+        val constraints = mutableMapOf<VariableExpression, IExpr>()
 
         for (unresolved in getCurrentlyUnresolved()) {
             val expr = TODO()

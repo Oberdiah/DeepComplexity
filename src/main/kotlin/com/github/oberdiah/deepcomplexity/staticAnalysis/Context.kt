@@ -1,6 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.Expr
+import com.github.oberdiah.deepcomplexity.evaluation.IExpr
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.intellij.psi.*
 import kotlinx.collections.immutable.toImmutableMap
@@ -21,7 +21,7 @@ class Context {
 
     // Psi Element is where the variable is defined —
     // either PsiLocalVariable, PsiParameter, or PsiField
-    private val variables = mutableMapOf<PsiElement, Expr>()
+    private val variables = mutableMapOf<PsiElement, IExpr>()
 
     companion object {
         /**
@@ -34,7 +34,7 @@ class Context {
          *
          * a and b must not be used again after this operation.
          */
-        fun combine(a: Context, b: Context, how: (a: Expr, b: Expr) -> Expr): Context {
+        fun combine(a: Context, b: Context, how: (a: IExpr, b: IExpr) -> IExpr): Context {
             assert(a.alive && b.alive)
 
             val resultingContext = Context()
@@ -64,7 +64,7 @@ class Context {
         return "Context$deadStr: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun getVariables(): Map<PsiElement, Expr> {
+    fun getVariables(): Map<PsiElement, IExpr> {
         assert(alive)
         return variables.toImmutableMap()
     }
@@ -98,7 +98,7 @@ class Context {
         migrateUnresolvedFrom(later)
     }
 
-    fun getVar(element: PsiElement): Expr {
+    fun getVar(element: PsiElement): IExpr {
         assert(alive)
         when (element) {
             is PsiLocalVariable, is PsiParameter, is PsiField -> {
@@ -111,7 +111,7 @@ class Context {
         }
     }
 
-    fun assignVar(element: PsiElement, expr: Expr) {
+    fun assignVar(element: PsiElement, expr: IExpr) {
         assert(alive)
         assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField)
 

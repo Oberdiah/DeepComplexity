@@ -2,13 +2,13 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 
-class InvertExpression(val expr: ExprRetBool) : ExprRetBool {
+class InvertExpression(val expr: IExprRetBool) : IExprRetBool {
     override fun evaluate(): BooleanSet {
         return expr.evaluate().invert() as BooleanSet
     }
 
-    override fun getConstraints(): Map<VariableExpression, Expr> {
-        return expr.getConstraints().mapValues { (_, expr) -> InvertExpression(expr as ExprRetBool) }
+    override fun getConstraints(): Map<VariableExpression, IExpr> {
+        return expr.getConstraints().mapValues { (_, expr) -> InvertExpression(expr as IExprRetBool) }
     }
 
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
