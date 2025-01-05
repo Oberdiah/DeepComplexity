@@ -23,4 +23,8 @@ class GaveUpExpression(private val weWouldCallIfWeKnewWhatToDo: Expr) : Expr {
             else -> throw IllegalStateException("Unknown set class")
         }
     }
+
+    override fun toString(): String {
+        return "X"
+    }
 }

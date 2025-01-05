@@ -14,4 +14,8 @@ class InvertExpression(val expr: ExprRetBool) : ExprRetBool {
     override fun getCurrentlyUnresolved(): Set<VariableExpression> {
         return expr.getCurrentlyUnresolved()
     }
+
+    override fun toString(): String {
+        return "!$expr"
+    }
 }

@@ -64,9 +64,14 @@ interface VariableExpression : Expr {
         // Applied as an intersection to our evaluation.
         var constraints: Expr = GaveUpExpression(this)
 
+        override fun addCondition(condition: ExprRetBool) {
+            // Do the immensely complicated work of converting from this to a constraint.
+            constraints = condition // This is completely wrong, just a POC.
+        }
+
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
-            return if (isResolved()) resolvedExpr.toString() else key.element.toString()
+            return (if (isResolved()) resolvedExpr.toString() else key.element.toString())// + "[${constraints}]"
         }
 
         override fun isResolved(): Boolean {

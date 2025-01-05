@@ -57,14 +57,11 @@ class Context {
         }
     }
 
-    fun applyConstraints(constraints: Map<VariableExpression, Expr>) {
-        return TODO()
-    }
-
     override fun toString(): String {
         val deadStr = if (alive) "" else " (dead)"
-        val variablesString = variables.entries.joinToString("\n\t") { "${it.key}: ${it.value}" }
-        return "Context$deadStr: {\n\t$variablesString\n}"
+        val variablesString =
+            variables.entries.joinToString("\n") { "${it.key}:\n${it.value.toString().prependIndent()}" }
+        return "Context$deadStr: {\n${variablesString.prependIndent()}\n}"
     }
 
     fun getVariables(): Map<PsiElement, Expr> {
@@ -97,6 +94,8 @@ class Context {
 
         // Later's variables overwrite ours if they exist as they're more recent.
         variables.putAll(later.variables)
+        // Any variables that are still unresolved need to be migrated.
+        migrateUnresolvedFrom(later)
     }
 
     fun getVar(element: PsiElement): Expr {
@@ -145,7 +144,7 @@ class Context {
      * likely break stuff.
      *
      * This is needed if you find yourself wanting to move variables from one context to another
-     * without stacking (the typical operation).
+     * (the typical operation).
      */
     private fun migrateUnresolvedFrom(other: Context) {
         for (value in variables.values) {

@@ -12,6 +12,12 @@ sealed interface Expr {
     fun evaluate(): MoldableSet
     fun asRetNum(): ExprRetNum? = this as? ExprRetNum
     fun asRetBool(): ExprRetBool? = this as? ExprRetBool
+
+    fun addCondition(condition: ExprRetBool) {
+        for (unresolved in getCurrentlyUnresolved()) {
+            unresolved.addCondition(condition)
+        }
+    }
 }
 
 sealed interface ExprRetNum : Expr {

@@ -28,6 +28,10 @@ class IfExpression(
     }
 
     override fun toString(): String {
-        return "($condition ? $trueExpr : $falseExpr)"
+        return "if $condition {\n${
+            trueExpr.toString().prependIndent()
+        }\n} else {\n${
+            falseExpr.toString().prependIndent()
+        }\n}"
     }
 }
