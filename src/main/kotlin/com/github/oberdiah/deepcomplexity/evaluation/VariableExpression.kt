@@ -1,12 +1,10 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression.BooleanOperation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import com.intellij.psi.PsiVariable
-import org.jetbrains.kotlin.resolve.calls.inference.model.checkConstraint
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
@@ -64,15 +62,15 @@ interface VariableExpression : IExpr {
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
      */
     abstract class VariableImpl<T : IExpr>(private val key: VariableKey?) : VariableExpression {
-        protected var resolved: T? = null
+        protected var resolvedInto: T? = null
 
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
-            return if (isResolved()) resolved.toString() else key.element.toString()
+            return if (isResolved()) resolvedInto.toString() else key.element.toString()
         }
 
         override fun isResolved(): Boolean {
-            return resolved != null
+            return resolvedInto != null
         }
 
         override fun getKey(): VariableKey {
@@ -82,10 +80,12 @@ interface VariableExpression : IExpr {
         }
 
         override fun getVariables(resolved: Boolean): Set<VariableExpression> {
+            val resolvedVariables = resolvedInto?.getVariables(resolved) ?: emptySet()
+
             return if ((isResolved() && resolved) || (!isResolved() && !resolved)) {
-                setOf(this)
+                resolvedVariables + this
             } else {
-                emptySet()
+                resolvedVariables
             }
         }
     }
@@ -93,36 +93,36 @@ interface VariableExpression : IExpr {
     class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),
         IExprRetBool {
         override fun setResolvedExpr(expr: IExpr) {
-            resolved = (expr as? IExprRetBool)
+            resolvedInto = (expr as? IExprRetBool)
                 ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
         }
 
         override fun evaluate(condition: IExprRetBool): BooleanSet {
-            return (resolved?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
+            return (resolvedInto?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
         }
     }
 
     class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),
         IExprRetNum {
         override fun setResolvedExpr(expr: IExpr) {
-            resolved = (expr as? IExprRetNum)
+            resolvedInto = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
 
         override fun evaluate(condition: IExprRetBool): NumberSet {
-            return (resolved?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
+            return (resolvedInto?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
         }
     }
 
     class VariableGeneric(key: VariableKey?) : VariableImpl<IExprRetGeneric>(key),
         IExprRetGeneric {
         override fun setResolvedExpr(expr: IExpr) {
-            resolved = (expr as? IExprRetGeneric)
+            resolvedInto = (expr as? IExprRetGeneric)
                 ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
         }
 
         override fun evaluate(condition: IExprRetBool): GenericSet {
-            return (resolved?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
+            return (resolvedInto?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
         }
     }
 }
