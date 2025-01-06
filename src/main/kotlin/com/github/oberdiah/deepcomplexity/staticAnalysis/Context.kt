@@ -65,17 +65,6 @@ class Context {
             variables.entries.joinToString("\n") { entry ->
                 val expr = entry.value
                 val psi = entry.key
-                "$psi:\n${expr.toString().prependIndent()}"
-            }
-        return "Context$deadStr: {\n${variablesString.prependIndent()}\n}"
-    }
-
-    fun toStringWithEvaluation(): String {
-        val deadStr = if (alive) "" else " (dead)"
-        val variablesString =
-            variables.entries.joinToString("\n") { entry ->
-                val expr = entry.value
-                val psi = entry.key
 
                 expr.getVariables(false).forEach {
                     it.setResolvedExpr(GaveUpExpression.fromExpr(it))

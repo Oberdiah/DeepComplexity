@@ -21,6 +21,28 @@ class BooleanExpression(
     }
 
     override fun toString(): String {
+        if (lhs == ConstantExpression.TRUE) {
+            return when (operation) {
+                BooleanOperation.AND -> rhs.toString()
+                BooleanOperation.OR -> "TRUE"
+            }
+        } else if (lhs == ConstantExpression.FALSE) {
+            return when (operation) {
+                BooleanOperation.AND -> "FALSE"
+                BooleanOperation.OR -> rhs.toString()
+            }
+        } else if (rhs == ConstantExpression.TRUE) {
+            return when (operation) {
+                BooleanOperation.AND -> lhs.toString()
+                BooleanOperation.OR -> "TRUE"
+            }
+        } else if (rhs == ConstantExpression.FALSE) {
+            return when (operation) {
+                BooleanOperation.AND -> "FALSE"
+                BooleanOperation.OR -> lhs.toString()
+            }
+        }
+
         return "($lhs $operation $rhs)"
     }
 
