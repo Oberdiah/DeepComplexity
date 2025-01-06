@@ -13,13 +13,9 @@ class ArithmeticExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun deepClone(): IExprRetNum {
-        return ArithmeticExpression(lhs.deepClone(), rhs.deepClone(), operation)
-    }
-
-    override fun evaluate(): NumberSet {
-        val lhs = lhs.evaluate()
-        val rhs = rhs.evaluate()
+    override fun evaluate(condition: IExprRetBool): NumberSet {
+        val lhs = lhs.evaluate(condition)
+        val rhs = rhs.evaluate(condition)
 
         return lhs.arithmeticOperation(rhs, operation)
     }

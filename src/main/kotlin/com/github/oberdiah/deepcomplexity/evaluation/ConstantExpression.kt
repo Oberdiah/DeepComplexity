@@ -37,22 +37,14 @@ object ConstantExpression {
     }
 
     class ConstExprNum(singleElementSet: NumberSet) : ConstExpr<NumberSet>(singleElementSet), IExprRetNum {
-        override fun evaluate(): NumberSet {
+        override fun evaluate(condition: IExprRetBool): NumberSet {
             return singleElementSet
-        }
-
-        override fun deepClone(): IExprRetNum {
-            return this
         }
     }
 
     class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool {
-        override fun evaluate(): BooleanSet {
+        override fun evaluate(condition: IExprRetBool): BooleanSet {
             return singleElementSet
-        }
-
-        override fun deepClone(): IExprRetBool {
-            return this
         }
 
         override fun getConstraints(): Map<VariableExpression, IExpr> {
@@ -61,12 +53,8 @@ object ConstantExpression {
     }
 
     class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric {
-        override fun evaluate(): GenericSet {
+        override fun evaluate(condition: IExprRetBool): GenericSet {
             return singleElementSet
-        }
-
-        override fun deepClone(): IExprRetGeneric {
-            return this
         }
     }
 }

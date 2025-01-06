@@ -15,15 +15,11 @@ class RepeatExpression(
         return exprToRepeat.getSetClass()
     }
 
-    override fun evaluate(): IMoldableSet {
+    override fun evaluate(condition: IExprRetBool): IMoldableSet {
         TODO("Not yet implemented")
     }
 
     override fun toString(): String {
         return "[repeat $numRepeats times] { $exprToRepeat }"
-    }
-
-    override fun deepClone(): IExpr {
-        return RepeatExpression(numRepeats.deepClone(), exprToRepeat.deepClone())
     }
 }

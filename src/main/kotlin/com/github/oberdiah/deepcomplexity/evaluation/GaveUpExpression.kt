@@ -15,17 +15,13 @@ class GaveUpExpression(private val weWouldCallIfWeKnewWhatToDo: IExpr) : IExpr {
         return weWouldCallIfWeKnewWhatToDo.getSetClass()
     }
 
-    override fun evaluate(): IMoldableSet {
+    override fun evaluate(condition: IExprRetBool): IMoldableSet {
         return when (weWouldCallIfWeKnewWhatToDo.getSetClass()) {
             NumberSet::class -> NumberSet.gaveUp()
             BooleanSet::class -> BooleanSet.BOTH
             GenericSet::class -> TODO("Not implemented yet")
             else -> throw IllegalStateException("Unknown set class")
         }
-    }
-
-    override fun deepClone(): IExpr {
-        return GaveUpExpression(weWouldCallIfWeKnewWhatToDo.deepClone())
     }
 
     override fun toString(): String {

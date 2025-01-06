@@ -3,8 +3,8 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 
 class InvertExpression(val expr: IExprRetBool) : IExprRetBool {
-    override fun evaluate(): BooleanSet {
-        return expr.evaluate().invert() as BooleanSet
+    override fun evaluate(condition: IExprRetBool): BooleanSet {
+        return expr.evaluate(condition).invert() as BooleanSet
     }
 
     override fun getConstraints(): Map<VariableExpression, IExpr> {
@@ -17,9 +17,5 @@ class InvertExpression(val expr: IExprRetBool) : IExprRetBool {
 
     override fun toString(): String {
         return "!$expr"
-    }
-
-    override fun deepClone(): IExprRetBool {
-        return InvertExpression(expr.deepClone())
     }
 }

@@ -12,12 +12,8 @@ class IntersectExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
         return lhs.getSetClass()
     }
 
-    override fun evaluate(): IMoldableSet {
-        return lhs.evaluate().intersect(rhs.evaluate())
-    }
-
-    override fun deepClone(): IExpr {
-        return IntersectExpression(lhs.deepClone(), rhs.deepClone())
+    override fun evaluate(condition: IExprRetBool): IMoldableSet {
+        return lhs.evaluate(condition).intersect(rhs.evaluate(condition))
     }
 
     override fun toString(): String {

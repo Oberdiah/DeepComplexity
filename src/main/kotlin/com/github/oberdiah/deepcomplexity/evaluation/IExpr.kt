@@ -6,33 +6,20 @@ import kotlin.reflect.KClass
 sealed interface IExpr {
     fun getVariables(resolved: Boolean): Set<VariableExpression>
     fun getSetClass(): KClass<*>
-    fun evaluate(): IMoldableSet
+    fun evaluate(condition: IExprRetBool): IMoldableSet
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
     fun asRetBool(): IExprRetBool? = this as? IExprRetBool
-    fun deepClone(): IExpr
-
-    /**
-     * When you add a condition you need to provide a context that that condition applies within, as
-     * an IExpr won't just have variables under a single context.
-     */
-    fun addCondition(condition: IExprRetBool, context: Context) {
-        for (unresolved in getVariables(false)) {
-            unresolved.addCondition(condition, context)
-        }
-    }
 }
 
 sealed interface IExprRetNum : IExpr {
-    override fun evaluate(): NumberSet
-    override fun deepClone(): IExprRetNum
+    override fun evaluate(condition: IExprRetBool): NumberSet
     override fun getSetClass(): KClass<*> {
         return NumberSet::class
     }
 }
 
 sealed interface IExprRetBool : IExpr {
-    override fun evaluate(): BooleanSet
-    override fun deepClone(): IExprRetBool
+    override fun evaluate(condition: IExprRetBool): BooleanSet
     override fun getSetClass(): KClass<*> {
         return BooleanSet::class
     }
@@ -45,8 +32,7 @@ sealed interface IExprRetBool : IExpr {
 }
 
 sealed interface IExprRetGeneric : IExpr {
-    override fun evaluate(): GenericSet
-    override fun deepClone(): IExprRetGeneric
+    override fun evaluate(condition: IExprRetBool): GenericSet
     override fun getSetClass(): KClass<*> {
         return GenericSet::class
     }

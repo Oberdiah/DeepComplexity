@@ -9,19 +9,15 @@ class BooleanExpression(
     val rhs: IExprRetBool,
     val operation: BooleanOperation
 ) : IExprRetBool {
-    override fun evaluate(): BooleanSet {
-        val lhs = lhs.evaluate()
-        val rhs = rhs.evaluate()
+    override fun evaluate(condition: IExprRetBool): BooleanSet {
+        val lhs = lhs.evaluate(condition)
+        val rhs = rhs.evaluate(condition)
 
         return lhs.booleanOperation(rhs, operation)
     }
 
     override fun getVariables(resolved: Boolean): Set<VariableExpression> {
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
-    }
-
-    override fun deepClone(): IExprRetBool {
-        return BooleanExpression(lhs.deepClone(), rhs.deepClone(), operation)
     }
 
     override fun getConstraints(): Map<VariableExpression, IExpr> {

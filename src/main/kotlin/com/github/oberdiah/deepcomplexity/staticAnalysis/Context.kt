@@ -86,8 +86,7 @@ class Context {
                 if (resolvedKey.context == later) {
                     val resolved = variables[resolvedKey.element]
                     if (resolved != null) {
-                        resolvedKey.context = this
-                        unresolved.setResolvedExpr(resolved.deepClone())
+                        unresolved.setResolvedExpr(resolved)
                     }
                 }
             }

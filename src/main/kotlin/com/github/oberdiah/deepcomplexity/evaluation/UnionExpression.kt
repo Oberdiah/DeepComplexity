@@ -12,15 +12,11 @@ class UnionExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
         return lhs.getSetClass()
     }
 
-    override fun evaluate(): IMoldableSet {
-        return lhs.evaluate().union(rhs.evaluate())
+    override fun evaluate(condition: IExprRetBool): IMoldableSet {
+        return lhs.evaluate(condition).union(rhs.evaluate(condition))
     }
 
     override fun toString(): String {
         return "($lhs ∪ $rhs)"
-    }
-
-    override fun deepClone(): IExpr {
-        return UnionExpression(lhs.deepClone(), rhs.deepClone())
     }
 }
