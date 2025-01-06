@@ -42,7 +42,7 @@ object ConstantExpression {
         }
 
         override fun deepClone(): IExprRetNum {
-            return ConstExprNum(singleElementSet)
+            return this
         }
     }
 
@@ -52,7 +52,7 @@ object ConstantExpression {
         }
 
         override fun deepClone(): IExprRetBool {
-            return ConstExprBool(singleElementSet)
+            return this
         }
 
         override fun getConstraints(): Map<VariableExpression, IExpr> {
@@ -66,7 +66,7 @@ object ConstantExpression {
         }
 
         override fun deepClone(): IExprRetGeneric {
-            return ConstExprGeneric(singleElementSet)
+            return this
         }
     }
 }

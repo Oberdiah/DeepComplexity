@@ -18,7 +18,6 @@ interface VariableExpression : IExpr {
      */
     fun isResolved(): Boolean
     fun getKey(): VariableKey
-    fun checkConstraints()
 
     companion object {
         fun fromElement(element: PsiElement, context: Context): VariableExpression {
@@ -67,11 +66,8 @@ interface VariableExpression : IExpr {
     abstract class VariableImpl<T : IExpr>(private val key: VariableKey?) : VariableExpression {
         protected var resolved: T? = null
 
-        // Applied as an intersection to our evaluation.
-        var constraint: IExpr = GaveUpExpression(this)
-
         // Kept around so we can check it again in future for constraints as it evolves.
-        protected var condition: IExprRetBool = ConstantExpression.TRUE
+        var condition: IExprRetBool = ConstantExpression.TRUE
 
         override fun addCondition(condition: IExprRetBool, context: Context) {
             val resolved = this.resolved
@@ -92,26 +88,24 @@ interface VariableExpression : IExpr {
             } else {
                 this.condition = BooleanExpression(this.condition, condition, BooleanOperation.AND)
             }
-
-            checkConstraints()
         }
 
-        override fun checkConstraints() {
+        protected fun getConstraint(): IExpr {
+            if (isResolved()) {
+                return GaveUpExpression(this)
+            }
+
             // Do the complicated work of converting from the condition to a constraint.
             // If the constraint doesn't contain us, it doesn't concern us :)
             if (condition.getVariables(false).any { it.getKey() == key }) {
-                if (constraint !is GaveUpExpression) {
-                    // This requires further investigation...
-                    println("Interesting :)")
-                }
-
-                constraint = condition // This is completely wrong, just a POC.
-                println("Woo got here! ${condition}, ${key?.element}")
+                return condition // This is completely wrong, just a POC.
             }
+            return GaveUpExpression(this)
         }
 
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
+            val constraint = getConstraint()
             val constraintStr = if (constraint is GaveUpExpression) "" else "[$constraint]"
             val mainExprStr = if (isResolved()) resolved.toString() else key.element.toString()
             return mainExprStr + constraintStr
@@ -148,7 +142,7 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(): BooleanSet {
             return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
-                .intersect(constraint.evaluate()) as BooleanSet
+                .intersect(getConstraint().evaluate()) as BooleanSet
         }
 
         override fun getConstraints(): Map<VariableExpression, IExpr> {
@@ -172,7 +166,7 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(): NumberSet {
             return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
-                .intersect(constraint.evaluate()) as NumberSet
+                .intersect(getConstraint().evaluate()) as NumberSet
         }
 
         override fun deepClone(): IExprRetNum {
@@ -192,7 +186,7 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(): GenericSet {
             return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
-                .intersect(constraint.evaluate()) as GenericSet
+                .intersect(getConstraint().evaluate()) as GenericSet
         }
 
         override fun deepClone(): IExprRetGeneric {
