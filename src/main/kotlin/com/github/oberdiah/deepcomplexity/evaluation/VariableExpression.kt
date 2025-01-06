@@ -71,7 +71,7 @@ interface VariableExpression : IExpr {
         var constraint: IExpr = GaveUpExpression(this)
 
         // Kept around so we can check it again in future for constraints as it evolves.
-        private var condition: IExprRetBool = ConstantExpression.TRUE
+        protected var condition: IExprRetBool = ConstantExpression.TRUE
 
         override fun addCondition(condition: IExprRetBool, context: Context) {
             val resolved = this.resolved
@@ -110,10 +110,6 @@ interface VariableExpression : IExpr {
             }
         }
 
-        protected fun updateExprConditions(expr: IExpr) {
-            expr.addCondition(condition.deepClone(), getKey().context)
-        }
-
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
             val constraintStr = if (constraint is GaveUpExpression) "" else "[$constraint]"
@@ -145,7 +141,7 @@ interface VariableExpression : IExpr {
     class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),
         IExprRetBool {
         override fun setResolvedExpr(expr: IExpr) {
-            updateExprConditions(expr)
+            expr.addCondition(condition.deepClone(), getKey().context)
             resolved = (expr as? IExprRetBool)
                 ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
         }
@@ -169,7 +165,7 @@ interface VariableExpression : IExpr {
     class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),
         IExprRetNum {
         override fun setResolvedExpr(expr: IExpr) {
-            updateExprConditions(expr)
+            expr.addCondition(condition.deepClone(), getKey().context)
             resolved = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
@@ -189,7 +185,7 @@ interface VariableExpression : IExpr {
     class VariableGeneric(key: VariableKey?) : VariableImpl<IExprRetGeneric>(key),
         IExprRetGeneric {
         override fun setResolvedExpr(expr: IExpr) {
-            updateExprConditions(expr)
+            expr.addCondition(condition.deepClone(), getKey().context)
             resolved = (expr as? IExprRetGeneric)
                 ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
         }
