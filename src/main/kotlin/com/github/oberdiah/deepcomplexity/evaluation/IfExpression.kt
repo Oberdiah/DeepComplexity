@@ -11,10 +11,6 @@ class IfExpression(
         return trueExpr.getVariables(resolved) + falseExpr.getVariables(resolved) + thisCondition.getVariables(resolved)
     }
 
-    override fun getBaseClass(): KClass<*> {
-        return trueExpr.getBaseClass()
-    }
-
     override fun toString(): String {
         return "if $thisCondition {\n${
             trueExpr.toString().prependIndent()

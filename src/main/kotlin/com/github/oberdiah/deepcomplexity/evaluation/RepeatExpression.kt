@@ -11,10 +11,6 @@ class RepeatExpression(
         return numRepeats.getVariables(resolved) + exprToRepeat.getVariables(resolved)
     }
 
-    override fun getBaseClass(): KClass<*> {
-        return exprToRepeat.getBaseClass()
-    }
-
     override fun toString(): String {
         return "[repeat $numRepeats times] { $exprToRepeat }"
     }

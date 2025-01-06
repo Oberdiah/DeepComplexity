@@ -101,10 +101,6 @@ sealed interface VariableExpression : IExpr {
             resolvedInto = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
-
-        override fun getBaseClass(): KClass<*> {
-            return clazz
-        }
     }
 
     class VariableGeneric(key: VariableKey?, id: Int) : VariableImpl<IExprRetGeneric>(key, id),
@@ -112,14 +108,6 @@ sealed interface VariableExpression : IExpr {
         override fun setResolvedExpr(expr: IExpr) {
             resolvedInto = (expr as? IExprRetGeneric)
                 ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
-        }
-
-        override fun evaluate(condition: IExprRetBool): GenericSet {
-            return (resolvedInto?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
-        }
-
-        override fun getBaseClass(): KClass<*> {
-            throw IllegalStateException("Base class for a generic is a strange concept...")
         }
     }
 }

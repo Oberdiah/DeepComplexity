@@ -14,10 +14,6 @@ class ArithmeticExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun getBaseClass(): KClass<*> {
-        return lhs.getBaseClass()
-    }
-
     override fun toString(): String {
         return "($lhs $operation $rhs)"
     }

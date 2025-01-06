@@ -1,0 +1,40 @@
+package com.github.oberdiah.deepcomplexity.evaluation
+
+import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import kotlin.reflect.KClass
+
+object ExprClass {
+    /**
+     * The class of the set that the expression returns.
+     */
+    fun getSetClass(expr: IExpr): KClass<*> {
+        return when (expr) {
+            is IExprRetNum -> NumberSet::class
+            is IExprRetBool -> Boolean::class
+            is IExprRetGeneric -> GenericSet::class
+            is IfExpression -> getSetClass(expr.trueExpr)
+            is IntersectExpression -> getSetClass(expr.lhs)
+            is RepeatExpression -> getSetClass(expr.exprToRepeat)
+            is UnionExpression -> getSetClass(expr.lhs)
+        }
+    }
+
+    /**
+     * The class of the elements in the set that the expression returns.
+     */
+    fun getBaseClass(expr: IExpr): KClass<*> {
+        return when (expr) {
+            is IExprRetBool -> Boolean::class
+            is ConstantExpression.ConstExprGeneric -> expr.singleElementSet.getClass()
+            is ConstantExpression.ConstExprNum -> expr.singleElementSet.getClass()
+            is VariableExpression.VariableGeneric -> throw IllegalStateException("Base class for a generic is a strange concept...")
+            is VariableExpression.VariableNumber -> expr.clazz
+            is ArithmeticExpression -> getBaseClass(expr.lhs)
+            is IfExpression -> getBaseClass(expr.trueExpr)
+            is IntersectExpression -> getBaseClass(expr.lhs)
+            is RepeatExpression -> getBaseClass(expr.exprToRepeat)
+            is UnionExpression -> getBaseClass(expr.lhs)
+        }
+    }
+}

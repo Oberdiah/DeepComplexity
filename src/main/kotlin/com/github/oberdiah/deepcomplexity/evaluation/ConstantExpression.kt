@@ -45,21 +45,12 @@ object ConstantExpression {
         }
     }
 
-    class ConstExprNum(singleElementSet: NumberSet) : ConstExpr<NumberSet>(singleElementSet), IExprRetNum {
-        override fun getBaseClass(): KClass<*> {
-            return singleElementSet.getClass()
-        }
-    }
+    class ConstExprNum(singleElementSet: NumberSet) :
+        ConstExpr<NumberSet>(singleElementSet), IExprRetNum
 
-    class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool
+    class ConstExprBool(singleElementSet: BooleanSet) :
+        ConstExpr<BooleanSet>(singleElementSet), IExprRetBool
 
-    class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric {
-        override fun evaluate(condition: IExprRetBool): GenericSet {
-            return singleElementSet
-        }
-
-        override fun getBaseClass(): KClass<*> {
-            return singleElementSet.getClass()
-        }
-    }
+    class ConstExprGeneric(singleElementSet: GenericSet) :
+        ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric
 }

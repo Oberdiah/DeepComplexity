@@ -8,10 +8,6 @@ class UnionExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun getBaseClass(): KClass<*> {
-        return lhs.getBaseClass()
-    }
-
     override fun toString(): String {
         return "($lhs ∪ $rhs)"
     }

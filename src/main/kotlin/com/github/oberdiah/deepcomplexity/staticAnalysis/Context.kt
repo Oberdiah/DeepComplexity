@@ -62,7 +62,7 @@ class Context {
                 val expr = entry.value
                 val psi = entry.key
 
-                val evaluated = ExprOperations.evaluate(expr, ConstantExpression.TRUE)
+                val evaluated = ExprEvaluate.evaluate(expr, ConstantExpression.TRUE)
 
                 "$psi ($evaluated):\n${expr.toString().prependIndent()}"
             }
