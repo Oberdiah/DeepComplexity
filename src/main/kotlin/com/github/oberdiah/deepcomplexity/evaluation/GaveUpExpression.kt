@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
 
 object GaveUpExpression {
     fun fromExpr(expr: IExpr): IExpr {
-        return when (expr.getSetClass()) {
+        return when (ExprOperations.getSetClass(expr)) {
             NumberSet::class -> ConstantExpression.ConstExprNum(NumberSet.fullRange(expr.getBaseClass()))
             BooleanSet::class -> ConstantExpression.ConstExprBool(BooleanSet.BOTH)
             GenericSet::class -> ConstantExpression.ConstExprGeneric(GenericSet.everyValue())

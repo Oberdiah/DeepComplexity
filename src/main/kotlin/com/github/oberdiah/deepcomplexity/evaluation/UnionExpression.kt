@@ -8,10 +8,6 @@ class UnionExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun getSetClass(): KClass<*> {
-        return lhs.getSetClass()
-    }
-
     override fun getBaseClass(): KClass<*> {
         return lhs.getBaseClass()
     }

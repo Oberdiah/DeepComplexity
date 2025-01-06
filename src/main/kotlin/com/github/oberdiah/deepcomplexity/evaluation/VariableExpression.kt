@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
-interface VariableExpression : IExpr {
+sealed interface VariableExpression : IExpr {
     fun setResolvedExpr(expr: IExpr)
 
     /**
@@ -58,7 +58,7 @@ interface VariableExpression : IExpr {
     /**
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
      */
-    abstract class VariableImpl<T : IExpr>(private val key: VariableKey?, private val id: Int) : VariableExpression {
+    sealed class VariableImpl<T : IExpr>(private val key: VariableKey?, private val id: Int) : VariableExpression {
         protected var resolvedInto: T? = null
 
         override fun toString(): String {

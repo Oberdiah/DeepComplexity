@@ -14,10 +14,6 @@ class IfExpression(
         return trueExpr.getVariables(resolved) + falseExpr.getVariables(resolved) + thisCondition.getVariables(resolved)
     }
 
-    override fun getSetClass(): KClass<*> {
-        return trueExpr.getSetClass()
-    }
-
     override fun getBaseClass(): KClass<*> {
         return trueExpr.getBaseClass()
     }

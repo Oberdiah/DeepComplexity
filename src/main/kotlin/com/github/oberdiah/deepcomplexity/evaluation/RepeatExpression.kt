@@ -11,10 +11,6 @@ class RepeatExpression(
         return numRepeats.getVariables(resolved) + exprToRepeat.getVariables(resolved)
     }
 
-    override fun getSetClass(): KClass<*> {
-        return exprToRepeat.getSetClass()
-    }
-
     override fun getBaseClass(): KClass<*> {
         return exprToRepeat.getBaseClass()
     }

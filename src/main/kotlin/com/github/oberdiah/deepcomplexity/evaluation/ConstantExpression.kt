@@ -35,7 +35,7 @@ object ConstantExpression {
         }
     }
 
-    abstract class ConstExpr<T>(protected val singleElementSet: T) : IExpr {
+    sealed class ConstExpr<T>(protected val singleElementSet: T) : IExpr {
         override fun toString(): String {
             return singleElementSet.toString()
         }

@@ -8,11 +8,6 @@ sealed interface IExpr {
     fun getVariables(resolved: Boolean): Set<VariableExpression>
 
     /**
-     * The class of the set itself.
-     */
-    fun getSetClass(): KClass<*>
-
-    /**
      * The class of the elements in the set.
      */
     fun getBaseClass(): KClass<*>
@@ -24,16 +19,10 @@ sealed interface IExpr {
 
 sealed interface IExprRetNum : IExpr {
     override fun evaluate(condition: IExprRetBool): NumberSet
-    override fun getSetClass(): KClass<*> {
-        return NumberSet::class
-    }
 }
 
 sealed interface IExprRetBool : IExpr {
     override fun evaluate(condition: IExprRetBool): BooleanSet
-    override fun getSetClass(): KClass<*> {
-        return BooleanSet::class
-    }
 
     override fun getBaseClass(): KClass<*> {
         return Boolean::class
@@ -47,7 +36,4 @@ sealed interface IExprRetBool : IExpr {
 
 sealed interface IExprRetGeneric : IExpr {
     override fun evaluate(condition: IExprRetBool): GenericSet
-    override fun getSetClass(): KClass<*> {
-        return GenericSet::class
-    }
 }
