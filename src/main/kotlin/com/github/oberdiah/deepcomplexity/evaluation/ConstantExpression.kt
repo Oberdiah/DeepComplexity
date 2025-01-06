@@ -5,19 +5,25 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstantExpression {
+    val TRUE = ConstExprBool(BooleanSet.TRUE)
+    val FALSE = ConstExprBool(BooleanSet.FALSE)
+
     fun fromAny(value: Any): IExpr {
         // When adding to this it is likely you'll also want to add to Unresolved.fromElement
         return when (value) {
             is Boolean -> ConstExprBool(BooleanSet.fromBoolean(value))
-            is Byte -> ConstExprNum(NumberSet.singleValue(value))
-            is Short -> ConstExprNum(NumberSet.singleValue(value))
-            is Int -> ConstExprNum(NumberSet.singleValue(value))
-            is Long -> ConstExprNum(NumberSet.singleValue(value))
-            is Float -> ConstExprNum(NumberSet.singleValue(value))
-            is Double -> ConstExprNum(NumberSet.singleValue(value))
+            is Number -> ConstExprNum(NumberSet.singleValue(value))
             is String -> ConstExprGeneric(GenericSet.singleValue(value))
             else -> ConstExprGeneric(GenericSet.singleValue(value))
         }
+    }
+
+    fun fromAny(bool: Boolean): IExprRetBool {
+        return ConstExprBool(BooleanSet.fromBoolean(bool))
+    }
+
+    fun fromAny(num: Number): IExprRetNum {
+        return ConstExprNum(NumberSet.singleValue(num))
     }
 
     abstract class ConstExpr<T>(protected val singleElementSet: T) : IExpr {

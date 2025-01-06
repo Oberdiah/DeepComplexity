@@ -6,6 +6,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import com.intellij.psi.PsiVariable
+import org.jetbrains.kotlin.resolve.calls.inference.model.checkConstraint
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
@@ -70,42 +71,52 @@ interface VariableExpression : IExpr {
         var constraint: IExpr = GaveUpExpression(this)
 
         // Kept around so we can check it again in future for constraints as it evolves.
-        private val conditions = mutableListOf<IExprRetBool>()
+        private var condition: IExprRetBool = ConstantExpression.TRUE
 
         override fun addCondition(condition: IExprRetBool, context: Context) {
+            val resolved = this.resolved
+            if (resolved != null) {
+                // We don't expect this to be called because at the moment addCondition walks the unresolved tree,
+                // but just in case.
+                resolved.addCondition(condition, context)
+                return
+            }
+
             // This is very important. We only want to accept conditions that apply to us.
             if (key == null || context != key.context) {
                 return
             }
 
-            this.conditions.add(condition)
-            checkConstraint(condition)
+            if (this.condition == ConstantExpression.TRUE) {
+                this.condition = condition
+            } else {
+                this.condition = BooleanExpression(this.condition, condition, BooleanOperation.AND)
+            }
+
+            checkConstraints()
         }
 
         override fun checkConstraints() {
-            for (condition in conditions) {
-                checkConstraint(condition)
-            }
-        }
-
-        private fun checkConstraint(condition: IExprRetBool) {
             // Do the complicated work of converting from the condition to a constraint.
             // If the constraint doesn't contain us, it doesn't concern us :)
             if (condition.getVariables(false).any { it.getKey() == key }) {
+                if (constraint !is GaveUpExpression) {
+                    // This requires further investigation...
+                    println("Interesting :)")
+                }
+
                 constraint = condition // This is completely wrong, just a POC.
                 println("Woo got here! ${condition}, ${key?.element}")
             }
         }
 
         protected fun updateExprConditions(expr: IExpr) {
-            for (condition in conditions) {
-                expr.addCondition(condition.deepClone(), getKey().context)
-            }
+            expr.addCondition(condition.deepClone(), getKey().context)
         }
 
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
-            val constraintStr = if (constraint is GaveUpExpression) "" else "[ $constraint ]"
+            val constraintStr = if (constraint is GaveUpExpression) "" else "[$constraint]"
             val mainExprStr = if (isResolved()) resolved.toString() else key.element.toString()
             return mainExprStr + constraintStr
         }
@@ -121,7 +132,7 @@ interface VariableExpression : IExpr {
         }
 
         override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-            val conditionVariables = conditions.flatMap { it.getVariables(resolved) }.toSet() - this
+            val conditionVariables = condition.getVariables(resolved)
 
             return if ((isResolved() && resolved) || (!isResolved() && !resolved)) {
                 conditionVariables + this
