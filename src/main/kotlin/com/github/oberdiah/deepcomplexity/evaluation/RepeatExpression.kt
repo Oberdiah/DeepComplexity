@@ -7,10 +7,6 @@ class RepeatExpression(
     val numRepeats: IExprRetNum,
     val exprToRepeat: IExpr,
 ) : IExpr {
-    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-        return numRepeats.getVariables(resolved) + exprToRepeat.getVariables(resolved)
-    }
-
     override fun toString(): String {
         return "[repeat $numRepeats times] { $exprToRepeat }"
     }

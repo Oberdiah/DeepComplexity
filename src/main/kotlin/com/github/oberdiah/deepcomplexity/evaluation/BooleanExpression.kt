@@ -21,10 +21,6 @@ class BooleanExpression(
 //        }
 //    }
 
-    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-        return lhs.getVariables(resolved) + rhs.getVariables(resolved)
-    }
-
     override fun toString(): String {
         if (lhs == ConstantExpression.TRUE) {
             return when (operation) {

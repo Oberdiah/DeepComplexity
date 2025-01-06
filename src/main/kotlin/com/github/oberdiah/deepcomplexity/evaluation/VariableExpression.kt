@@ -75,16 +75,6 @@ sealed interface VariableExpression : IExpr {
                 throw IllegalStateException("Unresolved expression was created on-the-fly, cannot grab its key.")
             return key
         }
-
-        override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-            val resolvedVariables = resolvedInto?.getVariables(resolved) ?: emptySet()
-
-            return if ((isResolved() && resolved) || (!isResolved() && !resolved)) {
-                resolvedVariables + this
-            } else {
-                resolvedVariables
-            }
-        }
     }
 
     class VariableBool(key: VariableKey?, id: Int) : VariableImpl<IExprRetBool>(key, id),

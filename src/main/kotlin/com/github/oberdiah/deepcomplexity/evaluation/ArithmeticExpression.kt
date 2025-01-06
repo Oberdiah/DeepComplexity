@@ -10,10 +10,6 @@ class ArithmeticExpression(
     val rhs: IExprRetNum,
     val operation: BinaryNumberOperation
 ) : IExprRetNum {
-    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-        return lhs.getVariables(resolved) + rhs.getVariables(resolved)
-    }
-
     override fun toString(): String {
         return "($lhs $operation $rhs)"
     }

@@ -10,9 +10,6 @@ class ComparisonExpression(
     val rhs: IExprRetNum,
     val comparison: ComparisonOperation
 ) : IExprRetBool {
-    override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-        return lhs.getVariables(resolved) + rhs.getVariables(resolved)
-    }
 
 //    override fun constrain(varKey: VariableExpression.VariableKey, set: IMoldableSet): IMoldableSet {
 //        lhs.getVariables(false).find { it.getKey() == varKey }
