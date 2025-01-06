@@ -19,7 +19,11 @@ interface VariableExpression : IExpr {
     fun getKey(): VariableKey
 
     companion object {
+        private var VARIABLE_ID = 0
+
         fun fromElement(element: PsiElement, context: Context): VariableExpression {
+            VARIABLE_ID++
+
             val type: PsiType =
                 (element as? PsiVariable)?.type
                     ?: throw IllegalArgumentException("Element must be a PsiVariable (got ${element::class})")
@@ -36,11 +40,11 @@ interface VariableExpression : IExpr {
                     val clazz = Utilities.psiTypeToKClass(type)
                         ?: throw IllegalArgumentException("Unsupported type for variable expression")
 
-                    VariableNumber(key, clazz)
+                    VariableNumber(key, clazz, VARIABLE_ID)
                 }
 
-                PsiTypes.booleanType() -> VariableBool(key)
-                else -> VariableGeneric(key)
+                PsiTypes.booleanType() -> VariableBool(key, VARIABLE_ID)
+                else -> VariableGeneric(key, VARIABLE_ID)
             }
         }
     }
@@ -54,12 +58,12 @@ interface VariableExpression : IExpr {
     /**
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
      */
-    abstract class VariableImpl<T : IExpr>(private val key: VariableKey?) : VariableExpression {
+    abstract class VariableImpl<T : IExpr>(private val key: VariableKey?, private val id: Int) : VariableExpression {
         protected var resolvedInto: T? = null
 
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
-            return if (isResolved()) resolvedInto.toString() else key.element.toString()
+            return if (isResolved()) resolvedInto.toString() else (key.element.toString() + "[$$id]")
         }
 
         override fun isResolved(): Boolean {
@@ -83,7 +87,7 @@ interface VariableExpression : IExpr {
         }
     }
 
-    class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),
+    class VariableBool(key: VariableKey?, id: Int) : VariableImpl<IExprRetBool>(key, id),
         IExprRetBool {
         override fun setResolvedExpr(expr: IExpr) {
             resolvedInto = (expr as? IExprRetBool)
@@ -95,14 +99,22 @@ interface VariableExpression : IExpr {
         }
     }
 
-    class VariableNumber(key: VariableKey?, val clazz: KClass<*>) : VariableImpl<IExprRetNum>(key), IExprRetNum {
+    class VariableNumber(key: VariableKey?, val clazz: KClass<*>, id: Int) : VariableImpl<IExprRetNum>(key, id),
+        IExprRetNum {
         override fun setResolvedExpr(expr: IExpr) {
             resolvedInto = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
 
         override fun evaluate(condition: IExprRetBool): NumberSet {
-            return (resolvedInto?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
+            resolvedInto?.let {
+                return it.evaluate(condition)
+            }
+
+            // If we're here we're at the end of the line, assume a full range.
+            val range = NumberSet.fullRange(clazz)
+//            return condition.constrain(range, getKey())
+            return range
         }
 
         override fun getBaseClass(): KClass<*> {
@@ -110,7 +122,7 @@ interface VariableExpression : IExpr {
         }
     }
 
-    class VariableGeneric(key: VariableKey?) : VariableImpl<IExprRetGeneric>(key),
+    class VariableGeneric(key: VariableKey?, id: Int) : VariableImpl<IExprRetGeneric>(key, id),
         IExprRetGeneric {
         override fun setResolvedExpr(expr: IExpr) {
             resolvedInto = (expr as? IExprRetGeneric)

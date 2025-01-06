@@ -1,11 +1,16 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.weisj.jsvg.T
 import kotlin.reflect.KClass
 
 interface GenericSet : IMoldableSet {
     companion object {
         inline fun <reified T> singleValue(value: T): GenericSetImpl<T> {
             return GenericSetImpl(T::class, setOf(value))
+        }
+
+        fun everyValue(): GenericSet {
+            TODO()
         }
     }
 

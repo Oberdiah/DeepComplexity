@@ -1,6 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression.BooleanOperation.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 
@@ -16,6 +18,16 @@ class BooleanExpression(
         return lhs.booleanOperation(rhs, operation)
     }
 
+//    override fun constrain(varKey: VariableExpression.VariableKey, set: IMoldableSet): IMoldableSet {
+//        val lhsConstrained = lhs.constrain(varKey, set)
+//        val rhsConstrained = rhs.constrain(varKey, set)
+//
+//        return when (operation) {
+//            AND -> lhsConstrained.intersect(rhsConstrained)
+//            OR -> lhsConstrained.union(rhsConstrained)
+//        }
+//    }
+
     override fun getVariables(resolved: Boolean): Set<VariableExpression> {
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
@@ -23,23 +35,23 @@ class BooleanExpression(
     override fun toString(): String {
         if (lhs == ConstantExpression.TRUE) {
             return when (operation) {
-                BooleanOperation.AND -> rhs.toString()
-                BooleanOperation.OR -> "TRUE"
+                AND -> rhs.toString()
+                OR -> "TRUE"
             }
         } else if (lhs == ConstantExpression.FALSE) {
             return when (operation) {
-                BooleanOperation.AND -> "FALSE"
-                BooleanOperation.OR -> rhs.toString()
+                AND -> "FALSE"
+                OR -> rhs.toString()
             }
         } else if (rhs == ConstantExpression.TRUE) {
             return when (operation) {
-                BooleanOperation.AND -> lhs.toString()
-                BooleanOperation.OR -> "TRUE"
+                AND -> lhs.toString()
+                OR -> "TRUE"
             }
         } else if (rhs == ConstantExpression.FALSE) {
             return when (operation) {
-                BooleanOperation.AND -> "FALSE"
-                BooleanOperation.OR -> lhs.toString()
+                AND -> "FALSE"
+                OR -> lhs.toString()
             }
         }
 

@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 
@@ -19,6 +20,11 @@ class ComparisonExpression(
 
         return lhs.comparisonOperation(rhs, comparison)
     }
+
+//    override fun constrain(varKey: VariableExpression.VariableKey, set: IMoldableSet): IMoldableSet {
+//        lhs.getVariables(false).find { it.getKey() == varKey }
+//        return set
+//    }
 
     override fun toString(): String {
         return "($lhs $comparison $rhs)"

@@ -60,20 +60,16 @@ class Context {
     }
 
     override fun toString(): String {
-        val deadStr = if (alive) "" else " (dead)"
         val variablesString =
             variables.entries.joinToString("\n") { entry ->
                 val expr = entry.value
                 val psi = entry.key
 
-                expr.getVariables(false).forEach {
-                    it.setResolvedExpr(GaveUpExpression.fromExpr(it))
-                }
                 val evaluated = expr.evaluate(ConstantExpression.TRUE)
 
                 "$psi ($evaluated):\n${expr.toString().prependIndent()}"
             }
-        return "Context$deadStr: {\n${variablesString.prependIndent()}\n}"
+        return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
     fun getVariables(): Map<PsiElement, IExpr> {
