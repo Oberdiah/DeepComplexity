@@ -15,6 +15,10 @@ class RepeatExpression(
         return exprToRepeat.getSetClass()
     }
 
+    override fun getBaseClass(): KClass<*> {
+        return exprToRepeat.getBaseClass()
+    }
+
     override fun evaluate(condition: IExprRetBool): IMoldableSet {
         TODO("Not yet implemented")
     }

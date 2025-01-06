@@ -18,6 +18,10 @@ class IfExpression(
         return trueExpr.getSetClass()
     }
 
+    override fun getBaseClass(): KClass<*> {
+        return trueExpr.getBaseClass()
+    }
+
     override fun evaluate(condition: IExprRetBool): IMoldableSet {
         val evaluatedCond = thisCondition.evaluate(condition)
 

@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
+import kotlin.reflect.KClass
 
 class ArithmeticExpression(
     val lhs: IExprRetNum,
@@ -11,6 +12,10 @@ class ArithmeticExpression(
 ) : IExprRetNum {
     override fun getVariables(resolved: Boolean): Set<VariableExpression> {
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
+    }
+
+    override fun getBaseClass(): KClass<*> {
+        return lhs.getBaseClass()
     }
 
     override fun evaluate(condition: IExprRetBool): NumberSet {

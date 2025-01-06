@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import kotlin.reflect.KClass
 
 object ConstantExpression {
     val TRUE = ConstExprBool(BooleanSet.TRUE)
@@ -48,6 +49,10 @@ object ConstantExpression {
         override fun evaluate(condition: IExprRetBool): NumberSet {
             return singleElementSet
         }
+
+        override fun getBaseClass(): KClass<*> {
+            return singleElementSet.getClass()
+        }
     }
 
     class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool {
@@ -59,6 +64,10 @@ object ConstantExpression {
     class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric {
         override fun evaluate(condition: IExprRetBool): GenericSet {
             return singleElementSet
+        }
+
+        override fun getBaseClass(): KClass<*> {
+            return singleElementSet.getClass()
         }
     }
 }

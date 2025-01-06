@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.weisj.jsvg.T
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceExpression
 import com.intellij.psi.PsiType
@@ -73,28 +74,28 @@ object Utilities {
         return this
     }
 
-    fun KClass<*>.getMaxValue(): DD {
-        when (this) {
-            Byte::class -> return DD.of(Byte.MAX_VALUE.toInt())
-            Short::class -> return DD.of(Short.MAX_VALUE.toInt())
-            Int::class -> return DD.of(Int.MAX_VALUE)
-            Long::class -> return DD.of(Long.MAX_VALUE)
-            Float::class -> return DD.of(Float.MAX_VALUE.toDouble())
-            Double::class -> return DD.of(Double.MAX_VALUE)
-        }
-        throw IllegalArgumentException("Unsupported type for max value")
+    fun <T : Number> KClass<*>.getMaxValue(): T {
+        return when (this) {
+            Byte::class -> Byte.MAX_VALUE
+            Short::class -> Short.MAX_VALUE
+            Int::class -> Int.MAX_VALUE
+            Long::class -> Long.MAX_VALUE
+            Float::class -> Float.MAX_VALUE
+            Double::class -> Double.MAX_VALUE
+            else -> throw IllegalArgumentException("Unsupported type for max value (got $this)")
+        } as T
     }
 
-    fun KClass<*>.getMinValue(): DD {
-        when (this) {
-            Byte::class -> return DD.of(Byte.MIN_VALUE.toInt())
-            Short::class -> return DD.of(Short.MIN_VALUE.toInt())
-            Int::class -> return DD.of(Int.MIN_VALUE)
-            Long::class -> return DD.of(Long.MIN_VALUE)
-            Float::class -> return DD.of(Float.MIN_VALUE.toDouble())
-            Double::class -> return DD.of(Double.MIN_VALUE)
-        }
-        throw IllegalArgumentException("Unsupported type for min value (got $this)")
+    fun <T : Number> KClass<*>.getMinValue(): T {
+        return when (this) {
+            Byte::class -> Byte.MIN_VALUE
+            Short::class -> Short.MIN_VALUE
+            Int::class -> Int.MIN_VALUE
+            Long::class -> Long.MIN_VALUE
+            Float::class -> Float.MIN_VALUE
+            Double::class -> Double.MIN_VALUE
+            else -> throw IllegalArgumentException("Unsupported type for min value (got $this)")
+        } as T
     }
 
     /**
@@ -114,5 +115,90 @@ object Utilities {
 
     inline fun <R> R?.orElse(block: () -> R): R {
         return this ?: block()
+    }
+
+    operator fun <T : Number> T.compareTo(other: T): Int {
+        return when (this) {
+            is Byte -> this.toInt().compareTo(other.toInt())
+            is Short -> this.toInt().compareTo(other.toInt())
+            is Int -> this.compareTo(other as Int)
+            is Long -> this.compareTo(other as Long)
+            is Float -> this.compareTo(other as Float)
+            is Double -> this.compareTo(other as Double)
+            else -> throw IllegalArgumentException("Unsupported type for comparison")
+        }
+    }
+
+    operator fun <T : Number> T.plus(other: T): T {
+        return when (this) {
+            is Byte -> (this.toByte() + other.toByte()).toByte()
+            is Short -> (this.toShort() + other.toShort()).toShort()
+            is Int -> this + other as Int
+            is Long -> this + other as Long
+            is Float -> this + other as Float
+            is Double -> this + other as Double
+            else -> throw IllegalArgumentException("Unsupported type for addition")
+        } as T // This cast shouldn't be necessary.
+    }
+
+    operator fun <T : Number> T.minus(other: T): T {
+        return when (this) {
+            is Byte -> (this.toByte() - other.toByte()).toByte()
+            is Short -> (this.toShort() - other.toShort()).toShort()
+            is Int -> this - other as Int
+            is Long -> this - other as Long
+            is Float -> this - other as Float
+            is Double -> this - other as Double
+            else -> throw IllegalArgumentException("Unsupported type for subtraction")
+        } as T // This cast shouldn't be necessary.
+    }
+
+    operator fun <T : Number> T.times(other: T): T {
+        return when (this) {
+            is Byte -> (this.toByte() * other.toByte()).toByte()
+            is Short -> (this.toShort() * other.toShort()).toShort()
+            is Int -> this * other as Int
+            is Long -> this * other as Long
+            is Float -> this * other as Float
+            is Double -> this * other as Double
+            else -> throw IllegalArgumentException("Unsupported type for multiplication")
+        } as T // This cast shouldn't be necessary.
+    }
+
+    operator fun <T : Number> T.div(other: T): T {
+        return when (this) {
+            is Byte -> (this.toByte() / other.toByte()).toByte()
+            is Short -> (this.toShort() / other.toShort()).toShort()
+            is Int -> this / other as Int
+            is Long -> this / other as Long
+            is Float -> this / other as Float
+            is Double -> this / other as Double
+            else -> throw IllegalArgumentException("Unsupported type for division")
+        } as T // This cast shouldn't be necessary.
+    }
+
+    // Min and max extension functions for Number
+    fun <T : Number> T.min(other: T): T {
+        return when (this) {
+            is Byte -> if (this < other.toByte()) this else other.toByte()
+            is Short -> if (this < other.toShort()) this else other.toShort()
+            is Int -> if (this < other.toInt()) this else other.toInt()
+            is Long -> if (this < other.toLong()) this else other.toLong()
+            is Float -> if (this < other.toFloat()) this else other.toFloat()
+            is Double -> if (this < other.toDouble()) this else other.toDouble()
+            else -> throw IllegalArgumentException("Unsupported type for min")
+        } as T
+    }
+
+    fun <T : Number> T.max(other: T): T {
+        return when (this) {
+            is Byte -> if (this > other.toByte()) this else other.toByte()
+            is Short -> if (this > other.toShort()) this else other.toShort()
+            is Int -> if (this > other.toInt()) this else other.toInt()
+            is Long -> if (this > other.toLong()) this else other.toLong()
+            is Float -> if (this > other.toFloat()) this else other.toFloat()
+            is Double -> if (this > other.toDouble()) this else other.toDouble()
+            else -> throw IllegalArgumentException("Unsupported type for max")
+        } as T
     }
 }

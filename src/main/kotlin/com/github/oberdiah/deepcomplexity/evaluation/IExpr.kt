@@ -5,7 +5,16 @@ import kotlin.reflect.KClass
 
 sealed interface IExpr {
     fun getVariables(resolved: Boolean): Set<VariableExpression>
+
+    /**
+     * The class of the set itself.
+     */
     fun getSetClass(): KClass<*>
+
+    /**
+     * The class of the elements in the set.
+     */
+    fun getBaseClass(): KClass<*>
     fun evaluate(condition: IExprRetBool): IMoldableSet
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
     fun asRetBool(): IExprRetBool? = this as? IExprRetBool
@@ -23,6 +32,10 @@ sealed interface IExprRetBool : IExpr {
     override fun evaluate(condition: IExprRetBool): BooleanSet
     override fun getSetClass(): KClass<*> {
         return BooleanSet::class
+    }
+
+    override fun getBaseClass(): KClass<*> {
+        return Boolean::class
     }
 }
 

@@ -5,6 +5,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import com.intellij.psi.PsiVariable
+import kotlin.reflect.KClass
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
@@ -31,24 +32,16 @@ interface VariableExpression : IExpr {
                 PsiTypes.intType(),
                 PsiTypes.longType(),
                 PsiTypes.floatType(),
-                PsiTypes.doubleType(),
-                    -> VariableNumber(key)
+                PsiTypes.doubleType() -> {
+                    val clazz = Utilities.psiTypeToKClass(type)
+                        ?: throw IllegalArgumentException("Unsupported type for variable expression")
+
+                    VariableNumber(key, clazz)
+                }
 
                 PsiTypes.booleanType() -> VariableBool(key)
                 else -> VariableGeneric(key)
             }
-        }
-
-        fun onTheFlyUnresolvedNumber(): VariableNumber {
-            return VariableNumber(null)
-        }
-
-        fun onTheFlyUnresolvedBool(): VariableBool {
-            return VariableBool(null)
-        }
-
-        fun onTheFlyUnresolvedGeneric(): VariableGeneric {
-            return VariableGeneric(null)
         }
     }
 
@@ -102,8 +95,7 @@ interface VariableExpression : IExpr {
         }
     }
 
-    class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),
-        IExprRetNum {
+    class VariableNumber(key: VariableKey?, val clazz: KClass<*>) : VariableImpl<IExprRetNum>(key), IExprRetNum {
         override fun setResolvedExpr(expr: IExpr) {
             resolvedInto = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
@@ -111,6 +103,10 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(condition: IExprRetBool): NumberSet {
             return (resolvedInto?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
+        }
+
+        override fun getBaseClass(): KClass<*> {
+            return clazz
         }
     }
 
@@ -123,6 +119,10 @@ interface VariableExpression : IExpr {
 
         override fun evaluate(condition: IExprRetBool): GenericSet {
             return (resolvedInto?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
+        }
+
+        override fun getBaseClass(): KClass<*> {
+            throw IllegalStateException("Base class for a generic is a strange concept...")
         }
     }
 }

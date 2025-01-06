@@ -10,9 +10,9 @@ interface GaveUpExpression : IExpr {
     companion object {
         fun fromExpr(expr: IExpr): GaveUpExpression {
             return when (expr.getSetClass()) {
-                NumberSet::class -> GaveUpExprNum
+                NumberSet::class -> GaveUpExprNum(expr.getBaseClass())
                 BooleanSet::class -> GaveUpExprBool
-                GenericSet::class -> GaveUpExprGeneric
+                GenericSet::class -> GaveUpExprGeneric(expr.getBaseClass())
                 else -> throw IllegalArgumentException("Unknown set class")
             }
         }
@@ -28,13 +28,17 @@ interface GaveUpExpression : IExpr {
         }
     }
 
-    data object GaveUpExprNum : GaveUpExpr(), IExprRetNum {
+    data class GaveUpExprNum(val clazz: KClass<*>) : GaveUpExpr(), IExprRetNum {
         override fun evaluate(condition: IExprRetBool): NumberSet {
-            return NumberSet.gaveUp()
+            return NumberSet.fullRange(clazz)
         }
 
         override fun getSetClass(): KClass<*> {
             return NumberSet::class
+        }
+
+        override fun getBaseClass(): KClass<*> {
+            return clazz
         }
     }
 
@@ -48,13 +52,17 @@ interface GaveUpExpression : IExpr {
         }
     }
 
-    data object GaveUpExprGeneric : GaveUpExpr(), IExprRetGeneric {
+    data class GaveUpExprGeneric(val clazz: KClass<*>) : GaveUpExpr(), IExprRetGeneric {
         override fun evaluate(condition: IExprRetBool): GenericSet {
             return TODO()
         }
 
         override fun getSetClass(): KClass<*> {
             return GenericSet::class
+        }
+
+        override fun getBaseClass(): KClass<*> {
+            return clazz
         }
     }
 }
