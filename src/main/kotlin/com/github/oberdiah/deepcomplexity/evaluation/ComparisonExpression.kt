@@ -14,13 +14,6 @@ class ComparisonExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun evaluate(condition: IExprRetBool): BooleanSet {
-        val lhs = lhs.evaluate(condition)
-        val rhs = rhs.evaluate(condition)
-
-        return lhs.comparisonOperation(rhs, comparison)
-    }
-
 //    override fun constrain(varKey: VariableExpression.VariableKey, set: IMoldableSet): IMoldableSet {
 //        lhs.getVariables(false).find { it.getKey() == varKey }
 //        return set

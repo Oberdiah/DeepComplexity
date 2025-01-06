@@ -18,13 +18,6 @@ class ArithmeticExpression(
         return lhs.getBaseClass()
     }
 
-    override fun evaluate(condition: IExprRetBool): NumberSet {
-        val lhs = lhs.evaluate(condition)
-        val rhs = rhs.evaluate(condition)
-
-        return lhs.arithmeticOperation(rhs, operation)
-    }
-
     override fun toString(): String {
         return "($lhs $operation $rhs)"
     }

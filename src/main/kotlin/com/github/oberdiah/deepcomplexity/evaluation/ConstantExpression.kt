@@ -35,7 +35,7 @@ object ConstantExpression {
         }
     }
 
-    sealed class ConstExpr<T>(protected val singleElementSet: T) : IExpr {
+    sealed class ConstExpr<T>(val singleElementSet: T) : IExpr {
         override fun toString(): String {
             return singleElementSet.toString()
         }
@@ -46,20 +46,12 @@ object ConstantExpression {
     }
 
     class ConstExprNum(singleElementSet: NumberSet) : ConstExpr<NumberSet>(singleElementSet), IExprRetNum {
-        override fun evaluate(condition: IExprRetBool): NumberSet {
-            return singleElementSet
-        }
-
         override fun getBaseClass(): KClass<*> {
             return singleElementSet.getClass()
         }
     }
 
-    class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool {
-        override fun evaluate(condition: IExprRetBool): BooleanSet {
-            return singleElementSet
-        }
-    }
+    class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool
 
     class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric {
         override fun evaluate(condition: IExprRetBool): GenericSet {

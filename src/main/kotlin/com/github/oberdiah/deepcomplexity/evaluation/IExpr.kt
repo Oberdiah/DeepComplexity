@@ -11,19 +11,14 @@ sealed interface IExpr {
      * The class of the elements in the set.
      */
     fun getBaseClass(): KClass<*>
-    fun evaluate(condition: IExprRetBool): IMoldableSet
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
     fun asRetBool(): IExprRetBool? = this as? IExprRetBool
     fun asRetGeneric(): IExprRetGeneric? = this as? IExprRetGeneric
 }
 
-sealed interface IExprRetNum : IExpr {
-    override fun evaluate(condition: IExprRetBool): NumberSet
-}
+sealed interface IExprRetNum : IExpr
 
 sealed interface IExprRetBool : IExpr {
-    override fun evaluate(condition: IExprRetBool): BooleanSet
-
     override fun getBaseClass(): KClass<*> {
         return Boolean::class
     }
@@ -35,5 +30,5 @@ sealed interface IExprRetBool : IExpr {
 }
 
 sealed interface IExprRetGeneric : IExpr {
-    override fun evaluate(condition: IExprRetBool): GenericSet
+    fun evaluate(condition: IExprRetBool): GenericSet
 }

@@ -11,13 +11,6 @@ class BooleanExpression(
     val rhs: IExprRetBool,
     val operation: BooleanOperation
 ) : IExprRetBool {
-    override fun evaluate(condition: IExprRetBool): BooleanSet {
-        val lhs = lhs.evaluate(condition)
-        val rhs = rhs.evaluate(condition)
-
-        return lhs.booleanOperation(rhs, operation)
-    }
-
 //    override fun constrain(varKey: VariableExpression.VariableKey, set: IMoldableSet): IMoldableSet {
 //        val lhsConstrained = lhs.constrain(varKey, set)
 //        val rhsConstrained = rhs.constrain(varKey, set)

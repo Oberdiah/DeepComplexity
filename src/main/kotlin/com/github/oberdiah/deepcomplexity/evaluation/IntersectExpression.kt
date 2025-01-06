@@ -12,10 +12,6 @@ class IntersectExpression(val lhs: IExpr, val rhs: IExpr) : IExpr {
         return lhs.getBaseClass()
     }
 
-    override fun evaluate(condition: IExprRetBool): IMoldableSet {
-        return lhs.evaluate(condition).intersect(rhs.evaluate(condition))
-    }
-
     override fun toString(): String {
         return "($lhs ∩ $rhs)"
     }

@@ -1,9 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
-import com.github.oberdiah.deepcomplexity.evaluation.GaveUpExpression
-import com.github.oberdiah.deepcomplexity.evaluation.IExpr
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
+import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.intellij.psi.*
 import kotlinx.collections.immutable.toImmutableMap
 
@@ -65,7 +62,7 @@ class Context {
                 val expr = entry.value
                 val psi = entry.key
 
-                val evaluated = expr.evaluate(ConstantExpression.TRUE)
+                val evaluated = ExprOperations.evaluate(expr, ConstantExpression.TRUE)
 
                 "$psi ($evaluated):\n${expr.toString().prependIndent()}"
             }
