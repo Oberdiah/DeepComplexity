@@ -1,5 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
+import com.github.oberdiah.deepcomplexity.evaluation.GaveUpExpression
 import com.github.oberdiah.deepcomplexity.evaluation.IExpr
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.intellij.psi.*
@@ -60,7 +62,28 @@ class Context {
     override fun toString(): String {
         val deadStr = if (alive) "" else " (dead)"
         val variablesString =
-            variables.entries.joinToString("\n") { "${it.key}:\n${it.value.toString().prependIndent()}" }
+            variables.entries.joinToString("\n") { entry ->
+                val expr = entry.value
+                val psi = entry.key
+                "$psi:\n${expr.toString().prependIndent()}"
+            }
+        return "Context$deadStr: {\n${variablesString.prependIndent()}\n}"
+    }
+
+    fun toStringWithEvaluation(): String {
+        val deadStr = if (alive) "" else " (dead)"
+        val variablesString =
+            variables.entries.joinToString("\n") { entry ->
+                val expr = entry.value
+                val psi = entry.key
+
+                expr.getVariables(false).forEach {
+                    it.setResolvedExpr(GaveUpExpression.fromExpr(it))
+                }
+                val evaluated = expr.evaluate(ConstantExpression.TRUE)
+
+                "$psi ($evaluated):\n${expr.toString().prependIndent()}"
+            }
         return "Context$deadStr: {\n${variablesString.prependIndent()}\n}"
     }
 

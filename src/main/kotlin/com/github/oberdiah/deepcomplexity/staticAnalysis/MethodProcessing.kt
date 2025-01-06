@@ -21,7 +21,7 @@ object MethodProcessing {
         method.body?.let { body ->
             processPsiElement(body, context)
         }
-        println(context)
+        println(context.toStringWithEvaluation())
     }
 
     private fun processPsiElement(

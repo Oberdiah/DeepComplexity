@@ -100,10 +100,6 @@ interface VariableExpression : IExpr {
         override fun evaluate(condition: IExprRetBool): BooleanSet {
             return (resolved?.evaluate(condition) ?: throw IllegalStateException("Unresolved expression"))
         }
-
-        override fun getConstraints(): Map<VariableExpression, IExpr> {
-            return resolved?.getConstraints() ?: mapOf(this to this)
-        }
     }
 
     class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),

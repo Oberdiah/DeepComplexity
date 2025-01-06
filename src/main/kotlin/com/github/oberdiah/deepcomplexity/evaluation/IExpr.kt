@@ -9,6 +9,7 @@ sealed interface IExpr {
     fun evaluate(condition: IExprRetBool): IMoldableSet
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
     fun asRetBool(): IExprRetBool? = this as? IExprRetBool
+    fun asRetGeneric(): IExprRetGeneric? = this as? IExprRetGeneric
 }
 
 sealed interface IExprRetNum : IExpr {
@@ -23,12 +24,6 @@ sealed interface IExprRetBool : IExpr {
     override fun getSetClass(): KClass<*> {
         return BooleanSet::class
     }
-
-    /**
-     * Returns, for every unresolved we depend on, an expression that when evaluated would return the set
-     * of all values that would result in the condition being true.
-     */
-    fun getConstraints(): Map<VariableExpression, IExpr>
 }
 
 sealed interface IExprRetGeneric : IExpr {

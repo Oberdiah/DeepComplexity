@@ -27,21 +27,21 @@ object LoopEvaluation {
                             context.assignVar(key, repeated)
                         } else {
                             // D:
-                            context.assignVar(key, GaveUpExpression(expr))
+                            context.assignVar(key, GaveUpExpression.fromExpr(expr))
                         }
                     } else {
                         // :(
-                        context.assignVar(key, GaveUpExpression(expr))
+                        context.assignVar(key, GaveUpExpression.fromExpr(expr))
                     }
                 } else {
                     // We might be able to deal with this with a bit more work, but
                     // I'm not going to bother for now.
-                    context.assignVar(key, GaveUpExpression(expr))
+                    context.assignVar(key, GaveUpExpression.fromExpr(expr))
                 }
             } else {
                 // We can't deal with this in general.
                 // Some edge cases might be doable in certain situations, for now I'm not going to bother.
-                context.assignVar(key, GaveUpExpression(expr))
+                context.assignVar(key, GaveUpExpression.fromExpr(expr))
             }
         }
     }

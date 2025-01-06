@@ -20,18 +20,6 @@ class ComparisonExpression(
         return lhs.comparisonOperation(rhs, comparison)
     }
 
-    override fun getConstraints(): Map<VariableExpression, IExpr> {
-        val constraints = mutableMapOf<VariableExpression, IExpr>()
-
-        for (unresolved in getVariables(false)) {
-            val expr = TODO()
-
-            constraints[unresolved] = expr
-        }
-
-        return constraints
-    }
-
     override fun toString(): String {
         return "($lhs $comparison $rhs)"
     }

@@ -7,10 +7,6 @@ class InvertExpression(val expr: IExprRetBool) : IExprRetBool {
         return expr.evaluate(condition).invert() as BooleanSet
     }
 
-    override fun getConstraints(): Map<VariableExpression, IExpr> {
-        return expr.getConstraints().mapValues { (_, expr) -> InvertExpression(expr as IExprRetBool) }
-    }
-
     override fun getVariables(resolved: Boolean): Set<VariableExpression> {
         return expr.getVariables(resolved)
     }

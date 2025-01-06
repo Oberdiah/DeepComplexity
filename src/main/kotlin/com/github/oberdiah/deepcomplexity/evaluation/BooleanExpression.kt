@@ -20,10 +20,6 @@ class BooleanExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun getConstraints(): Map<VariableExpression, IExpr> {
-        TODO("Not yet implemented")
-    }
-
     override fun toString(): String {
         return "($lhs $operation $rhs)"
     }

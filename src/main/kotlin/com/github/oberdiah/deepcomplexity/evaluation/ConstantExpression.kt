@@ -12,7 +12,7 @@ object ConstantExpression {
         // When adding to this it is likely you'll also want to add to Unresolved.fromElement
         return when (value) {
             is Boolean -> ConstExprBool(BooleanSet.fromBoolean(value))
-            is Number -> ConstExprNum(NumberSet.singleValue(value))
+            is Number -> fromAny(value)
             is String -> ConstExprGeneric(GenericSet.singleValue(value))
             else -> ConstExprGeneric(GenericSet.singleValue(value))
         }
@@ -22,8 +22,16 @@ object ConstantExpression {
         return ConstExprBool(BooleanSet.fromBoolean(bool))
     }
 
-    fun fromAny(num: Number): IExprRetNum {
-        return ConstExprNum(NumberSet.singleValue(num))
+    fun fromAny(value: Number): IExprRetNum {
+        return when (value) {
+            is Byte -> ConstExprNum(NumberSet.singleValue(value))
+            is Short -> ConstExprNum(NumberSet.singleValue(value))
+            is Int -> ConstExprNum(NumberSet.singleValue(value))
+            is Long -> ConstExprNum(NumberSet.singleValue(value))
+            is Float -> ConstExprNum(NumberSet.singleValue(value))
+            is Double -> ConstExprNum(NumberSet.singleValue(value))
+            else -> throw IllegalArgumentException("Unknown number type")
+        }
     }
 
     abstract class ConstExpr<T>(protected val singleElementSet: T) : IExpr {
@@ -45,10 +53,6 @@ object ConstantExpression {
     class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool {
         override fun evaluate(condition: IExprRetBool): BooleanSet {
             return singleElementSet
-        }
-
-        override fun getConstraints(): Map<VariableExpression, IExpr> {
-            return mapOf()
         }
     }
 

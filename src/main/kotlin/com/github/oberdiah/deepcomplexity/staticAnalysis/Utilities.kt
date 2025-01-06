@@ -94,7 +94,7 @@ object Utilities {
             Float::class -> return DD.of(Float.MIN_VALUE.toDouble())
             Double::class -> return DD.of(Double.MIN_VALUE)
         }
-        throw IllegalArgumentException("Unsupported type for min value")
+        throw IllegalArgumentException("Unsupported type for min value (got $this)")
     }
 
     /**
