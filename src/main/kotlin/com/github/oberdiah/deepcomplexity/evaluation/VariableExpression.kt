@@ -70,23 +70,15 @@ interface VariableExpression : IExpr {
         var condition: IExprRetBool = ConstantExpression.TRUE
 
         override fun addCondition(condition: IExprRetBool, context: Context) {
-            val resolved = this.resolved
-            if (resolved != null) {
-                // We don't expect this to be called because at the moment addCondition walks the unresolved tree,
-                // but just in case.
-                resolved.addCondition(condition, context)
-                return
-            }
-
             // This is very important. We only want to accept conditions that apply to us.
             if (key == null || context != key.context) {
                 return
             }
 
             if (this.condition == ConstantExpression.TRUE) {
-                this.condition = condition
+                this.condition = condition.deepClone()
             } else {
-                this.condition = BooleanExpression(this.condition, condition, BooleanOperation.AND)
+                this.condition = BooleanExpression(this.condition, condition.deepClone(), BooleanOperation.AND)
             }
         }
 
@@ -135,7 +127,7 @@ interface VariableExpression : IExpr {
     class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),
         IExprRetBool {
         override fun setResolvedExpr(expr: IExpr) {
-            expr.addCondition(condition.deepClone(), getKey().context)
+            expr.addCondition(condition, getKey().context)
             resolved = (expr as? IExprRetBool)
                 ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
         }
@@ -159,7 +151,7 @@ interface VariableExpression : IExpr {
     class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),
         IExprRetNum {
         override fun setResolvedExpr(expr: IExpr) {
-            expr.addCondition(condition.deepClone(), getKey().context)
+            expr.addCondition(condition, getKey().context)
             resolved = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
@@ -179,7 +171,7 @@ interface VariableExpression : IExpr {
     class VariableGeneric(key: VariableKey?) : VariableImpl<IExprRetGeneric>(key),
         IExprRetGeneric {
         override fun setResolvedExpr(expr: IExpr) {
-            expr.addCondition(condition.deepClone(), getKey().context)
+            expr.addCondition(condition, getKey().context)
             resolved = (expr as? IExprRetGeneric)
                 ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
         }
