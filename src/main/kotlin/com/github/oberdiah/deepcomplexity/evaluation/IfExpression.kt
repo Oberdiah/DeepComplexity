@@ -28,9 +28,22 @@ class IfExpression(
         val trueCondition = BooleanExpression(thisCondition, condition, BooleanOperation.AND)
         val falseCondition = BooleanExpression(InvertExpression(thisCondition), condition, BooleanOperation.AND)
         return when (evaluatedCond) {
-            TRUE -> trueExpr.evaluate(trueCondition)
-            FALSE -> falseExpr.evaluate(falseCondition)
-            BOTH -> trueExpr.evaluate(trueCondition).union(falseExpr.evaluate(falseCondition))
+            TRUE -> {
+                val v = trueExpr.evaluate(trueCondition)
+                v
+            }
+
+            FALSE -> {
+                val v = falseExpr.evaluate(falseCondition)
+                v
+            }
+
+            BOTH -> {
+                val trueValue = trueExpr.evaluate(trueCondition)
+                val falseValue = falseExpr.evaluate(falseCondition)
+                trueValue.union(falseValue)
+            }
+
             NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
         }
     }

@@ -4,15 +4,23 @@ import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.Binary
 import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation.*
+import com.github.oberdiah.deepcomplexity.settings.Settings
+import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
+import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMaxValue
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMinValue
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoint
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
+import org.apache.commons.lang3.NumberRange
+import java.math.BigInteger
 import kotlin.reflect.KClass
 
 sealed interface NumberSet : IMoldableSet {
@@ -27,24 +35,24 @@ sealed interface NumberSet : IMoldableSet {
     companion object {
         fun newFromClass(clazz: KClass<*>): NumberSet {
             return when (clazz) {
-                Double::class -> FloatingPointSet<Double>(clazz)
-                Float::class -> FloatingPointSet<Float>(clazz)
-                Long::class -> IntegerSet<Long>(clazz)
-                Int::class -> IntegerSet<Int>(clazz)
-                Short::class -> IntegerSet<Short>(clazz)
-                Byte::class -> IntegerSet<Byte>(clazz)
+                Double::class -> NumberSetImpl<Double>(clazz)
+                Float::class -> NumberSetImpl<Float>(clazz)
+                Long::class -> NumberSetImpl<Long>(clazz)
+                Int::class -> NumberSetImpl<Int>(clazz)
+                Short::class -> NumberSetImpl<Short>(clazz)
+                Byte::class -> NumberSetImpl<Byte>(clazz)
                 else -> throw IllegalArgumentException("Unknown number class")
             }
         }
 
         fun <T : Number> newFromClassTyped(clazz: KClass<*>): NumberSetImpl<T> {
             return when (clazz) {
-                Double::class -> FloatingPointSet(clazz)
-                Float::class -> FloatingPointSet(clazz)
-                Long::class -> IntegerSet(clazz)
-                Int::class -> IntegerSet(clazz)
-                Short::class -> IntegerSet(clazz)
-                Byte::class -> IntegerSet(clazz)
+                Double::class -> NumberSetImpl(clazz)
+                Float::class -> NumberSetImpl(clazz)
+                Long::class -> NumberSetImpl(clazz)
+                Int::class -> NumberSetImpl(clazz)
+                Short::class -> NumberSetImpl(clazz)
+                Byte::class -> NumberSetImpl(clazz)
                 else -> throw IllegalArgumentException("Unknown number class")
             }
         }
@@ -62,11 +70,11 @@ sealed interface NumberSet : IMoldableSet {
         }
     }
 
-    abstract class NumberSetImpl<T : Number>(private val clazz: KClass<*>) : NumberSet {
+    class NumberSetImpl<T : Number>(private val clazz: KClass<*>) : NumberSet {
         /**
          * These ranges are always sorted and never overlap.
          */
-        private val ranges = mutableListOf<NumberRange<T>>()
+        private val ranges = mutableListOf<NumberRange>()
 
         /**
          * Adds a range to the set. No checks are performed.
@@ -93,9 +101,7 @@ sealed interface NumberSet : IMoldableSet {
                 return ranges[0].start.toString()
             }
 
-            return ranges.joinToString(", ") {
-                "[${it.start}, ${it.end}]"
-            }
+            return ranges.joinToString(", ")
         }
 
         override fun getClass(): KClass<*> {
@@ -130,7 +136,7 @@ sealed interface NumberSet : IMoldableSet {
             val newSet = newFromClassTyped<T>(clazz)
             for (range in ranges) {
                 for (otherRange in castToThisType(other).ranges) {
-                    val values: Iterable<NumberRange<T>> = when (operation) {
+                    val values: Iterable<NumberRange> = when (operation) {
                         ADDITION -> range.addition(otherRange)
                         SUBTRACTION -> range.subtraction(otherRange)
                         MULTIPLICATION -> range.multiplication(otherRange)
@@ -195,12 +201,12 @@ sealed interface NumberSet : IMoldableSet {
             }
 
             ranges.sortWith { a, b -> a.start.compareTo(b.start) }
-            val newRanges = mutableListOf<NumberRange<T>>()
+            val newRanges = mutableListOf<NumberRange>()
             var currentRange = ranges[0]
             for (i in 1 until ranges.size) {
                 val nextRange = ranges[i]
                 if (currentRange.end >= nextRange.start) {
-                    currentRange = NumberRange(currentRange.start, nextRange.end)
+                    currentRange = NumberRange(currentRange.start, nextRange.end.max(currentRange.end))
                 } else {
                     newRanges.add(currentRange)
                     currentRange = nextRange
@@ -217,107 +223,156 @@ sealed interface NumberSet : IMoldableSet {
         /**
          * The start may be equal to the end.
          */
-        private inner class NumberRange<T : Number>(val start: T, val end: T) {
-            fun contains(other: T): Boolean {
-                return start <= other && other <= end
+        private inner class NumberRange(val start: T, val end: T) {
+            override fun toString(): String {
+                if (start == end) {
+                    return start.toString()
+                }
+
+                return "[$start, $end]"
             }
 
-            fun addition(other: NumberRange<T>): Iterable<NumberRange<T>> {
-                return resolvePotentialOverflow(
-                    start + other.start,
-                    end + other.end,
-                )
+            fun addition(other: NumberRange): Iterable<NumberRange> {
+                return if (clazz.isFloatingPoint()) {
+                    listOf(NumberRange(start + other.start, end + other.end))
+                } else {
+                    resolvePotentialOverflow(
+                        BigInteger.valueOf(start.toLong()).add(BigInteger.valueOf(other.start.toLong())),
+                        BigInteger.valueOf(end.toLong()).add(BigInteger.valueOf(other.end.toLong())),
+                    )
+                }
             }
 
-            fun subtraction(other: NumberRange<T>): Iterable<NumberRange<T>> {
-                return resolvePotentialOverflow(
-                    start - other.start,
-                    end - other.end,
-                )
+            fun subtraction(other: NumberRange): Iterable<NumberRange> {
+                return if (clazz.isFloatingPoint()) {
+                    listOf(NumberRange(start - other.end, end - other.start))
+                } else {
+                    resolvePotentialOverflow(
+                        BigInteger.valueOf(start.toLong()).subtract(BigInteger.valueOf(other.end.toLong())),
+                        BigInteger.valueOf(end.toLong()).subtract(BigInteger.valueOf(other.start.toLong())),
+                    )
+                }
             }
 
-            fun multiplication(other: NumberRange<T>): Iterable<NumberRange<T>> {
-                val a = start * other.start
-                val b = start * other.end
-                val c = end * other.start
-                val d = end * other.end
-                return resolvePotentialOverflow(
-                    a.min(b).min(c).min(d),
-                    a.max(b).max(c).max(d),
-                )
+            fun multiplication(other: NumberRange): Iterable<NumberRange> {
+                return if (clazz.isFloatingPoint()) {
+                    val a = start * other.start
+                    val b = start * other.end
+                    val c = end * other.start
+                    val d = end * other.end
+                    listOf(
+                        NumberRange(
+                            a.min(b).min(c).min(d),
+                            a.max(b).max(c).max(d),
+                        )
+                    )
+                } else {
+                    val a = multiply(start, other.start)
+                    val b = multiply(end, other.start)
+                    val c = multiply(start, other.end)
+                    val d = multiply(end, other.end)
+
+                    resolvePotentialOverflow(
+                        a.min(b).min(c).min(d),
+                        a.max(b).max(c).max(d),
+                    )
+                }
             }
 
-            fun division(other: NumberRange<T>): Iterable<NumberRange<T>> {
-                val a = start / other.start
-                val b = start / other.end
-                val c = end / other.start
-                val d = end / other.end
-                return resolvePotentialOverflow(
-                    a.min(b).min(c).min(d),
-                    a.max(b).max(c).max(d),
-                )
+            fun division(other: NumberRange): Iterable<NumberRange> {
+                return if (clazz.isFloatingPoint()) {
+                    val a = start / other.start
+                    val b = start / other.end
+                    val c = end / other.start
+                    val d = end / other.end
+                    listOf(
+                        NumberRange(
+                            a.min(b).min(c).min(d),
+                            a.max(b).max(c).max(d),
+                        )
+                    )
+                } else {
+                    val a = divide(start, other.start)
+                    val b = divide(end, other.start)
+                    val c = divide(start, other.end)
+                    val d = divide(end, other.end)
+
+                    resolvePotentialOverflow(
+                        a.min(b).min(c).min(d),
+                        a.max(b).max(c).max(d),
+                    )
+                }
             }
 
-            private fun resolvePotentialOverflow(min: T, max: T): Iterable<NumberRange<T>> {
-                // Not bothering with all this for now...
-                return listOf(NumberRange(min, max))
+            private fun multiply(a: Number, b: Number): BigInteger {
+                return BigInteger.valueOf(a.toLong()).multiply(BigInteger.valueOf(b.toLong()))
+            }
 
-//                val minValue = clazz.getMinValue()
-//                val maxValue = clazz.getMaxValue()
-//
-//                if (clazz == Double::class || clazz == Float::class) {
-//                    val biggest = if (max > maxValue) DD_POSITIVE_INFINITY else max
-//                    val smallest = if (min < minValue) DD_NEGATIVE_INFINITY else min
-//                    return listOf(NumberRange(smallest, biggest))
-//                }
-//
-//                when (Settings.overflowBehaviour) {
-//                    CLAMP -> {
-//                        return listOf(NumberRange(min.max(minValue), max.min(maxValue)))
-//                    }
-//
-//                    ALLOW -> {
-//                        // Check if we're overflowing and if we are, we must split the range.
-//                        // If we're overflowing in both directions we can just return the full range.
-//
-//                        if (min < minValue && max > maxValue) {
-//                            return listOf(NumberRange(minValue, maxValue))
-//                        } else if (min < minValue) {
-//                            val wrappedMin = min.add(clazz.getSetSize())
-//                            if (wrappedMin < minValue) {
-//                                // We're overflowing so much in a single direction
-//                                // that the overflow will cover the full range anyway.
-//                                return listOf(NumberRange(minValue, maxValue))
-//                            }
-//                            return listOf(
-//                                NumberRange(wrappedMin, maxValue),
-//                                NumberRange(minValue, max)
-//                            )
-//                        } else if (max > maxValue) {
-//                            val wrappedMax = max.subtract(clazz.getSetSize())
-//                            if (wrappedMax > maxValue) {
-//                                // We're overflowing so much in a single direction
-//                                // that the overflow will cover the full range anyway.
-//                                return listOf(NumberRange(minValue, maxValue))
-//                            }
-//                            return listOf(
-//                                NumberRange(minValue, wrappedMax),
-//                                NumberRange(min, maxValue)
-//                            )
-//                        } else {
-//                            return listOf(NumberRange(min, max))
-//                        }
-//                    }
-//                }
+            private fun divide(a: Number, b: Number): BigInteger {
+                if (b.toLong() == 0L) {
+                    // Could potentially warn of overflow here one day?
+                    return if (a > 0) {
+                        BigInteger.valueOf(clazz.getMaxValue().toLong())
+                    } else {
+                        BigInteger.valueOf(clazz.getMinValue().toLong())
+                    }
+                }
+
+                return BigInteger.valueOf(a.toLong()).divide(BigInteger.valueOf(b.toLong()))
+            }
+
+            private fun bigIntToT(v: BigInteger): T {
+                return v.longValueExact().castInto(clazz)
+            }
+
+            private fun resolvePotentialOverflow(min: BigInteger, max: BigInteger): Iterable<NumberRange> {
+                val minValue = BigInteger.valueOf(clazz.getMinValue().toLong())
+                val maxValue = BigInteger.valueOf(clazz.getMaxValue().toLong())
+
+                when (Settings.overflowBehaviour) {
+                    CLAMP -> {
+                        return listOf(
+                            NumberRange(
+                                bigIntToT(min.max(minValue)),
+                                bigIntToT(max.min(maxValue))
+                            )
+                        )
+                    }
+
+                    ALLOW -> {
+                        // Check if we're overflowing and if we are, we must split the range.
+                        // If we're overflowing in both directions we can just return the full range.
+
+                        if (min < minValue && max > maxValue) {
+                            return listOf(NumberRange(bigIntToT(minValue), bigIntToT(maxValue)))
+                        } else if (min < minValue) {
+                            val wrappedMin = min.add(clazz.getSetSize())
+                            if (wrappedMin < minValue) {
+                                // We're overflowing so much in a single direction
+                                // that the overflow will cover the full range anyway.
+                                return listOf(NumberRange(bigIntToT(minValue), bigIntToT(maxValue)))
+                            }
+                            return listOf(
+                                NumberRange(bigIntToT(wrappedMin), bigIntToT(maxValue)),
+                                NumberRange(bigIntToT(minValue), bigIntToT(max))
+                            )
+                        } else if (max > maxValue) {
+                            val wrappedMax = max.subtract(clazz.getSetSize())
+                            if (wrappedMax > maxValue) {
+                                // We're overflowing so much in a single direction
+                                // that the overflow will cover the full range anyway.
+                                return listOf(NumberRange(bigIntToT(minValue), bigIntToT(maxValue)))
+                            }
+                            return listOf(
+                                NumberRange(bigIntToT(minValue), bigIntToT(wrappedMax)),
+                                NumberRange(bigIntToT(min), bigIntToT(maxValue))
+                            )
+                        } else {
+                            return listOf(NumberRange(bigIntToT(min), bigIntToT(max)))
+                        }
+                    }
+                }
             }
         }
-    }
-
-    class FloatingPointSet<T : Number>(clazz: KClass<*>) : NumberSetImpl<T>(clazz) {
-
-    }
-
-    class IntegerSet<T : Number>(clazz: KClass<*>) : NumberSetImpl<T>(clazz) {
-
     }
 }

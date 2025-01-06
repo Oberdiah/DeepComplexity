@@ -6,6 +6,7 @@ import com.intellij.psi.PsiReferenceExpression
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import org.apache.commons.numbers.core.DD
+import java.math.BigInteger
 import kotlin.reflect.KClass
 
 object Utilities {
@@ -74,7 +75,7 @@ object Utilities {
         return this
     }
 
-    fun <T : Number> KClass<*>.getMaxValue(): T {
+    fun KClass<*>.getMaxValue(): Number {
         return when (this) {
             Byte::class -> Byte.MAX_VALUE
             Short::class -> Short.MAX_VALUE
@@ -83,10 +84,10 @@ object Utilities {
             Float::class -> Float.MAX_VALUE
             Double::class -> Double.MAX_VALUE
             else -> throw IllegalArgumentException("Unsupported type for max value (got $this)")
-        } as T
+        }
     }
 
-    fun <T : Number> KClass<*>.getMinValue(): T {
+    fun KClass<*>.getMinValue(): Number {
         return when (this) {
             Byte::class -> Byte.MIN_VALUE
             Short::class -> Short.MIN_VALUE
@@ -95,22 +96,39 @@ object Utilities {
             Float::class -> Float.MIN_VALUE
             Double::class -> Double.MIN_VALUE
             else -> throw IllegalArgumentException("Unsupported type for min value (got $this)")
-        } as T
+        }
     }
 
     /**
      * The length of the set of possible values of this type.
      */
-    fun KClass<*>.getSetSize(): DD {
+    fun KClass<*>.getSetSize(): BigInteger {
         when (this) {
-            Byte::class -> return DD.of(Byte.MAX_VALUE.toInt() - Byte.MIN_VALUE.toInt())
-            Short::class -> return DD.of(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt())
-            Int::class -> return DD.of(Int.MAX_VALUE).subtract(DD.of(Int.MIN_VALUE))
-            // This is a bit suspicious — might be exceeding the DD precision threshold,
-            // I've not checked.
-            Long::class -> return DD.of(Long.MAX_VALUE).subtract(DD.of(Long.MIN_VALUE))
+            Byte::class -> return BigInteger.valueOf(Byte.MAX_VALUE.toLong() - Byte.MIN_VALUE.toLong())
+            Short::class -> return BigInteger.valueOf(Short.MAX_VALUE.toLong() - Short.MIN_VALUE.toLong())
+            Int::class -> return BigInteger.valueOf(Int.MAX_VALUE.toLong() - Int.MIN_VALUE.toLong())
+            Long::class -> return BigInteger.valueOf(Long.MAX_VALUE).subtract(BigInteger.valueOf(Long.MIN_VALUE))
         }
         throw IllegalArgumentException("Unsupported type for zero value")
+    }
+
+    fun KClass<*>.isFloatingPoint(): Boolean {
+        return when (this) {
+            Float::class, Double::class -> true
+            else -> false
+        }
+    }
+
+    fun <T : Number> Number.castInto(target: KClass<*>): T {
+        return when (target) {
+            Byte::class -> this.toByte()
+            Short::class -> this.toShort()
+            Int::class -> this.toInt()
+            Long::class -> this.toLong()
+            Float::class -> this.toFloat()
+            Double::class -> this.toDouble()
+            else -> throw IllegalArgumentException("Unsupported type for cast")
+        } as T // This cast shouldn't be necessary.
     }
 
     inline fun <R> R?.orElse(block: () -> R): R {
@@ -131,8 +149,8 @@ object Utilities {
 
     operator fun <T : Number> T.plus(other: T): T {
         return when (this) {
-            is Byte -> (this.toByte() + other.toByte()).toByte()
-            is Short -> (this.toShort() + other.toShort()).toShort()
+            is Byte -> (this + other.toByte()).toByte()
+            is Short -> (this + other.toShort()).toShort()
             is Int -> this + other as Int
             is Long -> this + other as Long
             is Float -> this + other as Float
@@ -143,8 +161,8 @@ object Utilities {
 
     operator fun <T : Number> T.minus(other: T): T {
         return when (this) {
-            is Byte -> (this.toByte() - other.toByte()).toByte()
-            is Short -> (this.toShort() - other.toShort()).toShort()
+            is Byte -> (this - other.toByte()).toByte()
+            is Short -> (this - other.toShort()).toShort()
             is Int -> this - other as Int
             is Long -> this - other as Long
             is Float -> this - other as Float
