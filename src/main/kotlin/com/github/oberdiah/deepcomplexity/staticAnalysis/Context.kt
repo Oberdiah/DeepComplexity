@@ -42,8 +42,8 @@ class Context {
             val allKeys = a.variables.keys + b.variables.keys
 
             for (key in allKeys) {
-                val aVal = a.variables[key] ?: resultingContext.getVar(key)
-                val bVal = b.variables[key] ?: resultingContext.getVar(key)
+                val aVal = a.variables[key] ?: a.getVar(key)
+                val bVal = b.variables[key] ?: b.getVar(key)
                 resultingContext.variables[key] = how(aVal, bVal)
             }
 
@@ -86,8 +86,8 @@ class Context {
                 if (resolvedKey.context == later) {
                     val resolved = variables[resolvedKey.element]
                     if (resolved != null) {
-//                        resolvedKey.context = this
-                        unresolved.setResolvedExpr(resolved)
+                        resolvedKey.context = this
+                        unresolved.setResolvedExpr(resolved.deepClone())
                     }
                 }
             }
@@ -100,7 +100,7 @@ class Context {
 
         // Finally, let's re-check our conditions in case we have any new ones that can apply.
         for (value in variables.values) {
-            for (unresolved in value.getVariables(true)) {
+            for (unresolved in value.getVariables(false)) {
                 unresolved.checkConstraints()
             }
         }

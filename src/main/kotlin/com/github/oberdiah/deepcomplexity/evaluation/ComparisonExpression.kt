@@ -13,8 +13,8 @@ class ComparisonExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun deepClone(): IExpr {
-        return ComparisonExpression(lhs.deepClone() as IExprRetNum, rhs.deepClone() as IExprRetNum, comparison)
+    override fun deepClone(): IExprRetBool {
+        return ComparisonExpression(lhs.deepClone(), rhs.deepClone(), comparison)
     }
 
     override fun evaluate(): BooleanSet {

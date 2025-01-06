@@ -19,7 +19,7 @@ class InvertExpression(val expr: IExprRetBool) : IExprRetBool {
         return "!$expr"
     }
 
-    override fun deepClone(): IExpr {
-        return InvertExpression(expr.deepClone() as IExprRetBool)
+    override fun deepClone(): IExprRetBool {
+        return InvertExpression(expr.deepClone())
     }
 }

@@ -20,8 +20,8 @@ class BooleanExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun deepClone(): IExpr {
-        return BooleanExpression(lhs.deepClone() as IExprRetBool, rhs.deepClone() as IExprRetBool, operation)
+    override fun deepClone(): IExprRetBool {
+        return BooleanExpression(lhs.deepClone(), rhs.deepClone(), operation)
     }
 
     override fun getConstraints(): Map<VariableExpression, IExpr> {

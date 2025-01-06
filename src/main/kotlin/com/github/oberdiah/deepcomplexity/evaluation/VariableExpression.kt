@@ -70,7 +70,7 @@ interface VariableExpression : IExpr {
         var constraint: IExpr = GaveUpExpression(this)
 
         // Kept around so we can check it again in future for constraints as it evolves.
-        val conditions = mutableListOf<IExprRetBool>()
+        private val conditions = mutableListOf<IExprRetBool>()
 
         override fun addCondition(condition: IExprRetBool, context: Context) {
             // This is very important. We only want to accept conditions that apply to us.
@@ -79,35 +79,33 @@ interface VariableExpression : IExpr {
             }
 
             this.conditions.add(condition)
-
-            checkConstraints()
+            checkConstraint(condition)
         }
 
         override fun checkConstraints() {
-            val resolvedExpr = this.resolved
-            if (resolvedExpr == null) {
-                check(key)
-            } else {
-                for (variable in resolvedExpr.getVariables(false)) {
-                    check(variable.getKey())
-                }
+            for (condition in conditions) {
+                checkConstraint(condition)
             }
         }
 
-        private fun check(variableKey: VariableKey?) {
+        private fun checkConstraint(condition: IExprRetBool) {
+            // Do the complicated work of converting from the condition to a constraint.
+            // If the constraint doesn't contain us, it doesn't concern us :)
+            if (condition.getVariables(false).any { it.getKey() == key }) {
+                constraint = condition // This is completely wrong, just a POC.
+                println("Woo got here! ${condition}, ${key?.element}")
+            }
+        }
+
+        protected fun updateExprConditions(expr: IExpr) {
             for (condition in conditions) {
-                // Do the complicated work of converting from the condition to a constraint.
-                // If the constraint doesn't contain us, it doesn't concern us :)
-                if (condition.getVariables(false).any { it.getKey() == variableKey }) {
-                    constraint = condition // This is completely wrong, just a POC.
-                    println("Woo got here! ${condition}, ${variableKey?.element}")
-                }
+                expr.addCondition(condition.deepClone(), getKey().context)
             }
         }
 
         override fun toString(): String {
             if (key == null) return "Unresolved (on-the-fly)"
-            val constraintStr = if (constraint is GaveUpExpression) "" else "[${constraint}]"
+            val constraintStr = if (constraint is GaveUpExpression) "" else "[ $constraint ]"
             val mainExprStr = if (isResolved()) resolved.toString() else key.element.toString()
             return mainExprStr + constraintStr
         }
@@ -123,26 +121,20 @@ interface VariableExpression : IExpr {
         }
 
         override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-            val vars = mutableSetOf<VariableExpression>()
-            for (condition in conditions) {
-                vars.addAll(condition.getVariables(resolved))
-            }
+            val conditionVariables = conditions.flatMap { it.getVariables(resolved) }.toSet() - this
 
             return if ((isResolved() && resolved) || (!isResolved() && !resolved)) {
-                vars + this
+                conditionVariables + this
             } else {
-                vars - this
+                conditionVariables - this
             }
-        }
-
-        override fun deepClone(): IExpr {
-            return this
         }
     }
 
     class VariableBool(key: VariableKey?) : VariableImpl<IExprRetBool>(key),
         IExprRetBool {
         override fun setResolvedExpr(expr: IExpr) {
+            updateExprConditions(expr)
             resolved = (expr as? IExprRetBool)
                 ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
         }
@@ -155,11 +147,18 @@ interface VariableExpression : IExpr {
         override fun getConstraints(): Map<VariableExpression, IExpr> {
             return resolved?.getConstraints() ?: mapOf(this to this)
         }
+
+        override fun deepClone(): IExprRetBool {
+            val clone = VariableBool(getKey())
+            clone.resolved = resolved?.deepClone()
+            return clone
+        }
     }
 
     class VariableNumber(key: VariableKey?) : VariableImpl<IExprRetNum>(key),
         IExprRetNum {
         override fun setResolvedExpr(expr: IExpr) {
+            updateExprConditions(expr)
             resolved = (expr as? IExprRetNum)
                 ?: throw IllegalArgumentException("Resolved expression must be a number expression")
         }
@@ -168,11 +167,18 @@ interface VariableExpression : IExpr {
             return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
                 .intersect(constraint.evaluate()) as NumberSet
         }
+
+        override fun deepClone(): IExprRetNum {
+            val clone = VariableNumber(getKey())
+            clone.resolved = resolved?.deepClone()
+            return clone
+        }
     }
 
     class VariableGeneric(key: VariableKey?) : VariableImpl<IExprRetGeneric>(key),
         IExprRetGeneric {
         override fun setResolvedExpr(expr: IExpr) {
+            updateExprConditions(expr)
             resolved = (expr as? IExprRetGeneric)
                 ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
         }
@@ -180,6 +186,12 @@ interface VariableExpression : IExpr {
         override fun evaluate(): GenericSet {
             return (resolved?.evaluate() ?: throw IllegalStateException("Unresolved expression"))
                 .intersect(constraint.evaluate()) as GenericSet
+        }
+
+        override fun deepClone(): IExprRetGeneric {
+            val clone = VariableGeneric(getKey())
+            clone.resolved = resolved?.deepClone()
+            return clone
         }
     }
 }

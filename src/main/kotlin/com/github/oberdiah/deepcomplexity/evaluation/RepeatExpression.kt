@@ -24,6 +24,6 @@ class RepeatExpression(
     }
 
     override fun deepClone(): IExpr {
-        return RepeatExpression(numRepeats.deepClone() as IExprRetNum, exprToRepeat.deepClone())
+        return RepeatExpression(numRepeats.deepClone(), exprToRepeat.deepClone())
     }
 }

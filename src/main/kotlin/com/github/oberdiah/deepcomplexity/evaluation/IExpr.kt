@@ -24,6 +24,7 @@ sealed interface IExpr {
 
 sealed interface IExprRetNum : IExpr {
     override fun evaluate(): NumberSet
+    override fun deepClone(): IExprRetNum
     override fun getSetClass(): KClass<*> {
         return NumberSet::class
     }
@@ -31,6 +32,7 @@ sealed interface IExprRetNum : IExpr {
 
 sealed interface IExprRetBool : IExpr {
     override fun evaluate(): BooleanSet
+    override fun deepClone(): IExprRetBool
     override fun getSetClass(): KClass<*> {
         return BooleanSet::class
     }
@@ -44,6 +46,7 @@ sealed interface IExprRetBool : IExpr {
 
 sealed interface IExprRetGeneric : IExpr {
     override fun evaluate(): GenericSet
+    override fun deepClone(): IExprRetGeneric
     override fun getSetClass(): KClass<*> {
         return GenericSet::class
     }

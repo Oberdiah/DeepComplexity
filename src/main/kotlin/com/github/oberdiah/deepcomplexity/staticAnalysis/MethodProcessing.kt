@@ -125,8 +125,8 @@ object MethodProcessing {
 
                 context.stack(
                     Context.combine(trueBranchContext, falseBranchContext) { a, b ->
-                        a.addCondition(condition, trueBranchContext)
-                        b.addCondition(InvertExpression(condition), falseBranchContext)
+                        a.addCondition(condition.deepClone(), trueBranchContext)
+                        b.addCondition(InvertExpression(condition.deepClone()), falseBranchContext)
                         IfExpression(a, b, condition)
                     }
                 )

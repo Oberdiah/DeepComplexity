@@ -13,8 +13,8 @@ class ArithmeticExpression(
         return lhs.getVariables(resolved) + rhs.getVariables(resolved)
     }
 
-    override fun deepClone(): IExpr {
-        return ArithmeticExpression(lhs.deepClone() as IExprRetNum, rhs.deepClone() as IExprRetNum, operation)
+    override fun deepClone(): IExprRetNum {
+        return ArithmeticExpression(lhs.deepClone(), rhs.deepClone(), operation)
     }
 
     override fun evaluate(): NumberSet {

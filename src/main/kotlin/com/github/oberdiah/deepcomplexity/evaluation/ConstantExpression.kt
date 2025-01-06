@@ -28,21 +28,25 @@ object ConstantExpression {
         override fun getVariables(resolved: Boolean): Set<VariableExpression> {
             return setOf()
         }
-
-        override fun deepClone(): IExpr {
-            return this
-        }
     }
 
     class ConstExprNum(singleElementSet: NumberSet) : ConstExpr<NumberSet>(singleElementSet), IExprRetNum {
         override fun evaluate(): NumberSet {
             return singleElementSet
         }
+
+        override fun deepClone(): IExprRetNum {
+            return ConstExprNum(singleElementSet)
+        }
     }
 
     class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool {
         override fun evaluate(): BooleanSet {
             return singleElementSet
+        }
+
+        override fun deepClone(): IExprRetBool {
+            return ConstExprBool(singleElementSet)
         }
 
         override fun getConstraints(): Map<VariableExpression, IExpr> {
@@ -53,6 +57,10 @@ object ConstantExpression {
     class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric {
         override fun evaluate(): GenericSet {
             return singleElementSet
+        }
+
+        override fun deepClone(): IExprRetGeneric {
+            return ConstExprGeneric(singleElementSet)
         }
     }
 }
