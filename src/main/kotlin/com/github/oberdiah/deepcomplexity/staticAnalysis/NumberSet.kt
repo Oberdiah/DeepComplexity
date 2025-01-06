@@ -13,12 +13,11 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
-import com.github.weisj.jsvg.T
 import kotlin.reflect.KClass
 
 sealed interface NumberSet : IMoldableSet {
-    fun arithmeticOperation(otherN: NumberSet, operation: BinaryNumberOperation): NumberSet
-    fun comparisonOperation(otherN: NumberSet, operation: ComparisonOperation): BooleanSet
+    fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet
+    fun comparisonOperation(other: NumberSet, operation: ComparisonOperation): BooleanSet
     fun addRange(start: Number, end: Number)
 
     fun toImpl(): NumberSetImpl<*> {
@@ -26,7 +25,7 @@ sealed interface NumberSet : IMoldableSet {
     }
 
     companion object {
-        fun fromClass(clazz: KClass<*>): NumberSet {
+        fun newFromClass(clazz: KClass<*>): NumberSet {
             return when (clazz) {
                 Double::class -> FloatingPointSet<Double>(clazz)
                 Float::class -> FloatingPointSet<Float>(clazz)
@@ -38,7 +37,7 @@ sealed interface NumberSet : IMoldableSet {
             }
         }
 
-        fun <T : Number> fromClassTyped(clazz: KClass<*>): NumberSetImpl<T> {
+        fun <T : Number> newFromClassTyped(clazz: KClass<*>): NumberSetImpl<T> {
             return when (clazz) {
                 Double::class -> FloatingPointSet(clazz)
                 Float::class -> FloatingPointSet(clazz)
@@ -51,15 +50,14 @@ sealed interface NumberSet : IMoldableSet {
         }
 
         fun fullRange(clazz: KClass<*>): NumberSet {
-            val set = fromClass(clazz)
+            val set = newFromClass(clazz)
             set.addRange(clazz.getMinValue(), clazz.getMaxValue())
             return set
         }
 
         inline fun <reified T : Number> singleValue(value: T): NumberSet {
-            val clazz = T::class
-            val set = fromClassTyped<T>(clazz)
-            set.addRangeUnsafe(value, value)
+            val set = newFromClassTyped<T>(T::class)
+            set.addRangeTyped(value, value)
             return set
         }
     }
@@ -73,7 +71,7 @@ sealed interface NumberSet : IMoldableSet {
         /**
          * Adds a range to the set. No checks are performed.
          */
-        fun addRangeUnsafe(start: T, end: T) {
+        fun addRangeTyped(start: T, end: T) {
             ranges.add(NumberRange(start, end))
         }
 
@@ -82,7 +80,8 @@ sealed interface NumberSet : IMoldableSet {
                 throw IllegalArgumentException("Cannot add range of different types")
             }
 
-            addRangeUnsafe(start as T, end as T)
+            @Suppress("UNCHECKED_CAST")
+            addRangeTyped(start as T, end as T)
         }
 
         override fun toString(): String {
@@ -103,8 +102,20 @@ sealed interface NumberSet : IMoldableSet {
             return clazz
         }
 
+        private fun castToThisType(other: IMoldableSet): NumberSetImpl<T> {
+            if (other.getClass() != clazz) {
+                throw IllegalArgumentException("Cannot perform operation on different types")
+            }
+            @Suppress("UNCHECKED_CAST")
+            return other as NumberSetImpl<T>
+        }
+
         override fun union(other: IMoldableSet): IMoldableSet {
-            TODO("Not yet implemented")
+            val newSet = newFromClassTyped<T>(clazz)
+            newSet.ranges.addAll(ranges)
+            newSet.ranges.addAll(castToThisType(other).ranges)
+            newSet.mergeAndDeduplicate()
+            return newSet
         }
 
         override fun intersect(other: IMoldableSet): IMoldableSet {
@@ -115,15 +126,10 @@ sealed interface NumberSet : IMoldableSet {
             TODO("Not yet implemented")
         }
 
-        override fun arithmeticOperation(otherN: NumberSet, operation: BinaryNumberOperation): NumberSet {
-            if (otherN.getClass() != clazz) {
-                throw IllegalArgumentException("Cannot perform arithmetic operations on different types ($clazz vs ${otherN.getClass()})")
-            }
-            val other = otherN as NumberSetImpl<T>
-
-            val newSet = fromClassTyped<T>(clazz)
+        override fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet {
+            val newSet = newFromClassTyped<T>(clazz)
             for (range in ranges) {
-                for (otherRange in other.ranges) {
+                for (otherRange in castToThisType(other).ranges) {
                     val values: Iterable<NumberRange<T>> = when (operation) {
                         ADDITION -> range.addition(otherRange)
                         SUBTRACTION -> range.subtraction(otherRange)
@@ -138,16 +144,13 @@ sealed interface NumberSet : IMoldableSet {
             return newSet
         }
 
-        override fun comparisonOperation(otherN: NumberSet, operation: ComparisonOperation): BooleanSet {
-            if (otherN.getClass() != clazz) {
-                throw IllegalArgumentException("Cannot perform arithmetic operations on different types")
-            }
-            val other = otherN as NumberSetImpl<*>
+        override fun comparisonOperation(other: NumberSet, operation: ComparisonOperation): BooleanSet {
+            val castOther = castToThisType(other)
 
             val mySmallestPossibleValue = ranges[0].start
             val myLargestPossibleValue = ranges[ranges.size - 1].end
-            val otherSmallestPossibleValue = other.ranges[0].start
-            val otherLargestPossibleValue = other.ranges[other.ranges.size - 1].end
+            val otherSmallestPossibleValue = castOther.ranges[0].start
+            val otherLargestPossibleValue = castOther.ranges[castOther.ranges.size - 1].end
 
             when (operation) {
                 LESS_THAN -> {
