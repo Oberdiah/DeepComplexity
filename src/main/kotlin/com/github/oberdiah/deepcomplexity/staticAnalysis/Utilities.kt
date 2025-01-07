@@ -7,6 +7,8 @@ import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import org.apache.commons.numbers.core.DD
 import java.math.BigInteger
+import kotlin.math.nextDown
+import kotlin.math.nextUp
 import kotlin.reflect.KClass
 
 object Utilities {
@@ -96,6 +98,18 @@ object Utilities {
             Float::class -> Float.MIN_VALUE
             Double::class -> Double.MIN_VALUE
             else -> throw IllegalArgumentException("Unsupported type for min value (got $this)")
+        }
+    }
+
+    fun KClass<*>.getZero(): Number {
+        return when (this) {
+            Byte::class -> 0.toByte()
+            Short::class -> 0.toShort()
+            Int::class -> 0
+            Long::class -> 0L
+            Float::class -> 0.0f
+            Double::class -> 0.0
+            else -> throw IllegalArgumentException("Unsupported type for zero value")
         }
     }
 
@@ -217,6 +231,49 @@ object Utilities {
             is Float -> if (this > other.toFloat()) this else other.toFloat()
             is Double -> if (this > other.toDouble()) this else other.toDouble()
             else -> throw IllegalArgumentException("Unsupported type for max")
+        } as T
+    }
+
+    /**
+     * Goes down the smallest possible increment from the given number to the next.
+     * Clamps if it's already at the minimum.
+     */
+    fun <T : Number> T.downOneEpsilon(): T {
+        return when (this) {
+            is Byte -> if (this > Byte.MIN_VALUE) (this - 1).toByte() else Byte.MIN_VALUE
+            is Short -> if (this > Short.MIN_VALUE) (this - 1).toShort() else Short.MIN_VALUE
+            is Int -> if (this > Int.MIN_VALUE) this - 1 else Int.MIN_VALUE
+            is Long -> if (this > Long.MIN_VALUE) this - 1 else Long.MIN_VALUE
+            is Float -> this.nextDown()
+            is Double -> this.nextDown()
+            else -> throw IllegalArgumentException("Unsupported type for downOneEpsilon")
+        } as T
+    }
+
+    /**
+     * Goes up the smallest possible increment from the given number to the next.
+     */
+    fun <T : Number> T.upOneEpsilon(): T {
+        return when (this) {
+            is Byte -> if (this < Byte.MAX_VALUE) (this + 1).toByte() else Byte.MAX_VALUE
+            is Short -> if (this < Short.MAX_VALUE) (this + 1).toShort() else Short.MAX_VALUE
+            is Int -> if (this < Int.MAX_VALUE) this + 1 else Int.MAX_VALUE
+            is Long -> if (this < Long.MAX_VALUE) this + 1 else Long.MAX_VALUE
+            is Float -> this.nextUp()
+            is Double -> this.nextUp()
+            else -> throw IllegalArgumentException("Unsupported type for upOneEpsilon")
+        } as T
+    }
+
+    fun <T : Number> T.negate(): T {
+        return when (this) {
+            is Byte -> (-this).toByte()
+            is Short -> (-this).toShort()
+            is Int -> -this
+            is Long -> -this
+            is Float -> -this
+            is Double -> -this
+            else -> throw IllegalArgumentException("Unsupported type for negation")
         } as T
     }
 }

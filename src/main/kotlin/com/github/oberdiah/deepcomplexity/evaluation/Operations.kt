@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 
@@ -69,6 +70,15 @@ enum class ComparisonOp {
             LESS_THAN_OR_EQUAL -> "<="
             GREATER_THAN -> ">"
             GREATER_THAN_OR_EQUAL -> ">="
+        }
+    }
+
+    fun flip(): ComparisonOp {
+        return when (this) {
+            LESS_THAN -> GREATER_THAN
+            LESS_THAN_OR_EQUAL -> GREATER_THAN_OR_EQUAL
+            GREATER_THAN -> LESS_THAN
+            GREATER_THAN_OR_EQUAL -> LESS_THAN_OR_EQUAL
         }
     }
 

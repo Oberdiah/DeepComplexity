@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.weisj.jsvg.T
 import kotlin.reflect.KClass
 
 sealed interface IExpr {
@@ -24,14 +25,19 @@ sealed class Expr : IExpr {
     }
 }
 
-sealed interface IExprRetNum : IExpr
-
-sealed interface IExprRetBool : IExpr {
-    fun <T : IMoldableSet> constrain(varKey: VariableKey, set: T): T =
-        ExprConstrain.constrain(this, varKey, set)
+sealed interface IExprRetNum : IExpr {
+    override fun evaluate(condition: IExprRetBool): NumberSet = ExprEvaluate.evaluate(this, condition)
 }
 
-sealed interface IExprRetGeneric : IExpr
+sealed interface IExprRetBool : IExpr {
+    override fun evaluate(condition: IExprRetBool): BooleanSet = ExprEvaluate.evaluate(this, condition)
+    fun getConstraints(varKey: VariableExpression): IMoldableSet =
+        ExprConstrain.getConstraints(this, varKey)
+}
+
+sealed interface IExprRetGeneric : IExpr {
+    override fun evaluate(condition: IExprRetBool): GenericSet = ExprEvaluate.evaluate(this, condition)
+}
 
 class ArithmeticExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val op: BinaryNumberOp) : Expr(), IExprRetNum
 class ComparisonExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val comp: ComparisonOp) : Expr(), IExprRetBool

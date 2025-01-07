@@ -9,6 +9,10 @@ interface GenericSet : IMoldableSet {
             return GenericSetImpl(T::class, setOf(value))
         }
 
+        fun empty(): GenericSet {
+            return GenericSetImpl<Any>(Any::class, emptySet())
+        }
+
         fun everyValue(): GenericSet {
             TODO()
         }

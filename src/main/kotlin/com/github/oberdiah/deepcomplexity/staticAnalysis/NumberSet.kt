@@ -10,15 +10,19 @@ import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CL
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMaxValue
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMinValue
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getZero
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoint
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.negate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
@@ -26,6 +30,13 @@ sealed interface NumberSet : IMoldableSet {
     fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet
     fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet
     fun addRange(start: Number, end: Number)
+    fun negate(): NumberSet
+
+    /**
+     * Returns a new set that satisfies the comparison operation.
+     * We're the right hand side of the equation.
+     */
+    fun getSetSatisfying(comp: ComparisonOp): NumberSet
 
     fun toImpl(): NumberSetImpl<*> {
         return this as NumberSetImpl<*>
@@ -58,6 +69,12 @@ sealed interface NumberSet : IMoldableSet {
 
         fun empty(clazz: KClass<*>): NumberSet {
             return newFromClass(clazz)
+        }
+
+        fun zero(clazz: KClass<*>): NumberSet {
+            val set = newFromClass(clazz)
+            set.addRange(clazz.getZero(), clazz.getZero())
+            return set
         }
 
         fun fullRange(clazz: KClass<*>): NumberSet {
@@ -119,6 +136,43 @@ sealed interface NumberSet : IMoldableSet {
             return other as NumberSetImpl<T>
         }
 
+        override fun getSetSatisfying(comp: ComparisonOp): NumberSet {
+            if (ranges.isEmpty()) {
+                return this
+            }
+
+            val biggestValue = ranges[ranges.size - 1].end
+            val smallestValue = ranges[0].start
+
+            val newSet = newFromClassTyped<T>(clazz)
+
+            when (comp) {
+                LESS_THAN, LESS_THAN_OR_EQUAL -> newSet.ranges.add(
+                    NumberRange(
+                        clazz.getMinValue().castInto(clazz),
+                        smallestValue.downOneEpsilon()
+                    )
+                )
+
+                GREATER_THAN, GREATER_THAN_OR_EQUAL -> {
+                    newSet.ranges.add(
+                        NumberRange(
+                            biggestValue.upOneEpsilon(),
+                            clazz.getMaxValue().castInto(clazz)
+                        )
+                    )
+                }
+            }
+
+            if (comp == LESS_THAN_OR_EQUAL || comp == GREATER_THAN_OR_EQUAL) {
+                newSet.ranges.addAll(ranges)
+            }
+
+            newSet.mergeAndDeduplicate()
+
+            return newSet
+        }
+
         override fun union(other: IMoldableSet): IMoldableSet {
             val newSet = newFromClassTyped<T>(clazz)
             newSet.ranges.addAll(ranges)
@@ -128,11 +182,63 @@ sealed interface NumberSet : IMoldableSet {
         }
 
         override fun intersect(other: IMoldableSet): IMoldableSet {
-            TODO("Not yet implemented")
+            val otherSet = castToThisType(other)
+            val newSet = newFromClassTyped<T>(clazz)
+
+            // If either set is empty, intersection is empty
+            if (ranges.isEmpty() || otherSet.ranges.isEmpty()) {
+                return newSet
+            }
+
+            // For each range in this set, find overlapping ranges in other set
+            for (range in ranges) {
+                for (otherRange in otherSet.ranges) {
+                    // Find overlap
+                    val start = range.start.max(otherRange.start)
+                    val end = range.end.min(otherRange.end)
+
+                    // If there is an overlap, add it
+                    if (start <= end) {
+                        newSet.addRangeTyped(start, end)
+                    }
+                }
+            }
+
+            newSet.mergeAndDeduplicate()
+            return newSet
         }
 
         override fun invert(): IMoldableSet {
-            TODO("Not yet implemented")
+            val newSet = newFromClassTyped<T>(clazz)
+
+            if (ranges.isEmpty()) {
+                newSet.addRange(clazz.getMinValue(), clazz.getMaxValue())
+                return newSet
+            }
+
+            var currentMin = clazz.getMinValue().castInto<T>(clazz)
+            for (range in ranges) {
+                if (currentMin < range.start) {
+                    newSet.addRangeTyped(currentMin, range.start.downOneEpsilon())
+                }
+                currentMin = range.end.upOneEpsilon()
+            }
+
+            // Add final range if necessary
+            val maxValue = clazz.getMaxValue().castInto<T>(clazz)
+            if (currentMin < maxValue) {
+                newSet.addRangeTyped(currentMin, maxValue)
+            }
+
+            return newSet
+        }
+
+        override fun negate(): NumberSet {
+            val newSet = newFromClassTyped<T>(clazz)
+            for (range in ranges.reversed()) {
+                newSet.addRangeTyped(range.end.negate(), range.start.negate())
+            }
+            return newSet
         }
 
         override fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet {
@@ -227,6 +333,12 @@ sealed interface NumberSet : IMoldableSet {
          * The start may be equal to the end.
          */
         private inner class NumberRange(val start: T, val end: T) {
+            init {
+                assert(start <= end) {
+                    "Start ($start) must be less than or equal to end ($end)"
+                }
+            }
+
             override fun toString(): String {
                 if (start == end) {
                     return start.toString()
