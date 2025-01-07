@@ -4,15 +4,24 @@ import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ExprConstrain {
     // One day this should be expanded to take IMoldableSet instead.
-    fun constrain(expr: IExprRetBool, varKey: VariableKey, set: NumberSet): NumberSet {
+    fun <T : IMoldableSet> constrain(expr: IExprRetBool, varKey: VariableKey, set: T): T {
+        @Suppress("UNCHECKED_CAST")
+        return when (set) {
+            is NumberSet -> constrainNumber(expr, varKey, set) as T
+            else -> throw IllegalArgumentException("Only NumberSet is supported for now.")
+        }
+    }
+
+    private fun constrainNumber(expr: IExprRetBool, varKey: VariableKey, set: NumberSet): NumberSet {
         return when (expr) {
             is BooleanExpression -> {
-                val lhsConstrained = constrain(expr.lhs, varKey, set)
-                val rhsConstrained = constrain(expr.rhs, varKey, set)
+                val lhsConstrained = expr.lhs.constrain(varKey, set)
+                val rhsConstrained = expr.rhs.constrain(varKey, set)
 
                 when (expr.op) {
                     AND -> lhsConstrained.intersect(rhsConstrained)

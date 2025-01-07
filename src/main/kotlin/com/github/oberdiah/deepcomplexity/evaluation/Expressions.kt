@@ -1,13 +1,17 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import kotlin.reflect.KClass
 
 sealed interface IExpr {
-    fun getVariables(resolved: Boolean): Set<VariableExpression> {
-        return ExprGetVariables.getVariables(this, resolved)
-    }
+    fun getVariables(resolved: Boolean): Set<VariableExpression> = ExprGetVariables.getVariables(this, resolved)
+    fun getBaseClass(): KClass<*> = ExprClass.getBaseClass(this)
+    fun getSetClass(): KClass<*> = ExprClass.getSetClass(this)
+    fun evaluate(condition: IExprRetBool): IMoldableSet = ExprEvaluate.evaluate(this, condition)
 
     fun asRetNum(): IExprRetNum? = this as? IExprRetNum
     fun asRetBool(): IExprRetBool? = this as? IExprRetBool
@@ -21,7 +25,12 @@ sealed class Expr : IExpr {
 }
 
 sealed interface IExprRetNum : IExpr
-sealed interface IExprRetBool : IExpr
+
+sealed interface IExprRetBool : IExpr {
+    fun <T : IMoldableSet> constrain(varKey: VariableKey, set: T): T =
+        ExprConstrain.constrain(this, varKey, set)
+}
+
 sealed interface IExprRetGeneric : IExpr
 
 class ArithmeticExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val op: BinaryNumberOp) : Expr(), IExprRetNum
