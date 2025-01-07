@@ -10,6 +10,8 @@ object ConstantExpression {
     val TRUE = ConstExprBool(BooleanSet.TRUE)
     val FALSE = ConstExprBool(BooleanSet.FALSE)
 
+    fun zero(expr: IExprRetNum): IExprRetNum = ConstExprNum(NumberSet.zero(expr.getBaseClass()))
+
     fun emptySetFromExpr(expr: IExpr): IMoldableSet {
         return when (expr.getSetClass()) {
             NumberSet::class -> NumberSet.empty(ExprClass.getBaseClass(expr))

@@ -63,7 +63,7 @@ object ConstraintSolver {
 
     private fun merge(lhs: IExprRetNum?, rhs: IExprRetNum, op: BinaryNumberOp): IExprRetNum {
         return if (lhs == null) {
-            rhs
+            ArithmeticExpression(ConstantExpression.zero(rhs), rhs, op)
         } else {
             ArithmeticExpression(lhs, rhs, op)
         }
