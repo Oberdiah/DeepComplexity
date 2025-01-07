@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.IExpr.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType

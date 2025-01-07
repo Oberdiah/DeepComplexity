@@ -9,12 +9,12 @@ import kotlin.reflect.KClass
 object GaveUpExpression {
     fun fromExpr(expr: IExpr): IExpr {
         return when (ExprClass.getSetClass(expr)) {
-            NumberSet::class -> ConstantExpression.ConstExprNum(
+            NumberSet::class -> ConstExprNum(
                 NumberSet.fullRange(ExprClass.getBaseClass(expr))
             )
 
-            BooleanSet::class -> ConstantExpression.ConstExprBool(BooleanSet.BOTH)
-            GenericSet::class -> ConstantExpression.ConstExprGeneric(GenericSet.everyValue())
+            BooleanSet::class -> ConstExprBool(BooleanSet.BOTH)
+            GenericSet::class -> ConstExprGeneric(GenericSet.everyValue())
             else -> throw IllegalArgumentException("Unknown set class")
         }
     }

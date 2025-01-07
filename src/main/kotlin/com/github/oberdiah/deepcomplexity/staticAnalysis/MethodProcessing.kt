@@ -145,7 +145,7 @@ object MethodProcessing {
                     buildExpressionFromPsi(condition, bodyContext).asRetBool()
                         ?: throw IllegalArgumentException("Failed to cast to BooleanSet: ${condition.text}")
                 }.orElse {
-                    ConstantExpression.ConstExprBool(BooleanSet.fromBoolean(true))
+                    ConstExprBool(BooleanSet.fromBoolean(true))
                 }
 
                 LoopEvaluation.processLoopContext(bodyContext, conditionExpr)

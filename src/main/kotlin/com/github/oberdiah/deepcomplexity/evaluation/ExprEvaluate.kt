@@ -47,7 +47,7 @@ object ExprEvaluate {
                 return lhs.arithmeticOperation(rhs, expr.operation)
             }
 
-            is ConstantExpression.ConstExprNum -> expr.singleElementSet
+            is ConstExprNum -> expr.singleElementSet
             is VariableExpression.VariableNumber -> {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
@@ -77,7 +77,7 @@ object ExprEvaluate {
                 return lhs.comparisonOperation(rhs, expr.comparison)
             }
 
-            is ConstantExpression.ConstExprBool -> expr.singleElementSet
+            is ConstExprBool -> expr.singleElementSet
             is InvertExpression -> evaluate(expr, condition).invert() as BooleanSet
             is VariableExpression.VariableBool -> {
                 expr.resolvedInto?.let {
@@ -90,7 +90,7 @@ object ExprEvaluate {
 
     fun evaluate(expr: IExprRetGeneric, condition: IExprRetBool): GenericSet {
         return when (expr) {
-            is ConstantExpression.ConstExprGeneric -> expr.singleElementSet
+            is ConstExprGeneric -> expr.singleElementSet
             is VariableExpression.VariableGeneric -> {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)

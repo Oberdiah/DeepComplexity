@@ -26,8 +26,8 @@ object ExprClass {
     fun getBaseClass(expr: IExpr): KClass<*> {
         return when (expr) {
             is IExprRetBool -> Boolean::class
-            is ConstantExpression.ConstExprGeneric -> expr.singleElementSet.getClass()
-            is ConstantExpression.ConstExprNum -> expr.singleElementSet.getClass()
+            is ConstExprGeneric -> expr.singleElementSet.getClass()
+            is ConstExprNum -> expr.singleElementSet.getClass()
             is VariableExpression.VariableGeneric -> throw IllegalStateException("Base class for a generic is a strange concept...")
             is VariableExpression.VariableNumber -> expr.clazz
             is ArithmeticExpression -> getBaseClass(expr.lhs)

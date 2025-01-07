@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.IExpr.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
@@ -33,19 +34,4 @@ object ConstantExpression {
             else -> throw IllegalArgumentException("Unknown number type")
         }
     }
-
-    sealed class ConstExpr<T>(val singleElementSet: T) : IExpr {
-        override fun toString(): String {
-            return singleElementSet.toString()
-        }
-    }
-
-    class ConstExprNum(singleElementSet: NumberSet) :
-        ConstExpr<NumberSet>(singleElementSet), IExprRetNum
-
-    class ConstExprBool(singleElementSet: BooleanSet) :
-        ConstExpr<BooleanSet>(singleElementSet), IExprRetBool
-
-    class ConstExprGeneric(singleElementSet: GenericSet) :
-        ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric
 }

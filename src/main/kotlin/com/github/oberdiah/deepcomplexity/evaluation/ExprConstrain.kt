@@ -21,7 +21,7 @@ object ExprConstrain {
             }
 
             is ComparisonExpression -> set // A lot of heavy lifting here
-            is ConstantExpression.ConstExprBool -> {
+            is ConstExprBool -> {
                 when (expr.singleElementSet) {
                     BooleanSet.TRUE, BooleanSet.BOTH -> set
                     BooleanSet.FALSE, BooleanSet.NEITHER -> NumberSet.empty(set.getClass())

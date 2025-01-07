@@ -3,7 +3,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 object ExprGetVariables {
     fun getVariables(expr: IExpr, resolved: Boolean): Set<VariableExpression> {
         return when (expr) {
-            is ConstantExpression.ConstExpr<*> -> emptySet()
+            is ConstExpr<*> -> emptySet()
             is VariableExpression.VariableImpl<*> -> {
                 val resolvedVariables = expr.resolvedInto?.getVariables(resolved) ?: emptySet()
 
