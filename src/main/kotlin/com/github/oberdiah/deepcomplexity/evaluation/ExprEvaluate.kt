@@ -47,6 +47,7 @@ object ExprEvaluate {
                 return lhs.arithmeticOperation(rhs, expr.op)
             }
 
+            is NegateExpression -> evaluate(expr.expr, condition).negate()
             is ConstExprNum -> expr.singleElementSet
             is VariableExpression.VariableNumber -> {
                 expr.resolvedInto?.let {
@@ -56,7 +57,7 @@ object ExprEvaluate {
                 // If we're here we're at the end of the chain, assume a full range.
                 val range = NumberSet.fullRange(expr.clazz)
                 val constrainedRange = ExprConstrain.getConstraints(condition, expr)
-                
+
                 return if (constrainedRange != null) {
                     range.intersect(constrainedRange) as NumberSet
                 } else {

@@ -36,6 +36,7 @@ object ExprClass {
             is IntersectExpression -> getBaseClass(expr.lhs)
             is RepeatExpression -> getBaseClass(expr.exprToRepeat)
             is UnionExpression -> getBaseClass(expr.lhs)
+            is NegateExpression -> getBaseClass(expr.expr)
         }
     }
 }

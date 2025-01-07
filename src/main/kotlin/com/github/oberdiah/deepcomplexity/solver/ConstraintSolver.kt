@@ -13,6 +13,16 @@ object ConstraintSolver {
          */
         val terms: MutableMap<Int, IExprRetNum> = mutableMapOf(),
     ) {
+        fun negate(): CollectedTerms {
+            val newTerms = mutableMapOf<Int, IExprRetNum>()
+
+            for ((exp, term) in terms) {
+                newTerms[exp] = NegateExpression(term)
+            }
+
+            return CollectedTerms(newTerms)
+        }
+
         fun combine(other: CollectedTerms, op: BinaryNumberOp): CollectedTerms {
             return when (op) {
                 ADDITION, SUBTRACTION -> {
@@ -86,7 +96,7 @@ object ConstraintSolver {
         // Subtract right from left
         val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
 
-        val constant = lhs.terms.remove(0) ?: ConstExprNum(NumberSet.zero(numClazz))
+        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstExprNum(NumberSet.zero(numClazz)))
 
         if (lhs.terms.isEmpty()) {
             // The variable is not present in the expression, so there is no constraint.
@@ -104,7 +114,7 @@ object ConstraintSolver {
                 ComparisonOp.GREATER_THAN_OR_EQUAL
             )
 
-            val rhs = constantValue.negate().arithmeticOperation(coefficientValue, DIVISION)
+            val rhs = constantValue.arithmeticOperation(coefficientValue, DIVISION)
 
             val resultingSet = when (coeffGEZ) {
                 TRUE -> rhs.getSetSatisfying(expr.comp)
@@ -145,6 +155,9 @@ object ConstraintSolver {
                     CollectedTerms(terms = mutableMapOf(0 to expr))
                 }
             }
+
+            // I think this is correct?
+            is NegateExpression -> expandTerms(expr.expr, varKey).negate()
         }
     }
 }

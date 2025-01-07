@@ -44,6 +44,7 @@ class ComparisonExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val comp:
 class IfExpression(val trueExpr: IExpr, val falseExpr: IExpr, val thisCondition: IExprRetBool) : Expr()
 class IntersectExpression(val lhs: IExpr, val rhs: IExpr) : Expr()
 class InvertExpression(val expr: IExprRetBool) : Expr(), IExprRetBool
+class NegateExpression(val expr: IExprRetNum) : Expr(), IExprRetNum
 class RepeatExpression(val numRepeats: IExprRetNum, val exprToRepeat: IExpr) : Expr()
 class UnionExpression(val lhs: IExpr, val rhs: IExpr) : Expr()
 class BooleanExpression(val lhs: IExprRetBool, val rhs: IExprRetBool, val op: BooleanOp) : Expr(), IExprRetBool

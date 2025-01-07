@@ -19,6 +19,7 @@ object ExprToString {
 
             is IntersectExpression -> "(${expr.lhs} ∩ ${expr.rhs})"
             is InvertExpression -> "!${expr.expr}"
+            is NegateExpression -> "-${expr.expr}"
             is RepeatExpression -> "[repeat ${expr.numRepeats} times] { ${expr.exprToRepeat} }"
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)

@@ -17,6 +17,7 @@ object ExprGetVariables {
             is BooleanExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is ComparisonExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is InvertExpression -> expr.expr.getVariables(resolved)
+            is NegateExpression -> expr.expr.getVariables(resolved)
             is ArithmeticExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is IfExpression -> expr.trueExpr.getVariables(resolved) +
                     expr.falseExpr.getVariables(resolved) +
