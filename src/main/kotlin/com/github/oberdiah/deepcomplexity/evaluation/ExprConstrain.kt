@@ -15,8 +15,16 @@ object ExprConstrain {
         val varKey = variable.getKey()
         return when (condition) {
             is BooleanExpression -> {
-                val lhsConstrained = condition.lhs.getConstraints(variable) ?: return null
-                val rhsConstrained = condition.rhs.getConstraints(variable) ?: return null
+                val lhsConstrained = condition.lhs.getConstraints(variable)
+                val rhsConstrained = condition.rhs.getConstraints(variable)
+
+                if (lhsConstrained == null && rhsConstrained == null) {
+                    return null
+                } else if (lhsConstrained == null) {
+                    return rhsConstrained
+                } else if (rhsConstrained == null) {
+                    return lhsConstrained
+                }
 
                 when (condition.op) {
                     AND -> lhsConstrained.intersect(rhsConstrained)

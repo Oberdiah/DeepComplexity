@@ -88,6 +88,11 @@ object ConstraintSolver {
 
         val constant = lhs.terms.remove(0) ?: ConstExprNum(NumberSet.zero(numClazz))
 
+        if (lhs.terms.isEmpty()) {
+            // The variable is not present in the expression, so there is no constraint.
+            return null
+        }
+
         return if (lhs.terms.size == 1) {
             // This is good, we can solve this now.
             val (exponent, coefficient) = lhs.terms.entries.first()
