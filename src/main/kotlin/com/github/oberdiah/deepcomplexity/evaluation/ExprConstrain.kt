@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression.BooleanOperation.AND
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression.BooleanOperation.OR
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanOperation.AND
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanOperation.OR
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet

@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation
-import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.*
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation.*
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
@@ -19,7 +19,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
-import org.apache.commons.lang3.NumberRange
 import java.math.BigInteger
 import kotlin.reflect.KClass
 

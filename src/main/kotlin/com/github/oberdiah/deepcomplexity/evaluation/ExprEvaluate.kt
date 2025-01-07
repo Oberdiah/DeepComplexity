@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression.BooleanOperation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet

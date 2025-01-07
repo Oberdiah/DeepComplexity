@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.loopEvaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 
 object LoopEvaluation {

@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ArithmeticExpression.BinaryNumberOperation
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonExpression.ComparisonOperation
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
