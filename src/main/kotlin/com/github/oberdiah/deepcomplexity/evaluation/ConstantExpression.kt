@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import kotlin.reflect.KClass
 
 object ConstantExpression {
     val TRUE = ConstExprBool(BooleanSet.TRUE)
@@ -38,10 +37,6 @@ object ConstantExpression {
     sealed class ConstExpr<T>(val singleElementSet: T) : IExpr {
         override fun toString(): String {
             return singleElementSet.toString()
-        }
-
-        override fun getVariables(resolved: Boolean): Set<VariableExpression> {
-            return setOf()
         }
     }
 

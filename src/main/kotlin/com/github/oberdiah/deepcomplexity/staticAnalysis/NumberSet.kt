@@ -57,6 +57,10 @@ sealed interface NumberSet : IMoldableSet {
             }
         }
 
+        fun empty(clazz: KClass<*>): NumberSet {
+            return newFromClass(clazz)
+        }
+
         fun fullRange(clazz: KClass<*>): NumberSet {
             val set = newFromClass(clazz)
             set.addRange(clazz.getMinValue(), clazz.getMaxValue())

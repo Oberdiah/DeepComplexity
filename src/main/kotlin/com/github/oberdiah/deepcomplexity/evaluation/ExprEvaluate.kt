@@ -56,8 +56,8 @@ object ExprEvaluate {
 
                 // If we're here we're at the end of the chain, assume a full range.
                 val range = NumberSet.fullRange(expr.clazz)
-//            return condition.constrain(range, getKey())
                 return range
+//                return ExprConstrain.constrain(condition, expr.getKey(), range)
             }
         }
     }
@@ -84,7 +84,7 @@ object ExprEvaluate {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
                 }
-                throw IllegalStateException("Unresolved expression")
+                TODO("Not implemented constraints on boolean variables yet")
             }
         }
     }
@@ -96,7 +96,7 @@ object ExprEvaluate {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
                 }
-                throw IllegalStateException("Unresolved expression")
+                TODO("Not implemented constraints on generic variables yet")
             }
         }
     }

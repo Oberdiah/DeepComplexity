@@ -1,7 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.*
-
 sealed interface IExpr {
     fun getVariables(resolved: Boolean): Set<VariableExpression> {
         return ExprGetVariables.getVariables(this, resolved)
@@ -13,12 +11,5 @@ sealed interface IExpr {
 }
 
 sealed interface IExprRetNum : IExpr
-sealed interface IExprRetBool : IExpr {
-
-//    /**
-//     * Constrain the set to only include values that satisfy the condition.
-//     */
-//    fun constrain(varKey: VariableKey, set: IMoldableSet): IMoldableSet
-}
-
+sealed interface IExprRetBool : IExpr
 sealed interface IExprRetGeneric : IExpr

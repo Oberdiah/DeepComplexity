@@ -11,16 +11,6 @@ class BooleanExpression(
     val rhs: IExprRetBool,
     val operation: BooleanOperation
 ) : IExprRetBool {
-//    override fun constrain(varKey: VariableExpression.VariableKey, set: IMoldableSet): IMoldableSet {
-//        val lhsConstrained = lhs.constrain(varKey, set)
-//        val rhsConstrained = rhs.constrain(varKey, set)
-//
-//        return when (operation) {
-//            AND -> lhsConstrained.intersect(rhsConstrained)
-//            OR -> lhsConstrained.union(rhsConstrained)
-//        }
-//    }
-
     override fun toString(): String {
         if (lhs == ConstantExpression.TRUE) {
             return when (operation) {
