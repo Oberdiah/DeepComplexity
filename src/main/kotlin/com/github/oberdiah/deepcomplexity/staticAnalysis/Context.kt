@@ -57,14 +57,18 @@ class Context {
     }
 
     override fun toString(): String {
+        return convertToString(false)
+    }
+
+    fun convertToString(evaluate: Boolean): String {
         val variablesString =
             variables.entries.joinToString("\n") { entry ->
                 val expr = entry.value
                 val psi = entry.key
 
-                val evaluated = ExprEvaluate.evaluate(expr, ConstantExpression.TRUE)
+                val evalStr = if (evaluate) " (${ExprEvaluate.evaluate(expr, ConstantExpression.TRUE)})" else ""
 
-                "$psi ($evaluated):\n${expr.toString().prependIndent()}"
+                "$psi$evalStr:\n${expr.toString().prependIndent()}"
             }
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }

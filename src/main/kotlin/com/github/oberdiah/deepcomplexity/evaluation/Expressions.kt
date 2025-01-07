@@ -31,7 +31,7 @@ sealed interface IExprRetNum : IExpr {
 
 sealed interface IExprRetBool : IExpr {
     override fun evaluate(condition: IExprRetBool): BooleanSet = ExprEvaluate.evaluate(this, condition)
-    fun getConstraints(varKey: VariableExpression): IMoldableSet =
+    fun getConstraints(varKey: VariableExpression): IMoldableSet? =
         ExprConstrain.getConstraints(this, varKey)
 }
 

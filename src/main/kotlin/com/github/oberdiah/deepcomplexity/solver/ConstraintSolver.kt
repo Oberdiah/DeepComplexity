@@ -3,10 +3,8 @@ package com.github.oberdiah.deepcomplexity.solver
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import org.jetbrains.kotlin.idea.kdoc.insert
 
 object ConstraintSolver {
     private data class CollectedTerms(
@@ -69,10 +67,16 @@ object ConstraintSolver {
         }
     }
 
+    /**
+     * It is important this method is confident in its values — these can be inverted down the line,
+     * so returning the full set is essentially saying the other branch is never taken.
+     *
+     * Returns null if accurate constraints could not be ascertained.
+     */
     fun getVariableConstraints(
         expr: ComparisonExpression,
         varKey: VariableKey,
-    ): NumberSet {
+    ): NumberSet? {
         val numClazz = expr.lhs.getBaseClass()
 
         // Collect terms from both sides
@@ -109,11 +113,13 @@ object ConstraintSolver {
             return if (exponent == 1) {
                 resultingSet
             } else {
-                TODO()
+                println("Cannot constraint solve yet: $lhs")
+                null
             }
         } else {
-            // We might be able to solve this in future, for now we'll return set.
-            NumberSet.fullRange(numClazz)
+            // We might be able to solve this in future, for now we'll not bother.
+            println("Cannot constraint solve yet: $lhs")
+            null
         }
     }
 

@@ -56,7 +56,12 @@ object ExprEvaluate {
                 // If we're here we're at the end of the chain, assume a full range.
                 val range = NumberSet.fullRange(expr.clazz)
                 val constrainedRange = ExprConstrain.getConstraints(condition, expr)
-                return range.intersect(constrainedRange) as NumberSet
+                
+                return if (constrainedRange != null) {
+                    range.intersect(constrainedRange) as NumberSet
+                } else {
+                    range
+                }
             }
         }
     }

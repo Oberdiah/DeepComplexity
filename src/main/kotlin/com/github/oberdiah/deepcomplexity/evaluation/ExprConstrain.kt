@@ -7,12 +7,16 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 
 object ExprConstrain {
-    fun getConstraints(condition: IExprRetBool, variable: VariableExpression): IMoldableSet {
+    /**
+     * Returns null if the variable is not constrained by the condition,
+     * or the constraints were too complex to be determined.
+     */
+    fun getConstraints(condition: IExprRetBool, variable: VariableExpression): IMoldableSet? {
         val varKey = variable.getKey()
         return when (condition) {
             is BooleanExpression -> {
-                val lhsConstrained = condition.lhs.getConstraints(variable)
-                val rhsConstrained = condition.rhs.getConstraints(variable)
+                val lhsConstrained = condition.lhs.getConstraints(variable) ?: return null
+                val rhsConstrained = condition.rhs.getConstraints(variable) ?: return null
 
                 when (condition.op) {
                     AND -> lhsConstrained.intersect(rhsConstrained)
@@ -28,7 +32,7 @@ object ExprConstrain {
                 }
             }
 
-            is InvertExpression -> condition.expr.getConstraints(variable).invert()
+            is InvertExpression -> condition.expr.getConstraints(variable)?.invert()
             is VariableExpression.VariableBool -> TODO()
         }
     }
