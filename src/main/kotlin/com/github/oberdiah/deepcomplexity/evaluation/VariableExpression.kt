@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.IExpr.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
@@ -59,22 +58,18 @@ sealed interface VariableExpression : IExpr {
     /**
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
      */
-    sealed class VariableImpl<T : IExpr>(private val key: VariableKey?, private val id: Int) : VariableExpression {
+    sealed class VariableImpl<T : IExpr>(val myKey: VariableKey?, val id: Int) : Expr(),
+        VariableExpression {
         var resolvedInto: T? = null
-
-        override fun toString(): String {
-            if (key == null) return "Unresolved (on-the-fly)"
-            return if (isResolved()) resolvedInto.toString() else (key.element.toString() + "[$$id]")
-        }
 
         override fun isResolved(): Boolean {
             return resolvedInto != null
         }
 
         override fun getKey(): VariableKey {
-            if (key == null)
+            if (myKey == null)
                 throw IllegalStateException("Unresolved expression was created on-the-fly, cannot grab its key.")
-            return key
+            return myKey
         }
     }
 

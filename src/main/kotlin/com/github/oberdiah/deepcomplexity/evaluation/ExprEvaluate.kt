@@ -19,8 +19,8 @@ object ExprEvaluate {
             is IfExpression -> {
                 val ifCondition = expr.thisCondition
                 val evaluatedCond = evaluate(ifCondition, condition)
-                val trueCondition = BooleanExpression(ifCondition, condition, BooleanOperation.AND)
-                val falseCondition = BooleanExpression(InvertExpression(ifCondition), condition, BooleanOperation.AND)
+                val trueCondition = BooleanExpression(ifCondition, condition, BooleanOp.AND)
+                val falseCondition = BooleanExpression(InvertExpression(ifCondition), condition, BooleanOp.AND)
                 return when (evaluatedCond) {
                     TRUE -> evaluate(expr.trueExpr, trueCondition)
                     FALSE -> evaluate(expr.falseExpr, falseCondition)
@@ -44,7 +44,7 @@ object ExprEvaluate {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
 
-                return lhs.arithmeticOperation(rhs, expr.operation)
+                return lhs.arithmeticOperation(rhs, expr.op)
             }
 
             is ConstExprNum -> expr.singleElementSet
@@ -67,14 +67,14 @@ object ExprEvaluate {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
 
-                return lhs.booleanOperation(rhs, expr.operation)
+                return lhs.booleanOperation(rhs, expr.op)
             }
 
             is ComparisonExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
 
-                return lhs.comparisonOperation(rhs, expr.comparison)
+                return lhs.comparisonOperation(rhs, expr.comp)
             }
 
             is ConstExprBool -> expr.singleElementSet

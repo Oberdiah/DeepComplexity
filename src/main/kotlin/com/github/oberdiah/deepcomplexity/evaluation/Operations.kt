@@ -3,7 +3,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 
-enum class BinaryNumberOperation {
+enum class BinaryNumberOp {
     ADDITION,
     SUBTRACTION,
     MULTIPLICATION,
@@ -19,7 +19,7 @@ enum class BinaryNumberOperation {
     }
 
     companion object {
-        fun fromJavaTokenType(tokenType: IElementType): BinaryNumberOperation? {
+        fun fromJavaTokenType(tokenType: IElementType): BinaryNumberOp? {
             return when (tokenType) {
                 JavaTokenType.PLUSEQ -> ADDITION
                 JavaTokenType.MINUSEQ -> SUBTRACTION
@@ -35,7 +35,7 @@ enum class BinaryNumberOperation {
     }
 }
 
-enum class BooleanOperation {
+enum class BooleanOp {
     AND,
     OR;
 
@@ -47,7 +47,7 @@ enum class BooleanOperation {
     }
 
     companion object {
-        fun fromJavaTokenType(tokenType: IElementType): BooleanOperation? {
+        fun fromJavaTokenType(tokenType: IElementType): BooleanOp? {
             return when (tokenType) {
                 JavaTokenType.ANDAND -> AND
                 JavaTokenType.OROR -> OR
@@ -57,7 +57,7 @@ enum class BooleanOperation {
     }
 }
 
-enum class ComparisonOperation {
+enum class ComparisonOp {
     LESS_THAN,
     LESS_THAN_OR_EQUAL,
     GREATER_THAN,
@@ -73,7 +73,7 @@ enum class ComparisonOperation {
     }
 
     companion object {
-        fun fromJavaTokenType(tokenType: IElementType): ComparisonOperation? {
+        fun fromJavaTokenType(tokenType: IElementType): ComparisonOp? {
             return when (tokenType) {
                 JavaTokenType.LT -> LESS_THAN
                 JavaTokenType.LE -> LESS_THAN_OR_EQUAL

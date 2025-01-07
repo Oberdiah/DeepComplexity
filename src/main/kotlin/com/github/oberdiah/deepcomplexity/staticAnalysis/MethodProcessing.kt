@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
@@ -93,7 +93,7 @@ object MethodProcessing {
                                 ArithmeticExpression(
                                     lhs,
                                     rhs,
-                                    BinaryNumberOperation.fromJavaTokenType(psi.operationSign.tokenType)
+                                    BinaryNumberOp.fromJavaTokenType(psi.operationSign.tokenType)
                                         ?: throw IllegalArgumentException(
                                             "As-yet unsupported assignment operation: ${psi.operationSign}"
                                         )
@@ -199,12 +199,12 @@ object MethodProcessing {
 
                 val tokenType = psi.operationSign.tokenType
 
-                val comparisonOperation = ComparisonOperation.fromJavaTokenType(tokenType)
-                val binaryNumberOperation = BinaryNumberOperation.fromJavaTokenType(tokenType)
+                val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
+                val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
 
                 return when {
-                    comparisonOperation != null -> ComparisonExpression(lhs, rhs, comparisonOperation)
-                    binaryNumberOperation != null -> ArithmeticExpression(lhs, rhs, binaryNumberOperation)
+                    comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
+                    binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
                     else -> TODO("Unsupported binary operation: ${psi.operationSign}")
                 }
             }

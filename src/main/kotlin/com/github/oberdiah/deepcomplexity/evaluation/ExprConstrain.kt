@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOperation.AND
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOperation.OR
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
@@ -14,7 +14,7 @@ object ExprConstrain {
                 val lhsConstrained = constrain(expr.lhs, varKey, set)
                 val rhsConstrained = constrain(expr.rhs, varKey, set)
 
-                when (expr.operation) {
+                when (expr.op) {
                     AND -> lhsConstrained.intersect(rhsConstrained)
                     OR -> lhsConstrained.union(rhsConstrained)
                 } as NumberSet

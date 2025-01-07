@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOperation.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
@@ -23,8 +23,8 @@ import java.math.BigInteger
 import kotlin.reflect.KClass
 
 sealed interface NumberSet : IMoldableSet {
-    fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet
-    fun comparisonOperation(other: NumberSet, operation: ComparisonOperation): BooleanSet
+    fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet
+    fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet
     fun addRange(start: Number, end: Number)
 
     fun toImpl(): NumberSetImpl<*> {
@@ -135,7 +135,7 @@ sealed interface NumberSet : IMoldableSet {
             TODO("Not yet implemented")
         }
 
-        override fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOperation): NumberSet {
+        override fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet {
             val newSet = newFromClassTyped<T>(clazz)
             for (range in ranges) {
                 for (otherRange in castToThisType(other).ranges) {
@@ -153,7 +153,7 @@ sealed interface NumberSet : IMoldableSet {
             return newSet
         }
 
-        override fun comparisonOperation(other: NumberSet, operation: ComparisonOperation): BooleanSet {
+        override fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet {
             val castOther = castToThisType(other)
 
             val mySmallestPossibleValue = ranges[0].start

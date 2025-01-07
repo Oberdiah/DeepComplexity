@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanExpression
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOperation
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import kotlin.reflect.KClass
 
 enum class BooleanSet : IMoldableSet {
@@ -96,9 +95,9 @@ enum class BooleanSet : IMoldableSet {
         }
     }
 
-    fun booleanOperation(other: BooleanSet, operation: BooleanOperation): BooleanSet {
+    fun booleanOperation(other: BooleanSet, operation: BooleanOp): BooleanSet {
         return when (operation) {
-            BooleanOperation.AND -> {
+            BooleanOp.AND -> {
                 when (this) {
                     TRUE -> other
                     FALSE -> if (other == NEITHER) NEITHER else FALSE
@@ -107,7 +106,7 @@ enum class BooleanSet : IMoldableSet {
                 }
             }
 
-            BooleanOperation.OR -> {
+            BooleanOp.OR -> {
                 when (this) {
                     TRUE -> if (other == NEITHER) NEITHER else TRUE
                     FALSE -> other

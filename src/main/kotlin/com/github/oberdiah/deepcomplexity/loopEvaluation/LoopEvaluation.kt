@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.loopEvaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOperation.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 
 object LoopEvaluation {
@@ -65,12 +65,12 @@ object LoopEvaluation {
         val constantSide = if (lhsIsUnresolved) expr.rhs else expr.lhs
         val unresolvedSide = if (lhsIsUnresolved) expr.lhs else expr.rhs
 
-        if ((expr.operation == SUBTRACTION || expr.operation == DIVISION) && rhsIsUnresolved) {
+        if ((expr.op == SUBTRACTION || expr.op == DIVISION) && rhsIsUnresolved) {
             // We can't deal with this case e.g. x = (5 - x) has no obvious solution
             return null
         }
 
-        return when (expr.operation) {
+        return when (expr.op) {
             ADDITION, SUBTRACTION -> {
                 ArithmeticExpression(
                     unresolvedSide,
@@ -79,7 +79,7 @@ object LoopEvaluation {
                         TODO(),
                         MULTIPLICATION
                     ),
-                    expr.operation
+                    expr.op
                 )
             }
 
