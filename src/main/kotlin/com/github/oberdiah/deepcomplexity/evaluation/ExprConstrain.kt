@@ -4,14 +4,13 @@ import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 
 object ExprConstrain {
     /**
      * Returns null if the variable is not constrained by the condition,
      * or the constraints were too complex to be determined.
      */
-    fun getConstraints(condition: IExprRetBool, variable: VariableExpression): IMoldableSet? {
+    fun getConstraints(condition: IExprRetBool, variable: VariableExpression): IExpr? {
         val varKey = variable.getKey()
         return when (condition) {
             is BooleanExpression -> {
@@ -27,22 +26,22 @@ object ExprConstrain {
                 }
 
                 when (condition.op) {
-                    AND -> lhsConstrained.intersect(rhsConstrained)
-                    OR -> lhsConstrained.union(rhsConstrained)
+                    AND -> IntersectExpression(lhsConstrained, rhsConstrained)
+                    OR -> UnionExpression(lhsConstrained, rhsConstrained)
                 }
             }
 
             is ComparisonExpression -> ConstraintSolver.getVariableConstraints(condition, varKey)
-                ?.evaluate(ConstantExpression.TRUE)
 
             is ConstExprBool -> {
                 when (condition.singleElementSet) {
-                    BooleanSet.TRUE, BooleanSet.BOTH -> ConstantExpression.fullSetFromExpr(variable)
-                    BooleanSet.FALSE, BooleanSet.NEITHER -> ConstantExpression.emptySetFromExpr(variable)
+                    BooleanSet.TRUE, BooleanSet.BOTH -> ConstantExpression.fullExprFromExpr(variable)
+                    BooleanSet.FALSE, BooleanSet.NEITHER -> ConstantExpression.emptyExprFromExpr(variable)
                 }
             }
 
-            is BooleanInvertExpression -> condition.expr.getConstraints(variable)?.invert()
+            is BooleanInvertExpression -> condition.expr.getConstraints(variable)?.let { return InvertExpression(it) }
+
             is VariableExpression.VariableBool -> TODO()
         }
     }
