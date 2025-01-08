@@ -102,14 +102,22 @@ object Utilities {
     }
 
     fun KClass<*>.getZero(): Number {
+        return getInt(0)
+    }
+
+    fun KClass<*>.getOne(): Number {
+        return getInt(1)
+    }
+
+    fun KClass<*>.getInt(int: Int): Number {
         return when (this) {
-            Byte::class -> 0.toByte()
-            Short::class -> 0.toShort()
-            Int::class -> 0
-            Long::class -> 0L
-            Float::class -> 0.0f
-            Double::class -> 0.0
-            else -> throw IllegalArgumentException("Unsupported type for zero value")
+            Byte::class -> int.toByte()
+            Short::class -> int.toShort()
+            Int::class -> int
+            Long::class -> int.toLong()
+            Float::class -> int.toFloat()
+            Double::class -> int.toDouble()
+            else -> throw IllegalArgumentException("Unsupported type for int value")
         }
     }
 

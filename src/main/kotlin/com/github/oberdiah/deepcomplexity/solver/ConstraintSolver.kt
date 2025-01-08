@@ -7,12 +7,22 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstraintSolver {
-    private data class CollectedTerms(
+    data class CollectedTerms(
         /**
          * Map from exponent to coefficient. 0th is constant, 1st is linear, 2nd is quadratic, etc.
          */
         val terms: MutableMap<Int, IExprRetNum> = mutableMapOf(),
     ) {
+        override fun toString(): String {
+            return terms.entries.joinToString(" + ") { (exp, term) ->
+                if (exp == 0) {
+                    term.toString()
+                } else {
+                    "${term}x^$exp"
+                }
+            }
+        }
+
         fun negate(): CollectedTerms {
             val newTerms = mutableMapOf<Int, IExprRetNum>()
 
@@ -87,22 +97,8 @@ object ConstraintSolver {
         expr: ComparisonExpression,
         varKey: VariableKey,
     ): NumberSet? {
-        val numClazz = expr.lhs.getBaseClass()
-
-        // Collect terms from both sides
-        val leftTerms = expandTerms(expr.lhs, varKey)
-        val rightTerms = expandTerms(expr.rhs, varKey)
-
-        // Subtract right from left
-        val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
-
-        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstExprNum(NumberSet.zero(numClazz)))
-
-        if (lhs.terms.isEmpty()) {
-            // The variable is not present in the expression, so there is no constraint.
-            return null
-        }
-
+        val (lhs, constant) = normalizeComparisonExpression(expr, varKey)
+        
         return if (lhs.terms.size == 1) {
             // This is good, we can solve this now.
             val (exponent, coefficient) = lhs.terms.entries.first()
@@ -110,7 +106,7 @@ object ConstraintSolver {
             val constantValue = constant.evaluate(ConstantExpression.TRUE)
 
             val coeffGEZ = coefficientValue.comparisonOperation(
-                NumberSet.zero(numClazz),
+                NumberSet.zero(expr.lhs.getBaseClass()),
                 ComparisonOp.GREATER_THAN_OR_EQUAL
             )
 
@@ -138,7 +134,29 @@ object ConstraintSolver {
         }
     }
 
-    private fun expandTerms(expr: IExprRetNum, varKey: VariableKey): CollectedTerms {
+    /**
+     * Normalizes the comparison expression to a form where the left hand side is a linear equation and the right hand
+     * side is a constant.
+     */
+    fun normalizeComparisonExpression(
+        expr: ComparisonExpression,
+        varKey: VariableKey,
+    ): Pair<CollectedTerms, IExprRetNum> {
+        val numClazz = expr.lhs.getBaseClass()
+
+        // Collect terms from both sides
+        val leftTerms = expandTerms(expr.lhs, varKey)
+        val rightTerms = expandTerms(expr.rhs, varKey)
+
+        // Subtract right from left
+        val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
+
+        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstExprNum(NumberSet.zero(numClazz)))
+
+        return lhs to constant
+    }
+
+    fun expandTerms(expr: IExprRetNum, varKey: VariableKey): CollectedTerms {
         return when (expr) {
             is ArithmeticExpression -> {
                 val lhs = expandTerms(expr.lhs, varKey)

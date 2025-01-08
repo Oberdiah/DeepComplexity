@@ -60,6 +60,11 @@ class Context {
         return convertToString(false)
     }
 
+    fun canResolve(variable: VariableExpression): Boolean {
+        assert(alive)
+        return variables.containsKey(variable.getKey().element) && variable.getKey().context == this
+    }
+
     fun convertToString(evaluate: Boolean): String {
         val variablesString =
             variables.entries.joinToString("\n") { entry ->

@@ -13,6 +13,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMaxValue
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMinValue
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getOne
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getZero
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoint
@@ -31,6 +32,7 @@ sealed interface NumberSet : IMoldableSet {
     fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet
     fun addRange(start: Number, end: Number)
     fun negate(): NumberSet
+    fun isOne(): Boolean
 
     /**
      * Returns a new set that satisfies the comparison operation.
@@ -327,6 +329,10 @@ sealed interface NumberSet : IMoldableSet {
 
             ranges.clear()
             ranges.addAll(newRanges)
+        }
+
+        override fun isOne(): Boolean {
+            return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start == clazz.getOne()
         }
 
         /**

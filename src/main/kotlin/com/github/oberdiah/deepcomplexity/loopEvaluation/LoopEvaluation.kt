@@ -1,89 +1,83 @@
 package com.github.oberdiah.deepcomplexity.loopEvaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.intellij.psi.PsiElement
 
 object LoopEvaluation {
     /**
      * Given the context for the loop body, and the condition, figure out our new context.
      */
     fun processLoopContext(context: Context, condition: IExprRetBool) {
-        val allElements = context.getVariables().keys
-        for ((key, expr) in context.getVariables()) {
-            // Unresolved expressions not in this context are of no interest to us — they can't affect this loop.
-            val allUnresolved = expr.getVariables(false)
-                .filter { it.getKey().element in allElements }
+        val numLoops = null
 
+        val conditionVariables = condition.getVariables(false).map { it.getKey() }
+        for ((psiElement, expr) in context.getVariables()) {
+            val matchingCondition = expr.getVariables(false)
+                .filter { conditionVariables.contains(it.getKey()) }
+
+            if (matchingCondition.isEmpty()) continue
+
+            // We now have an expression that is looping stuff.
+            val terms = collectTerms(expr, psiElement, matchingCondition) ?: continue
+            val linearTerm = terms.terms[1] ?: continue
+            val constantTerm = terms.terms[0] ?: continue
+            if (terms.terms.size > 2) {
+                continue
+            }
+            if (!linearTerm.evaluate(ConstantExpression.TRUE).isOne()) {
+                // We can deal with this if the constant term is 0, but not for now.
+                continue
+            }
+
+
+        }
+
+        val allElements = context.getVariables().keys
+        for ((psiElement, expr) in context.getVariables()) {
+            // Unresolved expressions not able to be resolved by this context are of no interest to
+            // us as they can't affect this loop.
+            val allUnresolved = expr.getVariables(false).filter { context.canResolve(it) }
             if (allUnresolved.isEmpty()) continue
 
-            if (allUnresolved.size == 1) {
-                val unresolved = allUnresolved.first()
-                if (unresolved.getKey().element == key) {
-                    if (expr is ArithmeticExpression) {
-                        val repeated = repeatArithmeticExpression(expr, condition)
-
-                        if (repeated != null) {
-                            context.assignVar(key, repeated)
-                        } else {
-                            // D:
-                            context.assignVar(key, ConstantExpression.fullExprFromExpr(expr))
-                        }
-                    } else {
-                        // :(
-                        context.assignVar(key, ConstantExpression.fullExprFromExpr(expr))
-                    }
-                } else {
-                    // We might be able to deal with this with a bit more work, but
-                    // I'm not going to bother for now.
-                    context.assignVar(key, ConstantExpression.fullExprFromExpr(expr))
-                }
-            } else {
-                // We can't deal with this in general.
-                // Some edge cases might be doable in certain situations, for now I'm not going to bother.
-                context.assignVar(key, ConstantExpression.fullExprFromExpr(expr))
+            if (numLoops == null) {
+                // If we don't know the number of loops, we've got absolutely no chance.
+                // This can definitely be improved from just throwing all info away though.
+                context.assignVar(psiElement, ConstantExpression.fullExprFromExpr(expr))
+                continue
             }
+
+            val terms = collectTerms(expr, psiElement, allUnresolved)
+            println(terms)
         }
     }
 
-    private fun repeatArithmeticExpression(expr: ArithmeticExpression, condition: IExprRetBool): ArithmeticExpression? {
-        // Note: Currently x = (x * 2) * 2 is not handled with this but it could be with some
-        // re-arranging/preparation in the pipeline somewhere
-
-        val lhsIsUnresolved = expr.lhs is VariableExpression
-        val rhsIsUnresolved = expr.rhs is VariableExpression
-
-        if (!lhsIsUnresolved && !rhsIsUnresolved) {
-            // We can only deal with surface-level unresolved expressions
-            return null
-        }
-        if (lhsIsUnresolved && rhsIsUnresolved) {
-            // This is the caller's fault
-            throw IllegalArgumentException("Both sides of the expression are unresolved, which shouldn't happen.")
-        }
-
-        val constantSide = if (lhsIsUnresolved) expr.rhs else expr.lhs
-        val unresolvedSide = if (lhsIsUnresolved) expr.lhs else expr.rhs
-
-        if ((expr.op == SUBTRACTION || expr.op == DIVISION) && rhsIsUnresolved) {
-            // We can't deal with this case e.g. x = (5 - x) has no obvious solution
-            return null
-        }
-
-        return when (expr.op) {
-            ADDITION, SUBTRACTION -> {
-                ArithmeticExpression(
-                    unresolvedSide,
-                    ArithmeticExpression(
-                        constantSide,
-                        TODO(),
-                        MULTIPLICATION
-                    ),
-                    expr.op
-                )
+    fun collectTerms(
+        expr: IExpr,
+        psiElement: PsiElement,
+        variables: List<VariableExpression>
+    ): ConstraintSolver.CollectedTerms? {
+        return if (variables.size == 1) {
+            val unresolved = variables.first()
+            if (unresolved.getKey().element == psiElement) {
+                if (expr is IExprRetNum) {
+                    ConstraintSolver.expandTerms(expr, unresolved.getKey())
+                } else {
+                    // Nothing for now.
+                    null
+                }
+            } else {
+                // We rely only on one thing, but it's not us.
+                // We might be able to deal with this with a bit more work, but
+                // I'm not going to bother for now.
+                null
             }
-
-            else -> TODO("These could be implemented with some sort of pow(), but I've not bothered for now.")
+        } else {
+            // We can't deal with this in general, things start getting too complicated when
+            // something in the loop relies on two other things.
+            // Some edge cases might be doable in certain situations, for now I'm not going to bother.
+            null
         }
     }
 }
