@@ -26,6 +26,7 @@ object ExprGetVariables {
             is IntersectExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is RepeatExpression -> expr.numRepeats.getVariables(resolved) + expr.exprToRepeat.getVariables(resolved)
             is UnionExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
+            is NumberLimitsExpression -> expr.limit.getVariables(resolved) + expr.shouldFlipCmp.getVariables(resolved)
         }
     }
 }

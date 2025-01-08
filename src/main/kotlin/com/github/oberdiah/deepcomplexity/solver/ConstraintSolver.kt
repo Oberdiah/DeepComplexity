@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.solver
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstraintSolver {
@@ -96,33 +95,23 @@ object ConstraintSolver {
     fun getVariableConstraints(
         expr: ComparisonExpression,
         varKey: VariableKey,
-    ): NumberSet? {
+    ): IExprRetNum? {
         val (lhs, constant) = normalizeComparisonExpression(expr, varKey)
-        
+
         return if (lhs.terms.size == 1) {
             // This is good, we can solve this now.
             val (exponent, coefficient) = lhs.terms.entries.first()
-            val coefficientValue = coefficient.evaluate(ConstantExpression.TRUE)
-            val constantValue = constant.evaluate(ConstantExpression.TRUE)
 
-            val coeffGEZ = coefficientValue.comparisonOperation(
-                NumberSet.zero(expr.lhs.getBaseClass()),
+            val coeffGEZ = ComparisonExpression(
+                coefficient,
+                ConstantExpression.zero(expr.lhs),
                 ComparisonOp.GREATER_THAN_OR_EQUAL
             )
 
-            val rhs = constantValue.arithmeticOperation(coefficientValue, DIVISION)
-
-            val resultingSet = when (coeffGEZ) {
-                TRUE -> rhs.getSetSatisfying(expr.comp)
-                FALSE -> rhs.getSetSatisfying(expr.comp.flip())
-                BOTH -> rhs.getSetSatisfying(expr.comp)
-                    .union(rhs.getSetSatisfying(expr.comp.flip())) as NumberSet
-
-                NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
-            }
+            val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
 
             return if (exponent == 1) {
-                resultingSet
+                NumberLimitsExpression(rhs, coeffGEZ, expr.comp)
             } else {
                 println("Cannot constraint solve yet: $lhs")
                 null
@@ -176,6 +165,7 @@ object ConstraintSolver {
 
             // I think this is correct?
             is NegateExpression -> expandTerms(expr.expr, varKey).negate()
+            is NumberLimitsExpression -> throw IllegalStateException("Uuh ... this can maybe happen?")
         }
     }
 }

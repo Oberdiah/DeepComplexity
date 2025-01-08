@@ -64,6 +64,18 @@ object ExprEvaluate {
                     range
                 }
             }
+
+            is NumberLimitsExpression -> {
+                val rhs = expr.limit.evaluate(condition)
+                when (expr.shouldFlipCmp.evaluate(condition)) {
+                    TRUE -> rhs.getSetSatisfying(expr.cmp)
+                    FALSE -> rhs.getSetSatisfying(expr.cmp.flip())
+                    BOTH -> rhs.getSetSatisfying(expr.cmp)
+                        .union(rhs.getSetSatisfying(expr.cmp.flip())) as NumberSet
+
+                    NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                }
+            }
         }
     }
 

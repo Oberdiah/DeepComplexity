@@ -27,6 +27,8 @@ object ExprToString {
                 if (expr.myKey == null) return "Unresolved (on-the-fly)"
                 return if (expr.isResolved()) expr.resolvedInto.toString() else (expr.myKey.element.toString() + "[$${expr.id}]")
             }
+
+            is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
         }
     }
 

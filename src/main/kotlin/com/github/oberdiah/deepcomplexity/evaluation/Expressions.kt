@@ -1,11 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import com.github.weisj.jsvg.T
 import kotlin.reflect.KClass
 
 sealed interface IExpr {
@@ -45,6 +43,19 @@ class IfExpression(val trueExpr: IExpr, val falseExpr: IExpr, val thisCondition:
 class IntersectExpression(val lhs: IExpr, val rhs: IExpr) : Expr()
 class InvertExpression(val expr: IExprRetBool) : Expr(), IExprRetBool
 class NegateExpression(val expr: IExprRetNum) : Expr(), IExprRetNum
+
+/**
+ * Returns the range of numbers above or below a given limit, depending on cmp.
+ */
+class NumberLimitsExpression(
+    // The value we're either going to be above or below.
+    val limit: IExprRetNum,
+    // Whether we should flip the comparison operator or not.
+    val shouldFlipCmp: IExprRetBool,
+    // The comparison operator to use.
+    val cmp: ComparisonOp
+) : Expr(), IExprRetNum
+
 class RepeatExpression(val numRepeats: IExprRetNum, val exprToRepeat: IExpr) : Expr()
 class UnionExpression(val lhs: IExpr, val rhs: IExpr) : Expr()
 class BooleanExpression(val lhs: IExprRetBool, val rhs: IExprRetBool, val op: BooleanOp) : Expr(), IExprRetBool

@@ -33,6 +33,8 @@ object ExprConstrain {
             }
 
             is ComparisonExpression -> ConstraintSolver.getVariableConstraints(condition, varKey)
+                ?.evaluate(ConstantExpression.TRUE)
+
             is ConstExprBool -> {
                 when (condition.singleElementSet) {
                     BooleanSet.TRUE, BooleanSet.BOTH -> ConstantExpression.fullSetFromExpr(variable)

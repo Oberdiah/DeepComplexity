@@ -37,6 +37,7 @@ object ExprClass {
             is RepeatExpression -> getBaseClass(expr.exprToRepeat)
             is UnionExpression -> getBaseClass(expr.lhs)
             is NegateExpression -> getBaseClass(expr.expr)
+            is NumberLimitsExpression -> getBaseClass(expr.limit)
         }
     }
 }
