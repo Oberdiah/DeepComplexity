@@ -69,8 +69,8 @@ object ExprEvaluate {
             is NumberLimitsExpression -> {
                 val rhs = expr.limit.evaluate(condition)
                 when (expr.shouldFlipCmp.evaluate(condition)) {
-                    TRUE -> rhs.getSetSatisfying(expr.cmp)
-                    FALSE -> rhs.getSetSatisfying(expr.cmp.flip())
+                    TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
+                    FALSE -> rhs.getSetSatisfying(expr.cmp)
                     BOTH -> rhs.getSetSatisfying(expr.cmp)
                         .union(rhs.getSetSatisfying(expr.cmp.flip())) as NumberSet
 

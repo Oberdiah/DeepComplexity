@@ -102,16 +102,16 @@ object ConstraintSolver {
             // This is good, we can solve this now.
             val (exponent, coefficient) = lhs.terms.entries.first()
 
-            val coeffGEZ = ComparisonExpression(
+            val coeffLZ = ComparisonExpression(
                 coefficient,
                 ConstantExpression.zero(expr.lhs),
-                ComparisonOp.GREATER_THAN_OR_EQUAL
+                ComparisonOp.LESS_THAN
             )
 
             val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
 
             return if (exponent == 1) {
-                NumberLimitsExpression(rhs, coeffGEZ, expr.comp)
+                NumberLimitsExpression(rhs, coeffLZ, expr.comp)
             } else {
                 println("Cannot constraint solve yet: $lhs")
                 null
