@@ -127,7 +127,7 @@ object ConstraintSolver {
      * Normalizes the comparison expression to a form where the left hand side is a linear equation and the right hand
      * side is a constant.
      */
-    fun normalizeComparisonExpression(
+    private fun normalizeComparisonExpression(
         expr: ComparisonExpression,
         varKey: VariableKey,
     ): Pair<CollectedTerms, IExprRetNum> {
