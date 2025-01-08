@@ -16,7 +16,7 @@ object ExprGetVariables {
 
             is BooleanExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is ComparisonExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
-            is InvertExpression -> expr.expr.getVariables(resolved)
+            is BooleanInvertExpression -> expr.expr.getVariables(resolved)
             is NegateExpression -> expr.expr.getVariables(resolved)
             is ArithmeticExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is IfExpression -> expr.trueExpr.getVariables(resolved) +
@@ -27,6 +27,7 @@ object ExprGetVariables {
             is RepeatExpression -> expr.numRepeats.getVariables(resolved) + expr.exprToRepeat.getVariables(resolved)
             is UnionExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is NumberLimitsExpression -> expr.limit.getVariables(resolved) + expr.shouldFlipCmp.getVariables(resolved)
+            is InvertExpression -> expr.expr.getVariables(resolved)
         }
     }
 }

@@ -42,7 +42,7 @@ object ExprConstrain {
                 }
             }
 
-            is InvertExpression -> condition.expr.getConstraints(variable)?.invert()
+            is BooleanInvertExpression -> condition.expr.getConstraints(variable)?.invert()
             is VariableExpression.VariableBool -> TODO()
         }
     }

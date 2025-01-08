@@ -18,6 +18,7 @@ object ExprClass {
             is IntersectExpression -> getSetClass(expr.lhs)
             is RepeatExpression -> getSetClass(expr.exprToRepeat)
             is UnionExpression -> getSetClass(expr.lhs)
+            is InvertExpression -> getSetClass(expr.expr)
         }
     }
 
@@ -38,6 +39,7 @@ object ExprClass {
             is UnionExpression -> getBaseClass(expr.lhs)
             is NegateExpression -> getBaseClass(expr.expr)
             is NumberLimitsExpression -> getBaseClass(expr.limit)
+            is InvertExpression -> getBaseClass(expr.expr)
         }
     }
 }

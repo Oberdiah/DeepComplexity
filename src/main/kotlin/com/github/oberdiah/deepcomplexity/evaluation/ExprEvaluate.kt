@@ -15,12 +15,13 @@ object ExprEvaluate {
 
             is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
+            is InvertExpression -> evaluate(expr.expr, condition).invert()
 
             is IfExpression -> {
                 val ifCondition = expr.thisCondition
                 val evaluatedCond = evaluate(ifCondition, condition)
                 val trueCondition = BooleanExpression(ifCondition, condition, BooleanOp.AND)
-                val falseCondition = BooleanExpression(InvertExpression(ifCondition), condition, BooleanOp.AND)
+                val falseCondition = BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
                 return when (evaluatedCond) {
                     TRUE -> evaluate(expr.trueExpr, trueCondition)
                     FALSE -> evaluate(expr.falseExpr, falseCondition)
@@ -96,7 +97,7 @@ object ExprEvaluate {
             }
 
             is ConstExprBool -> expr.singleElementSet
-            is InvertExpression -> evaluate(expr, condition).invert() as BooleanSet
+            is BooleanInvertExpression -> evaluate(expr, condition).invert() as BooleanSet
             is VariableExpression.VariableBool -> {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
