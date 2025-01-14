@@ -40,6 +40,7 @@ object ExprClass {
             is NegateExpression -> getBaseClass(expr.expr)
             is NumberLimitsExpression -> getBaseClass(expr.limit)
             is InvertExpression -> getBaseClass(expr.expr)
+            is NumIterationTimesExpression -> getBaseClass(expr.constraint)
         }
     }
 }

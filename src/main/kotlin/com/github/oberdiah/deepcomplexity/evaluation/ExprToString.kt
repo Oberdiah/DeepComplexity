@@ -30,6 +30,7 @@ object ExprToString {
             }
 
             is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
+            is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
         }
     }
 

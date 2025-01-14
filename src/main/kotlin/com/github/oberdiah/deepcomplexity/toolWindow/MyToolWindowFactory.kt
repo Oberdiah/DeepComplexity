@@ -35,34 +35,37 @@ class MyToolWindowFactory : ToolWindowFactory {
             val textArea = JBTextArea(MyBundle.message("randomLabel", "?"))
 
             add(textArea)
-            add(JButton("Reload Indices!").apply {
+
+            add(JButton("Build Tree").apply {
                 addActionListener {
-                    FileBasedIndex.getInstance().requestRebuild(PRIMARY_INDEX_ID)
-                    println("Reloading Indices :)")
+                    scanMethod(false)
                 }
             })
 
-            add(JButton("Scan method").apply {
+            add(JButton("Build & Eval Tree").apply {
                 addActionListener {
-                    val fileEditorManager = FileEditorManager.getInstance(toolWindow.project)
-
-                    // Get the currently selected file
-                    val selectedTextEditor = fileEditorManager.selectedTextEditor
-                    val currentFile = selectedTextEditor?.virtualFile
-
-                    selectedTextEditor?.let { editor ->
-                        val psiFile = PsiDocumentManager.getInstance(toolWindow.project)
-                            .getPsiFile(editor.document)
-
-                        val offset = editor.caretModel.offset
-                        val element = psiFile?.findElementAt(offset)
-
-                        if (element != null && element.parent is PsiMethod) {
-                            MethodProcessing.processMethod(element.parent as PsiMethod)
-                        }
-                    }
+                    scanMethod(true)
                 }
             })
+        }
+
+        private fun scanMethod(evaluateResults: Boolean) {
+            val fileEditorManager = FileEditorManager.getInstance(toolWindow.project)
+
+            // Get the currently selected file
+            val selectedTextEditor = fileEditorManager.selectedTextEditor
+
+            selectedTextEditor?.let { editor ->
+                val psiFile = PsiDocumentManager.getInstance(toolWindow.project)
+                    .getPsiFile(editor.document)
+
+                val offset = editor.caretModel.offset
+                val element = psiFile?.findElementAt(offset)
+
+                if (element != null && element.parent is PsiMethod) {
+                    MethodProcessing.processMethod(element.parent as PsiMethod, evaluateResults)
+                }
+            }
         }
     }
 }

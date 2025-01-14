@@ -14,10 +14,10 @@ object ConstraintSolver {
     ) {
         override fun toString(): String {
             return terms.entries.joinToString(" + ") { (exp, term) ->
-                if (exp == 0) {
-                    term.toString()
-                } else {
-                    "${term}x^$exp"
+                when (exp) {
+                    0 -> term.toString()
+                    1 -> "${term}x"
+                    else -> "${term}x^$exp"
                 }
             }
         }
@@ -166,6 +166,7 @@ object ConstraintSolver {
             // I think this is correct?
             is NegateExpression -> expandTerms(expr.expr, varKey).negate()
             is NumberLimitsExpression -> throw IllegalStateException("Uuh ... this can maybe happen?")
+            is NumIterationTimesExpression -> TODO("Maybe one day? Unsure if this is possible")
         }
     }
 }

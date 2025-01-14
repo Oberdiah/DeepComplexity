@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
@@ -55,6 +56,16 @@ class NumberLimitsExpression(
     val shouldFlipCmp: IExprRetBool,
     // The comparison operator to use.
     val cmp: ComparisonOp
+) : Expr(), IExprRetNum
+
+class NumIterationTimesExpression(
+    // How the variable is constrained; if the variable changes such that this returns false,
+    // the loop will end.
+    val constraint: IExprRetNum,
+    // The variable that's being modified as it changes inside the loop.
+    val variable: VariableExpression.VariableNumber,
+    // How the variable is changing each iteration.
+    val terms: ConstraintSolver.CollectedTerms
 ) : Expr(), IExprRetNum
 
 class RepeatExpression(val numRepeats: IExprRetNum, val exprToRepeat: IExpr) : Expr()

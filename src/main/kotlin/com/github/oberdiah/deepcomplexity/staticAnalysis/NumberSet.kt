@@ -4,9 +4,11 @@ import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
+import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
@@ -33,6 +35,14 @@ sealed interface NumberSet : IMoldableSet {
     fun addRange(start: Number, end: Number)
     fun negate(): NumberSet
     fun isOne(): Boolean
+
+    /**
+     * Given a set of `terms` to apply to this set on each iteration, evaluate
+     * the number of iterations required to exit the `valid` number set.
+     *
+     * You can think of this set as being the 'initial' state.
+     */
+    fun evaluateLoopingRange(terms: ConstraintSolver.CollectedTerms, valid: NumberSet): NumberSet
 
     /**
      * Returns a new set that satisfies the comparison operation.
@@ -82,6 +92,18 @@ sealed interface NumberSet : IMoldableSet {
         fun fullRange(clazz: KClass<*>): NumberSet {
             val set = newFromClass(clazz)
             set.addRange(clazz.getMinValue(), clazz.getMaxValue())
+            return set
+        }
+
+        fun fullPositiveRange(clazz: KClass<*>): NumberSet {
+            val set = newFromClass(clazz)
+            set.addRange(clazz.getZero(), clazz.getMaxValue())
+            return set
+        }
+
+        fun fullNegativeRange(clazz: KClass<*>): NumberSet {
+            val set = newFromClass(clazz)
+            set.addRange(clazz.getMinValue(), clazz.getZero())
             return set
         }
 
@@ -304,6 +326,21 @@ sealed interface NumberSet : IMoldableSet {
             }
 
             return BooleanSet.BOTH
+        }
+
+        override fun evaluateLoopingRange(terms: ConstraintSolver.CollectedTerms, valid: NumberSet): NumberSet {
+            val gaveUp = fullPositiveRange(clazz)
+
+            val linearTerm = terms.terms[1] ?: return gaveUp
+            val constantTerm = terms.terms[0] ?: return gaveUp
+            if (terms.terms.size > 2) return gaveUp
+            if (!linearTerm.evaluate(ConstantExpression.TRUE).isOne()) {
+                // We can deal with this if the constant term is 0, but we're not bothering
+                // with that for now.
+                return gaveUp
+            }
+
+            TODO()
         }
 
         private fun mergeAndDeduplicate() {

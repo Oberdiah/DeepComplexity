@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.loopEvaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.intellij.psi.PsiElement
@@ -10,7 +11,7 @@ object LoopEvaluation {
      * Given the context for the loop body, and the condition, figure out our new context.
      */
     fun processLoopContext(context: Context, condition: IExprRetBool) {
-        val numLoops = null
+        var numLoops: NumIterationTimesExpression? = null
 
         val conditionVariables = condition.getVariables(false)
         for ((psiElement, expr) in context.getVariables()) {
@@ -21,46 +22,61 @@ object LoopEvaluation {
 
             // We now have an expression that is looping stuff.
             val (terms, variable) = collectTerms(expr, psiElement, variablesMatchingCondition) ?: continue
-            val linearTerm = terms.terms[1] ?: continue
-            val constantTerm = terms.terms[0] ?: continue
-            if (terms.terms.size > 2) {
-                continue
-            }
-            if (!linearTerm.evaluate(ConstantExpression.TRUE).isOne()) {
-                // We can deal with this if the constant term is 0, but not for now.
-                continue
-            }
 
-//            val solved = ConstraintSolver.getVariableConstraints(
-//                condition,
-//                variable.getKey()
-//            )
+            val constraint = ExprConstrain.getConstraints(condition, variable)
+            if (constraint !is IExprRetNum) continue
+
+            numLoops = NumIterationTimesExpression(constraint, variable, terms)
         }
 
-        val allElements = context.getVariables().keys
         for ((psiElement, expr) in context.getVariables()) {
             // Unresolved expressions not able to be resolved by this context are of no interest to
             // us as they can't affect this loop.
             val allUnresolved = expr.getVariables(false).filter { context.canResolve(it) }
             if (allUnresolved.isEmpty()) continue
 
-            if (numLoops == null) {
-                // If we don't know the number of loops, we've got absolutely no chance.
-                // This can definitely be improved from just throwing all info away though.
-                context.assignVar(psiElement, ConstantExpression.fullExprFromExpr(expr))
-                continue
-            }
-
-            val terms = collectTerms(expr, psiElement, allUnresolved)
-            println(terms)
+            val newExpr = repeatExpression(numLoops, expr, psiElement, allUnresolved)
+            context.assignVar(psiElement, newExpr)
         }
+    }
+
+    private fun repeatExpression(
+        numLoops: NumIterationTimesExpression?,
+        expr: IExpr,
+        psiElement: PsiElement,
+        allUnresolved: List<VariableExpression>
+    ): IExpr {
+        val gaveUp = ConstantExpression.fullExprFromExpr(expr)
+
+        if (numLoops == null) {
+            // If we don't know the number of loops, we've got absolutely no chance.
+            // This can definitely be improved from just throwing all info away though.
+            return gaveUp
+        }
+
+        val (terms, _) = collectTerms(expr, psiElement, allUnresolved) ?: return gaveUp
+
+        if (terms.terms.size > 2) return gaveUp
+        val linearTerm = terms.terms[1] ?: return gaveUp
+        val constantTerm = terms.terms[0] ?: return gaveUp
+        if (!linearTerm.evaluate(ConstantExpression.TRUE).isOne()) {
+            // We can deal with this if the constant term is 0, but we're not bothering
+            // with that for now.
+            return gaveUp
+        }
+
+        return ArithmeticExpression(
+            constantTerm,
+            numLoops,
+            MULTIPLICATION
+        )
     }
 
     fun collectTerms(
         expr: IExpr,
         psiElement: PsiElement,
         variables: List<VariableExpression>
-    ): Pair<ConstraintSolver.CollectedTerms, VariableExpression>? {
+    ): Pair<ConstraintSolver.CollectedTerms, VariableExpression.VariableNumber>? {
         // We can't deal with this in general, things start getting too complicated when
         // something in the loop relies on two other things.
         // Some edge cases might be doable in certain situations, for now I'm not going to bother.
@@ -72,6 +88,7 @@ object LoopEvaluation {
         // We might be able to deal with this with a bit more work, but
         // I'm not going to bother for now.
         if (unresolved.getKey().element != psiElement) return null
+        if (unresolved !is VariableExpression.VariableNumber) return null
 
         if (expr !is IExprRetNum) return null
 

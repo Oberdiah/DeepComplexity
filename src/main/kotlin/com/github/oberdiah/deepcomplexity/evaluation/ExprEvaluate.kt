@@ -77,6 +77,17 @@ object ExprEvaluate {
                     NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
             }
+
+            is NumIterationTimesExpression -> {
+                val terms = expr.terms
+                // The plan here is to figure out, based on the set of numbers we are allowed to have,
+                // the maximum number of times this could occur.
+                // This could get pretty complex, but we'll keep it relatively simple for now.
+                val constrainingValues = expr.constraint.evaluate(condition)
+                val startingValue = expr.variable.evaluate(condition)
+
+                startingValue.evaluateLoopingRange(terms, constrainingValues)
+            }
         }
     }
 
