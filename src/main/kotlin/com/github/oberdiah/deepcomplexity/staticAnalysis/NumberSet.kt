@@ -4,7 +4,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
-import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
@@ -33,6 +32,14 @@ sealed interface NumberSet : IMoldableSet {
     fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet
     fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet
     fun addRange(start: Number, end: Number)
+    fun <T : Number> castToType(clazz: KClass<*>): NumberSetImpl<T>
+
+    /**
+     * Returns the range of the set. i.e., the smallest value in the set and the largest.
+     *
+     * Returns null if the set is empty.
+     */
+    fun getRange(): Pair<Number, Number>?
     fun negate(): NumberSet
     fun isOne(): Boolean
 
@@ -42,7 +49,7 @@ sealed interface NumberSet : IMoldableSet {
      *
      * You can think of this set as being the 'initial' state.
      */
-    fun evaluateLoopingRange(terms: ConstraintSolver.CollectedTerms, valid: NumberSet): NumberSet
+    fun evaluateLoopingRange(changeTerms: ConstraintSolver.EvaluatedCollectedTerms, valid: NumberSet): NumberSet
 
     /**
      * Returns a new set that satisfies the comparison operation.
@@ -127,6 +134,14 @@ sealed interface NumberSet : IMoldableSet {
             ranges.add(NumberRange(start, end))
         }
 
+        override fun <T : Number> castToType(clazz: KClass<*>): NumberSetImpl<T> {
+            if (clazz != this.clazz) {
+                throw IllegalArgumentException("Cannot cast to different type — $clazz != ${this.clazz}")
+            }
+            @Suppress("UNCHECKED_CAST")
+            return this as NumberSetImpl<T>
+        }
+
         override fun addRange(start: Number, end: Number) {
             if (start::class != clazz || end::class != clazz) {
                 throw IllegalArgumentException("Cannot add range of different types")
@@ -134,6 +149,18 @@ sealed interface NumberSet : IMoldableSet {
 
             @Suppress("UNCHECKED_CAST")
             addRangeTyped(start as T, end as T)
+        }
+
+        override fun getRange(): Pair<Number, Number>? {
+            return getRangeTyped()
+        }
+
+        private fun getRangeTyped(): Pair<T, T>? {
+            if (ranges.isEmpty()) {
+                return null
+            }
+
+            return ranges[0].start to ranges[ranges.size - 1].end
         }
 
         override fun toString(): String {
@@ -161,12 +188,7 @@ sealed interface NumberSet : IMoldableSet {
         }
 
         override fun getSetSatisfying(comp: ComparisonOp): NumberSet {
-            if (ranges.isEmpty()) {
-                return this
-            }
-
-            val biggestValue = ranges[ranges.size - 1].end
-            val smallestValue = ranges[0].start
+            val (smallestValue, biggestValue) = getRangeTyped() ?: return this
 
             val newSet = newFromClassTyped<T>(clazz)
 
@@ -265,6 +287,15 @@ sealed interface NumberSet : IMoldableSet {
             return newSet
         }
 
+        fun contains(value: T): Boolean {
+            for (range in ranges) {
+                if (value >= range.start && value <= range.end) {
+                    return true
+                }
+            }
+            return false
+        }
+
         override fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet {
             val newSet = newFromClassTyped<T>(clazz)
             for (range in ranges) {
@@ -328,19 +359,60 @@ sealed interface NumberSet : IMoldableSet {
             return BooleanSet.BOTH
         }
 
-        override fun evaluateLoopingRange(terms: ConstraintSolver.CollectedTerms, valid: NumberSet): NumberSet {
+        override fun evaluateLoopingRange(
+            changeTerms: ConstraintSolver.EvaluatedCollectedTerms,
+            valid: NumberSet
+        ): NumberSet {
             val gaveUp = fullPositiveRange(clazz)
 
-            val linearTerm = terms.terms[1] ?: return gaveUp
-            val constantTerm = terms.terms[0] ?: return gaveUp
-            if (terms.terms.size > 2) return gaveUp
-            if (!linearTerm.evaluate(ConstantExpression.TRUE).isOne()) {
+            val invalid = (valid.invert() as NumberSet).castToType<T>(clazz)
+            val linearChange = (changeTerms.terms[1] ?: return gaveUp).castToType<T>(clazz)
+            val constantChange = (changeTerms.terms[0] ?: return gaveUp).castToType<T>(clazz)
+            if (changeTerms.terms.size > 2) return gaveUp
+            if (!linearChange.isOne()) {
                 // We can deal with this if the constant term is 0, but we're not bothering
                 // with that for now.
                 return gaveUp
             }
 
-            TODO()
+            val zero = clazz.getZero().castInto<T>(clazz)
+
+            if (constantChange.contains(zero)) {
+                // We genuinely can't do a thing, gave up is the best we're ever going to be able to do here.
+                return gaveUp
+            }
+
+            var minimumNumberOfLoops = clazz.getMaxValue().castInto<T>(clazz)
+            var maximumNumberOfLoops = zero
+
+            // This is obviously not a very performant way to do this, but it's a start.
+
+            // This is mostly there, but doesn't consider the possibility of variables overflowing, so I don't
+            // want to make it final yet.
+//            for (deltaRange in constantChange.ranges) {
+//                for (initialRange in ranges) {
+//                    for (invalidRange in invalid.ranges) {
+//                        // As we know deltaRange cannot contain zero, it must either be entirely positive or entirely negative.
+//                        if (deltaRange.start > zero) {
+//                            if (invalidRange.start < initialRange.end) {
+//                                minimumNumberOfLoops = zero
+//                            }
+//
+//                            // Going up
+//                            val minLoopsUp = (invalidRange.start - initialRange.end) / deltaRange.end
+//                            minimumNumberOfLoops = minimumNumberOfLoops.min(minLoopsUp)
+//                            val maxLoopsUp = (invalidRange.start - initialRange.start) / deltaRange.start
+//                            maximumNumberOfLoops = maximumNumberOfLoops.max(maxLoopsUp)
+//                        } else {
+//
+//                        }
+//                    }
+//                }
+//            }
+
+            val newSet = newFromClassTyped<T>(clazz)
+            newSet.addRangeTyped(minimumNumberOfLoops, maximumNumberOfLoops)
+            return newSet
         }
 
         private fun mergeAndDeduplicate() {

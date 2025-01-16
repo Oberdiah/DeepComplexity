@@ -6,12 +6,22 @@ import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.Variable
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstraintSolver {
+    data class EvaluatedCollectedTerms(
+        val terms: Map<Int, NumberSet>,
+    )
+
     data class CollectedTerms(
         /**
          * Map from exponent to coefficient. 0th is constant, 1st is linear, 2nd is quadratic, etc.
          */
         val terms: MutableMap<Int, IExprRetNum> = mutableMapOf(),
     ) {
+        fun evaluate(condition: IExprRetBool): EvaluatedCollectedTerms {
+            return EvaluatedCollectedTerms(
+                terms.mapValues { (_, term) -> term.evaluate(condition) }
+            )
+        }
+
         override fun toString(): String {
             return terms.entries.joinToString(" + ") { (exp, term) ->
                 when (exp) {

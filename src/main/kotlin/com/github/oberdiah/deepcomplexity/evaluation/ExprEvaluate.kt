@@ -86,7 +86,7 @@ object ExprEvaluate {
                 val constrainingValues = expr.constraint.evaluate(condition)
                 val startingValue = expr.variable.evaluate(condition)
 
-                startingValue.evaluateLoopingRange(terms, constrainingValues)
+                startingValue.evaluateLoopingRange(terms.evaluate(condition), constrainingValues)
             }
         }
     }

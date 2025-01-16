@@ -150,7 +150,7 @@ object Utilities {
             Float::class -> this.toFloat()
             Double::class -> this.toDouble()
             else -> throw IllegalArgumentException("Unsupported type for cast")
-        } as T // This cast shouldn't be necessary.
+        } as T
     }
 
     inline fun <R> R?.orElse(block: () -> R): R {
