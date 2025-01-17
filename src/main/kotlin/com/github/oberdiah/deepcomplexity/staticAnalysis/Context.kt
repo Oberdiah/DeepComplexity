@@ -13,14 +13,56 @@ import kotlinx.collections.immutable.toImmutableMap
  * have the states specified
  */
 class Context {
+    sealed class Key {
+        // Variable is where the variable is defined —
+        // either PsiLocalVariable, PsiParameter, or PsiField
+        data class VariableKey(val variable: PsiVariable) : Key() {
+            override fun toString(): String {
+                return "$variable"
+            }
+        }
+
+        // ReturnMethod is the method that the return statement will return to
+        data class ReturnKey(val returnMethod: PsiElement) : Key() {
+            override fun toString(): String {
+                return "Return from $returnMethod"
+            }
+        }
+
+        fun getType(): PsiType {
+            return when (this) {
+                is VariableKey -> variable.type
+                is ReturnKey -> {
+                    val returnType = (returnMethod as? PsiMethod)?.returnType
+                    // One day this will have to deal with lambdas too.
+                    returnType ?: throw IllegalArgumentException("Return statement is not inside a method")
+                }
+            }
+        }
+
+        /**
+         * If the key is a variable (i.e. a Local Variable, Field, etc.), returns the variable.
+         * If the key is a return statement, returns the method we're returning from.
+         */
+        fun getElement(): PsiElement {
+            return when (this) {
+                is VariableKey -> variable
+                is ReturnKey -> returnMethod
+            }
+        }
+
+        fun matchesElement(element: PsiElement): Boolean {
+            return getElement() == element
+        }
+    }
+
     /**
      * Set to false when a destructive operation is called on this context.
      */
     private var alive = true
 
-    // Psi Element is where the variable is defined —
-    // either PsiLocalVariable, PsiParameter, or PsiField
-    private val variables = mutableMapOf<PsiElement, IExpr>()
+
+    private val variables = mutableMapOf<Key, IExpr>()
 
     companion object {
         /**
@@ -62,7 +104,7 @@ class Context {
 
     fun canResolve(variable: VariableExpression): Boolean {
         assert(alive)
-        return variables.containsKey(variable.getKey().element) && variable.getKey().context == this
+        return variables.containsKey(variable.getKey().key) && variable.getKey().context == this
     }
 
     fun convertToString(evaluate: Boolean): String {
@@ -78,7 +120,7 @@ class Context {
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun getVariables(): Map<PsiElement, IExpr> {
+    fun getVariables(): Map<Key, IExpr> {
         assert(alive)
         return variables.toImmutableMap()
     }
@@ -98,7 +140,7 @@ class Context {
             for (unresolved in allUnresolved) {
                 val resolvedKey = unresolved.getKey()
                 if (resolvedKey.context == later) {
-                    val resolved = variables[resolvedKey.element]
+                    val resolved = variables[resolvedKey.key]
                     if (resolved != null) {
                         unresolved.setResolvedExpr(resolved)
                     }
@@ -114,42 +156,49 @@ class Context {
 
     fun getVar(element: PsiElement): IExpr {
         assert(alive)
-        when (element) {
-            is PsiLocalVariable, is PsiParameter, is PsiField, is PsiReturnStatement -> {
-                return variables[element] ?: VariableExpression.fromElement(element, this)
-            }
+        return getVar(keyFromElement(element))
+    }
 
-            else -> {
-                TODO("As-yet unsupported PsiElement type (${element::class}) for variable declaration")
-            }
-        }
+    fun getVar(element: Key): IExpr {
+        assert(alive)
+        return variables[element] ?: VariableExpression.fromKey(element, this)
+    }
+
+    fun assignVar(key: Key, expr: IExpr) {
+        variables[key] = expr
     }
 
     fun assignVar(element: PsiElement, expr: IExpr) {
         assert(alive)
-        assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField || element is PsiReturnStatement)
+        assignVar(keyFromElement(element), expr)
+    }
 
-        when (element) {
-            is PsiLocalVariable, is PsiParameter, is PsiField, is PsiReturnStatement -> {
-                variables[element] = expr
+    private fun keyFromElement(element: PsiElement): Key {
+        assert(alive)
+
+        return when (element) {
+            is PsiVariable -> Key.VariableKey(element)
+            is PsiReturnStatement -> {
+                val returnMethod = findContainingMethodOrLambda(element)
+                    ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
+
+                Key.ReturnKey(returnMethod)
             }
 
-            is PsiReferenceExpression -> {
-                // If we're assigning to a variable that's already been declared, overwrite it
-                // with the new value. Otherwise, create a new variable.
-                val variable = element.resolve() ?: TODO(
-                    "Variable couldn't be resolved (${element.text})"
-                )
-
-                variables[variable] = expr
-            }
-
-            else -> {
-                TODO(
-                    "As-yet unsupported PsiElement type (${element::class}) for variable declaration"
-                )
-            }
+            else -> throw IllegalArgumentException("Unsupported PsiElement type: ${element::class} (${element.text})")
         }
+    }
+
+    private fun findContainingMethodOrLambda(returnStatement: PsiReturnStatement): PsiElement? {
+        var parent = returnStatement.parent
+        while (parent != null) {
+            when (parent) {
+                is PsiMethod -> return parent // Found the containing method
+                is PsiLambdaExpression -> return parent // Found the containing lambda
+            }
+            parent = parent.parent
+        }
+        return null // Not inside a method or lambda
     }
 
     /**

@@ -1,10 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
-import com.intellij.psi.PsiVariable
 import kotlin.reflect.KClass
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
@@ -21,14 +19,12 @@ sealed interface VariableExpression : IExpr {
     companion object {
         private var VARIABLE_ID = 0
 
-        fun fromElement(element: PsiElement, context: Context): VariableExpression {
+        fun fromKey(contextKey: Context.Key, context: Context): VariableExpression {
             VARIABLE_ID++
 
-            val type: PsiType =
-                (element as? PsiVariable)?.type
-                    ?: throw IllegalArgumentException("Element must be a PsiVariable (got ${element::class})")
+            val key = VariableKey(contextKey, context)
 
-            val key = VariableKey(element, context)
+            val type: PsiType = contextKey.getType()
 
             return when (type) {
                 PsiTypes.byteType(),
@@ -53,7 +49,7 @@ sealed interface VariableExpression : IExpr {
     /**
      * An unresolved expression needs both its context and the element to correctly resolve it.
      */
-    data class VariableKey(val element: PsiElement, var context: Context)
+    data class VariableKey(val key: Context.Key, var context: Context)
 
     /**
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.

@@ -14,14 +14,14 @@ object LoopEvaluation {
         var numLoops: NumIterationTimesExpression? = null
 
         val conditionVariables = condition.getVariables(false)
-        for ((psiElement, expr) in context.getVariables()) {
+        for ((key, expr) in context.getVariables()) {
             val variablesMatchingCondition = expr.getVariables(false)
                 .filter { vari -> conditionVariables.any { vari.getKey() == it.getKey() } }
 
             if (variablesMatchingCondition.isEmpty()) continue
 
             // We now have an expression that is looping stuff.
-            val (terms, variable) = collectTerms(expr, psiElement, variablesMatchingCondition) ?: continue
+            val (terms, variable) = collectTerms(expr, key.getElement(), variablesMatchingCondition) ?: continue
 
             val constraint = ExprConstrain.getConstraints(condition, variable)
             if (constraint !is IExprRetNum) continue
@@ -29,14 +29,14 @@ object LoopEvaluation {
             numLoops = NumIterationTimesExpression(constraint, variable, terms)
         }
 
-        for ((psiElement, expr) in context.getVariables()) {
+        for ((key, expr) in context.getVariables()) {
             // Unresolved expressions not able to be resolved by this context are of no interest to
             // us as they can't affect this loop.
             val allUnresolved = expr.getVariables(false).filter { context.canResolve(it) }
             if (allUnresolved.isEmpty()) continue
 
-            val newExpr = repeatExpression(numLoops, expr, psiElement, allUnresolved)
-            context.assignVar(psiElement, newExpr)
+            val newExpr = repeatExpression(numLoops, expr, key.getElement(), allUnresolved)
+            context.assignVar(key, newExpr)
         }
     }
 
@@ -72,7 +72,7 @@ object LoopEvaluation {
         )
     }
 
-    fun collectTerms(
+    private fun collectTerms(
         expr: IExpr,
         psiElement: PsiElement,
         variables: List<VariableExpression>
@@ -87,7 +87,7 @@ object LoopEvaluation {
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but
         // I'm not going to bother for now.
-        if (unresolved.getKey().element != psiElement) return null
+        if (!unresolved.getKey().key.matchesElement(psiElement)) return null
         if (unresolved !is VariableExpression.VariableNumber) return null
 
         if (expr !is IExprRetNum) return null

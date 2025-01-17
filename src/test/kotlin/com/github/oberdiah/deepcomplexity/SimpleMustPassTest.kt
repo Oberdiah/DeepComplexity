@@ -46,6 +46,9 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
         val tests = mutableListOf<DynamicTest>()
 
+        // for after work: Need to figure out how to avoid regressions.
+        // i.e. making our constraints accidentally weaker.
+
         for (method in methods) {
             tests.add(DynamicTest.dynamicTest(method.second) {
                 app.runReadAction {
