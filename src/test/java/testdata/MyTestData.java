@@ -9,10 +9,10 @@ public class MyTestData {
 		}
 	}
 	
-	public static int test2(int incoming1, int incoming2) {
+	public static int test2(int incoming1) {
 		int foo = 0;
 		int bar = incoming1;
-		incoming2 += 1;
+		int incoming2 = incoming1 * 2;
 		
 		if (incoming1 > 2) {
 			incoming2 = incoming1 * incoming2;

@@ -204,10 +204,10 @@ object MethodProcessing {
                 val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()
 
                 val lhs = buildExpressionFromPsi(lhsOperand, context).asRetNum()
-                    ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text}")
+                    ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text} while parsing ${psi.text}")
 
                 val rhs = buildExpressionFromPsi(rhsOperand, context).asRetNum()
-                    ?: TODO("Failed to cast to NumberSet: ${rhsOperand.text}")
+                    ?: TODO("Failed to cast to NumberSet: ${rhsOperand.text} while parsing ${psi.text}")
 
                 val tokenType = psi.operationSign.tokenType
 
@@ -217,7 +217,7 @@ object MethodProcessing {
                 return when {
                     comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
                     binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
-                    else -> TODO("Unsupported binary operation: ${psi.operationSign}")
+                    else -> TODO("Unsupported binary operation: ${psi.operationSign} (${psi.text})")
                 }
             }
         }

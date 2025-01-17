@@ -17,16 +17,6 @@ import org.junit.jupiter.api.TestFactory
 class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
     override fun getTestDataPath() = "src/test/java/testdata/"
 
-    @BeforeEach
-    fun setUp() {
-
-    }
-
-    @Test
-    fun simpleTest() {
-
-    }
-
     @TestFactory
     fun dynamicTestsWithCollection(): Collection<DynamicTest> {
         val outputFile: PsiFile = fixture.configureByFile("MyTestData.java")
@@ -57,8 +47,8 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                     val context = MethodProcessing.getMethodContext(method.first)
                     val range = context.evaluateKey(Context.Key.ReturnKey(method.first))
 
-                    TestUtilities.verifyMethod(method.second, range)
                     println("\tRange: $range")
+                    TestUtilities.verifyMethod(method.second, range)
                 }
             })
         }
