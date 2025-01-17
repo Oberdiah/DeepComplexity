@@ -14,6 +14,9 @@ object ExprGetVariables {
                 }
             }
 
+            is DynamicNumberCastExpression -> expr.expr.getVariables(resolved)
+            is DynamicBooleanCastExpression -> expr.expr.getVariables(resolved)
+            is DynamicGenericCastExpression -> expr.expr.getVariables(resolved)
             is BooleanExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is ComparisonExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is BooleanInvertExpression -> expr.expr.getVariables(resolved)

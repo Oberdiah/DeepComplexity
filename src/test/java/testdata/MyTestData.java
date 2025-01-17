@@ -21,7 +21,7 @@ public class MyTestData {
 			foo += 3;
 		}
 		
-		return incoming1;
+		return incoming1 + bar;
 	}
 
 //	public static int test2(int incoming1, int incoming2) {

@@ -13,6 +13,10 @@ object ExprConstrain {
     fun getConstraints(condition: IExprRetBool, variable: VariableExpression): IExpr? {
         val varKey = variable.getKey()
         return when (condition) {
+            is DynamicBooleanCastExpression -> (condition.expr as? IExprRetBool
+                ?: throw IllegalStateException("Tried to cast ${condition.expr} to a boolean set but failed."))
+                .getConstraints(variable)
+
             is BooleanExpression -> {
                 val lhsConstrained = condition.lhs.getConstraints(variable)
                 val rhsConstrained = condition.rhs.getConstraints(variable)

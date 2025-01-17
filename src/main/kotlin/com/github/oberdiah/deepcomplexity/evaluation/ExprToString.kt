@@ -31,6 +31,10 @@ object ExprToString {
 
             is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
+
+            is DynamicBooleanCastExpression -> "${expr.expr}"
+            is DynamicGenericCastExpression -> "${expr.expr}"
+            is DynamicNumberCastExpression -> "${expr.expr}"
         }
     }
 

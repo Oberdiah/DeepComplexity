@@ -13,9 +13,9 @@ sealed interface IExpr {
     fun getSetClass(): KClass<*> = ExprClass.getSetClass(this)
     fun evaluate(condition: IExprRetBool): IMoldableSet = ExprEvaluate.evaluate(this, condition)
 
-    fun asRetNum(): IExprRetNum? = this as? IExprRetNum
-    fun asRetBool(): IExprRetBool? = this as? IExprRetBool
-    fun asRetGeneric(): IExprRetGeneric? = this as? IExprRetGeneric
+    fun asRetNum(): IExprRetNum? = this as? IExprRetNum ?: DynamicNumberCastExpression(this)
+    fun asRetBool(): IExprRetBool? = this as? IExprRetBool ?: DynamicBooleanCastExpression(this)
+    fun asRetGeneric(): IExprRetGeneric? = this as? IExprRetGeneric ?: DynamicGenericCastExpression(this)
 }
 
 sealed class Expr : IExpr {
@@ -38,6 +38,9 @@ sealed interface IExprRetGeneric : IExpr {
     override fun evaluate(condition: IExprRetBool): GenericSet = ExprEvaluate.evaluate(this, condition)
 }
 
+class DynamicNumberCastExpression(val expr: IExpr) : Expr(), IExprRetNum
+class DynamicBooleanCastExpression(val expr: IExpr) : Expr(), IExprRetBool
+class DynamicGenericCastExpression(val expr: IExpr) : Expr(), IExprRetGeneric
 class ArithmeticExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val op: BinaryNumberOp) : Expr(), IExprRetNum
 class ComparisonExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val comp: ComparisonOp) : Expr(), IExprRetBool
 class IfExpression(val trueExpr: IExpr, val falseExpr: IExpr, val thisCondition: IExprRetBool) : Expr()

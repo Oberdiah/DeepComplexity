@@ -41,6 +41,8 @@ object ExprClass {
             is NumberLimitsExpression -> getBaseClass(expr.limit)
             is InvertExpression -> getBaseClass(expr.expr)
             is NumIterationTimesExpression -> getBaseClass(expr.constraint)
+            is DynamicNumberCastExpression -> getBaseClass(expr.expr)
+            is DynamicGenericCastExpression -> getBaseClass(expr.expr)
         }
     }
 }

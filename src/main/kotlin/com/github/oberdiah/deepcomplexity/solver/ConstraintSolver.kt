@@ -157,6 +157,7 @@ object ConstraintSolver {
 
     fun expandTerms(expr: IExprRetNum, varKey: VariableKey): CollectedTerms {
         return when (expr) {
+            is DynamicNumberCastExpression -> TODO("Cannot expand dynamic number cast for now. Maybe one day?")
             is ArithmeticExpression -> {
                 val lhs = expandTerms(expr.lhs, varKey)
                 val rhs = expandTerms(expr.rhs, varKey)

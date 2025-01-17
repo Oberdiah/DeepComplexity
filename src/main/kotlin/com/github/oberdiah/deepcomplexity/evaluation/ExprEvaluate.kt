@@ -41,6 +41,9 @@ object ExprEvaluate {
 
     fun evaluate(expr: IExprRetNum, condition: IExprRetBool): NumberSet {
         return when (expr) {
+            is DynamicNumberCastExpression -> expr.expr.evaluate(condition) as? NumberSet
+                ?: throw IllegalStateException("Tried to cast ${expr.expr} to a number set but failed.")
+
             is ArithmeticExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
@@ -93,6 +96,9 @@ object ExprEvaluate {
 
     fun evaluate(expr: IExprRetBool, condition: IExprRetBool): BooleanSet {
         return when (expr) {
+            is DynamicBooleanCastExpression -> expr.expr.evaluate(condition) as? BooleanSet
+                ?: throw IllegalStateException("Tried to cast ${expr.expr} to a boolean set but failed.")
+
             is BooleanExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
@@ -120,6 +126,9 @@ object ExprEvaluate {
 
     fun evaluate(expr: IExprRetGeneric, condition: IExprRetBool): GenericSet {
         return when (expr) {
+            is DynamicGenericCastExpression -> expr.expr.evaluate(condition) as? GenericSet
+                ?: throw IllegalStateException("Tried to cast ${expr.expr} to a generic set but failed.")
+
             is ConstExprGeneric -> expr.singleElementSet
             is VariableExpression.VariableGeneric -> {
                 expr.resolvedInto?.let {
