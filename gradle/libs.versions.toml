@@ -1,6 +1,6 @@
 [versions]
 # libraries
-junit = "4.13.2"
+junit = "5.11.4"
 commonsNumbersCore = "1.2"
 
 # plugins
@@ -11,7 +11,7 @@ kover = "0.8.3"
 qodana = "2024.2.6"
 
 [libraries]
-junit = { group = "junit", name = "junit", version.ref = "junit" }
+junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
 commonsNumbersCore = { group = "org.apache.commons", name = "commons-numbers-core", version.ref = "commonsNumbersCore" }
 
 [plugins]

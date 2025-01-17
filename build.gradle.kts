@@ -40,6 +40,7 @@ repositories {
 dependencies {
     testImplementation(libs.junit)
     implementation(libs.commonsNumbersCore)
+    testRuntimeOnly("junit:junit:4.13.2")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
@@ -55,6 +56,8 @@ dependencies {
         pluginVerifier()
         zipSigner()
         testFramework(TestFrameworkType.Platform)
+        testFramework(TestFrameworkType.Plugin.Java)
+        testFramework(TestFrameworkType.JUnit5)
     }
 }
 
@@ -137,6 +140,10 @@ kover {
 }
 
 tasks {
+    test {
+        useJUnitPlatform()
+    }
+
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
