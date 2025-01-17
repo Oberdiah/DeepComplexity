@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.toolWindow
 
 import com.github.oberdiah.deepcomplexity.MyBundle
-import com.github.oberdiah.deepcomplexity.indexes.PRIMARY_INDEX_ID
 import com.github.oberdiah.deepcomplexity.services.MyProjectService
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
 import com.intellij.openapi.components.service
@@ -10,12 +9,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.content.ContentFactory
-import com.intellij.util.indexing.FileBasedIndex
 import javax.swing.JButton
 
 
@@ -63,7 +60,7 @@ class MyToolWindowFactory : ToolWindowFactory {
                 val element = psiFile?.findElementAt(offset)
 
                 if (element != null && element.parent is PsiMethod) {
-                    MethodProcessing.processMethod(element.parent as PsiMethod, evaluateResults)
+                    MethodProcessing.printMethod(element.parent as PsiMethod, evaluateResults)
                 }
             }
         }

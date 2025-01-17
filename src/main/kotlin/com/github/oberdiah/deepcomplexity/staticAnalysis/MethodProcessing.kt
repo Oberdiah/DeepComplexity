@@ -10,7 +10,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeed
 import com.intellij.psi.*
 
 object MethodProcessing {
-    fun processMethod(method: PsiMethod, evaluate: Boolean) {
+    fun printMethod(method: PsiMethod, evaluate: Boolean) {
         // The key about this parsing operation is we want to be able to do it in O(n) time
         // where n is the size of the project.
         // What makes method processing nice is we don't need to think about
@@ -22,6 +22,14 @@ object MethodProcessing {
             processPsiElement(body, context)
         }
         println(context.convertToString(evaluate))
+    }
+
+    fun getMethodContext(method: PsiMethod): Context {
+        val context = Context()
+        method.body?.let { body ->
+            processPsiElement(body, context)
+        }
+        return context
     }
 
     private fun processPsiElement(
@@ -158,7 +166,11 @@ object MethodProcessing {
             }
 
             is PsiReturnStatement -> {
-
+                val returnExpression = psi.returnValue
+                if (returnExpression != null) {
+                    val returnExpr = buildExpressionFromPsi(returnExpression, context)
+                    context.assignVar(psi, returnExpr)
+                }
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {

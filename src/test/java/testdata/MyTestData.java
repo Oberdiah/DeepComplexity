@@ -1,12 +1,11 @@
 package testdata;
 
 public class MyTestData {
-	public static void test1(int incoming) {
-		int outgoing = 0;
+	public static int test1(int incoming) {
 		if (incoming < 3) {
-			outgoing = 1;
+			return 2;
 		} else {
-			outgoing = 2;
+			return 1;
 		}
 	}
 }

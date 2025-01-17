@@ -115,7 +115,7 @@ class Context {
     fun getVar(element: PsiElement): IExpr {
         assert(alive)
         when (element) {
-            is PsiLocalVariable, is PsiParameter, is PsiField -> {
+            is PsiLocalVariable, is PsiParameter, is PsiField, is PsiReturnStatement -> {
                 return variables[element] ?: VariableExpression.fromElement(element, this)
             }
 
@@ -127,10 +127,10 @@ class Context {
 
     fun assignVar(element: PsiElement, expr: IExpr) {
         assert(alive)
-        assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField)
+        assert(element is PsiLocalVariable || element is PsiParameter || element is PsiField || element is PsiReturnStatement)
 
         when (element) {
-            is PsiLocalVariable, is PsiParameter, is PsiField -> {
+            is PsiLocalVariable, is PsiParameter, is PsiField, is PsiReturnStatement -> {
                 variables[element] = expr
             }
 
