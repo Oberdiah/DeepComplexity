@@ -4,19 +4,17 @@ import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ExprConstrain {
     /**
      * Returns null if the variable is not constrained by the condition,
      * or the constraints were too complex to be determined.
      */
-    fun getConstraints(condition: IExprRetBool, variable: VariableExpression): IExpr? {
+    fun <T : IMoldableSet<T>> getConstraints(condition: IExpr<BooleanSet>, variable: VariableExpression<T>): IExpr<T>? {
         val varKey = variable.getKey()
         return when (condition) {
-            is DynamicBooleanCastExpression -> (condition.expr as? IExprRetBool
-                ?: throw IllegalStateException("Tried to cast ${condition.expr} to a boolean set but failed."))
-                .getConstraints(variable)
-
             is BooleanExpression -> {
                 val lhsConstrained = condition.lhs.getConstraints(variable)
                 val rhsConstrained = condition.rhs.getConstraints(variable)
@@ -35,9 +33,14 @@ object ExprConstrain {
                 }
             }
 
-            is ComparisonExpression -> ConstraintSolver.getVariableConstraints(condition, varKey)
+            is ComparisonExpression -> {
+                assert(variable.getSetClass() == NumberSet::class) {
+                    "Variable must be a number set. This requires more thought if we've hit this."
+                }
+                ConstraintSolver.getVariableConstraints(condition, varKey) as IExpr<T>?
+            }
 
-            is ConstExprBool -> {
+            is ConstExpr -> {
                 when (condition.singleElementSet) {
                     BooleanSet.TRUE, BooleanSet.BOTH -> ConstantExpression.fullExprFromExpr(variable)
                     BooleanSet.FALSE, BooleanSet.NEITHER -> ConstantExpression.emptyExprFromExpr(variable)
@@ -45,8 +48,7 @@ object ExprConstrain {
             }
 
             is BooleanInvertExpression -> condition.expr.getConstraints(variable)?.let { return InvertExpression(it) }
-
-            is VariableExpression.VariableBool -> TODO()
+            else -> TODO("Not implemented constraints for $condition")
         }
     }
 }

@@ -1,9 +1,12 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.weisj.jsvg.T
 import kotlin.reflect.KClass
 
-interface GenericSet : IMoldableSet {
+interface GenericSet : IMoldableSet<GenericSet> {
+    override fun getSetClass(): KClass<*> {
+        return GenericSet::class
+    }
+
     companion object {
         inline fun <reified T> singleValue(value: T): GenericSetImpl<T> {
             return GenericSetImpl(T::class, setOf(value))
@@ -23,21 +26,21 @@ interface GenericSet : IMoldableSet {
             return clazz
         }
 
-        override fun union(other: IMoldableSet): IMoldableSet {
+        override fun union(other: GenericSet): GenericSet {
             if (other !is GenericSetImpl<*>) {
                 throw IllegalArgumentException("Cannot union with a different set type")
             }
             return GenericSetImpl(clazz, values.union(other.values))
         }
 
-        override fun intersect(other: IMoldableSet): IMoldableSet {
+        override fun intersect(other: GenericSet): GenericSet {
             if (other !is GenericSetImpl<*>) {
                 throw IllegalArgumentException("Cannot intersect with a different set type")
             }
             return GenericSetImpl(clazz, values.intersect(other.values))
         }
 
-        override fun invert(): IMoldableSet {
+        override fun invert(): GenericSet {
             TODO(
                 "Not yet implemented. It's definitely possible, " +
                         "but requires a new InvertedGenericSet class and I've not bothered yet."

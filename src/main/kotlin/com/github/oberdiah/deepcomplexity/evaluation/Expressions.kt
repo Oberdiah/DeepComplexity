@@ -2,80 +2,86 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
-sealed interface IExpr {
-    fun getVariables(resolved: Boolean): Set<VariableExpression> = ExprGetVariables.getVariables(this, resolved)
+sealed interface IExpr<T : IMoldableSet<T>> {
+    fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
     fun getBaseClass(): KClass<*> = ExprClass.getBaseClass(this)
     fun getSetClass(): KClass<*> = ExprClass.getSetClass(this)
-    fun evaluate(condition: IExprRetBool): IMoldableSet = ExprEvaluate.evaluate(this, condition)
-
-    fun asRetNum(): IExprRetNum? = this as? IExprRetNum ?: DynamicNumberCastExpression(this)
-    fun asRetBool(): IExprRetBool? = this as? IExprRetBool ?: DynamicBooleanCastExpression(this)
-    fun asRetGeneric(): IExprRetGeneric? = this as? IExprRetGeneric ?: DynamicGenericCastExpression(this)
+    fun evaluate(condition: IExpr<BooleanSet>): T = ExprEvaluate.evaluate(this, condition)
 }
 
-sealed class Expr : IExpr {
+sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
     override fun toString(): String {
         return ExprToString.toString(this)
     }
 }
 
-sealed interface IExprRetNum : IExpr {
-    override fun evaluate(condition: IExprRetBool): NumberSet = ExprEvaluate.evaluate(this, condition)
+inline fun <reified R : IMoldableSet<R>> IExpr<*>.tryCast(): IExpr<R>? {
+    val setClass = this.getSetClass()
+    val setClass2 = R::class
+
+    return if (setClass == setClass2) {
+        @Suppress("UNCHECKED_CAST")
+        this as IExpr<R>
+    } else {
+        null
+    }
 }
 
-sealed interface IExprRetBool : IExpr {
-    override fun evaluate(condition: IExprRetBool): BooleanSet = ExprEvaluate.evaluate(this, condition)
-    fun getConstraints(varKey: VariableExpression): IExpr? =
-        ExprConstrain.getConstraints(this, varKey)
+inline fun <reified T : IMoldableSet<T>, reified R : IExpr<T>> IExpr<*>.tryExactCast(): R? {
+    return if (this::class == R::class && this.getSetClass() == T::class) {
+        this as R
+    } else {
+        null
+    }
 }
 
-sealed interface IExprRetGeneric : IExpr {
-    override fun evaluate(condition: IExprRetBool): GenericSet = ExprEvaluate.evaluate(this, condition)
-}
+fun <T : IMoldableSet<T>> IExpr<BooleanSet>.getConstraints(varKey: VariableExpression<T>): IExpr<T>? =
+    ExprConstrain.getConstraints(this, varKey)
 
-class DynamicNumberCastExpression(val expr: IExpr) : Expr(), IExprRetNum
-class DynamicBooleanCastExpression(val expr: IExpr) : Expr(), IExprRetBool
-class DynamicGenericCastExpression(val expr: IExpr) : Expr(), IExprRetGeneric
-class ArithmeticExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val op: BinaryNumberOp) : Expr(), IExprRetNum
-class ComparisonExpression(val lhs: IExprRetNum, val rhs: IExprRetNum, val comp: ComparisonOp) : Expr(), IExprRetBool
-class IfExpression(val trueExpr: IExpr, val falseExpr: IExpr, val thisCondition: IExprRetBool) : Expr()
-class IntersectExpression(val lhs: IExpr, val rhs: IExpr) : Expr()
-class BooleanInvertExpression(val expr: IExprRetBool) : Expr(), IExprRetBool
-class InvertExpression(val expr: IExpr) : Expr()
-class NegateExpression(val expr: IExprRetNum) : Expr(), IExprRetNum
+class ArithmeticExpression(val lhs: IExpr<NumberSet>, val rhs: IExpr<NumberSet>, val op: BinaryNumberOp) :
+    Expr<NumberSet>()
+
+class ComparisonExpression(val lhs: IExpr<NumberSet>, val rhs: IExpr<NumberSet>, val comp: ComparisonOp) :
+    Expr<BooleanSet>()
+
+class IfExpression<T : IMoldableSet<T>>(
+    val trueExpr: IExpr<T>,
+    val falseExpr: IExpr<T>,
+    val thisCondition: IExpr<BooleanSet>
+) : Expr<T>()
+
+class IntersectExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
+class BooleanInvertExpression(val expr: IExpr<BooleanSet>) : Expr<BooleanSet>()
+class InvertExpression<T : IMoldableSet<T>>(val expr: IExpr<T>) : Expr<T>()
+class NegateExpression(val expr: IExpr<NumberSet>) : Expr<NumberSet>()
 
 /**
  * Returns the range of numbers above or below a given limit, depending on cmp.
  */
 class NumberLimitsExpression(
     // The value we're either going to be above or below.
-    val limit: IExprRetNum,
+    val limit: IExpr<NumberSet>,
     // Whether we should flip the comparison operator or not.
-    val shouldFlipCmp: IExprRetBool,
+    val shouldFlipCmp: IExpr<BooleanSet>,
     // The comparison operator to use.
     val cmp: ComparisonOp
-) : Expr(), IExprRetNum
+) : Expr<NumberSet>()
 
 class NumIterationTimesExpression(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.
-    val constraint: IExprRetNum,
+    val constraint: IExpr<NumberSet>,
     // The variable that's being modified as it changes inside the loop.
-    val variable: VariableExpression.VariableNumber,
+    val variable: VariableExpression<NumberSet>,
     // How the variable is changing each iteration.
     val terms: ConstraintSolver.CollectedTerms
-) : Expr(), IExprRetNum
+) : Expr<NumberSet>()
 
-class RepeatExpression(val numRepeats: IExprRetNum, val exprToRepeat: IExpr) : Expr()
-class UnionExpression(val lhs: IExpr, val rhs: IExpr) : Expr()
-class BooleanExpression(val lhs: IExprRetBool, val rhs: IExprRetBool, val op: BooleanOp) : Expr(), IExprRetBool
+class UnionExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
+class BooleanExpression(val lhs: IExpr<BooleanSet>, val rhs: IExpr<BooleanSet>, val op: BooleanOp) : Expr<BooleanSet>()
 
-sealed class ConstExpr<T>(val singleElementSet: T) : Expr()
-class ConstExprNum(singleElementSet: NumberSet) : ConstExpr<NumberSet>(singleElementSet), IExprRetNum
-class ConstExprBool(singleElementSet: BooleanSet) : ConstExpr<BooleanSet>(singleElementSet), IExprRetBool
-class ConstExprGeneric(singleElementSet: GenericSet) : ConstExpr<GenericSet>(singleElementSet), IExprRetGeneric
+class ConstExpr<T : IMoldableSet<T>>(val singleElementSet: T) : Expr<T>()

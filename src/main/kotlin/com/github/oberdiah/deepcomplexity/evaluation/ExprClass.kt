@@ -1,48 +1,51 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import kotlin.math.exp
 import kotlin.reflect.KClass
 
 object ExprClass {
     /**
      * The class of the set that the expression returns.
      */
-    fun getSetClass(expr: IExpr): KClass<*> {
+    fun <T : IMoldableSet<T>> getSetClass(expr: IExpr<T>): KClass<*> {
         return when (expr) {
-            is IExprRetNum -> NumberSet::class
-            is IExprRetBool -> BooleanSet::class
-            is IExprRetGeneric -> GenericSet::class
-            is IfExpression -> getSetClass(expr.trueExpr)
-            is IntersectExpression -> getSetClass(expr.lhs)
-            is RepeatExpression -> getSetClass(expr.exprToRepeat)
-            is UnionExpression -> getSetClass(expr.lhs)
-            is InvertExpression -> getSetClass(expr.expr)
+            is IfExpression -> expr.trueExpr.getSetClass()
+            is IntersectExpression -> expr.lhs.getSetClass()
+            is UnionExpression -> expr.lhs.getSetClass()
+            is InvertExpression -> expr.expr.getSetClass()
+            is ArithmeticExpression -> NumberSet::class
+            is BooleanExpression -> BooleanSet::class
+            is BooleanInvertExpression -> BooleanSet::class
+            is ComparisonExpression -> BooleanSet::class
+            is NegateExpression -> NumberSet::class
+            is NumIterationTimesExpression -> NumberSet::class
+            is NumberLimitsExpression -> NumberSet::class
+            is ConstExpr -> expr.singleElementSet.getSetClass()
+            is VariableExpression.VariableImpl -> expr.setClazz
         }
     }
 
     /**
      * The class of the elements in the set that the expression returns.
      */
-    fun getBaseClass(expr: IExpr): KClass<*> {
+    fun <T : IMoldableSet<T>> getBaseClass(expr: IExpr<T>): KClass<*> {
         return when (expr) {
-            is IExprRetBool -> Boolean::class
-            is ConstExprGeneric -> expr.singleElementSet.getClass()
-            is ConstExprNum -> expr.singleElementSet.getClass()
-            is VariableExpression.VariableGeneric -> throw IllegalStateException("Base class for a generic is a strange concept...")
-            is VariableExpression.VariableNumber -> expr.clazz
-            is ArithmeticExpression -> getBaseClass(expr.lhs)
-            is IfExpression -> getBaseClass(expr.trueExpr)
-            is IntersectExpression -> getBaseClass(expr.lhs)
-            is RepeatExpression -> getBaseClass(expr.exprToRepeat)
-            is UnionExpression -> getBaseClass(expr.lhs)
-            is NegateExpression -> getBaseClass(expr.expr)
-            is NumberLimitsExpression -> getBaseClass(expr.limit)
-            is InvertExpression -> getBaseClass(expr.expr)
-            is NumIterationTimesExpression -> getBaseClass(expr.constraint)
-            is DynamicNumberCastExpression -> getBaseClass(expr.expr)
-            is DynamicGenericCastExpression -> getBaseClass(expr.expr)
+            is ArithmeticExpression -> expr.lhs.getBaseClass()
+            is BooleanExpression -> Boolean::class
+            is BooleanInvertExpression -> Boolean::class
+            is ComparisonExpression -> Boolean::class
+            is ConstExpr -> expr.singleElementSet.getClass()
+            is IfExpression -> expr.trueExpr.getBaseClass()
+            is IntersectExpression -> expr.lhs.getBaseClass()
+            is InvertExpression -> expr.expr.getBaseClass()
+            is NegateExpression -> expr.expr.getBaseClass()
+            is NumIterationTimesExpression -> expr.variable.getBaseClass()
+            is NumberLimitsExpression -> expr.limit.getBaseClass()
+            is UnionExpression -> expr.lhs.getBaseClass()
+            is VariableExpression.VariableImpl -> expr.baseClazz
         }
     }
 }

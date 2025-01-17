@@ -7,43 +7,18 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ExprEvaluate {
-    fun evaluate(expr: IExpr, condition: IExprRetBool): IMoldableSet {
-        return when (expr) {
-            is IExprRetNum -> evaluate(expr, condition)
-            is IExprRetBool -> evaluate(expr, condition)
-            is IExprRetGeneric -> evaluate(expr, condition)
-
-            is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
-            is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
-            is InvertExpression -> evaluate(expr.expr, condition).invert()
-
-            is IfExpression -> {
-                val ifCondition = expr.thisCondition
-                val evaluatedCond = evaluate(ifCondition, condition)
-                val trueCondition = BooleanExpression(ifCondition, condition, BooleanOp.AND)
-                val falseCondition = BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
-                return when (evaluatedCond) {
-                    TRUE -> evaluate(expr.trueExpr, trueCondition)
-                    FALSE -> evaluate(expr.falseExpr, falseCondition)
-                    BOTH -> {
-                        val trueValue = evaluate(expr.trueExpr, trueCondition)
-                        val falseValue = evaluate(expr.falseExpr, falseCondition)
-                        trueValue.union(falseValue)
-                    }
-
-                    NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
-                }
-            }
-
-            is RepeatExpression -> TODO("Not yet implemented")
+    @Suppress("UNCHECKED_CAST")
+    fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+        return when (expr.getSetClass()) {
+            NumberSet::class -> evaluateNums(expr as IExpr<NumberSet>, condition) as T
+            BooleanSet::class -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
+            GenericSet::class -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
+            else -> throw IllegalStateException("Unknown set class ${expr.getSetClass()}")
         }
     }
 
-    fun evaluate(expr: IExprRetNum, condition: IExprRetBool): NumberSet {
+    private fun evaluateNums(expr: IExpr<NumberSet>, condition: IExpr<BooleanSet>): NumberSet {
         return when (expr) {
-            is DynamicNumberCastExpression -> expr.expr.evaluate(condition) as? NumberSet
-                ?: throw IllegalStateException("Tried to cast ${expr.expr} to a number set but failed.")
-
             is ArithmeticExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
@@ -52,23 +27,6 @@ object ExprEvaluate {
             }
 
             is NegateExpression -> evaluate(expr.expr, condition).negate()
-            is ConstExprNum -> expr.singleElementSet
-            is VariableExpression.VariableNumber -> {
-                expr.resolvedInto?.let {
-                    return evaluate(it, condition)
-                }
-
-                // If we're here we're at the end of the chain, assume a full range.
-                val range = NumberSet.fullRange(expr.clazz)
-                val constrainedRange = ExprConstrain.getConstraints(condition, expr)?.evaluate(condition)
-
-                return if (constrainedRange != null) {
-                    range.intersect(constrainedRange) as NumberSet
-                } else {
-                    range
-                }
-            }
-
             is NumberLimitsExpression -> {
                 val rhs = expr.limit.evaluate(condition)
                 when (expr.shouldFlipCmp.evaluate(condition)) {
@@ -91,14 +49,13 @@ object ExprEvaluate {
 
                 startingValue.evaluateLoopingRange(terms.evaluate(condition), constrainingValues)
             }
+
+            else -> evaluateAnythings(expr, condition)
         }
     }
 
-    fun evaluate(expr: IExprRetBool, condition: IExprRetBool): BooleanSet {
+    private fun evaluateBools(expr: IExpr<BooleanSet>, condition: IExpr<BooleanSet>): BooleanSet {
         return when (expr) {
-            is DynamicBooleanCastExpression -> expr.expr.evaluate(condition) as? BooleanSet
-                ?: throw IllegalStateException("Tried to cast ${expr.expr} to a boolean set but failed.")
-
             is BooleanExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
@@ -113,28 +70,65 @@ object ExprEvaluate {
                 return lhs.comparisonOperation(rhs, expr.comp)
             }
 
-            is ConstExprBool -> expr.singleElementSet
-            is BooleanInvertExpression -> evaluate(expr, condition).invert() as BooleanSet
-            is VariableExpression.VariableBool -> {
-                expr.resolvedInto?.let {
-                    return evaluate(it, condition)
-                }
-                TODO("Not implemented constraints on boolean variables yet")
-            }
+            is BooleanInvertExpression -> evaluate(expr, condition).invert()
+            else -> evaluateAnythings(expr, condition)
         }
     }
 
-    fun evaluate(expr: IExprRetGeneric, condition: IExprRetBool): GenericSet {
-        return when (expr) {
-            is DynamicGenericCastExpression -> expr.expr.evaluate(condition) as? GenericSet
-                ?: throw IllegalStateException("Tried to cast ${expr.expr} to a generic set but failed.")
+    private fun evaluateGenerics(expr: IExpr<GenericSet>, condition: IExpr<BooleanSet>): GenericSet {
+        return evaluateAnythings(expr, condition)
+    }
 
-            is ConstExprGeneric -> expr.singleElementSet
-            is VariableExpression.VariableGeneric -> {
+    private fun <T : IMoldableSet<T>> evaluateAnythings(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+        return when (expr) {
+            is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
+            is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
+            is InvertExpression -> evaluate(expr.expr, condition).invert()
+            is IfExpression -> {
+                val ifCondition = expr.thisCondition
+                val evaluatedCond = evaluate(ifCondition, condition)
+                val trueCondition = BooleanExpression(ifCondition, condition, BooleanOp.AND)
+                val falseCondition =
+                    BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
+                when (evaluatedCond) {
+                    TRUE -> evaluate(expr.trueExpr, trueCondition)
+                    FALSE -> evaluate(expr.falseExpr, falseCondition)
+                    BOTH -> {
+                        val trueValue = evaluate(expr.trueExpr, trueCondition)
+                        val falseValue = evaluate(expr.falseExpr, falseCondition)
+                        trueValue.union(falseValue)
+                    }
+
+                    NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
+                }
+            }
+
+            is ConstExpr -> expr.singleElementSet
+
+            is VariableExpression.VariableImpl -> {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
                 }
-                TODO("Not implemented constraints on generic variables yet")
+
+                if (expr.setClazz == NumberSet::class) {
+                    // If we're here we're at the end of the chain, assume a full range.
+                    val range = NumberSet.fullRange(expr.baseClazz)
+                    val constrainedRange =
+                        ExprConstrain.getConstraints(condition, expr)?.evaluate(condition) as NumberSet?
+
+                    @Suppress("UNCHECKED_CAST")
+                    if (constrainedRange != null) {
+                        range.intersect(constrainedRange)
+                    } else {
+                        range
+                    } as T
+                } else {
+                    TODO("Not implemented yet")
+                }
+            }
+
+            else -> {
+                throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
         }
     }

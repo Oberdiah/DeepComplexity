@@ -3,14 +3,17 @@ package com.github.oberdiah.deepcomplexity.loopEvaluation
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.PsiElement
 
 object LoopEvaluation {
     /**
      * Given the context for the loop body, and the condition, figure out our new context.
      */
-    fun processLoopContext(context: Context, condition: IExprRetBool) {
+    fun processLoopContext(context: Context, condition: IExpr<BooleanSet>) {
         var numLoops: NumIterationTimesExpression? = null
 
         val conditionVariables = condition.getVariables(false)
@@ -18,13 +21,13 @@ object LoopEvaluation {
             val variablesMatchingCondition = expr.getVariables(false)
                 .filter { vari -> conditionVariables.any { vari.getKey() == it.getKey() } }
 
+            val numExpr = expr.tryCast<NumberSet>() ?: continue
             if (variablesMatchingCondition.isEmpty()) continue
 
             // We now have an expression that is looping stuff.
-            val (terms, variable) = collectTerms(expr, key.getElement(), variablesMatchingCondition) ?: continue
+            val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: continue
 
-            val constraint = ExprConstrain.getConstraints(condition, variable)
-            if (constraint !is IExprRetNum) continue
+            val constraint = ExprConstrain.getConstraints(condition, variable)?.tryCast<NumberSet>() ?: continue
 
             numLoops = NumIterationTimesExpression(constraint, variable, terms)
         }
@@ -35,17 +38,23 @@ object LoopEvaluation {
             val allUnresolved = expr.getVariables(false).filter { context.canResolve(it) }
             if (allUnresolved.isEmpty()) continue
 
-            val newExpr = repeatExpression(numLoops, expr, key.getElement(), allUnresolved)
+            val numExpr = expr.tryCast<NumberSet>()
+            if (numExpr == null) {
+                context.assignVar(key, ConstantExpression.fullExprFromExpr(expr))
+                continue
+            }
+
+            val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
             context.assignVar(key, newExpr)
         }
     }
 
     private fun repeatExpression(
         numLoops: NumIterationTimesExpression?,
-        expr: IExpr,
+        expr: IExpr<NumberSet>,
         psiElement: PsiElement,
-        allUnresolved: List<VariableExpression>
-    ): IExpr {
+        allUnresolved: List<VariableExpression<*>>
+    ): IExpr<NumberSet> {
         val gaveUp = ConstantExpression.fullExprFromExpr(expr)
 
         if (numLoops == null) {
@@ -57,6 +66,7 @@ object LoopEvaluation {
         val (terms, _) = collectTerms(expr, psiElement, allUnresolved) ?: return gaveUp
 
         if (terms.terms.size > 2) return gaveUp
+
         val linearTerm = terms.terms[1] ?: return gaveUp
         val constantTerm = terms.terms[0] ?: return gaveUp
         if (!linearTerm.evaluate(ConstantExpression.TRUE).isOne()) {
@@ -73,24 +83,21 @@ object LoopEvaluation {
     }
 
     private fun collectTerms(
-        expr: IExpr,
+        expr: IExpr<NumberSet>,
         psiElement: PsiElement,
-        variables: List<VariableExpression>
-    ): Pair<ConstraintSolver.CollectedTerms, VariableExpression.VariableNumber>? {
+        variables: List<VariableExpression<*>>
+    ): Pair<ConstraintSolver.CollectedTerms, VariableExpression<NumberSet>>? {
         // We can't deal with this in general, things start getting too complicated when
         // something in the loop relies on two other things.
         // Some edge cases might be doable in certain situations, for now I'm not going to bother.
         if (variables.size != 1) return null
 
-        val unresolved = variables.first()
+        val unresolved = variables.first().tryExactCast<NumberSet, VariableExpression<NumberSet>>() ?: return null
 
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but
         // I'm not going to bother for now.
         if (!unresolved.getKey().key.matchesElement(psiElement)) return null
-        if (unresolved !is VariableExpression.VariableNumber) return null
-
-        if (expr !is IExprRetNum) return null
 
         return ConstraintSolver.expandTerms(expr, unresolved.getKey()) to unresolved
     }

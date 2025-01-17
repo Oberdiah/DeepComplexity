@@ -62,7 +62,7 @@ class Context {
     private var alive = true
 
 
-    private val variables = mutableMapOf<Key, IExpr>()
+    private val variables = mutableMapOf<Key, IExpr<*>>()
 
     companion object {
         /**
@@ -75,7 +75,7 @@ class Context {
          *
          * a and b must not be used again after this operation.
          */
-        fun combine(a: Context, b: Context, how: (a: IExpr, b: IExpr) -> IExpr): Context {
+        fun combine(a: Context, b: Context, how: (a: IExpr<*>, b: IExpr<*>) -> IExpr<*>): Context {
             assert(a.alive && b.alive)
 
             val resultingContext = Context()
@@ -102,7 +102,7 @@ class Context {
         return convertToString(false)
     }
 
-    fun canResolve(variable: VariableExpression): Boolean {
+    fun canResolve(variable: VariableExpression<*>): Boolean {
         assert(alive)
         return variables.containsKey(variable.getKey().key) && variable.getKey().context == this
     }
@@ -120,13 +120,13 @@ class Context {
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun evaluateKey(key: Key): IMoldableSet {
+    fun evaluateKey(key: Key): IMoldableSet<*> {
         assert(alive)
         val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
         return expr.evaluate(ConstantExpression.TRUE)
     }
 
-    fun getVariables(): Map<Key, IExpr> {
+    fun getVariables(): Map<Key, IExpr<*>> {
         assert(alive)
         return variables.toImmutableMap()
     }
@@ -160,21 +160,21 @@ class Context {
         migrateUnresolvedFrom(later)
     }
 
-    fun getVar(element: PsiElement): IExpr {
+    fun getVar(element: PsiElement): IExpr<*> {
         assert(alive)
         return getVar(keyFromElement(element))
     }
 
-    fun getVar(element: Key): IExpr {
+    fun getVar(element: Key): IExpr<*> {
         assert(alive)
         return variables[element] ?: VariableExpression.fromKey(element, this)
     }
 
-    fun assignVar(key: Key, expr: IExpr) {
+    fun assignVar(key: Key, expr: IExpr<*>) {
         variables[key] = expr
     }
 
-    fun assignVar(element: PsiElement, expr: IExpr) {
+    fun assignVar(element: PsiElement, expr: IExpr<*>) {
         assert(alive)
         assignVar(keyFromElement(element), expr)
     }

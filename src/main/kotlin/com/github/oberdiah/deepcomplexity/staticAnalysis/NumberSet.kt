@@ -28,7 +28,11 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-sealed interface NumberSet : IMoldableSet {
+sealed interface NumberSet : IMoldableSet<NumberSet> {
+    override fun getSetClass(): KClass<*> {
+        return NumberSet::class
+    }
+
     fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet
     fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet
     fun addRange(start: Number, end: Number)
@@ -188,9 +192,9 @@ sealed interface NumberSet : IMoldableSet {
             return clazz
         }
 
-        private fun castToThisType(other: IMoldableSet): NumberSetImpl<T> {
+        private fun <Q : IMoldableSet<Q>> castToThisType(other: Q): NumberSetImpl<T> {
             if (other.getClass() != clazz) {
-                throw IllegalArgumentException("Cannot perform operation on different types")
+                throw IllegalArgumentException("Cannot perform operation on different types ($clazz != ${other.getClass()})")
             }
             @Suppress("UNCHECKED_CAST")
             return other as NumberSetImpl<T>
@@ -228,7 +232,7 @@ sealed interface NumberSet : IMoldableSet {
             return newSet
         }
 
-        override fun union(other: IMoldableSet): IMoldableSet {
+        override fun union(other: NumberSet): NumberSet {
             val newSet = newFromClassTyped<T>(clazz)
             newSet.ranges.addAll(ranges)
             newSet.ranges.addAll(castToThisType(other).ranges)
@@ -236,7 +240,7 @@ sealed interface NumberSet : IMoldableSet {
             return newSet
         }
 
-        override fun intersect(other: IMoldableSet): IMoldableSet {
+        override fun intersect(other: NumberSet): NumberSet {
             val otherSet = castToThisType(other)
             val newSet = newFromClassTyped<T>(clazz)
 
@@ -263,7 +267,7 @@ sealed interface NumberSet : IMoldableSet {
             return newSet
         }
 
-        override fun invert(): IMoldableSet {
+        override fun invert(): NumberSet {
             val newSet = newFromClassTyped<T>(clazz)
 
             if (ranges.isEmpty()) {

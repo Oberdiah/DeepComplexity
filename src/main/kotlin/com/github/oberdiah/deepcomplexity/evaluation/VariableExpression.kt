@@ -1,14 +1,15 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
+import com.github.weisj.jsvg.T
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import kotlin.reflect.KClass
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
-sealed interface VariableExpression : IExpr {
-    fun setResolvedExpr(expr: IExpr)
+sealed interface VariableExpression<T : IMoldableSet<T>> : IExpr<T> {
+    fun setResolvedExpr(expr: IExpr<*>)
 
     /**
      * Whether we have a concrete expression for this yet or it's just a placeholder.
@@ -19,7 +20,7 @@ sealed interface VariableExpression : IExpr {
     companion object {
         private var VARIABLE_ID = 0
 
-        fun fromKey(contextKey: Context.Key, context: Context): VariableExpression {
+        fun fromKey(contextKey: Context.Key, context: Context): VariableExpression<*> {
             VARIABLE_ID++
 
             val key = VariableKey(contextKey, context)
@@ -36,11 +37,11 @@ sealed interface VariableExpression : IExpr {
                     val clazz = Utilities.psiTypeToKClass(type)
                         ?: throw IllegalArgumentException("Unsupported type for variable expression")
 
-                    VariableNumber(key, clazz, VARIABLE_ID)
+                    VariableImpl(key, VARIABLE_ID, clazz, NumberSet::class)
                 }
 
-                PsiTypes.booleanType() -> VariableBool(key, VARIABLE_ID)
-                else -> VariableGeneric(key, VARIABLE_ID)
+                PsiTypes.booleanType() -> VariableImpl(key, VARIABLE_ID, Boolean::class, BooleanSet::class)
+                else -> VariableImpl(key, VARIABLE_ID, Any::class, GenericSet::class)
             }
         }
     }
@@ -54,9 +55,14 @@ sealed interface VariableExpression : IExpr {
     /**
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
      */
-    sealed class VariableImpl<T : IExpr>(val myKey: VariableKey?, val id: Int) : Expr(),
-        VariableExpression {
-        var resolvedInto: T? = null
+    class VariableImpl<T : IMoldableSet<T>>(
+        val myKey: VariableKey?,
+        val id: Int,
+        val baseClazz: KClass<*>,
+        val setClazz: KClass<*>
+    ) : Expr<T>(),
+        VariableExpression<T> {
+        var resolvedInto: IExpr<T>? = null
 
         override fun isResolved(): Boolean {
             return resolvedInto != null
@@ -67,29 +73,16 @@ sealed interface VariableExpression : IExpr {
                 throw IllegalStateException("Unresolved expression was created on-the-fly, cannot grab its key.")
             return myKey
         }
-    }
 
-    class VariableBool(key: VariableKey?, id: Int) : VariableImpl<IExprRetBool>(key, id),
-        IExprRetBool {
-        override fun setResolvedExpr(expr: IExpr) {
-            resolvedInto = (expr as? IExprRetBool)
-                ?: throw IllegalArgumentException("Resolved expression must be a boolean expression")
-        }
-    }
+        override fun setResolvedExpr(expr: IExpr<*>) {
+            if (expr.getSetClass() != setClazz || expr.getBaseClass() != baseClazz)
+                throw IllegalArgumentException(
+                    "Resolved expression is not of the correct type " +
+                            "(expected $baseClazz, $setClazz, got ${expr.getBaseClass()}, ${expr.getSetClass()})"
+                )
 
-    class VariableNumber(key: VariableKey?, val clazz: KClass<*>, id: Int) : VariableImpl<IExprRetNum>(key, id),
-        IExprRetNum {
-        override fun setResolvedExpr(expr: IExpr) {
-            resolvedInto = (expr as? IExprRetNum)
-                ?: throw IllegalArgumentException("Resolved expression must be a number expression")
-        }
-    }
-
-    class VariableGeneric(key: VariableKey?, id: Int) : VariableImpl<IExprRetGeneric>(key, id),
-        IExprRetGeneric {
-        override fun setResolvedExpr(expr: IExpr) {
-            resolvedInto = (expr as? IExprRetGeneric)
-                ?: throw IllegalArgumentException("Resolved expression must be a generic expression")
+            @Suppress("UNCHECKED_CAST")
+            resolvedInto = expr as IExpr<T>
         }
     }
 }

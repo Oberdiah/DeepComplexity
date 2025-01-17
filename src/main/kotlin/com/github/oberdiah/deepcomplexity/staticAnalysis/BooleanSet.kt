@@ -3,7 +3,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import kotlin.reflect.KClass
 
-enum class BooleanSet : IMoldableSet {
+enum class BooleanSet : IMoldableSet<BooleanSet> {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
@@ -63,7 +63,7 @@ enum class BooleanSet : IMoldableSet {
         }
     }
 
-    override fun invert(): IMoldableSet {
+    override fun invert(): BooleanSet {
         // This is a set invert, not a boolean invert
         return when (this) {
             TRUE -> FALSE
@@ -73,7 +73,7 @@ enum class BooleanSet : IMoldableSet {
         }
     }
 
-    override fun intersect(other: IMoldableSet): IMoldableSet {
+    override fun intersect(other: BooleanSet): BooleanSet {
         // Set intersection
         return when (other) {
             TRUE -> this.removeFromSet(false)
@@ -84,7 +84,7 @@ enum class BooleanSet : IMoldableSet {
         }
     }
 
-    override fun union(other: IMoldableSet): IMoldableSet {
+    override fun union(other: BooleanSet): BooleanSet {
         // Set union
         return when (other) {
             TRUE -> this.addToSet(true)
@@ -100,6 +100,10 @@ enum class BooleanSet : IMoldableSet {
             is Boolean -> contains(element)
             else -> false
         }
+    }
+
+    override fun getSetClass(): KClass<*> {
+        return BooleanSet::class
     }
 
     fun booleanOperation(other: BooleanSet, operation: BooleanOp): BooleanSet {

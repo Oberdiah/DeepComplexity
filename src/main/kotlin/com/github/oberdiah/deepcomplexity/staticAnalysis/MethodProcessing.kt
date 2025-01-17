@@ -88,11 +88,11 @@ object MethodProcessing {
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
-                            val lhs = context.getVar(resolvedLhs).asRetNum() ?: TODO(
+                            val lhs = context.getVar(resolvedLhs).tryCast<NumberSet>() ?: TODO(
                                 "Failed to cast to NumberSet: ${psi.lExpression.text} while parsing ${psi.text}"
                             )
 
-                            val rhs = buildExpressionFromPsi(rExpression, context).asRetNum() ?: TODO(
+                            val rhs = buildExpressionFromPsi(rExpression, context).tryCast<NumberSet>() ?: TODO(
                                 "Failed to cast to NumberSet: ${rExpression.text} while parsing ${psi.text}"
                             )
 
@@ -122,7 +122,7 @@ object MethodProcessing {
                 val condition = buildExpressionFromPsi(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     context
-                ).asRetBool() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
+                ).tryCast<BooleanSet>() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 val trueBranchContext = Context()
@@ -133,7 +133,35 @@ object MethodProcessing {
 
                 context.stack(
                     Context.combine(trueBranchContext, falseBranchContext) { a, b ->
-                        IfExpression(a, b, condition)
+                        val aClazz = a.getSetClass()
+                        val bClazz = b.getSetClass()
+
+                        if (aClazz == bClazz) {
+                            @Suppress("UNCHECKED_CAST")
+                            when (aClazz) {
+                                BooleanSet::class -> IfExpression(
+                                    a as IExpr<BooleanSet>,
+                                    b as IExpr<BooleanSet>,
+                                    condition
+                                )
+
+                                NumberSet::class -> IfExpression(
+                                    a as IExpr<NumberSet>,
+                                    b as IExpr<NumberSet>,
+                                    condition
+                                )
+
+                                GenericSet::class -> IfExpression(
+                                    a as IExpr<GenericSet>,
+                                    b as IExpr<GenericSet>,
+                                    condition
+                                )
+
+                                else -> throw IllegalStateException("Unsupported set class in if statement: $aClazz")
+                            }
+                        } else {
+                            throw IllegalStateException("Incompatible types in if statement: $aClazz and $bClazz")
+                        }
                     }
                 )
             }
@@ -150,8 +178,8 @@ object MethodProcessing {
                 psi.update?.let { processPsiElement(it, bodyContext) }
 
                 val conditionExpr = psi.condition?.let { condition ->
-                    buildExpressionFromPsi(condition, bodyContext).asRetBool()
-                        ?: throw IllegalArgumentException("Failed to cast to BooleanSet: ${condition.text}")
+                    buildExpressionFromPsi(condition, bodyContext).tryCast<BooleanSet>()
+                        ?: TODO("Failed to cast to BooleanSet: ${condition.text}")
                 }.orElse {
                     ConstantExpression.TRUE
                 }
@@ -188,7 +216,7 @@ object MethodProcessing {
      *
      * Nothing in here should be declaring variables.
      */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): IExpr {
+    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): IExpr<*> {
         when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()
@@ -203,10 +231,10 @@ object MethodProcessing {
                 val lhsOperand = psi.lOperand
                 val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()
 
-                val lhs = buildExpressionFromPsi(lhsOperand, context).asRetNum()
+                val lhs = buildExpressionFromPsi(lhsOperand, context).tryCast<NumberSet>()
                     ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text} while parsing ${psi.text}")
 
-                val rhs = buildExpressionFromPsi(rhsOperand, context).asRetNum()
+                val rhs = buildExpressionFromPsi(rhsOperand, context).tryCast<NumberSet>()
                     ?: TODO("Failed to cast to NumberSet: ${rhsOperand.text} while parsing ${psi.text}")
 
                 val tokenType = psi.operationSign.tokenType

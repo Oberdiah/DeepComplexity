@@ -2,9 +2,11 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.weisj.jsvg.T
 
 object ExprToString {
-    fun toString(expr: IExpr): String {
+    fun <T : IMoldableSet<T>> toString(expr: IExpr<T>): String {
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is ComparisonExpression -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
@@ -21,7 +23,6 @@ object ExprToString {
             is BooleanInvertExpression -> "!${expr.expr}"
             is InvertExpression -> "!${expr.expr}"
             is NegateExpression -> "-${expr.expr}"
-            is RepeatExpression -> "[repeat ${expr.numRepeats} times] { ${expr.exprToRepeat} }"
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
             is VariableExpression.VariableImpl<*> -> {
@@ -31,10 +32,6 @@ object ExprToString {
 
             is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
-
-            is DynamicBooleanCastExpression -> "${expr.expr}"
-            is DynamicGenericCastExpression -> "${expr.expr}"
-            is DynamicNumberCastExpression -> "${expr.expr}"
         }
     }
 
