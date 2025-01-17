@@ -13,4 +13,5 @@ sealed interface IMoldableSet {
     fun union(other: IMoldableSet): IMoldableSet
     fun intersect(other: IMoldableSet): IMoldableSet
     fun invert(): IMoldableSet
+    fun contains(element: Any): Boolean
 }

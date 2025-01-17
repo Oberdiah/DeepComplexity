@@ -95,6 +95,13 @@ enum class BooleanSet : IMoldableSet {
         }
     }
 
+    override fun contains(element: Any): Boolean {
+        return when (element) {
+            is Boolean -> contains(element)
+            else -> false
+        }
+    }
+
     fun booleanOperation(other: BooleanSet, operation: BooleanOp): BooleanSet {
         return when (operation) {
             BooleanOp.AND -> {

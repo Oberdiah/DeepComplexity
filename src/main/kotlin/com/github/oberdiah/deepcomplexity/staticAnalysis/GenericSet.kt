@@ -44,8 +44,13 @@ interface GenericSet : IMoldableSet {
             )
         }
 
-        fun contains(other: T): Boolean {
-            return values.contains(other)
+        override fun contains(element: Any): Boolean {
+            if (element::class != clazz) {
+                return false
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            return values.contains(element as T)
         }
     }
 }

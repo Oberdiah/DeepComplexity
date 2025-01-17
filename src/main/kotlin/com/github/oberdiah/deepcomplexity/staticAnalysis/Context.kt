@@ -111,13 +111,19 @@ class Context {
         val variablesString =
             variables.entries.joinToString("\n") { entry ->
                 val expr = entry.value
-                val psi = entry.key
+                val key = entry.key
 
                 val evalStr = if (evaluate) " (${ExprEvaluate.evaluate(expr, ConstantExpression.TRUE)})" else ""
 
-                "$psi$evalStr:\n${expr.toString().prependIndent()}"
+                "$key$evalStr:\n${expr.toString().prependIndent()}"
             }
         return "Context: {\n${variablesString.prependIndent()}\n}"
+    }
+
+    fun evaluateKey(key: Key): IMoldableSet {
+        assert(alive)
+        val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
+        return expr.evaluate(ConstantExpression.TRUE)
     }
 
     fun getVariables(): Map<Key, IExpr> {

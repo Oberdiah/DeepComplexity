@@ -89,11 +89,11 @@ object MethodProcessing {
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
                             val lhs = context.getVar(resolvedLhs).asRetNum() ?: TODO(
-                                "Failed to cast to NumberSet: ${psi.lExpression.text}"
+                                "Failed to cast to NumberSet: ${psi.lExpression.text} while parsing ${psi.text}"
                             )
 
                             val rhs = buildExpressionFromPsi(rExpression, context).asRetNum() ?: TODO(
-                                "Failed to cast to NumberSet: ${rExpression.text}"
+                                "Failed to cast to NumberSet: ${rExpression.text} while parsing ${psi.text}"
                             )
 
                             context.assignVar(

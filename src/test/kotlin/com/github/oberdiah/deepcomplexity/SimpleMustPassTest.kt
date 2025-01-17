@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.psi.PsiFile
@@ -46,14 +47,18 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
         val tests = mutableListOf<DynamicTest>()
 
-        // for after work: Need to figure out how to avoid regressions.
+        // Need to figure out how to avoid regressions.
         // i.e. making our constraints accidentally weaker.
 
         for (method in methods) {
             tests.add(DynamicTest.dynamicTest(method.second) {
                 app.runReadAction {
+                    println("Processing method ${method.first.name}:")
                     val context = MethodProcessing.getMethodContext(method.first)
-                    println(context.convertToString(false))
+                    val range = context.evaluateKey(Context.Key.ReturnKey(method.first))
+
+                    TestUtilities.verifyMethod(method.second, range)
+                    println("\tRange: $range")
                 }
             })
         }

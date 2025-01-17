@@ -134,6 +134,15 @@ sealed interface NumberSet : IMoldableSet {
             ranges.add(NumberRange(start, end))
         }
 
+        override fun contains(element: Any): Boolean {
+            if (element::class != clazz) {
+                return false
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            return contains(element as T)
+        }
+
         override fun <T : Number> castToType(clazz: KClass<*>): NumberSetImpl<T> {
             if (clazz != this.clazz) {
                 throw IllegalArgumentException("Cannot cast to different type — $clazz != ${this.clazz}")
