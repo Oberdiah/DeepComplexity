@@ -13,7 +13,7 @@ object Settings {
         ALLOW,
     }
 
-    var overflowBehaviour: OverflowBehaviour = OverflowBehaviour.CLAMP
+    var overflowBehaviour: OverflowBehaviour = OverflowBehaviour.ALLOW
     var overflowWarns: Boolean = false
 
 }
