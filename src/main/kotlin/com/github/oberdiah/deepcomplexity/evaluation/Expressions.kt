@@ -7,7 +7,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
-sealed class SetClass<T : IMoldableSet<T>>(val clazz: KClass<T>)
+sealed class SetClass<T : IMoldableSet<T>>(val setClazz: KClass<T>)
 data object NumberSetClass : SetClass<NumberSet>(NumberSet::class)
 data object BooleanSetClass : SetClass<BooleanSet>(BooleanSet::class)
 data object GenericSetClass : SetClass<GenericSet>(GenericSet::class)
@@ -26,7 +26,7 @@ sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
 }
 
 inline fun <reified R : IMoldableSet<R>> IExpr<*>.tryCast(): IExpr<R>? {
-    return if (this.getSetClass().clazz == R::class) {
+    return if (this.getSetClass().setClazz == R::class) {
         @Suppress("UNCHECKED_CAST")
         this as IExpr<R>
     } else {
@@ -35,7 +35,7 @@ inline fun <reified R : IMoldableSet<R>> IExpr<*>.tryCast(): IExpr<R>? {
 }
 
 inline fun <reified T : IMoldableSet<T>, reified R : IExpr<T>> IExpr<*>.tryExactCast(): R? {
-    return if (this::class == R::class && this.getSetClass() == T::class) {
+    return if (this::class == R::class && this.getSetClass().setClazz == T::class) {
         this as R
     } else {
         null
