@@ -1,8 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.math.exp
 import kotlin.reflect.KClass
 
@@ -10,22 +8,23 @@ object ExprClass {
     /**
      * The class of the set that the expression returns.
      */
-    fun <T : IMoldableSet<T>> getSetClass(expr: IExpr<T>): KClass<*> {
+    fun <T : IMoldableSet<T>> getSetClass(expr: IExpr<T>): SetClass<T> {
+        @Suppress("UNCHECKED_CAST")
         return when (expr) {
             is IfExpression -> expr.trueExpr.getSetClass()
             is IntersectExpression -> expr.lhs.getSetClass()
             is UnionExpression -> expr.lhs.getSetClass()
             is InvertExpression -> expr.expr.getSetClass()
-            is ArithmeticExpression -> NumberSet::class
-            is BooleanExpression -> BooleanSet::class
-            is BooleanInvertExpression -> BooleanSet::class
-            is ComparisonExpression -> BooleanSet::class
-            is NegateExpression -> NumberSet::class
-            is NumIterationTimesExpression -> NumberSet::class
-            is NumberLimitsExpression -> NumberSet::class
+            is ArithmeticExpression -> NumberSetClass
+            is BooleanExpression -> BooleanSetClass
+            is BooleanInvertExpression -> BooleanSetClass
+            is ComparisonExpression -> BooleanSetClass
+            is NegateExpression -> NumberSetClass
+            is NumIterationTimesExpression -> NumberSetClass
+            is NumberLimitsExpression -> NumberSetClass
             is ConstExpr -> expr.singleElementSet.getSetClass()
             is VariableExpression.VariableImpl -> expr.setClazz
-        }
+        } as SetClass<T>
     }
 
     /**

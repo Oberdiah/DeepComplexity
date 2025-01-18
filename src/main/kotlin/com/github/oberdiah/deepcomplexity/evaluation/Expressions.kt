@@ -2,14 +2,20 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
+sealed class SetClass<T : IMoldableSet<T>>(val clazz: KClass<T>)
+data object NumberSetClass : SetClass<NumberSet>(NumberSet::class)
+data object BooleanSetClass : SetClass<BooleanSet>(BooleanSet::class)
+data object GenericSetClass : SetClass<GenericSet>(GenericSet::class)
+
 sealed interface IExpr<T : IMoldableSet<T>> {
     fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
     fun getBaseClass(): KClass<*> = ExprClass.getBaseClass(this)
-    fun getSetClass(): KClass<*> = ExprClass.getSetClass(this)
+    fun getSetClass(): SetClass<T> = ExprClass.getSetClass(this)
     fun evaluate(condition: IExpr<BooleanSet>): T = ExprEvaluate.evaluate(this, condition)
 }
 
@@ -20,10 +26,7 @@ sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
 }
 
 inline fun <reified R : IMoldableSet<R>> IExpr<*>.tryCast(): IExpr<R>? {
-    val setClass = this.getSetClass()
-    val setClass2 = R::class
-
-    return if (setClass == setClass2) {
+    return if (this.getSetClass().clazz == R::class) {
         @Suppress("UNCHECKED_CAST")
         this as IExpr<R>
     } else {
@@ -52,7 +55,22 @@ class IfExpression<T : IMoldableSet<T>>(
     val trueExpr: IExpr<T>,
     val falseExpr: IExpr<T>,
     val thisCondition: IExpr<BooleanSet>
-) : Expr<T>()
+) : Expr<T>() {
+    companion object {
+        fun <A : IMoldableSet<A>, B : IMoldableSet<B>> new(
+            a: IExpr<A>,
+            b: IExpr<B>,
+            condition: IExpr<BooleanSet>
+        ): IExpr<A> {
+            return if (a.getSetClass() == b.getSetClass()) {
+                @Suppress("UNCHECKED_CAST")
+                IfExpression(a, b as IExpr<A>, condition)
+            } else {
+                throw IllegalStateException("Incompatible types in if statement: ${a.getSetClass()} and ${b.getSetClass()}")
+            }
+        }
+    }
+}
 
 class IntersectExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
 class BooleanInvertExpression(val expr: IExpr<BooleanSet>) : Expr<BooleanSet>()

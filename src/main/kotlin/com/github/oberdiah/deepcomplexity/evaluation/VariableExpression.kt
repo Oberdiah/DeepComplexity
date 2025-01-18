@@ -37,11 +37,11 @@ sealed interface VariableExpression<T : IMoldableSet<T>> : IExpr<T> {
                     val clazz = Utilities.psiTypeToKClass(type)
                         ?: throw IllegalArgumentException("Unsupported type for variable expression")
 
-                    VariableImpl(key, VARIABLE_ID, clazz, NumberSet::class)
+                    VariableImpl(key, VARIABLE_ID, clazz, NumberSetClass)
                 }
 
-                PsiTypes.booleanType() -> VariableImpl(key, VARIABLE_ID, Boolean::class, BooleanSet::class)
-                else -> VariableImpl(key, VARIABLE_ID, Any::class, GenericSet::class)
+                PsiTypes.booleanType() -> VariableImpl(key, VARIABLE_ID, Boolean::class, BooleanSetClass)
+                else -> VariableImpl(key, VARIABLE_ID, Any::class, GenericSetClass)
             }
         }
     }
@@ -59,7 +59,7 @@ sealed interface VariableExpression<T : IMoldableSet<T>> : IExpr<T> {
         val myKey: VariableKey?,
         val id: Int,
         val baseClazz: KClass<*>,
-        val setClazz: KClass<*>
+        val setClazz: SetClass<T>
     ) : Expr<T>(),
         VariableExpression<T> {
         var resolvedInto: IExpr<T>? = null

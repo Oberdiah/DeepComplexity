@@ -133,35 +133,7 @@ object MethodProcessing {
 
                 context.stack(
                     Context.combine(trueBranchContext, falseBranchContext) { a, b ->
-                        val aClazz = a.getSetClass()
-                        val bClazz = b.getSetClass()
-
-                        if (aClazz == bClazz) {
-                            @Suppress("UNCHECKED_CAST")
-                            when (aClazz) {
-                                BooleanSet::class -> IfExpression(
-                                    a as IExpr<BooleanSet>,
-                                    b as IExpr<BooleanSet>,
-                                    condition
-                                )
-
-                                NumberSet::class -> IfExpression(
-                                    a as IExpr<NumberSet>,
-                                    b as IExpr<NumberSet>,
-                                    condition
-                                )
-
-                                GenericSet::class -> IfExpression(
-                                    a as IExpr<GenericSet>,
-                                    b as IExpr<GenericSet>,
-                                    condition
-                                )
-
-                                else -> throw IllegalStateException("Unsupported set class in if statement: $aClazz")
-                            }
-                        } else {
-                            throw IllegalStateException("Incompatible types in if statement: $aClazz and $bClazz")
-                        }
+                        IfExpression.new(a, b, condition)
                     }
                 )
             }

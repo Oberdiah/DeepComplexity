@@ -1,10 +1,12 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.oberdiah.deepcomplexity.evaluation.GenericSetClass
+import com.github.oberdiah.deepcomplexity.evaluation.SetClass
 import kotlin.reflect.KClass
 
 interface GenericSet : IMoldableSet<GenericSet> {
-    override fun getSetClass(): KClass<*> {
-        return GenericSet::class
+    override fun getSetClass(): SetClass<GenericSet> {
+        return GenericSetClass
     }
 
     companion object {

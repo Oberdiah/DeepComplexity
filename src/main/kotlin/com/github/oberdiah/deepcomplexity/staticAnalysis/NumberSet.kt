@@ -4,6 +4,8 @@ import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.GenericSetClass
+import com.github.oberdiah.deepcomplexity.evaluation.NumberSetClass
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
@@ -29,8 +31,8 @@ import java.math.BigInteger
 import kotlin.reflect.KClass
 
 sealed interface NumberSet : IMoldableSet<NumberSet> {
-    override fun getSetClass(): KClass<*> {
-        return NumberSet::class
+    override fun getSetClass(): NumberSetClass {
+        return NumberSetClass
     }
 
     fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet

@@ -34,9 +34,10 @@ object ExprConstrain {
             }
 
             is ComparisonExpression -> {
-                assert(variable.getSetClass() == NumberSet::class) {
+                assert(variable.getSetClass() == NumberSetClass) {
                     "Variable must be a number set. This requires more thought if we've hit this."
                 }
+                @Suppress("UNCHECKED_CAST")
                 ConstraintSolver.getVariableConstraints(condition, varKey) as IExpr<T>?
             }
 

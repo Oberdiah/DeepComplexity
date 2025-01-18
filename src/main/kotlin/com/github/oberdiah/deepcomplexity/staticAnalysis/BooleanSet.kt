@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetClass
 import kotlin.reflect.KClass
 
 enum class BooleanSet : IMoldableSet<BooleanSet> {
@@ -102,8 +103,8 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
         }
     }
 
-    override fun getSetClass(): KClass<*> {
-        return BooleanSet::class
+    override fun getSetClass(): BooleanSetClass {
+        return BooleanSetClass
     }
 
     fun booleanOperation(other: BooleanSet, operation: BooleanOp): BooleanSet {

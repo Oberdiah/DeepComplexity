@@ -14,41 +14,27 @@ object ConstantExpression {
     fun <T : IMoldableSet<T>> emptySetFromExpr(expr: IExpr<T>): T {
         @Suppress("UNCHECKED_CAST")
         return when (expr.getSetClass()) {
-            NumberSet::class -> NumberSet.empty(ExprClass.getBaseClass(expr))
-            BooleanSet::class -> BooleanSet.NEITHER
-            GenericSet::class -> GenericSet.empty()
-            else -> throw IllegalArgumentException("Unknown set class ${expr.getSetClass()}")
+            NumberSetClass -> NumberSet.empty(ExprClass.getBaseClass(expr))
+            BooleanSetClass -> BooleanSet.NEITHER
+            GenericSetClass -> GenericSet.empty()
         } as T
     }
 
     fun <T : IMoldableSet<T>> fullSetFromExpr(expr: IExpr<T>): T {
         @Suppress("UNCHECKED_CAST")
         return when (expr.getSetClass()) {
-            NumberSet::class -> NumberSet.fullRange(ExprClass.getBaseClass(expr))
-            BooleanSet::class -> BooleanSet.BOTH
-            GenericSet::class -> GenericSet.everyValue()
-            else -> throw IllegalArgumentException("Unknown set class ${expr.getSetClass()}")
+            NumberSetClass -> NumberSet.fullRange(ExprClass.getBaseClass(expr))
+            BooleanSetClass -> BooleanSet.BOTH
+            GenericSetClass -> GenericSet.everyValue()
         } as T
     }
 
-    fun <T : IMoldableSet<T>> setToConstExpr(set: T): ConstExpr<T> {
-        @Suppress("UNCHECKED_CAST")
-        return when (set) {
-            is BooleanSet -> ConstExpr(set)
-            is GenericSet -> ConstExpr(set)
-            is NumberSet -> ConstExpr(set)
-            else -> {
-                throw IllegalArgumentException("Unknown set type $set")
-            }
-        } as ConstExpr<T>
-    }
-
     fun <T : IMoldableSet<T>> fullExprFromExpr(expr: IExpr<T>): IExpr<T> {
-        return setToConstExpr(fullSetFromExpr(expr))
+        return ConstExpr(fullSetFromExpr(expr))
     }
 
     fun <T : IMoldableSet<T>> emptyExprFromExpr(expr: IExpr<T>): IExpr<T> {
-        return setToConstExpr(emptySetFromExpr(expr))
+        return ConstExpr(emptySetFromExpr(expr))
     }
 
     fun fromAny(value: Any): IExpr<*> {

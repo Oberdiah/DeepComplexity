@@ -10,10 +10,9 @@ object ExprEvaluate {
     @Suppress("UNCHECKED_CAST")
     fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
         return when (expr.getSetClass()) {
-            NumberSet::class -> evaluateNums(expr as IExpr<NumberSet>, condition) as T
-            BooleanSet::class -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
-            GenericSet::class -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
-            else -> throw IllegalStateException("Unknown set class ${expr.getSetClass()}")
+            NumberSetClass -> evaluateNums(expr as IExpr<NumberSet>, condition) as T
+            BooleanSetClass -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
+            GenericSetClass -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
         }
     }
 
@@ -110,7 +109,7 @@ object ExprEvaluate {
                     return evaluate(it, condition)
                 }
 
-                if (expr.setClazz == NumberSet::class) {
+                if (expr.setClazz == NumberSetClass) {
                     // If we're here we're at the end of the chain, assume a full range.
                     val range = NumberSet.fullRange(expr.baseClazz)
                     val constrainedRange =

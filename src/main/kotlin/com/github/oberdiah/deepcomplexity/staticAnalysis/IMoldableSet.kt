@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.oberdiah.deepcomplexity.evaluation.SetClass
 import kotlin.reflect.KClass
 
 /**
@@ -15,7 +16,7 @@ sealed interface IMoldableSet<T : IMoldableSet<T>> {
      * You might think this is completely pointless, but it allows us to get the interface back
      * from a class that implements it.
      */
-    fun getSetClass(): KClass<*>
+    fun getSetClass(): SetClass<T>
     fun union(other: T): T
     fun intersect(other: T): T
     fun invert(): T
