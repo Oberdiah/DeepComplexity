@@ -10,8 +10,6 @@ import kotlin.reflect.KClass
 class VariableExpression<T : IMoldableSet<T>>(
     val myKey: VariableKey?,
     val id: Int,
-    val baseClazz: KClass<*>,
-    val setClazz: SetClass,
     val setInd: SetIndicator<T>
 ) : Expr<T>() {
     /**
@@ -35,10 +33,10 @@ class VariableExpression<T : IMoldableSet<T>>(
     }
 
     fun setResolvedExpr(expr: IExpr<*>) {
-        if (expr.getSetClass() != setClazz || expr.getBaseClass() != baseClazz)
+        if (expr.getSetIndicator() != setInd)
             throw IllegalArgumentException(
                 "Resolved expression is not of the correct type " +
-                        "(expected $baseClazz, $setClazz, got ${expr.getBaseClass()}, ${expr.getSetClass()})"
+                        "(expected ${setInd.clazz}, got ${expr.getSetIndicator().clazz})"
             )
 
         @Suppress("UNCHECKED_CAST")
@@ -65,15 +63,11 @@ class VariableExpression<T : IMoldableSet<T>>(
                     val clazz = Utilities.psiTypeToKClass(type)
                         ?: throw IllegalArgumentException("Unsupported type for variable expression")
 
-                    VariableExpression(key, VARIABLE_ID, clazz, NumberSetClass, SetIndicator.fromClass(clazz))
+                    VariableExpression(key, VARIABLE_ID, SetIndicator.fromClass(clazz))
                 }
-
-                PsiTypes.booleanType() -> VariableExpression(
-                    key, VARIABLE_ID, Boolean::class, BooleanSetClass,
-                    BooleanSetIndicator
-                )
-
-                else -> VariableExpression(key, VARIABLE_ID, Any::class, GenericSetClass, GenericSetIndicator)
+                
+                PsiTypes.booleanType() -> VariableExpression(key, VARIABLE_ID, BooleanSetIndicator)
+                else -> VariableExpression(key, VARIABLE_ID, GenericSetIndicator)
             }
         }
     }

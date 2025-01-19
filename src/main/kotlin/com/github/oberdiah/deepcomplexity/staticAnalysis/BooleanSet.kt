@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetClass
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import kotlin.reflect.KClass
@@ -109,10 +108,6 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
         }
     }
 
-    override fun getSetClass(): BooleanSetClass {
-        return BooleanSetClass
-    }
-
     fun booleanOperation(other: BooleanSet, operation: BooleanOp): BooleanSet {
         return when (operation) {
             BooleanOp.AND -> {
@@ -138,8 +133,4 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
     abstract fun addToSet(other: Boolean): BooleanSet
     abstract fun removeFromSet(other: Boolean): BooleanSet
     abstract fun contains(other: Boolean): Boolean
-
-    override fun getClass(): KClass<*> {
-        return Boolean::class
-    }
 }

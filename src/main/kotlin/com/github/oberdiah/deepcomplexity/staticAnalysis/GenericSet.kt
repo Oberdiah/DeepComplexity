@@ -1,16 +1,10 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.GenericSetClass
 import com.github.oberdiah.deepcomplexity.evaluation.GenericSetIndicator
-import com.github.oberdiah.deepcomplexity.evaluation.SetClass
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import kotlin.reflect.KClass
 
 interface GenericSet : IMoldableSet<GenericSet> {
-    override fun getSetClass(): SetClass {
-        return GenericSetClass
-    }
-
     companion object {
         inline fun <reified T> singleValue(value: T): GenericSetImpl<T> {
             return GenericSetImpl(T::class, setOf(value))
@@ -28,10 +22,6 @@ interface GenericSet : IMoldableSet<GenericSet> {
     class GenericSetImpl<T>(private val clazz: KClass<*>, private val values: Set<T>) : GenericSet {
         override fun getSetIndicator(): SetIndicator<GenericSet> {
             return GenericSetIndicator
-        }
-
-        override fun getClass(): KClass<*> {
-            return clazz
         }
 
         override fun union(other: GenericSet): GenericSet {

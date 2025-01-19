@@ -9,7 +9,15 @@ public class MyTestData {
 		}
 	}
 	
-	public static int test2(int incoming1) {
+	public static int test2(int incoming) {
+		if (incoming < 3) {
+			return incoming;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static int test3(int incoming1) {
 		int foo = 0;
 		int bar = incoming1;
 		int incoming2 = incoming1 * 2;

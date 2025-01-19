@@ -2,36 +2,27 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import kotlin.reflect.KClass
-
-sealed class SetClass(val setClazz: KClass<*>)
-data object NumberSetClass : SetClass(NumberSet::class)
-data object BooleanSetClass : SetClass(BooleanSet::class)
-data object GenericSetClass : SetClass(GenericSet::class)
-
-fun <Q : NumberSet<Q>, T : IMoldableSet<T>> mapNumExprToSet(expr: IExpr<T>, numExpr: (IExpr<Q>) -> Q): T? {
-    if (expr.getSetClass() == NumberSetClass) {
-        @Suppress("UNCHECKED_CAST")
-        return numExpr(expr as IExpr<Q>) as T
-    } else {
-        return null
-    }
-}
 
 sealed interface IExpr<T : IMoldableSet<T>> {
     fun getSetIndicator(): SetIndicator<T> = ExprClass.getSetIndicator(this)
     fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
-    fun getBaseClass(): KClass<*> = ExprClass.getBaseClass(this)
-    fun getSetClass(): SetClass = ExprClass.getSetClass(this)
     fun evaluate(condition: IExpr<BooleanSet>): T = ExprEvaluate.evaluate(this, condition)
 }
 
 sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
     override fun toString(): String {
         return ExprToString.toString(this)
+    }
+}
+
+fun <Q : NumberSet<Q>, T : IMoldableSet<T>> mapNumExprToSet(expr: IExpr<T>, numExpr: (IExpr<Q>) -> Q): T? {
+    if (expr.getSetIndicator() is NumberSetIndicator) {
+        @Suppress("UNCHECKED_CAST")
+        return numExpr(expr as IExpr<Q>) as T
+    } else {
+        return null
     }
 }
 
@@ -62,11 +53,11 @@ class IfExpression<T : IMoldableSet<T>>(
             b: IExpr<B>,
             condition: IExpr<BooleanSet>
         ): IExpr<A> {
-            return if (a.getSetClass() == b.getSetClass()) {
+            return if (a.getSetIndicator() == b.getSetIndicator()) {
                 @Suppress("UNCHECKED_CAST")
                 IfExpression(a, b as IExpr<A>, condition)
             } else {
-                throw IllegalStateException("Incompatible types in if statement: ${a.getSetClass()} and ${b.getSetClass()}")
+                throw IllegalStateException("Incompatible types in if statement: ${a.getSetIndicator()} and ${b.getSetIndicator()}")
             }
         }
     }

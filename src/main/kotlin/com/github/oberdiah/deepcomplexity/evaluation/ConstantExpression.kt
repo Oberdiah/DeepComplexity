@@ -14,19 +14,19 @@ object ConstantExpression {
 
     fun <T : IMoldableSet<T>> emptySetFromExpr(expr: IExpr<T>): T {
         @Suppress("UNCHECKED_CAST")
-        return when (expr.getSetClass()) {
-            NumberSetClass -> mapNumExprToSet(expr) { NumberSet.empty(it.getSetIndicator()) }!!
-            BooleanSetClass -> BooleanSet.NEITHER
-            GenericSetClass -> GenericSet.empty()
+        return when (expr.getSetIndicator()) {
+            is NumberSetIndicator -> mapNumExprToSet(expr) { NumberSet.empty(it.getSetIndicator()) }!!
+            BooleanSetIndicator -> BooleanSet.NEITHER
+            GenericSetIndicator -> GenericSet.empty()
         } as T
     }
 
     fun <T : IMoldableSet<T>> fullSetFromExpr(expr: IExpr<T>): T {
         @Suppress("UNCHECKED_CAST")
-        return when (expr.getSetClass()) {
-            NumberSetClass -> mapNumExprToSet(expr) { NumberSet.fullRange(it.getSetIndicator()) }!!
-            BooleanSetClass -> BooleanSet.BOTH
-            GenericSetClass -> GenericSet.everyValue()
+        return when (expr.getSetIndicator()) {
+            is NumberSetIndicator -> mapNumExprToSet(expr) { NumberSet.fullRange(it.getSetIndicator()) }!!
+            BooleanSetIndicator -> BooleanSet.BOTH
+            GenericSetIndicator -> GenericSet.everyValue()
         } as T
     }
 

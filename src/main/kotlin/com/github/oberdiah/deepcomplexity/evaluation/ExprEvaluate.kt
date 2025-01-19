@@ -9,10 +9,10 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 object ExprEvaluate {
     fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
         @Suppress("UNCHECKED_CAST")
-        return when (expr.getSetClass()) {
-            NumberSetClass -> mapNumExprToSet(expr) { evaluateNums(it, condition) }!!
-            BooleanSetClass -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
-            GenericSetClass -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
+        return when (expr.getSetIndicator()) {
+            is NumberSetIndicator -> mapNumExprToSet(expr) { evaluateNums(it, condition) }!!
+            BooleanSetIndicator -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
+            GenericSetIndicator -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
         }
     }
 

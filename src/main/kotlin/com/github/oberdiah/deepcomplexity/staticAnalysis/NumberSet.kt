@@ -11,8 +11,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.FloatSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.IntSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.LongSetIndicator
-import com.github.oberdiah.deepcomplexity.evaluation.NumberSetClass
-import com.github.oberdiah.deepcomplexity.evaluation.SetClass
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.settings.Settings
@@ -133,26 +131,19 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
     }
 
     sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
-        private val clazz: KClass<T>,
         private val setIndicator: SetIndicator<Self>
     ) : NumberSet<Self> {
-        class DoubleSet : NumberSetImpl<Double, DoubleSet>(Double::class, DoubleSetIndicator)
-        class FloatSet : NumberSetImpl<Float, FloatSet>(Float::class, FloatSetIndicator)
-        class LongSet : NumberSetImpl<Long, LongSet>(Long::class, LongSetIndicator)
-        class IntSet : NumberSetImpl<Int, IntSet>(Int::class, IntSetIndicator)
-        class ShortSet : NumberSetImpl<Short, ShortSet>(Short::class, ShortSetIndicator)
-        class ByteSet : NumberSetImpl<Byte, ByteSet>(Byte::class, ByteSetIndicator)
+        class DoubleSet : NumberSetImpl<Double, DoubleSet>(DoubleSetIndicator)
+        class FloatSet : NumberSetImpl<Float, FloatSet>(FloatSetIndicator)
+        class LongSet : NumberSetImpl<Long, LongSet>(LongSetIndicator)
+        class IntSet : NumberSetImpl<Int, IntSet>(IntSetIndicator)
+        class ShortSet : NumberSetImpl<Short, ShortSet>(ShortSetIndicator)
+        class ByteSet : NumberSetImpl<Byte, ByteSet>(ByteSetIndicator)
+
+        private val clazz: KClass<*> = setIndicator.clazz
 
         override fun getSetIndicator(): SetIndicator<Self> {
             return setIndicator
-        }
-
-        override fun getSetClass(): SetClass {
-            return NumberSetClass
-        }
-
-        override fun getClass(): KClass<*> {
-            return clazz
         }
 
         fun duplicateMe(): Self {

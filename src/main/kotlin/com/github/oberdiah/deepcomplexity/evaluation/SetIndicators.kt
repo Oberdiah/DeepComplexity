@@ -55,12 +55,13 @@ sealed interface SetIndicator<Self : IMoldableSet<Self>> {
     }
 }
 
+sealed interface NumberSetIndicator
 sealed class SetIndicatorImpl<T : Any, Self : IMoldableSet<Self>>(override val clazz: KClass<T>) : SetIndicator<Self>
-data object DoubleSetIndicator : SetIndicatorImpl<Double, DoubleSet>(Double::class)
-data object FloatSetIndicator : SetIndicatorImpl<Float, FloatSet>(Float::class)
-data object IntSetIndicator : SetIndicatorImpl<Int, IntSet>(Int::class)
-data object LongSetIndicator : SetIndicatorImpl<Long, LongSet>(Long::class)
-data object ShortSetIndicator : SetIndicatorImpl<Short, ShortSet>(Short::class)
-data object ByteSetIndicator : SetIndicatorImpl<Byte, ByteSet>(Byte::class)
+data object DoubleSetIndicator : SetIndicatorImpl<Double, DoubleSet>(Double::class), NumberSetIndicator
+data object FloatSetIndicator : SetIndicatorImpl<Float, FloatSet>(Float::class), NumberSetIndicator
+data object IntSetIndicator : SetIndicatorImpl<Int, IntSet>(Int::class), NumberSetIndicator
+data object LongSetIndicator : SetIndicatorImpl<Long, LongSet>(Long::class), NumberSetIndicator
+data object ShortSetIndicator : SetIndicatorImpl<Short, ShortSet>(Short::class), NumberSetIndicator
+data object ByteSetIndicator : SetIndicatorImpl<Byte, ByteSet>(Byte::class), NumberSetIndicator
 data object BooleanSetIndicator : SetIndicatorImpl<Boolean, BooleanSet>(Boolean::class)
 data object GenericSetIndicator : SetIndicatorImpl<Any, GenericSet>(Any::class)
