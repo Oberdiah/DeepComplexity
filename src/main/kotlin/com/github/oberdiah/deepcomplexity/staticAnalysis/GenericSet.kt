@@ -6,7 +6,7 @@ import kotlin.reflect.KClass
 
 interface GenericSet : IMoldableSet<GenericSet> {
     companion object {
-        inline fun <reified T> singleValue(value: T): GenericSetImpl<T> {
+        inline fun <reified T : Any> singleValue(value: T): GenericSetImpl<T> {
             return GenericSetImpl(T::class, setOf(value))
         }
 
@@ -19,20 +19,20 @@ interface GenericSet : IMoldableSet<GenericSet> {
         }
     }
 
-    class GenericSetImpl<T>(private val clazz: KClass<*>, private val values: Set<T>) : GenericSet {
+    class GenericSetImpl<T : Any>(private val clazz: KClass<T>, private val values: Set<T>) : GenericSet {
         override fun getSetIndicator(): SetIndicator<GenericSet> {
             return GenericSetIndicator
         }
 
         override fun union(other: GenericSet): GenericSet {
-            if (other !is GenericSetImpl<*>) {
+            if (other !is GenericSetImpl<T>) {
                 throw IllegalArgumentException("Cannot union with a different set type")
             }
             return GenericSetImpl(clazz, values.union(other.values))
         }
 
         override fun intersect(other: GenericSet): GenericSet {
-            if (other !is GenericSetImpl<*>) {
+            if (other !is GenericSetImpl<T>) {
                 throw IllegalArgumentException("Cannot intersect with a different set type")
             }
             return GenericSetImpl(clazz, values.intersect(other.values))

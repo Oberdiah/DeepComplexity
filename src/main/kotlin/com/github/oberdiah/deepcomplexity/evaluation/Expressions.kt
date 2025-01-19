@@ -6,7 +6,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 sealed interface IExpr<T : IMoldableSet<T>> {
-    fun getSetIndicator(): SetIndicator<T> = ExprClass.getSetIndicator(this)
+    fun getSetIndicator(): SetIndicator<T> = SetIndicator.getSetIndicator(this)
     fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
     fun evaluate(condition: IExpr<BooleanSet>): T = ExprEvaluate.evaluate(this, condition)
 }
