@@ -10,7 +10,7 @@ object ExprEvaluate {
     fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
         @Suppress("UNCHECKED_CAST")
         return when (expr.getSetIndicator()) {
-            is NumberSetIndicator -> mapNumExprToSet(expr) { evaluateNums(it, condition) }!!
+            is NumberSetIndicator<*, *> -> mapNumExprToSet(expr) { evaluateNums(it, condition) }!!
             BooleanSetIndicator -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
             GenericSetIndicator -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
         }
@@ -111,9 +111,10 @@ object ExprEvaluate {
                     return evaluate(it, condition)
                 }
 
-                val range = mapNumExprToSet(expr) {
-                    NumberSet.fullRange(it.getSetIndicator())
-                } ?: TODO("Variables evaluation on stuff other than numbers is not implemented yet.")
+                val range = when (val ind = expr.getSetIndicator()) {
+                    is NumberSetIndicator<*, *> -> NumberSet.fullRange(ind) as T
+                    else -> TODO("Variables evaluation on stuff other than numbers is not implemented yet.")
+                }
 
                 val constrainedRange = ExprConstrain.getConstraints(condition, expr)?.evaluate(condition)
 

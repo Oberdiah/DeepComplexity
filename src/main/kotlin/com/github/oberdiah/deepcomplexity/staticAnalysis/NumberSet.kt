@@ -11,6 +11,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.FloatSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.IntSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.LongSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.settings.Settings
@@ -41,7 +42,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.negate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
-import com.github.weisj.jsvg.T
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
@@ -89,7 +89,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             } as T
         }
 
-        fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>): T {
+        fun <T : Number, Self : NumberSetImpl<T, Self>> fullRange(indicator: NumberSetIndicator<T, Self>): Self {
             val set = newFromIndicator(indicator)
             set.addRange(indicator.clazz.getMinValue(), indicator.clazz.getMaxValue())
             return set
@@ -107,7 +107,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             return set
         }
 
-        fun <T : NumberSet<T>> empty(indicator: SetIndicator<T>): T {
+        fun <T : NumberSet<T>> emptyRange(indicator: SetIndicator<T>): T {
             return newFromIndicator(indicator)
         }
 
@@ -411,9 +411,8 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             changeTerms: ConstraintSolver.EvaluatedCollectedTerms<Self>,
             valid: Self
         ): Self {
-            val gaveUp = fullPositiveRange(setIndicator).castToType<Self>(clazz)
+            val gaveUp = fullPositiveRange(setIndicator)
 
-            val invalid = valid.invert()
             val linearChange = changeTerms.terms[1] ?: return gaveUp
             val constantChange = changeTerms.terms[0] ?: return gaveUp
             if (changeTerms.terms.size > 2) return gaveUp

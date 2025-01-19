@@ -35,7 +35,7 @@ object ExprConstrain {
             }
 
             is ComparisonExpression<*> -> {
-                assert(variable.getSetIndicator() is NumberSetIndicator) {
+                assert(variable.getSetIndicator() is NumberSetIndicator<*, *>) {
                     "Variable must be a number set. This requires more thought if we've hit this."
                 }
 
