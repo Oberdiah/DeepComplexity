@@ -12,6 +12,7 @@ object ConstraintSolver {
     )
 
     data class CollectedTerms<T : NumberSet<T>>(
+        val setIndicator: SetIndicator<T>,
         /**
          * Map from exponent to coefficient. 0th is constant, 1st is linear, 2nd is quadratic, etc.
          */
@@ -40,7 +41,7 @@ object ConstraintSolver {
                 newTerms[exp] = NegateExpression(term)
             }
 
-            return CollectedTerms(newTerms)
+            return CollectedTerms(setIndicator, newTerms)
         }
 
         fun combine(other: CollectedTerms<T>, op: BinaryNumberOp): CollectedTerms<T> {
@@ -54,7 +55,7 @@ object ConstraintSolver {
                         newTerms[exp] = merge(newTerms[exp], term, op)
                     }
 
-                    CollectedTerms(newTerms)
+                    CollectedTerms(setIndicator, newTerms)
                 }
 
                 MULTIPLICATION -> {
@@ -69,7 +70,7 @@ object ConstraintSolver {
                             newTerms[newExp] = merge(newTerms[newExp], newTerm, ADDITION)
                         }
                     }
-                    CollectedTerms(newTerms)
+                    CollectedTerms(setIndicator, newTerms)
                 }
 
                 DIVISION -> {
@@ -83,7 +84,7 @@ object ConstraintSolver {
                             newTerms[newExp] = merge(newTerms[newExp], newTerm, ADDITION)
                         }
                     }
-                    CollectedTerms(newTerms)
+                    CollectedTerms(setIndicator, newTerms)
                 }
             }
         }
@@ -156,6 +157,7 @@ object ConstraintSolver {
     }
 
     fun <T : NumberSet<T>> expandTerms(expr: IExpr<T>, varKey: VariableKey): CollectedTerms<T> {
+        val setIndicator = expr.getSetIndicator()
         return when (expr) {
             is ArithmeticExpression -> {
                 val lhs = expandTerms(expr.lhs, varKey)
@@ -164,12 +166,12 @@ object ConstraintSolver {
                 lhs.combine(rhs, expr.op)
             }
 
-            is ConstExpr -> CollectedTerms(terms = mutableMapOf(0 to expr))
+            is ConstExpr -> CollectedTerms(setIndicator, terms = mutableMapOf(0 to expr))
             is VariableExpression -> {
                 if (expr.getKey() == varKey) {
-                    CollectedTerms(terms = mutableMapOf(1 to ConstExpr(NumberSet.one(expr.setInd))))
+                    CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstExpr(NumberSet.one(expr.setInd))))
                 } else {
-                    CollectedTerms(terms = mutableMapOf(0 to expr))
+                    CollectedTerms(setIndicator, terms = mutableMapOf(0 to expr))
                 }
             }
 

@@ -17,12 +17,21 @@ sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
     }
 }
 
-fun <Q : NumberSet<Q>, T : IMoldableSet<T>> mapNumExprToSet(expr: IExpr<T>, func: (IExpr<Q>) -> Q): T? {
-    if (expr.getSetIndicator() is NumberSetIndicator<*, *>) {
+fun IExpr<*>.tryCastToNumbers(): IExpr<out NumberSet<*>>? {
+    if (this.getSetIndicator() is NumberSetIndicator<*, *>) {
         @Suppress("UNCHECKED_CAST")
-        return func(expr as IExpr<Q>) as T
+        return this as IExpr<out NumberSet<*>>
     } else {
         return null
+    }
+}
+
+inline fun <Set : IMoldableSet<Set>, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
+    return if (this::class == T::class && indicator == this.getSetIndicator()) {
+        @Suppress("UNCHECKED_CAST")
+        this as T
+    } else {
+        null
     }
 }
 
@@ -88,7 +97,30 @@ class NumIterationTimesExpression<T : NumberSet<T>>(
     val variable: VariableExpression<T>,
     // How the variable is changing each iteration.
     val terms: ConstraintSolver.CollectedTerms<T>
-) : Expr<T>()
+) : Expr<T>() {
+    companion object {
+        fun <T : NumberSet<T>> new(
+            constraint: IExpr<T>,
+            variable: VariableExpression<out NumberSet<*>>,
+            terms: ConstraintSolver.CollectedTerms<out NumberSet<*>>
+        ): NumIterationTimesExpression<T> {
+            val setIndicator = constraint.getSetIndicator()
+            assert(setIndicator == variable.getSetIndicator()) {
+                "Variable and constraint have different set indicators: ${variable.getSetIndicator()} and $setIndicator"
+            }
+            assert(setIndicator == terms.setIndicator) {
+                "Variable and terms have different set indicators: ${variable.getSetIndicator()} and ${terms.setIndicator}"
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            return NumIterationTimesExpression(
+                constraint,
+                variable as VariableExpression<T>,
+                terms as ConstraintSolver.CollectedTerms<T>
+            )
+        }
+    }
+}
 
 class UnionExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
 class BooleanExpression(val lhs: IExpr<BooleanSet>, val rhs: IExpr<BooleanSet>, val op: BooleanOp) : Expr<BooleanSet>()

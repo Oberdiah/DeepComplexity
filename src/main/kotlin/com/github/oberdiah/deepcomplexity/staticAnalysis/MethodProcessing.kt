@@ -156,7 +156,7 @@ object MethodProcessing {
                     ConstantExpression.TRUE
                 }
 
-//                LoopEvaluation.processLoopContext(bodyContext, conditionExpr)
+                LoopEvaluation.processLoopContext(bodyContext, conditionExpr)
 
                 context.stack(bodyContext)
             }
