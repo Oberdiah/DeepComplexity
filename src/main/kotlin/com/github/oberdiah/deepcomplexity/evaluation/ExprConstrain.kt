@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
+import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
@@ -33,11 +34,13 @@ object ExprConstrain {
                 }
             }
 
-            is ComparisonExpression -> {
+            is ComparisonExpression<*> -> {
                 assert(variable.getSetClass() == NumberSetClass) {
                     "Variable must be a number set. This requires more thought if we've hit this."
                 }
+
                 @Suppress("UNCHECKED_CAST")
+                // We can only cast back like this because we've verified it's a number set.
                 ConstraintSolver.getVariableConstraints(condition, varKey) as IExpr<T>?
             }
 

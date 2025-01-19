@@ -88,11 +88,11 @@ object MethodProcessing {
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
-                            val lhs = context.getVar(resolvedLhs).tryCast<NumberSet>() ?: TODO(
+                            val lhs = context.getVar(resolvedLhs).tryCastTo(IntSetIndicator) ?: TODO(
                                 "Failed to cast to NumberSet: ${psi.lExpression.text} while parsing ${psi.text}"
                             )
 
-                            val rhs = buildExpressionFromPsi(rExpression, context).tryCast<NumberSet>() ?: TODO(
+                            val rhs = buildExpressionFromPsi(rExpression, context).tryCastTo(IntSetIndicator) ?: TODO(
                                 "Failed to cast to NumberSet: ${rExpression.text} while parsing ${psi.text}"
                             )
 
@@ -122,7 +122,7 @@ object MethodProcessing {
                 val condition = buildExpressionFromPsi(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     context
-                ).tryCast<BooleanSet>() ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
+                ).tryCastTo(BooleanSetIndicator) ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 val trueBranchContext = Context()
@@ -150,13 +150,13 @@ object MethodProcessing {
                 psi.update?.let { processPsiElement(it, bodyContext) }
 
                 val conditionExpr = psi.condition?.let { condition ->
-                    buildExpressionFromPsi(condition, bodyContext).tryCast<BooleanSet>()
+                    buildExpressionFromPsi(condition, bodyContext).tryCastTo(BooleanSetIndicator)
                         ?: TODO("Failed to cast to BooleanSet: ${condition.text}")
                 }.orElse {
                     ConstantExpression.TRUE
                 }
 
-                LoopEvaluation.processLoopContext(bodyContext, conditionExpr)
+//                LoopEvaluation.processLoopContext(bodyContext, conditionExpr)
 
                 context.stack(bodyContext)
             }
@@ -203,10 +203,10 @@ object MethodProcessing {
                 val lhsOperand = psi.lOperand
                 val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()
 
-                val lhs = buildExpressionFromPsi(lhsOperand, context).tryCast<NumberSet>()
+                val lhs = buildExpressionFromPsi(lhsOperand, context).tryCastTo(IntSetIndicator)
                     ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text} while parsing ${psi.text}")
 
-                val rhs = buildExpressionFromPsi(rhsOperand, context).tryCast<NumberSet>()
+                val rhs = buildExpressionFromPsi(rhsOperand, context).tryCastTo(IntSetIndicator)
                     ?: TODO("Failed to cast to NumberSet: ${rhsOperand.text} while parsing ${psi.text}")
 
                 val tokenType = psi.operationSign.tokenType

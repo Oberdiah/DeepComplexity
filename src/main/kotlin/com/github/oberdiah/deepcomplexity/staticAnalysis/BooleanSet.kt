@@ -2,6 +2,8 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetClass
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import kotlin.reflect.KClass
 
 enum class BooleanSet : IMoldableSet<BooleanSet> {
@@ -62,6 +64,10 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
         fun fromBoolean(value: Boolean): BooleanSet {
             return if (value) TRUE else FALSE
         }
+    }
+
+    override fun getSetIndicator(): SetIndicator<BooleanSet> {
+        return BooleanSetIndicator
     }
 
     override fun invert(): BooleanSet {

@@ -9,7 +9,7 @@ object ExprToString {
     fun <T : IMoldableSet<T>> toString(expr: IExpr<T>): String {
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
-            is ComparisonExpression -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
+            is ComparisonExpression<*> -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
             is ConstExpr<*> -> expr.singleElementSet.toString()
             is IfExpression -> {
                 return "if ${expr.thisCondition} {\n${
@@ -25,7 +25,7 @@ object ExprToString {
             is NegateExpression -> "-${expr.expr}"
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
-            is VariableExpression.VariableImpl<*> -> {
+            is VariableExpression -> {
                 if (expr.myKey == null) return "Unresolved (on-the-fly)"
                 return if (expr.isResolved()) expr.resolvedInto.toString() else (expr.myKey.key.toString() + "[$${expr.id}]")
             }

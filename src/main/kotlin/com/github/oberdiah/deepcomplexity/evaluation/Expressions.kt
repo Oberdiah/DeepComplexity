@@ -7,15 +7,25 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
-sealed class SetClass<T : IMoldableSet<T>>(val setClazz: KClass<T>)
-data object NumberSetClass : SetClass<NumberSet>(NumberSet::class)
-data object BooleanSetClass : SetClass<BooleanSet>(BooleanSet::class)
-data object GenericSetClass : SetClass<GenericSet>(GenericSet::class)
+sealed class SetClass(val setClazz: KClass<*>)
+data object NumberSetClass : SetClass(NumberSet::class)
+data object BooleanSetClass : SetClass(BooleanSet::class)
+data object GenericSetClass : SetClass(GenericSet::class)
+
+fun <Q : NumberSet<Q>, T : IMoldableSet<T>> mapNumExprToSet(expr: IExpr<T>, numExpr: (IExpr<Q>) -> Q): T? {
+    if (expr.getSetClass() == NumberSetClass) {
+        @Suppress("UNCHECKED_CAST")
+        return numExpr(expr as IExpr<Q>) as T
+    } else {
+        return null
+    }
+}
 
 sealed interface IExpr<T : IMoldableSet<T>> {
+    fun getSetIndicator(): SetIndicator<T> = ExprClass.getSetIndicator(this)
     fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
     fun getBaseClass(): KClass<*> = ExprClass.getBaseClass(this)
-    fun getSetClass(): SetClass<T> = ExprClass.getSetClass(this)
+    fun getSetClass(): SetClass = ExprClass.getSetClass(this)
     fun evaluate(condition: IExpr<BooleanSet>): T = ExprEvaluate.evaluate(this, condition)
 }
 
@@ -25,18 +35,10 @@ sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
     }
 }
 
-inline fun <reified R : IMoldableSet<R>> IExpr<*>.tryCast(): IExpr<R>? {
-    return if (this.getSetClass().setClazz == R::class) {
+fun <T : IMoldableSet<T>> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<T>? {
+    return if (this.getSetIndicator() == indicator) {
         @Suppress("UNCHECKED_CAST")
-        this as IExpr<R>
-    } else {
-        null
-    }
-}
-
-inline fun <reified T : IMoldableSet<T>, reified R : IExpr<T>> IExpr<*>.tryExactCast(): R? {
-    return if (this::class == R::class && this.getSetClass().setClazz == T::class) {
-        this as R
+        this as IExpr<T>
     } else {
         null
     }
@@ -45,10 +47,8 @@ inline fun <reified T : IMoldableSet<T>, reified R : IExpr<T>> IExpr<*>.tryExact
 fun <T : IMoldableSet<T>> IExpr<BooleanSet>.getConstraints(varKey: VariableExpression<T>): IExpr<T>? =
     ExprConstrain.getConstraints(this, varKey)
 
-class ArithmeticExpression(val lhs: IExpr<NumberSet>, val rhs: IExpr<NumberSet>, val op: BinaryNumberOp) :
-    Expr<NumberSet>()
-
-class ComparisonExpression(val lhs: IExpr<NumberSet>, val rhs: IExpr<NumberSet>, val comp: ComparisonOp) :
+class ArithmeticExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>()
+class ComparisonExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val comp: ComparisonOp) :
     Expr<BooleanSet>()
 
 class IfExpression<T : IMoldableSet<T>>(
@@ -75,29 +75,29 @@ class IfExpression<T : IMoldableSet<T>>(
 class IntersectExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
 class BooleanInvertExpression(val expr: IExpr<BooleanSet>) : Expr<BooleanSet>()
 class InvertExpression<T : IMoldableSet<T>>(val expr: IExpr<T>) : Expr<T>()
-class NegateExpression(val expr: IExpr<NumberSet>) : Expr<NumberSet>()
+class NegateExpression<T : NumberSet<T>>(val expr: IExpr<T>) : Expr<T>()
 
 /**
  * Returns the range of numbers above or below a given limit, depending on cmp.
  */
-class NumberLimitsExpression(
+class NumberLimitsExpression<T : NumberSet<T>>(
     // The value we're either going to be above or below.
-    val limit: IExpr<NumberSet>,
+    val limit: IExpr<T>,
     // Whether we should flip the comparison operator or not.
     val shouldFlipCmp: IExpr<BooleanSet>,
     // The comparison operator to use.
     val cmp: ComparisonOp
-) : Expr<NumberSet>()
+) : Expr<T>()
 
-class NumIterationTimesExpression(
+class NumIterationTimesExpression<T : NumberSet<T>>(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.
-    val constraint: IExpr<NumberSet>,
+    val constraint: IExpr<T>,
     // The variable that's being modified as it changes inside the loop.
-    val variable: VariableExpression<NumberSet>,
+    val variable: VariableExpression<T>,
     // How the variable is changing each iteration.
-    val terms: ConstraintSolver.CollectedTerms
-) : Expr<NumberSet>()
+    val terms: ConstraintSolver.CollectedTerms<T>
+) : Expr<T>()
 
 class UnionExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
 class BooleanExpression(val lhs: IExpr<BooleanSet>, val rhs: IExpr<BooleanSet>, val op: BooleanOp) : Expr<BooleanSet>()

@@ -7,16 +7,17 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ExprEvaluate {
-    @Suppress("UNCHECKED_CAST")
     fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+        @Suppress("UNCHECKED_CAST")
         return when (expr.getSetClass()) {
-            NumberSetClass -> evaluateNums(expr as IExpr<NumberSet>, condition) as T
+            NumberSetClass -> mapNumExprToSet(expr) { evaluateNums(it, condition) }!!
             BooleanSetClass -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
             GenericSetClass -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
         }
     }
 
-    private fun evaluateNums(expr: IExpr<NumberSet>, condition: IExpr<BooleanSet>): NumberSet {
+
+    private fun <T : NumberSet<T>> evaluateNums(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
         return when (expr) {
             is ArithmeticExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
@@ -31,9 +32,7 @@ object ExprEvaluate {
                 when (expr.shouldFlipCmp.evaluate(condition)) {
                     TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
                     FALSE -> rhs.getSetSatisfying(expr.cmp)
-                    BOTH -> rhs.getSetSatisfying(expr.cmp)
-                        .union(rhs.getSetSatisfying(expr.cmp.flip())) as NumberSet
-
+                    BOTH -> rhs.getSetSatisfying(expr.cmp).union(rhs.getSetSatisfying(expr.cmp.flip()))
                     NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
             }
@@ -62,11 +61,14 @@ object ExprEvaluate {
                 return lhs.booleanOperation(rhs, expr.op)
             }
 
-            is ComparisonExpression -> {
-                val lhs = evaluate(expr.lhs, condition)
-                val rhs = evaluate(expr.rhs, condition)
+            is ComparisonExpression<*> -> {
+                fun <T : NumberSet<T>> evalC(expr: ComparisonExpression<T>, condition: IExpr<BooleanSet>): BooleanSet {
+                    val lhs = evaluate(expr.lhs, condition)
+                    val rhs = evaluate(expr.rhs, condition)
 
-                return lhs.comparisonOperation(rhs, expr.comp)
+                    return lhs.comparisonOperation(rhs, expr.comp)
+                }
+                evalC(expr, condition)
             }
 
             is BooleanInvertExpression -> evaluate(expr, condition).invert()
@@ -104,25 +106,21 @@ object ExprEvaluate {
 
             is ConstExpr -> expr.singleElementSet
 
-            is VariableExpression.VariableImpl -> {
+            is VariableExpression -> {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
                 }
 
-                if (expr.setClazz == NumberSetClass) {
-                    // If we're here we're at the end of the chain, assume a full range.
-                    val range = NumberSet.fullRange(expr.baseClazz)
-                    val constrainedRange =
-                        ExprConstrain.getConstraints(condition, expr)?.evaluate(condition) as NumberSet?
+                val range = mapNumExprToSet(expr) {
+                    NumberSet.fullRange(it.getSetIndicator())
+                } ?: TODO("Variables evaluation on stuff other than numbers is not implemented yet.")
 
-                    @Suppress("UNCHECKED_CAST")
-                    if (constrainedRange != null) {
-                        range.intersect(constrainedRange)
-                    } else {
-                        range
-                    } as T
+                val constrainedRange = ExprConstrain.getConstraints(condition, expr)?.evaluate(condition)
+
+                if (constrainedRange != null) {
+                    range.intersect(constrainedRange)
                 } else {
-                    TODO("Not implemented yet")
+                    range
                 }
             }
 

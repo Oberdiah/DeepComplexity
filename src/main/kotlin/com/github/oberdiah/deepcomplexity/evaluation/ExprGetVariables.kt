@@ -6,7 +6,7 @@ object ExprGetVariables {
     fun <T : IMoldableSet<T>> getVariables(expr: IExpr<T>, resolved: Boolean): Set<VariableExpression<*>> {
         return when (expr) {
             is ConstExpr -> emptySet()
-            is VariableExpression.VariableImpl -> {
+            is VariableExpression -> {
                 val resolvedVariables = expr.resolvedInto?.getVariables(resolved) ?: emptySet()
 
                 if ((expr.isResolved() && resolved) || (!expr.isResolved() && !resolved)) {
@@ -17,7 +17,7 @@ object ExprGetVariables {
             }
 
             is BooleanExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
-            is ComparisonExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
+            is ComparisonExpression<*> -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is BooleanInvertExpression -> expr.expr.getVariables(resolved)
             is NegateExpression -> expr.expr.getVariables(resolved)
             is ArithmeticExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)

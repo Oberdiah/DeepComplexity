@@ -2,14 +2,29 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.ByteSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
-import com.github.oberdiah.deepcomplexity.evaluation.GenericSetClass
+import com.github.oberdiah.deepcomplexity.evaluation.DoubleSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.FloatSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.GenericSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.IntSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.LongSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetClass
+import com.github.oberdiah.deepcomplexity.evaluation.SetClass
+import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ByteSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.DoubleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.FloatSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.IntSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.LongSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ShortSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
@@ -20,6 +35,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getOne
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getZero
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoint
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
@@ -27,18 +43,15 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.negate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
+import com.github.weisj.jsvg.T
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-sealed interface NumberSet : IMoldableSet<NumberSet> {
-    override fun getSetClass(): NumberSetClass {
-        return NumberSetClass
-    }
-
-    fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet
-    fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet
+sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<Self>, Self : NumberSet<Self> {
+    fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T
+    fun arithmeticOperation(other: Self, operation: BinaryNumberOp): Self
+    fun comparisonOperation(other: Self, operation: ComparisonOp): BooleanSet
     fun addRange(start: Number, end: Number)
-    fun <T : Number> castToType(clazz: KClass<*>): NumberSetImpl<T>
 
     /**
      * Returns the range of the set. i.e., the smallest value in the set and the largest.
@@ -46,7 +59,7 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
      * Returns null if the set is empty.
      */
     fun getRange(): Pair<Number, Number>?
-    fun negate(): NumberSet
+    fun negate(): Self
     fun isOne(): Boolean
 
     /**
@@ -55,90 +68,114 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
      *
      * You can think of this set as being the 'initial' state.
      */
-    fun evaluateLoopingRange(changeTerms: ConstraintSolver.EvaluatedCollectedTerms, valid: NumberSet): NumberSet
+    fun evaluateLoopingRange(changeTerms: ConstraintSolver.EvaluatedCollectedTerms<Self>, valid: Self): Self
 
     /**
      * Returns a new set that satisfies the comparison operation.
      * We're the right hand side of the equation.
      */
-    fun getSetSatisfying(comp: ComparisonOp): NumberSet
-
-    fun toImpl(): NumberSetImpl<*> {
-        return this as NumberSetImpl<*>
-    }
+    fun getSetSatisfying(comp: ComparisonOp): Self
 
     companion object {
-        fun newFromClass(clazz: KClass<*>): NumberSet {
-            return when (clazz) {
-                Double::class -> NumberSetImpl<Double>(clazz)
-                Float::class -> NumberSetImpl<Float>(clazz)
-                Long::class -> NumberSetImpl<Long>(clazz)
-                Int::class -> NumberSetImpl<Int>(clazz)
-                Short::class -> NumberSetImpl<Short>(clazz)
-                Byte::class -> NumberSetImpl<Byte>(clazz)
-                else -> throw IllegalArgumentException("Unknown number class")
-            }
+        fun <T : NumberSet<T>> newFromIndicator(indicator: SetIndicator<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return when (indicator) {
+                ByteSetIndicator -> ByteSet()
+                ShortSetIndicator -> ShortSet()
+                IntSetIndicator -> IntSet()
+                LongSetIndicator -> LongSet()
+                FloatSetIndicator -> FloatSet()
+                DoubleSetIndicator -> DoubleSet()
+                BooleanSetIndicator, GenericSetIndicator ->
+                    throw IllegalArgumentException("Cannot create number set from boolean or generic indicator")
+            } as T
         }
 
-        fun <T : Number> newFromClassTyped(clazz: KClass<*>): NumberSetImpl<T> {
-            return when (clazz) {
-                Double::class -> NumberSetImpl(clazz)
-                Float::class -> NumberSetImpl(clazz)
-                Long::class -> NumberSetImpl(clazz)
-                Int::class -> NumberSetImpl(clazz)
-                Short::class -> NumberSetImpl(clazz)
-                Byte::class -> NumberSetImpl(clazz)
-                else -> throw IllegalArgumentException("Unknown number class")
-            }
-        }
-
-        fun empty(clazz: KClass<*>): NumberSet {
-            return newFromClass(clazz)
-        }
-
-        fun zero(clazz: KClass<*>): NumberSet {
-            val set = newFromClass(clazz)
-            set.addRange(clazz.getZero(), clazz.getZero())
+        fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>): T {
+            val set = newFromIndicator(indicator)
+            set.addRange(indicator.clazz.getMinValue(), indicator.clazz.getMaxValue())
             return set
         }
 
-        fun fullRange(clazz: KClass<*>): NumberSet {
-            val set = newFromClass(clazz)
-            set.addRange(clazz.getMinValue(), clazz.getMaxValue())
+        fun <T : NumberSet<T>> fullPositiveRange(indicator: SetIndicator<T>): T {
+            val set = newFromIndicator(indicator)
+            set.addRange(indicator.clazz.getZero(), indicator.clazz.getMaxValue())
             return set
         }
 
-        fun fullPositiveRange(clazz: KClass<*>): NumberSet {
-            val set = newFromClass(clazz)
-            set.addRange(clazz.getZero(), clazz.getMaxValue())
+        fun <T : NumberSet<T>> fullNegativeRange(indicator: SetIndicator<T>): T {
+            val set = newFromIndicator(indicator)
+            set.addRange(indicator.clazz.getMinValue(), indicator.clazz.getZero())
             return set
         }
 
-        fun fullNegativeRange(clazz: KClass<*>): NumberSet {
-            val set = newFromClass(clazz)
-            set.addRange(clazz.getMinValue(), clazz.getZero())
+        fun <T : NumberSet<T>> empty(indicator: SetIndicator<T>): T {
+            return newFromIndicator(indicator)
+        }
+
+        fun <T : NumberSet<T>> zero(indicator: SetIndicator<T>): T {
+            val set = newFromIndicator(indicator)
+            set.addRange(indicator.clazz.getZero(), indicator.clazz.getZero())
             return set
         }
 
-        inline fun <reified T : Number> singleValue(value: T): NumberSet {
-            val set = newFromClassTyped<T>(T::class)
-            set.addRangeTyped(value, value)
+        fun <T : NumberSet<T>> one(indicator: SetIndicator<T>): T {
+            val set = newFromIndicator(indicator)
+            set.addRange(indicator.clazz.getOne(), indicator.clazz.getOne())
+            return set
+        }
+
+        fun <T : Number, Self : NumberSetImpl<T, Self>> singleValue(value: T): Self {
+            val set: Self = newFromIndicator(SetIndicator.fromValue(value))
+            set.addRange(value, value)
             return set
         }
     }
 
-    class NumberSetImpl<T : Number>(private val clazz: KClass<*>) : NumberSet {
+    sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
+        private val clazz: KClass<T>,
+        private val setIndicator: SetIndicator<Self>
+    ) : NumberSet<Self> {
+        class DoubleSet : NumberSetImpl<Double, DoubleSet>(Double::class, DoubleSetIndicator)
+        class FloatSet : NumberSetImpl<Float, FloatSet>(Float::class, FloatSetIndicator)
+        class LongSet : NumberSetImpl<Long, LongSet>(Long::class, LongSetIndicator)
+        class IntSet : NumberSetImpl<Int, IntSet>(Int::class, IntSetIndicator)
+        class ShortSet : NumberSetImpl<Short, ShortSet>(Short::class, ShortSetIndicator)
+        class ByteSet : NumberSetImpl<Byte, ByteSet>(Byte::class, ByteSetIndicator)
+
+        override fun getSetIndicator(): SetIndicator<Self> {
+            return setIndicator
+        }
+
+        override fun getSetClass(): SetClass {
+            return NumberSetClass
+        }
+
+        override fun getClass(): KClass<*> {
+            return clazz
+        }
+
+        fun duplicateMe(): Self {
+            @Suppress("UNCHECKED_CAST")
+            return when (this) {
+                is ByteSet -> ByteSet()
+                is ShortSet -> ShortSet()
+                is IntSet -> IntSet()
+                is LongSet -> LongSet()
+                is FloatSet -> FloatSet()
+                is DoubleSet -> DoubleSet()
+            } as Self
+        }
+
+        fun me(): Self {
+            @Suppress("UNCHECKED_CAST")
+            return this as Self
+        }
+
         /**
          * These ranges are always sorted and never overlap.
          */
         private val ranges = mutableListOf<NumberRange>()
-
-        /**
-         * Adds a range to the set. No checks are performed.
-         */
-        fun addRangeTyped(start: T, end: T) {
-            ranges.add(NumberRange(start, end))
-        }
 
         override fun contains(element: Any): Boolean {
             if (element::class != clazz) {
@@ -149,28 +186,28 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return contains(element as T)
         }
 
-        override fun <T : Number> castToType(clazz: KClass<*>): NumberSetImpl<T> {
+        override fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T {
             if (clazz != this.clazz) {
                 throw IllegalArgumentException("Cannot cast to different type — $clazz != ${this.clazz}")
             }
             @Suppress("UNCHECKED_CAST")
-            return this as NumberSetImpl<T>
+            return this as T
         }
 
         override fun addRange(start: Number, end: Number) {
-            if (start::class != clazz || end::class != clazz) {
-                throw IllegalArgumentException("Cannot add range of different types")
-            }
+            addRangeTyped(start.castInto(clazz), end.castInto(clazz))
+        }
 
-            @Suppress("UNCHECKED_CAST")
-            addRangeTyped(start as T, end as T)
+        fun addRangeTyped(start: T, end: T) {
+            ranges.add(NumberRange(start, end))
         }
 
         override fun getRange(): Pair<Number, Number>? {
-            return getRangeTyped()
+            val (start, end) = getRangeTyped() ?: return null
+            return start to end
         }
 
-        private fun getRangeTyped(): Pair<T, T>? {
+        fun getRangeTyped(): Pair<T, T>? {
             if (ranges.isEmpty()) {
                 return null
             }
@@ -190,22 +227,22 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return ranges.joinToString(", ")
         }
 
-        override fun getClass(): KClass<*> {
-            return clazz
-        }
-
-        private fun <Q : IMoldableSet<Q>> castToThisType(other: Q): NumberSetImpl<T> {
-            if (other.getClass() != clazz) {
-                throw IllegalArgumentException("Cannot perform operation on different types ($clazz != ${other.getClass()})")
+        private fun <Q : IMoldableSet<Q>> castToThisType(other: Q): Self {
+            if (other::class != this::class) {
+                throw IllegalArgumentException("Cannot perform operation on different types ($other != $this)")
             }
             @Suppress("UNCHECKED_CAST")
-            return other as NumberSetImpl<T>
+            return other as Self
         }
 
-        override fun getSetSatisfying(comp: ComparisonOp): NumberSet {
-            val (smallestValue, biggestValue) = getRangeTyped() ?: return this
+        /**
+         * Returns a new set that satisfies the comparison operation.
+         * We're the right hand side of the equation.
+         */
+        override fun getSetSatisfying(comp: ComparisonOp): Self {
+            val (smallestValue, biggestValue) = getRangeTyped() ?: return me()
 
-            val newSet = newFromClassTyped<T>(clazz)
+            val newSet = duplicateMe()
 
             when (comp) {
                 LESS_THAN, LESS_THAN_OR_EQUAL -> newSet.ranges.add(
@@ -234,17 +271,16 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return newSet
         }
 
-        override fun union(other: NumberSet): NumberSet {
-            val newSet = newFromClassTyped<T>(clazz)
+        override fun union(other: Self): Self {
+            val newSet = duplicateMe()
             newSet.ranges.addAll(ranges)
             newSet.ranges.addAll(castToThisType(other).ranges)
             newSet.mergeAndDeduplicate()
             return newSet
         }
 
-        override fun intersect(other: NumberSet): NumberSet {
-            val otherSet = castToThisType(other)
-            val newSet = newFromClassTyped<T>(clazz)
+        override fun intersect(otherSet: Self): Self {
+            val newSet = duplicateMe()
 
             // If either set is empty, intersection is empty
             if (ranges.isEmpty() || otherSet.ranges.isEmpty()) {
@@ -269,15 +305,18 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return newSet
         }
 
-        override fun invert(): NumberSet {
-            val newSet = newFromClassTyped<T>(clazz)
+        override fun invert(): Self {
+            val newSet = duplicateMe()
+
+            val minValue = clazz.getMinValue().castInto<T>(clazz)
+            val maxValue = clazz.getMaxValue().castInto<T>(clazz)
 
             if (ranges.isEmpty()) {
-                newSet.addRange(clazz.getMinValue(), clazz.getMaxValue())
+                newSet.addRangeTyped(minValue, maxValue)
                 return newSet
             }
 
-            var currentMin = clazz.getMinValue().castInto<T>(clazz)
+            var currentMin = minValue
             for (range in ranges) {
                 if (currentMin < range.start) {
                     newSet.addRangeTyped(currentMin, range.start.downOneEpsilon())
@@ -286,7 +325,6 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             }
 
             // Add final range if necessary
-            val maxValue = clazz.getMaxValue().castInto<T>(clazz)
             if (currentMin < maxValue) {
                 newSet.addRangeTyped(currentMin, maxValue)
             }
@@ -294,8 +332,8 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return newSet
         }
 
-        override fun negate(): NumberSet {
-            val newSet = newFromClassTyped<T>(clazz)
+        override fun negate(): Self {
+            val newSet = duplicateMe()
             for (range in ranges.reversed()) {
                 newSet.addRangeTyped(range.end.negate(), range.start.negate())
             }
@@ -311,8 +349,8 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return false
         }
 
-        override fun arithmeticOperation(other: NumberSet, operation: BinaryNumberOp): NumberSet {
-            val newSet = newFromClassTyped<T>(clazz)
+        override fun arithmeticOperation(other: Self, operation: BinaryNumberOp): Self {
+            val newSet = duplicateMe()
             for (range in ranges) {
                 for (otherRange in castToThisType(other).ranges) {
                     val values: Iterable<NumberRange> = when (operation) {
@@ -329,13 +367,11 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return newSet
         }
 
-        override fun comparisonOperation(other: NumberSet, operation: ComparisonOp): BooleanSet {
-            val castOther = castToThisType(other)
-
+        override fun comparisonOperation(otherSet: Self, operation: ComparisonOp): BooleanSet {
             val mySmallestPossibleValue = ranges[0].start
             val myLargestPossibleValue = ranges[ranges.size - 1].end
-            val otherSmallestPossibleValue = castOther.ranges[0].start
-            val otherLargestPossibleValue = castOther.ranges[castOther.ranges.size - 1].end
+            val otherSmallestPossibleValue = otherSet.ranges[0].start
+            val otherLargestPossibleValue = otherSet.ranges[otherSet.ranges.size - 1].end
 
             when (operation) {
                 LESS_THAN -> {
@@ -374,15 +410,21 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
             return BooleanSet.BOTH
         }
 
+        /**
+         * Given a set of `terms` to apply to this set on each iteration, evaluate
+         * the number of iterations required to exit the `valid` number set.
+         *
+         * You can think of this set as being the 'initial' state.
+         */
         override fun evaluateLoopingRange(
-            changeTerms: ConstraintSolver.EvaluatedCollectedTerms,
-            valid: NumberSet
-        ): NumberSet {
-            val gaveUp = fullPositiveRange(clazz)
+            changeTerms: ConstraintSolver.EvaluatedCollectedTerms<Self>,
+            valid: Self
+        ): Self {
+            val gaveUp = fullPositiveRange(setIndicator).castToType<Self>(clazz)
 
-            val invalid = (valid.invert() as NumberSet).castToType<T>(clazz)
-            val linearChange = (changeTerms.terms[1] ?: return gaveUp).castToType<T>(clazz)
-            val constantChange = (changeTerms.terms[0] ?: return gaveUp).castToType<T>(clazz)
+            val invalid = valid.invert()
+            val linearChange = changeTerms.terms[1] ?: return gaveUp
+            val constantChange = changeTerms.terms[0] ?: return gaveUp
             if (changeTerms.terms.size > 2) return gaveUp
             if (!linearChange.isOne()) {
                 // We can deal with this if the constant term is 0, but we're not bothering
@@ -425,7 +467,7 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
 //                }
 //            }
 
-            val newSet = newFromClassTyped<T>(clazz)
+            val newSet = duplicateMe()
             newSet.addRangeTyped(minimumNumberOfLoops, maximumNumberOfLoops)
             return newSet
         }
@@ -456,7 +498,7 @@ sealed interface NumberSet : IMoldableSet<NumberSet> {
         }
 
         override fun isOne(): Boolean {
-            return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start == clazz.getOne()
+            return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isOne()
         }
 
         /**

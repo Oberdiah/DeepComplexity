@@ -23,7 +23,7 @@ object TestUtilities {
             val highestScore = boolArray.count { it }
 
             for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
-                val result = method.invoke(null, s.toShort()) as Short
+                val result = method.invoke(null, s.toInt()) as Int
 
                 if (!range.contains(result)) {
                     throw AssertionError(

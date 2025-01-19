@@ -7,17 +7,17 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstraintSolver {
-    data class EvaluatedCollectedTerms(
-        val terms: Map<Int, NumberSet>,
+    data class EvaluatedCollectedTerms<T : NumberSet<T>>(
+        val terms: Map<Int, T>,
     )
 
-    data class CollectedTerms(
+    data class CollectedTerms<T : NumberSet<T>>(
         /**
          * Map from exponent to coefficient. 0th is constant, 1st is linear, 2nd is quadratic, etc.
          */
-        val terms: MutableMap<Int, IExpr<NumberSet>> = mutableMapOf(),
+        val terms: MutableMap<Int, IExpr<T>> = mutableMapOf(),
     ) {
-        fun evaluate(condition: IExpr<BooleanSet>): EvaluatedCollectedTerms {
+        fun evaluate(condition: IExpr<BooleanSet>): EvaluatedCollectedTerms<T> {
             return EvaluatedCollectedTerms(
                 terms.mapValues { (_, term) -> term.evaluate(condition) }
             )
@@ -33,8 +33,8 @@ object ConstraintSolver {
             }
         }
 
-        fun negate(): CollectedTerms {
-            val newTerms = mutableMapOf<Int, IExpr<NumberSet>>()
+        fun negate(): CollectedTerms<T> {
+            val newTerms = mutableMapOf<Int, IExpr<T>>()
 
             for ((exp, term) in terms) {
                 newTerms[exp] = NegateExpression(term)
@@ -43,11 +43,11 @@ object ConstraintSolver {
             return CollectedTerms(newTerms)
         }
 
-        fun combine(other: CollectedTerms, op: BinaryNumberOp): CollectedTerms {
+        fun combine(other: CollectedTerms<T>, op: BinaryNumberOp): CollectedTerms<T> {
             return when (op) {
                 ADDITION, SUBTRACTION -> {
                     // Combine terms
-                    val newTerms = mutableMapOf<Int, IExpr<NumberSet>>()
+                    val newTerms = mutableMapOf<Int, IExpr<T>>()
                     newTerms.putAll(terms)
 
                     for ((exp, term) in other.terms) {
@@ -59,7 +59,7 @@ object ConstraintSolver {
 
                 MULTIPLICATION -> {
                     // Multiply terms together
-                    val newTerms = mutableMapOf<Int, IExpr<NumberSet>>()
+                    val newTerms = mutableMapOf<Int, IExpr<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
@@ -73,7 +73,7 @@ object ConstraintSolver {
                 }
 
                 DIVISION -> {
-                    val newTerms = mutableMapOf<Int, IExpr<NumberSet>>()
+                    val newTerms = mutableMapOf<Int, IExpr<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
@@ -89,7 +89,7 @@ object ConstraintSolver {
         }
     }
 
-    private fun merge(lhs: IExpr<NumberSet>?, rhs: IExpr<NumberSet>, op: BinaryNumberOp): IExpr<NumberSet> {
+    private fun <T : NumberSet<T>> merge(lhs: IExpr<T>?, rhs: IExpr<T>, op: BinaryNumberOp): IExpr<T> {
         return if (lhs == null) {
             ArithmeticExpression(ConstantExpression.zero(rhs), rhs, op)
         } else {
@@ -103,10 +103,10 @@ object ConstraintSolver {
      *
      * Returns null if accurate constraints could not be ascertained.
      */
-    fun getVariableConstraints(
-        expr: ComparisonExpression,
+    fun <T : NumberSet<T>> getVariableConstraints(
+        expr: ComparisonExpression<T>,
         varKey: VariableKey,
-    ): IExpr<NumberSet>? {
+    ): IExpr<T>? {
         val (lhs, constant) = normalizeComparisonExpression(expr, varKey)
 
         return if (lhs.terms.size == 1) {
@@ -138,12 +138,10 @@ object ConstraintSolver {
      * Normalizes the comparison expression to a form where the left hand side is a linear equation and the right hand
      * side is a constant.
      */
-    private fun normalizeComparisonExpression(
-        expr: ComparisonExpression,
+    private fun <T : NumberSet<T>> normalizeComparisonExpression(
+        expr: ComparisonExpression<T>,
         varKey: VariableKey,
-    ): Pair<CollectedTerms, IExpr<NumberSet>> {
-        val numClazz = expr.lhs.getBaseClass()
-
+    ): Pair<CollectedTerms<T>, IExpr<T>> {
         // Collect terms from both sides
         val leftTerms = expandTerms(expr.lhs, varKey)
         val rightTerms = expandTerms(expr.rhs, varKey)
@@ -151,12 +149,13 @@ object ConstraintSolver {
         // Subtract right from left
         val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
 
-        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstExpr(NumberSet.zero(numClazz)))
+        val indicator = expr.lhs.getSetIndicator()
+        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstExpr(NumberSet.zero(indicator)))
 
         return lhs to constant
     }
 
-    fun expandTerms(expr: IExpr<NumberSet>, varKey: VariableKey): CollectedTerms {
+    fun <T : NumberSet<T>> expandTerms(expr: IExpr<T>, varKey: VariableKey): CollectedTerms<T> {
         return when (expr) {
             is ArithmeticExpression -> {
                 val lhs = expandTerms(expr.lhs, varKey)
@@ -168,7 +167,7 @@ object ConstraintSolver {
             is ConstExpr -> CollectedTerms(terms = mutableMapOf(0 to expr))
             is VariableExpression -> {
                 if (expr.getKey() == varKey) {
-                    CollectedTerms(terms = mutableMapOf(1 to ConstExpr(NumberSet.singleValue(1))))
+                    CollectedTerms(terms = mutableMapOf(1 to ConstExpr(NumberSet.one(expr.setInd))))
                 } else {
                     CollectedTerms(terms = mutableMapOf(0 to expr))
                 }

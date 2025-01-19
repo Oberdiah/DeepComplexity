@@ -141,6 +141,30 @@ object Utilities {
         }
     }
 
+    fun Number.isOne(): Boolean {
+        return when (this) {
+            is Byte -> this == 1.toByte()
+            is Short -> this == 1.toShort()
+            is Int -> this == 1
+            is Long -> this == 1L
+            is Float -> this == 1.0f
+            is Double -> this == 1.0
+            else -> throw IllegalArgumentException("Unsupported type for isOne")
+        }
+    }
+
+    fun Number.isZero(): Boolean {
+        return when (this) {
+            is Byte -> this == 0.toByte()
+            is Short -> this == 0.toShort()
+            is Int -> this == 0
+            is Long -> this == 0L
+            is Float -> this == 0.0f
+            is Double -> this == 0.0
+            else -> throw IllegalArgumentException("Unsupported type for isZero")
+        }
+    }
+
     fun <T : Number> Number.castInto(target: KClass<*>): T {
         return when (target) {
             Byte::class -> this.toByte()
