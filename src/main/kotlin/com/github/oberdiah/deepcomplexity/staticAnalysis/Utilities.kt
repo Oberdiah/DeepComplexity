@@ -77,50 +77,6 @@ object Utilities {
         return this
     }
 
-    fun KClass<*>.getMaxValue(): Number {
-        return when (this) {
-            Byte::class -> Byte.MAX_VALUE
-            Short::class -> Short.MAX_VALUE
-            Int::class -> Int.MAX_VALUE
-            Long::class -> Long.MAX_VALUE
-            Float::class -> Float.MAX_VALUE
-            Double::class -> Double.MAX_VALUE
-            else -> throw IllegalArgumentException("Unsupported type for max value (got $this)")
-        }
-    }
-
-    fun KClass<*>.getMinValue(): Number {
-        return when (this) {
-            Byte::class -> Byte.MIN_VALUE
-            Short::class -> Short.MIN_VALUE
-            Int::class -> Int.MIN_VALUE
-            Long::class -> Long.MIN_VALUE
-            Float::class -> Float.MIN_VALUE
-            Double::class -> Double.MIN_VALUE
-            else -> throw IllegalArgumentException("Unsupported type for min value (got $this)")
-        }
-    }
-
-    fun KClass<*>.getZero(): Number {
-        return getInt(0)
-    }
-
-    fun KClass<*>.getOne(): Number {
-        return getInt(1)
-    }
-
-    fun KClass<*>.getInt(int: Int): Number {
-        return when (this) {
-            Byte::class -> int.toByte()
-            Short::class -> int.toShort()
-            Int::class -> int
-            Long::class -> int.toLong()
-            Float::class -> int.toFloat()
-            Double::class -> int.toDouble()
-            else -> throw IllegalArgumentException("Unsupported type for int value")
-        }
-    }
-
     /**
      * The length of the set of possible values of this type.
      */

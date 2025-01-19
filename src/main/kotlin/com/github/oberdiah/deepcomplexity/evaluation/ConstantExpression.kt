@@ -15,8 +15,8 @@ object ConstantExpression {
         @Suppress("UNCHECKED_CAST")
         return when (val ind = expr.getSetIndicator()) {
             is NumberSetIndicator<*, *> -> NumberSet.emptyRange(ind)
-            BooleanSetIndicator -> BooleanSet.NEITHER
-            GenericSetIndicator -> GenericSet.empty()
+            is BooleanSetIndicator -> BooleanSet.NEITHER
+            is GenericSetIndicator -> GenericSet.empty()
         } as T
     }
 

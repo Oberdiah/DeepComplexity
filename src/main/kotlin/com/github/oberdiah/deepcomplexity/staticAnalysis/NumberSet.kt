@@ -28,11 +28,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMaxValue
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getMinValue
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getOne
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getZero
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoint
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
@@ -49,7 +45,6 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
     fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T
     fun arithmeticOperation(other: Self, operation: BinaryNumberOp): Self
     fun comparisonOperation(other: Self, operation: ComparisonOp): BooleanSet
-    fun addRange(start: Number, end: Number)
 
     /**
      * Returns the range of the set. i.e., the smallest value in the set and the largest.
@@ -75,36 +70,47 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
     fun getSetSatisfying(comp: ComparisonOp): Self
 
     companion object {
-        fun <T : NumberSet<T>> newFromIndicator(indicator: SetIndicator<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return when (indicator) {
-                ByteSetIndicator -> ByteSet()
-                ShortSetIndicator -> ShortSet()
-                IntSetIndicator -> IntSet()
-                LongSetIndicator -> LongSet()
-                FloatSetIndicator -> FloatSet()
-                DoubleSetIndicator -> DoubleSet()
-                BooleanSetIndicator, GenericSetIndicator ->
+        fun <T : NumberSet<T>> newFromIndicator(ind: SetIndicator<T>): T {
+            return when (ind) {
+                is ByteSetIndicator -> ind.sillyCast(ind, ByteSet())
+                is ShortSetIndicator -> ind.sillyCast(ind, ShortSet())
+                is IntSetIndicator -> ind.sillyCast(ind, IntSet())
+                is LongSetIndicator -> ind.sillyCast(ind, LongSet())
+                is FloatSetIndicator -> ind.sillyCast(ind, FloatSet())
+                is DoubleSetIndicator -> ind.sillyCast(ind, DoubleSet())
+                is BooleanSetIndicator, GenericSetIndicator ->
                     throw IllegalArgumentException("Cannot create number set from boolean or generic indicator")
-            } as T
+            }
         }
 
-        fun <T : Number, Self : NumberSetImpl<T, Self>> fullRange(indicator: NumberSetIndicator<T, Self>): Self {
-            val set = newFromIndicator(indicator)
-            set.addRange(indicator.clazz.getMinValue(), indicator.clazz.getMaxValue())
-            return set
+        fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>): T {
+            fun <T : Number, Set : NumberSetImpl<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
+                val set = newFromIndicator(indicator)
+                set.addRange(indicator.getMinValue(), indicator.getMaxValue())
+                return set
+            }
+            @Suppress("UNCHECKED_CAST")
+            return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
         fun <T : NumberSet<T>> fullPositiveRange(indicator: SetIndicator<T>): T {
-            val set = newFromIndicator(indicator)
-            set.addRange(indicator.clazz.getZero(), indicator.clazz.getMaxValue())
-            return set
+            fun <T : Number, Set : NumberSetImpl<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
+                val set = newFromIndicator(indicator)
+                set.addRange(indicator.getZero(), indicator.getMaxValue())
+                return set
+            }
+            @Suppress("UNCHECKED_CAST")
+            return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
         fun <T : NumberSet<T>> fullNegativeRange(indicator: SetIndicator<T>): T {
-            val set = newFromIndicator(indicator)
-            set.addRange(indicator.clazz.getMinValue(), indicator.clazz.getZero())
-            return set
+            fun <T : Number, Set : NumberSetImpl<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
+                val set = newFromIndicator(indicator)
+                set.addRange(indicator.getMinValue(), indicator.getZero())
+                return set
+            }
+            @Suppress("UNCHECKED_CAST")
+            return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
         fun <T : NumberSet<T>> emptyRange(indicator: SetIndicator<T>): T {
@@ -112,15 +118,23 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         }
 
         fun <T : NumberSet<T>> zero(indicator: SetIndicator<T>): T {
-            val set = newFromIndicator(indicator)
-            set.addRange(indicator.clazz.getZero(), indicator.clazz.getZero())
-            return set
+            fun <T : Number, Set : NumberSetImpl<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
+                val set = newFromIndicator(indicator)
+                set.addRange(indicator.getZero(), indicator.getZero())
+                return set
+            }
+            @Suppress("UNCHECKED_CAST")
+            return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
         fun <T : NumberSet<T>> one(indicator: SetIndicator<T>): T {
-            val set = newFromIndicator(indicator)
-            set.addRange(indicator.clazz.getOne(), indicator.clazz.getOne())
-            return set
+            fun <T : Number, Set : NumberSetImpl<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
+                val set = newFromIndicator(indicator)
+                set.addRange(indicator.getOne(), indicator.getOne())
+                return set
+            }
+            @Suppress("UNCHECKED_CAST")
+            return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
         fun <T : Number, Self : NumberSetImpl<T, Self>> singleValue(value: T): Self {
@@ -131,7 +145,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
     }
 
     sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
-        private val setIndicator: SetIndicator<Self>
+        private val setIndicator: NumberSetIndicator<T, Self>
     ) : NumberSet<Self> {
         class DoubleSet : NumberSetImpl<Double, DoubleSet>(DoubleSetIndicator)
         class FloatSet : NumberSetImpl<Float, FloatSet>(FloatSetIndicator)
@@ -185,11 +199,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             return this as T
         }
 
-        override fun addRange(start: Number, end: Number) {
-            addRangeTyped(start.castInto(clazz), end.castInto(clazz))
-        }
-
-        fun addRangeTyped(start: T, end: T) {
+        fun addRange(start: T, end: T) {
             ranges.add(NumberRange(start, end))
         }
 
@@ -237,20 +247,12 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
             when (comp) {
                 LESS_THAN, LESS_THAN_OR_EQUAL -> newSet.ranges.add(
-                    NumberRange(
-                        clazz.getMinValue().castInto(clazz),
-                        smallestValue.downOneEpsilon()
-                    )
+                    NumberRange(setIndicator.getMinValue(), smallestValue.downOneEpsilon())
                 )
 
-                GREATER_THAN, GREATER_THAN_OR_EQUAL -> {
-                    newSet.ranges.add(
-                        NumberRange(
-                            biggestValue.upOneEpsilon(),
-                            clazz.getMaxValue().castInto(clazz)
-                        )
-                    )
-                }
+                GREATER_THAN, GREATER_THAN_OR_EQUAL -> newSet.ranges.add(
+                    NumberRange(biggestValue.upOneEpsilon(), setIndicator.getMaxValue())
+                )
             }
 
             if (comp == LESS_THAN_OR_EQUAL || comp == GREATER_THAN_OR_EQUAL) {
@@ -287,7 +289,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
                     // If there is an overlap, add it
                     if (start <= end) {
-                        newSet.addRangeTyped(start, end)
+                        newSet.addRange(start, end)
                     }
                 }
             }
@@ -299,25 +301,25 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         override fun invert(): Self {
             val newSet = duplicateMe()
 
-            val minValue = clazz.getMinValue().castInto<T>(clazz)
-            val maxValue = clazz.getMaxValue().castInto<T>(clazz)
+            val minValue = setIndicator.getMinValue()
+            val maxValue = setIndicator.getMaxValue()
 
             if (ranges.isEmpty()) {
-                newSet.addRangeTyped(minValue, maxValue)
+                newSet.addRange(minValue, maxValue)
                 return newSet
             }
 
             var currentMin = minValue
             for (range in ranges) {
                 if (currentMin < range.start) {
-                    newSet.addRangeTyped(currentMin, range.start.downOneEpsilon())
+                    newSet.addRange(currentMin, range.start.downOneEpsilon())
                 }
                 currentMin = range.end.upOneEpsilon()
             }
 
             // Add final range if necessary
             if (currentMin < maxValue) {
-                newSet.addRangeTyped(currentMin, maxValue)
+                newSet.addRange(currentMin, maxValue)
             }
 
             return newSet
@@ -326,7 +328,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         override fun negate(): Self {
             val newSet = duplicateMe()
             for (range in ranges.reversed()) {
-                newSet.addRangeTyped(range.end.negate(), range.start.negate())
+                newSet.addRange(range.end.negate(), range.start.negate())
             }
             return newSet
         }
@@ -422,14 +424,14 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
                 return gaveUp
             }
 
-            val zero = clazz.getZero().castInto<T>(clazz)
+            val zero = setIndicator.getZero()
 
             if (constantChange.contains(zero)) {
                 // We genuinely can't do a thing, gave up is the best we're ever going to be able to do here.
                 return gaveUp
             }
 
-            var minimumNumberOfLoops = clazz.getMaxValue().castInto<T>(clazz)
+            var minimumNumberOfLoops = setIndicator.getMaxValue()
             var maximumNumberOfLoops = zero
 
             // This is obviously not a very performant way to do this, but it's a start.
@@ -458,7 +460,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 //            }
 
             val newSet = duplicateMe()
-            newSet.addRangeTyped(minimumNumberOfLoops, maximumNumberOfLoops)
+            newSet.addRange(minimumNumberOfLoops, maximumNumberOfLoops)
             return newSet
         }
 
@@ -589,9 +591,9 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
                 if (b.toLong() == 0L) {
                     // Could potentially warn of overflow here one day?
                     return if (a > 0) {
-                        BigInteger.valueOf(clazz.getMaxValue().toLong())
+                        BigInteger.valueOf(setIndicator.getMaxValue().toLong())
                     } else {
-                        BigInteger.valueOf(clazz.getMinValue().toLong())
+                        BigInteger.valueOf(setIndicator.getMinValue().toLong())
                     }
                 }
 
@@ -603,8 +605,8 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             }
 
             private fun resolvePotentialOverflow(min: BigInteger, max: BigInteger): Iterable<NumberRange> {
-                val minValue = BigInteger.valueOf(clazz.getMinValue().toLong())
-                val maxValue = BigInteger.valueOf(clazz.getMaxValue().toLong())
+                val minValue = BigInteger.valueOf(setIndicator.getMinValue().toLong())
+                val maxValue = BigInteger.valueOf(setIndicator.getMaxValue().toLong())
 
                 when (Settings.overflowBehaviour) {
                     CLAMP -> {

@@ -17,10 +17,10 @@ sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
     }
 }
 
-fun <Q : NumberSet<Q>, T : IMoldableSet<T>> mapNumExprToSet(expr: IExpr<T>, numExpr: (IExpr<Q>) -> Q): T? {
+fun <Q : NumberSet<Q>, T : IMoldableSet<T>> mapNumExprToSet(expr: IExpr<T>, func: (IExpr<Q>) -> Q): T? {
     if (expr.getSetIndicator() is NumberSetIndicator<*, *>) {
         @Suppress("UNCHECKED_CAST")
-        return numExpr(expr as IExpr<Q>) as T
+        return func(expr as IExpr<Q>) as T
     } else {
         return null
     }

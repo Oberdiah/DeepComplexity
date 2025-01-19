@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ByteSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.DoubleSet
@@ -13,8 +12,18 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ShortSet
 import kotlin.reflect.KClass
 
-sealed interface SetIndicator<Self : IMoldableSet<Self>> {
+sealed interface SetIndicator<Set : IMoldableSet<Set>> {
     val clazz: KClass<*>
+
+    /**
+     * It's silly because it's so abundantly clear that the cast is safe when used in the intended way
+     * (i.e. when other is the same as this).
+     */
+    fun <Set1 : IMoldableSet<Set1>> sillyCast(other: SetIndicator<Set1>, c: Set): Set1 {
+        assert(other == this)
+        @Suppress("UNCHECKED_CAST")
+        return c as Set1
+    }
 
     companion object {
         fun fromClass(clazz: KClass<*>): SetIndicator<*> {
@@ -55,10 +64,62 @@ sealed interface SetIndicator<Self : IMoldableSet<Self>> {
     }
 }
 
-sealed class SetIndicatorImpl<T : Any, Self : IMoldableSet<Self>>(override val clazz: KClass<T>) : SetIndicator<Self>
+sealed class SetIndicatorImpl<T : Any, Set : IMoldableSet<Set>>(override val clazz: KClass<T>) : SetIndicator<Set>
 
-sealed class NumberSetIndicator<T : Number, Self : NumberSetImpl<T, Self>>(clazz: KClass<T>) :
-    SetIndicatorImpl<T, Self>(clazz)
+sealed class NumberSetIndicator<T : Number, Set : NumberSetImpl<T, Set>>(clazz: KClass<T>) :
+    SetIndicatorImpl<T, Set>(clazz) {
+
+    /**
+     * It's silly because it's so abundantly clear that the cast is safe when used in the intended way
+     * (i.e. when other is the same as this).
+     */
+    fun <T1 : Number, Set1 : NumberSetImpl<T1, Set1>> sillyCast(other: NumberSetIndicator<T1, Set1>, c: T): T1 {
+        assert(other == this)
+        @Suppress("UNCHECKED_CAST")
+        return c as T1
+    }
+
+    fun getMaxValue(): T {
+        return when (this) {
+            is ByteSetIndicator -> this.sillyCast(this, Byte.MAX_VALUE)
+            is ShortSetIndicator -> this.sillyCast(this, Short.MAX_VALUE)
+            is IntSetIndicator -> this.sillyCast(this, Int.MAX_VALUE)
+            is LongSetIndicator -> this.sillyCast(this, Long.MAX_VALUE)
+            is FloatSetIndicator -> this.sillyCast(this, Float.MAX_VALUE)
+            is DoubleSetIndicator -> this.sillyCast(this, Double.MAX_VALUE)
+        }
+    }
+
+    fun getMinValue(): T {
+        return when (this) {
+            is ByteSetIndicator -> this.sillyCast(this, Byte.MIN_VALUE)
+            is ShortSetIndicator -> this.sillyCast(this, Short.MIN_VALUE)
+            is IntSetIndicator -> this.sillyCast(this, Int.MIN_VALUE)
+            is LongSetIndicator -> this.sillyCast(this, Long.MIN_VALUE)
+            is FloatSetIndicator -> this.sillyCast(this, Float.MIN_VALUE)
+            is DoubleSetIndicator -> this.sillyCast(this, Double.MIN_VALUE)
+        }
+    }
+
+    fun getZero(): T {
+        return getInt(0)
+    }
+
+    fun getOne(): T {
+        return getInt(1)
+    }
+
+    fun getInt(int: Int): T {
+        return when (this) {
+            is ByteSetIndicator -> sillyCast(this, int.toByte())
+            is ShortSetIndicator -> sillyCast(this, int.toShort())
+            is IntSetIndicator -> sillyCast(this, int)
+            is LongSetIndicator -> sillyCast(this, int.toLong())
+            is FloatSetIndicator -> sillyCast(this, int.toFloat())
+            is DoubleSetIndicator -> sillyCast(this, int.toDouble())
+        }
+    }
+}
 
 sealed interface Foo<T : Any, F : Any>
 
