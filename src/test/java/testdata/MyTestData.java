@@ -37,6 +37,10 @@ public class MyTestData {
 	}
 	
 	public static short shortTest2(short incoming) {
+		return (short) (((int) incoming) + 1);
+	}
+	
+	public static short shortTest3(short incoming) {
 		return (short) (incoming + 1);
 	}
 

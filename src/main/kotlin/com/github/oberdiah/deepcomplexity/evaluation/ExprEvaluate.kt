@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.solver.CastSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
@@ -102,6 +103,12 @@ object ExprEvaluate {
                     NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
                 }
             }
+
+            is TypeCastExpression -> CastSolver.castFrom(
+                evaluate(expr.expr, condition),
+                expr.getSetIndicator(),
+                expr.explicit
+            )
 
             is ConstExpr -> expr.singleElementSet
 

@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.weisj.jsvg.T
 
 object ExprToString {
     fun <T : IMoldableSet<T>> toString(expr: IExpr<T>): String {
@@ -32,6 +31,13 @@ object ExprToString {
 
             is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
+            is TypeCastExpression -> {
+                return if (expr.explicit) {
+                    "(${expr.setInd}) ${expr.expr}"
+                } else {
+                    "${expr.expr}"
+                }
+            }
         }
     }
 

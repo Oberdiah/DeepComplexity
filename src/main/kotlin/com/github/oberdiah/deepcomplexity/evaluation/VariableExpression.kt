@@ -52,23 +52,10 @@ class VariableExpression<T : IMoldableSet<T>>(
             val key = VariableKey(contextKey, context)
 
             val type: PsiType = contextKey.getType()
+            val clazz = Utilities.psiTypeToKClass(type)
+                ?: throw IllegalArgumentException("Unsupported type for variable expression")
 
-            return when (type) {
-                PsiTypes.byteType(),
-                PsiTypes.shortType(),
-                PsiTypes.intType(),
-                PsiTypes.longType(),
-                PsiTypes.floatType(),
-                PsiTypes.doubleType() -> {
-                    val clazz = Utilities.psiTypeToKClass(type)
-                        ?: throw IllegalArgumentException("Unsupported type for variable expression")
-
-                    VariableExpression(key, VARIABLE_ID, SetIndicator.fromClass(clazz))
-                }
-                
-                PsiTypes.booleanType() -> VariableExpression(key, VARIABLE_ID, BooleanSetIndicator)
-                else -> VariableExpression(key, VARIABLE_ID, GenericSetIndicator)
-            }
+            return VariableExpression(key, VARIABLE_ID, SetIndicator.fromClass(clazz))
         }
     }
 }

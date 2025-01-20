@@ -45,6 +45,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
 
                 is ConstExpr -> expr.singleElementSet.getSetIndicator()
                 is VariableExpression -> expr.setInd
+                is TypeCastExpression -> expr.setInd
             } as SetIndicator<T>
         }
 

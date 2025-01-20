@@ -8,6 +8,8 @@ import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.intellij.psi.*
+import com.intellij.psi.impl.source.tree.java.PsiParenthesizedExpressionImpl
+import org.jetbrains.kotlin.idea.util.CommentSaver.Companion.tokenType
 
 object MethodProcessing {
     fun printMethod(method: PsiMethod, evaluate: Boolean) {
@@ -219,6 +221,23 @@ object MethodProcessing {
                     binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
                     else -> TODO("Unsupported binary operation: ${psi.operationSign} (${psi.text})")
                 }
+            }
+
+            is PsiTypeCastExpression -> {
+                val expr = buildExpressionFromPsi(psi.operand ?: throw ExpressionIncompleteException(), context)
+
+                val psiType = psi.castType ?: throw ExpressionIncompleteException()
+                val type = Utilities.psiTypeToKClass(psiType.type) ?: throw IllegalArgumentException(
+                    "Failed to convert PsiType to KClass: ${psiType.text}"
+                )
+
+                val setInd = SetIndicator.fromClass(type)
+
+                return TypeCastExpression(expr, setInd, false)
+            }
+
+            is PsiParenthesizedExpression -> {
+                return buildExpressionFromPsi(psi.expression ?: throw ExpressionIncompleteException(), context)
             }
         }
         TODO("As-yet unsupported PsiExpression type ${psi::class} (${psi.text})")

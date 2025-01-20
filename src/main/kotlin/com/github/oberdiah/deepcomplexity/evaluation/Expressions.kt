@@ -6,6 +6,9 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 sealed interface IExpr<T : IMoldableSet<T>> {
+    /**
+     * The indicator represents what the expression will be once evaluated.
+     */
     fun getSetIndicator(): SetIndicator<T> = SetIndicator.getSetIndicator(this)
     fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
     fun evaluate(condition: IExpr<BooleanSet>): T = ExprEvaluate.evaluate(this, condition)
@@ -50,6 +53,16 @@ fun <T : IMoldableSet<T>> IExpr<BooleanSet>.getConstraints(varKey: VariableExpre
 class ArithmeticExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>()
 class ComparisonExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val comp: ComparisonOp) :
     Expr<BooleanSet>()
+
+/**
+ * Tries to cast the expression to the given set indicator.
+ * Does nothing if the expression is already of the given type.
+ *
+ * Given that there's an assumption baked into all of this that we're working on a compilable program,
+ * explicit isn't strictly necessary, but it's nice debugging and printing purposes.
+ */
+class TypeCastExpression<T : IMoldableSet<T>>(val expr: IExpr<*>, val setInd: SetIndicator<T>, val explicit: Boolean) :
+    Expr<T>()
 
 class IfExpression<T : IMoldableSet<T>>(
     val trueExpr: IExpr<T>,
