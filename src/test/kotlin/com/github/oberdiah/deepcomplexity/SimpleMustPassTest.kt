@@ -45,9 +45,10 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                 app.runReadAction {
                     println("Processing method ${method.first.name}:")
                     val context = MethodProcessing.getMethodContext(method.first)
+                    println(context.toString().prependIndent())
                     val range = context.evaluateKey(Context.Key.ReturnKey(method.first))
 
-                    println("\tRange: $range")
+                    println("\tRange of return value: $range")
                     TestUtilities.verifyMethod(method.second, range)
                 }
             })
