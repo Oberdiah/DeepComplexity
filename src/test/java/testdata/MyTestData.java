@@ -1,6 +1,9 @@
 package testdata;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class MyTestData {
+	@RequiredScore(1.0)
 	public static int test1(int incoming) {
 		if (incoming < 3) {
 			return 2;
@@ -9,6 +12,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static int test2(int incoming) {
 		if (incoming < 3) {
 			return incoming;

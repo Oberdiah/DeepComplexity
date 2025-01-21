@@ -7,10 +7,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiMethod
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase5
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 
 
@@ -43,13 +40,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         for (method in methods) {
             tests.add(DynamicTest.dynamicTest(method.second) {
                 app.runReadAction {
-                    println("Processing method ${method.first.name}:")
-                    val context = MethodProcessing.getMethodContext(method.first)
-                    println(context.toString().prependIndent())
-                    val range = context.evaluateKey(Context.Key.ReturnKey(method.first))
-
-                    println("\tRange of return value: $range")
-                    TestUtilities.verifyMethod(method.second, range)
+                    TestUtilities.testMethod(method.first, method.second)
                 }
             })
         }
