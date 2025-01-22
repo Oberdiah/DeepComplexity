@@ -3,13 +3,13 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ByteSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.DoubleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.FloatSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.IntSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.LongSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ShortSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.ByteSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.DoubleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.FloatSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.IntSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.LongSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.ShortSet
 import kotlin.reflect.KClass
 
 sealed interface SetIndicator<Set : IMoldableSet<Set>> {
