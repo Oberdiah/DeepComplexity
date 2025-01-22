@@ -3,27 +3,16 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.ByteSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.DoubleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.FloatSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.IntSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.LongSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.ShortSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetRangeImpl.*
 import kotlin.reflect.KClass
 
 sealed interface SetIndicator<Set : IMoldableSet<Set>> {
     val clazz: KClass<*>
 
-    /**
-     * It's silly because it's so abundantly clear that the cast is safe when used in the intended way
-     * (i.e. when other is the same as this).
-     */
-    fun <Set1 : IMoldableSet<Set1>> sillyCast(other: SetIndicator<Set1>, c: Set): Set1 {
-        assert(other == this)
-        @Suppress("UNCHECKED_CAST")
-        return c as Set1
-    }
+    fun newEmptySet(): Set
+    fun newFullSet(): Set
 
     companion object {
         fun <T : IMoldableSet<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
@@ -72,7 +61,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
             } as SetIndicatorImpl<T, Self>
         }
 
-        fun <T : Number, Self : NumberSetImpl<T, Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
             @Suppress("UNCHECKED_CAST")
             return when (value) {
                 is Double -> DoubleSetIndicator
@@ -89,40 +78,13 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
 
 sealed class SetIndicatorImpl<T : Any, Set : IMoldableSet<Set>>(override val clazz: KClass<T>) : SetIndicator<Set>
 
-sealed class NumberSetIndicator<T : Number, Set : NumberSetImpl<T, Set>>(clazz: KClass<T>) :
+sealed class NumberSetIndicator<T : Number, Set : FullyTypedNumberSet<T, Set>>(clazz: KClass<T>) :
     SetIndicatorImpl<T, Set>(clazz) {
 
-    /**
-     * It's silly because it's so abundantly clear that the cast is safe when used in the intended way
-     * (i.e. when other is the same as this).
-     */
-    fun <T1 : Number, Set1 : NumberSetImpl<T1, Set1>> sillyCast(other: NumberSetIndicator<T1, Set1>, c: T): T1 {
-        assert(other == this)
-        @Suppress("UNCHECKED_CAST")
-        return c as T1
-    }
-
-    fun getMaxValue(): T {
-        return when (this) {
-            is ByteSetIndicator -> this.sillyCast(this, Byte.MAX_VALUE)
-            is ShortSetIndicator -> this.sillyCast(this, Short.MAX_VALUE)
-            is IntSetIndicator -> this.sillyCast(this, Int.MAX_VALUE)
-            is LongSetIndicator -> this.sillyCast(this, Long.MAX_VALUE)
-            is FloatSetIndicator -> this.sillyCast(this, Float.MAX_VALUE)
-            is DoubleSetIndicator -> this.sillyCast(this, Double.MAX_VALUE)
-        }
-    }
-
-    fun getMinValue(): T {
-        return when (this) {
-            is ByteSetIndicator -> this.sillyCast(this, Byte.MIN_VALUE)
-            is ShortSetIndicator -> this.sillyCast(this, Short.MIN_VALUE)
-            is IntSetIndicator -> this.sillyCast(this, Int.MIN_VALUE)
-            is LongSetIndicator -> this.sillyCast(this, Long.MIN_VALUE)
-            is FloatSetIndicator -> this.sillyCast(this, Float.MIN_VALUE)
-            is DoubleSetIndicator -> this.sillyCast(this, Double.MIN_VALUE)
-        }
-    }
+    override fun newFullSet(): Set = NumberSet.fullRange(this)
+    abstract fun getMaxValue(): T
+    abstract fun getMinValue(): T
+    abstract fun getInt(int: Int): T
 
     fun getZero(): T {
         return getInt(0)
@@ -131,27 +93,56 @@ sealed class NumberSetIndicator<T : Number, Set : NumberSetImpl<T, Set>>(clazz: 
     fun getOne(): T {
         return getInt(1)
     }
-
-    fun getInt(int: Int): T {
-        return when (this) {
-            is ByteSetIndicator -> sillyCast(this, int.toByte())
-            is ShortSetIndicator -> sillyCast(this, int.toShort())
-            is IntSetIndicator -> sillyCast(this, int)
-            is LongSetIndicator -> sillyCast(this, int.toLong())
-            is FloatSetIndicator -> sillyCast(this, int.toFloat())
-            is DoubleSetIndicator -> sillyCast(this, int.toDouble())
-        }
-    }
 }
 
-sealed interface Foo<T : Any, F : Any>
+data object DoubleSetIndicator : NumberSetIndicator<Double, DoubleSetRange>(Double::class) {
+    override fun newEmptySet(): DoubleSetRange = DoubleSetRange()
+    override fun getMaxValue(): Double = Double.MAX_VALUE
+    override fun getMinValue(): Double = Double.MIN_VALUE
+    override fun getInt(int: Int): Double = int.toDouble()
+}
 
-data object DoubleSetIndicator : NumberSetIndicator<Double, DoubleSet>(Double::class), Foo<Double, Double>
-data object FloatSetIndicator : NumberSetIndicator<Float, FloatSet>(Float::class), Foo<Int, Int>
-data object IntSetIndicator : NumberSetIndicator<Int, IntSet>(Int::class)
-data object LongSetIndicator : NumberSetIndicator<Long, LongSet>(Long::class)
-data object ShortSetIndicator : NumberSetIndicator<Short, ShortSet>(Short::class)
-data object ByteSetIndicator : NumberSetIndicator<Byte, ByteSet>(Byte::class)
+data object FloatSetIndicator : NumberSetIndicator<Float, FloatSetRange>(Float::class) {
+    override fun newEmptySet(): FloatSetRange = FloatSetRange()
+    override fun getMaxValue(): Float = Float.MAX_VALUE
+    override fun getMinValue(): Float = Float.MIN_VALUE
+    override fun getInt(int: Int): Float = int.toFloat()
+}
 
-data object BooleanSetIndicator : SetIndicatorImpl<Boolean, BooleanSet>(Boolean::class)
-data object GenericSetIndicator : SetIndicatorImpl<Any, GenericSet>(Any::class)
+data object IntSetIndicator : NumberSetIndicator<Int, IntSetRange>(Int::class) {
+    override fun newEmptySet(): IntSetRange = IntSetRange()
+    override fun getMaxValue(): Int = Int.MAX_VALUE
+    override fun getMinValue(): Int = Int.MIN_VALUE
+    override fun getInt(int: Int): Int = int
+}
+
+data object LongSetIndicator : NumberSetIndicator<Long, LongSetRange>(Long::class) {
+    override fun newEmptySet(): LongSetRange = LongSetRange()
+    override fun getMaxValue(): Long = Long.MAX_VALUE
+    override fun getMinValue(): Long = Long.MIN_VALUE
+    override fun getInt(int: Int): Long = int.toLong()
+}
+
+data object ShortSetIndicator : NumberSetIndicator<Short, ShortSetRange>(Short::class) {
+    override fun newEmptySet(): ShortSetRange = ShortSetRange()
+    override fun getMaxValue(): Short = Short.MAX_VALUE
+    override fun getMinValue(): Short = Short.MIN_VALUE
+    override fun getInt(int: Int): Short = int.toShort()
+}
+
+data object ByteSetIndicator : NumberSetIndicator<Byte, ByteSetRange>(Byte::class) {
+    override fun newEmptySet(): ByteSetRange = ByteSetRange()
+    override fun getMaxValue(): Byte = Byte.MAX_VALUE
+    override fun getMinValue(): Byte = Byte.MIN_VALUE
+    override fun getInt(int: Int): Byte = int.toByte()
+}
+
+data object BooleanSetIndicator : SetIndicatorImpl<Boolean, BooleanSet>(Boolean::class) {
+    override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
+    override fun newFullSet(): BooleanSet = BooleanSet.BOTH
+}
+
+data object GenericSetIndicator : SetIndicatorImpl<Any, GenericSet>(Any::class) {
+    override fun newEmptySet(): GenericSet = GenericSet.empty()
+    override fun newFullSet(): GenericSet = GenericSet.everyValue()
+}

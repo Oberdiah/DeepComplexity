@@ -20,6 +20,8 @@ import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.Companion.fullPositiveRange
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
@@ -29,15 +31,15 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.negate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
-sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
+sealed class NumberSetRangeImpl<T : Number, Self : NumberSetRangeImpl<T, Self>>(
     private val setIndicator: NumberSetIndicator<T, Self>
-) : NumberSet<Self> {
-    class DoubleSet : NumberSetImpl<Double, DoubleSet>(DoubleSetIndicator)
-    class FloatSet : NumberSetImpl<Float, FloatSet>(FloatSetIndicator)
-    class LongSet : NumberSetImpl<Long, LongSet>(LongSetIndicator)
-    class IntSet : NumberSetImpl<Int, IntSet>(IntSetIndicator)
-    class ShortSet : NumberSetImpl<Short, ShortSet>(ShortSetIndicator)
-    class ByteSet : NumberSetImpl<Byte, ByteSet>(ByteSetIndicator)
+) : FullyTypedNumberSet<T, Self> {
+    class DoubleSetRange : NumberSetRangeImpl<Double, DoubleSetRange>(DoubleSetIndicator), DoubleSet<DoubleSetRange>
+    class FloatSetRange : NumberSetRangeImpl<Float, FloatSetRange>(FloatSetIndicator), FloatSet<FloatSetRange>
+    class IntSetRange : NumberSetRangeImpl<Int, IntSetRange>(IntSetIndicator), IntSet<IntSetRange>
+    class LongSetRange : NumberSetRangeImpl<Long, LongSetRange>(LongSetIndicator), LongSet<LongSetRange>
+    class ShortSetRange : NumberSetRangeImpl<Short, ShortSetRange>(ShortSetIndicator), ShortSet<ShortSetRange>
+    class ByteSetRange : NumberSetRangeImpl<Byte, ByteSetRange>(ByteSetIndicator), ByteSet<ByteSetRange>
 
     private val clazz: KClass<*> = setIndicator.clazz
 
@@ -52,12 +54,12 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
     fun duplicateMe(): Self {
         @Suppress("UNCHECKED_CAST")
         return when (this) {
-            is ByteSet -> ByteSet()
-            is ShortSet -> ShortSet()
-            is IntSet -> IntSet()
-            is LongSet -> LongSet()
-            is FloatSet -> FloatSet()
-            is DoubleSet -> DoubleSet()
+            is ByteSetRange -> ByteSetRange()
+            is ShortSetRange -> ShortSetRange()
+            is IntSetRange -> IntSetRange()
+            is LongSetRange -> LongSetRange()
+            is FloatSetRange -> FloatSetRange()
+            is DoubleSetRange -> DoubleSetRange()
         } as Self
     }
 
@@ -88,7 +90,7 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
         return this as T
     }
 
-    fun addRange(start: T, end: T) {
+    override fun addRange(start: T, end: T) {
         ranges.add(NumberRange(start, end, setIndicator))
     }
 

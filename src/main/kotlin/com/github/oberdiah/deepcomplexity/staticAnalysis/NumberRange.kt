@@ -4,7 +4,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.settings.Settings
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
 import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
@@ -18,7 +17,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-class NumberRange<T : Number, Self : NumberSetImpl<T, Self>>(
+class NumberRange<T : Number, Self : NumberSetRangeImpl<T, Self>>(
     val start: T,
     val end: T,
     private val setIndicator: NumberSetIndicator<T, Self>

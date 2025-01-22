@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression.emptySetFromExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
@@ -11,23 +12,8 @@ object ConstantExpression {
 
     fun <T : NumberSet<T>> zero(expr: IExpr<T>): ConstExpr<T> = ConstExpr(NumberSet.zero(expr.getSetIndicator()))
 
-    fun <T : IMoldableSet<T>> emptySetFromExpr(expr: IExpr<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return when (val ind = expr.getSetIndicator()) {
-            is NumberSetIndicator<*, *> -> NumberSet.emptyRange(ind)
-            is BooleanSetIndicator -> BooleanSet.NEITHER
-            is GenericSetIndicator -> GenericSet.empty()
-        } as T
-    }
-
-    fun <T : IMoldableSet<T>> fullSetFromExpr(expr: IExpr<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return when (val ind = expr.getSetIndicator()) {
-            is NumberSetIndicator<*, *> -> NumberSet.fullRange(ind)
-            BooleanSetIndicator -> BooleanSet.BOTH
-            GenericSetIndicator -> GenericSet.everyValue()
-        } as T
-    }
+    fun <T : IMoldableSet<T>> emptySetFromExpr(expr: IExpr<T>): T = expr.getSetIndicator().newEmptySet()
+    fun <T : IMoldableSet<T>> fullSetFromExpr(expr: IExpr<T>): T = expr.getSetIndicator().newFullSet()
 
     fun <T : IMoldableSet<T>> fullExprFromExpr(expr: IExpr<T>): IExpr<T> {
         return ConstExpr(fullSetFromExpr(expr))
