@@ -14,9 +14,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.LongSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
-import com.github.oberdiah.deepcomplexity.settings.Settings
-import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.ALLOW
-import com.github.oberdiah.deepcomplexity.settings.Settings.OverflowBehaviour.CLAMP
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ByteSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.DoubleSet
@@ -24,21 +21,13 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.IntSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.LongSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.NumberSetImpl.ShortSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoint
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.negate
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
-import java.math.BigInteger
 import kotlin.reflect.KClass
 
 sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<Self>, Self : NumberSet<Self> {
@@ -156,6 +145,10 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         private val clazz: KClass<*> = setIndicator.clazz
 
+        private fun newRange(start: T, end: T): NumberRange<T, Self> {
+            return NumberRange(start, end, setIndicator)
+        }
+
         override fun getSetIndicator(): SetIndicator<Self> {
             return setIndicator
         }
@@ -180,7 +173,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         /**
          * These ranges are always sorted and never overlap.
          */
-        private val ranges = mutableListOf<NumberRange>()
+        private val ranges = mutableListOf<NumberRange<T, Self>>()
 
         override fun contains(element: Any): Boolean {
             if (element::class != clazz) {
@@ -200,7 +193,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         }
 
         fun addRange(start: T, end: T) {
-            ranges.add(NumberRange(start, end))
+            ranges.add(NumberRange(start, end, setIndicator))
         }
 
         override fun getRange(): Pair<Number, Number>? {
@@ -247,11 +240,11 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
             when (comp) {
                 LESS_THAN, LESS_THAN_OR_EQUAL -> newSet.ranges.add(
-                    NumberRange(setIndicator.getMinValue(), smallestValue.downOneEpsilon())
+                    newRange(setIndicator.getMinValue(), smallestValue.downOneEpsilon())
                 )
 
                 GREATER_THAN, GREATER_THAN_OR_EQUAL -> newSet.ranges.add(
-                    NumberRange(biggestValue.upOneEpsilon(), setIndicator.getMaxValue())
+                    newRange(biggestValue.upOneEpsilon(), setIndicator.getMaxValue())
                 )
             }
 
@@ -346,7 +339,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             val newSet = duplicateMe()
             for (range in ranges) {
                 for (otherRange in castToThisType(other).ranges) {
-                    val values: Iterable<NumberRange> = when (operation) {
+                    val values: Iterable<NumberRange<T, Self>> = when (operation) {
                         ADDITION -> range.addition(otherRange)
                         SUBTRACTION -> range.subtraction(otherRange)
                         MULTIPLICATION -> range.multiplication(otherRange)
@@ -470,12 +463,12 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             }
 
             ranges.sortWith { a, b -> a.start.compareTo(b.start) }
-            val newRanges = mutableListOf<NumberRange>()
+            val newRanges = mutableListOf<NumberRange<T, Self>>()
             var currentRange = ranges[0]
             for (i in 1 until ranges.size) {
                 val nextRange = ranges[i]
                 if (currentRange.end >= nextRange.start) {
-                    currentRange = NumberRange(currentRange.start, nextRange.end.max(currentRange.end))
+                    currentRange = newRange(currentRange.start, nextRange.end.max(currentRange.end))
                 } else {
                     newRanges.add(currentRange)
                     currentRange = nextRange
@@ -491,167 +484,6 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         override fun isOne(): Boolean {
             return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isOne()
-        }
-
-        /**
-         * The start may be equal to the end.
-         */
-        private inner class NumberRange(val start: T, val end: T) {
-            init {
-                assert(start <= end) {
-                    "Start ($start) must be less than or equal to end ($end)"
-                }
-            }
-
-            override fun toString(): String {
-                if (start == end) {
-                    return start.toString()
-                }
-
-                return "[$start, $end]"
-            }
-
-            fun addition(other: NumberRange): Iterable<NumberRange> {
-                return if (clazz.isFloatingPoint()) {
-                    listOf(NumberRange(start + other.start, end + other.end))
-                } else {
-                    resolvePotentialOverflow(
-                        BigInteger.valueOf(start.toLong()).add(BigInteger.valueOf(other.start.toLong())),
-                        BigInteger.valueOf(end.toLong()).add(BigInteger.valueOf(other.end.toLong())),
-                    )
-                }
-            }
-
-            fun subtraction(other: NumberRange): Iterable<NumberRange> {
-                return if (clazz.isFloatingPoint()) {
-                    listOf(NumberRange(start - other.end, end - other.start))
-                } else {
-                    resolvePotentialOverflow(
-                        BigInteger.valueOf(start.toLong()).subtract(BigInteger.valueOf(other.end.toLong())),
-                        BigInteger.valueOf(end.toLong()).subtract(BigInteger.valueOf(other.start.toLong())),
-                    )
-                }
-            }
-
-            fun multiplication(other: NumberRange): Iterable<NumberRange> {
-                return if (clazz.isFloatingPoint()) {
-                    val a = start * other.start
-                    val b = start * other.end
-                    val c = end * other.start
-                    val d = end * other.end
-                    listOf(
-                        NumberRange(
-                            a.min(b).min(c).min(d),
-                            a.max(b).max(c).max(d),
-                        )
-                    )
-                } else {
-                    val a = multiply(start, other.start)
-                    val b = multiply(end, other.start)
-                    val c = multiply(start, other.end)
-                    val d = multiply(end, other.end)
-
-                    resolvePotentialOverflow(
-                        a.min(b).min(c).min(d),
-                        a.max(b).max(c).max(d),
-                    )
-                }
-            }
-
-            fun division(other: NumberRange): Iterable<NumberRange> {
-                return if (clazz.isFloatingPoint()) {
-                    val a = start / other.start
-                    val b = start / other.end
-                    val c = end / other.start
-                    val d = end / other.end
-                    listOf(
-                        NumberRange(
-                            a.min(b).min(c).min(d),
-                            a.max(b).max(c).max(d),
-                        )
-                    )
-                } else {
-                    val a = divide(start, other.start)
-                    val b = divide(end, other.start)
-                    val c = divide(start, other.end)
-                    val d = divide(end, other.end)
-
-                    resolvePotentialOverflow(
-                        a.min(b).min(c).min(d),
-                        a.max(b).max(c).max(d),
-                    )
-                }
-            }
-
-            private fun multiply(a: Number, b: Number): BigInteger {
-                return BigInteger.valueOf(a.toLong()).multiply(BigInteger.valueOf(b.toLong()))
-            }
-
-            private fun divide(a: Number, b: Number): BigInteger {
-                if (b.toLong() == 0L) {
-                    // Could potentially warn of overflow here one day?
-                    return if (a > 0) {
-                        BigInteger.valueOf(setIndicator.getMaxValue().toLong())
-                    } else {
-                        BigInteger.valueOf(setIndicator.getMinValue().toLong())
-                    }
-                }
-
-                return BigInteger.valueOf(a.toLong()).divide(BigInteger.valueOf(b.toLong()))
-            }
-
-            private fun bigIntToT(v: BigInteger): T {
-                return v.longValueExact().castInto(clazz)
-            }
-
-            private fun resolvePotentialOverflow(min: BigInteger, max: BigInteger): Iterable<NumberRange> {
-                val minValue = BigInteger.valueOf(setIndicator.getMinValue().toLong())
-                val maxValue = BigInteger.valueOf(setIndicator.getMaxValue().toLong())
-
-                when (Settings.overflowBehaviour) {
-                    CLAMP -> {
-                        return listOf(
-                            NumberRange(
-                                bigIntToT(min.max(minValue)),
-                                bigIntToT(max.min(maxValue))
-                            )
-                        )
-                    }
-
-                    ALLOW -> {
-                        // Check if we're overflowing and if we are, we must split the range.
-                        // If we're overflowing in both directions we can just return the full range.
-
-                        if (min < minValue && max > maxValue) {
-                            return listOf(NumberRange(bigIntToT(minValue), bigIntToT(maxValue)))
-                        } else if (min < minValue) {
-                            val wrappedMin = min.add(clazz.getSetSize())
-                            if (wrappedMin < minValue) {
-                                // We're overflowing so much in a single direction
-                                // that the overflow will cover the full range anyway.
-                                return listOf(NumberRange(bigIntToT(minValue), bigIntToT(maxValue)))
-                            }
-                            return listOf(
-                                NumberRange(bigIntToT(wrappedMin), bigIntToT(maxValue)),
-                                NumberRange(bigIntToT(minValue), bigIntToT(max))
-                            )
-                        } else if (max > maxValue) {
-                            val wrappedMax = max.subtract(clazz.getSetSize())
-                            if (wrappedMax > maxValue) {
-                                // We're overflowing so much in a single direction
-                                // that the overflow will cover the full range anyway.
-                                return listOf(NumberRange(bigIntToT(minValue), bigIntToT(maxValue)))
-                            }
-                            return listOf(
-                                NumberRange(bigIntToT(minValue), bigIntToT(wrappedMax)),
-                                NumberRange(bigIntToT(min), bigIntToT(maxValue))
-                            )
-                        } else {
-                            return listOf(NumberRange(bigIntToT(min), bigIntToT(max)))
-                        }
-                    }
-                }
-            }
         }
     }
 }

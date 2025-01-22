@@ -5,8 +5,10 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
 import com.intellij.debugger.impl.DebuggerUtilsEx.methodName
 import com.intellij.psi.PsiMethod
+import jdk.internal.org.jline.utils.Colors.s
 import testdata.MyTestData
 import java.lang.reflect.Method
+import kotlin.jvm.java
 
 object TestUtilities {
     private val boolArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
@@ -51,12 +53,18 @@ object TestUtilities {
                 println(" which was sufficient (>=${String.format("%.2f", requiredScore * 100)}%)")
             }
         } else {
-            println(" which passed by default")
+            println("\n\tThis method was not required to reach a score threshold and as such it passed by default.")
         }
+
     }
 
     fun getMethodScore(method: Method, range: IMoldableSet<*>): Double {
-        if (method.parameterCount != 1) {
+        // For now, int-only. Short is the goal though.
+        if (method.parameterCount != 1 ||
+            method.parameterTypes[0] != Int::class.java ||
+            method.returnType != Int::class.java
+        ) {
+            print("\tSkipped method ${method.name} as it's not valid for testing.")
             return 0.0
         }
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
