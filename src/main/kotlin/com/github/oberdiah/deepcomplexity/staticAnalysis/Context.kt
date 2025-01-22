@@ -4,14 +4,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.intellij.psi.*
 import kotlinx.collections.immutable.toImmutableMap
 
-
-/**
- * For the moment, this is entirely within the context of a single method.
- *
- * The context represents the state of the variables at this point in time.
- * If you're passed a Context, you can safely assume all variables in there
- * have the states specified
- */
 class Context {
     sealed class Key {
         // Variable is where the variable is defined —
@@ -67,7 +59,7 @@ class Context {
     companion object {
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
-         * This does not and cannot resolve any unresolved expressions as these two statements
+         * This does not and can not resolve any unresolved expressions as these two statements
          * are independent of each other.
          *
          * You must define how to resolve conflicts.
