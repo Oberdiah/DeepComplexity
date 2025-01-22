@@ -20,22 +20,23 @@ object TestUtilities {
         val reflectMethod = clazz.declaredMethods.find { it.name == methodName }
             ?: throw NoSuchMethodException("Method $methodName not found in class ${clazz.name}")
 
+        var range: IMoldableSet<*>? = null
         try {
             errorMessage = "Failed to get method context"
             val context = MethodProcessing.getMethodContext(method)
             println(context.toString().prependIndent())
             errorMessage = "Failed to evaluate return value range"
-            val range = context.evaluateKey(Context.Key.ReturnKey(method))
+            range = context.evaluateKey(Context.Key.ReturnKey(method))
             println("\tRange of return value: $range")
             errorMessage = "Failed to verify method"
-
-            methodScore = getMethodScore(reflectMethod, range)
         } catch (e: Throwable) {
             println("\tAww no :( ($errorMessage)\n")
             e.printStackTrace()
 
             methodScore = 1.0
         }
+
+        range?.let { methodScore = getMethodScore(reflectMethod, range) }
 
         val annotation = reflectMethod.getAnnotation(RequiredScore::class.java)
         if (annotation != null) {
