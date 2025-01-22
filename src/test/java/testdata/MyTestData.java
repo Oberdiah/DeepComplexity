@@ -21,6 +21,10 @@ public class MyTestData {
 		}
 	}
 	
+	public static int zeroTest(int incoming) {
+		return incoming - incoming;
+	}
+	
 	public static int test3(int incoming1) {
 		int foo = 0;
 		int bar = incoming1;

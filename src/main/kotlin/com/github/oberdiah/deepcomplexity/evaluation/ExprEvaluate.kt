@@ -10,11 +10,12 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 object ExprEvaluate {
     fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
         @Suppress("UNCHECKED_CAST")
-        return when (expr.getSetIndicator()) {
+        val evaluated = when (expr.getSetIndicator()) {
             is NumberSetIndicator<*, *> -> evaluateNums(expr.tryCastToNumbers()!!, condition) as T
             BooleanSetIndicator -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
             GenericSetIndicator -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
         }
+        return evaluated
     }
 
     private fun <T : NumberSet<T>> evaluateNums(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
