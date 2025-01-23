@@ -1,48 +1,102 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import java.math.BigInteger
+import java.math.BigInteger.valueOf
 
 /**
  * A neat little class that represents an integer affine.
+ *
+ * The way this is if the range represented by center and noiseTerms is outside the numberLimit
+ * it's just assumed to be clipped.
  */
 class IntegerAffine(
     // This represents twice the constant term. This allows us to represent ranges like [1, 2]
     // where the center is 1.5.
-    val twiceCenter: BigInteger,
-    val twiceNoiseTerms: Map<Context.Key, BigInteger>
+    private val center: BigInteger,
+    private val noiseTerms: Map<Context.Key, BigInteger>,
+    /**
+     * This is the negative side of the limit (inclusive), the positive side is one lower.
+     * e.g. if the limit is 128, the range is [-128, 127].
+     */
+    private val numberLimit: BigInteger,
 ) {
     companion object {
-        val ZERO = IntegerAffine(BigInteger.ZERO, emptyMap())
-        val ONE = IntegerAffine(BigInteger.TWO, emptyMap())
-
-        fun fromConstant(constant: BigInteger): IntegerAffine {
-            return IntegerAffine(constant * BigInteger.TWO, emptyMap())
+        fun fromConstant(constant: Long, numberLimit: Long): IntegerAffine {
+            return IntegerAffine(
+                valueOf(constant) * BigInteger.TWO,
+                emptyMap(),
+                valueOf(numberLimit)
+            )
         }
 
-        fun fromRange(start: Long, end: Long, key: Context.Key): IntegerAffine {
-            val twiceCenter = BigInteger.valueOf(start + end)
-            val twiceRadius = BigInteger.valueOf(end - start)
-            return IntegerAffine(twiceCenter, mapOf(key to twiceRadius))
+        fun fromRange(start: Long, end: Long, numberLimit: Long, key: Context.Key): IntegerAffine {
+            val twiceCenter = valueOf(start + end)
+            val twiceRadius = valueOf(end - start)
+            return IntegerAffine(
+                twiceCenter,
+                mapOf(key to twiceRadius),
+                valueOf(numberLimit)
+            )
         }
     }
 
-    fun toRange(): Pair<BigInteger, BigInteger> {
-        val radius = twiceNoiseTerms.values.fold(BigInteger.ZERO) { acc, it -> acc + it }
+    fun toRange(): Pair<Pair<Long, Long>, Pair<Long, Long>?> {
+        val (inner, outer) = toRangeInner()
+        return Pair(inner.first.toLong(), inner.second.toLong()) to
+                outer?.let { Pair(it.first.toLong(), it.second.toLong()) }
+    }
 
-        return Pair((twiceCenter - radius) / BigInteger.TWO, (twiceCenter + radius) / BigInteger.TWO)
+    fun negate(): IntegerAffine {
+        return IntegerAffine(-center, noiseTerms.mapValues { (_, value) -> -value }, numberLimit)
+    }
+
+    fun subtract(other: IntegerAffine): IntegerAffine {
+        return add(other.negate())
     }
 
     fun add(other: IntegerAffine): IntegerAffine {
-        val newTwiceCenter = twiceCenter + other.twiceCenter
-        val newTwiceNoiseTerms = mutableMapOf<Context.Key, BigInteger>()
-        for ((key, value) in twiceNoiseTerms) {
-            newTwiceNoiseTerms[key] = value + other.twiceNoiseTerms.getOrDefault(key, BigInteger.ZERO)
+        val newCenter = center + other.center
+        val newNoiseTerms = mutableMapOf<Context.Key, BigInteger>()
+        for ((key, value) in noiseTerms) {
+            newNoiseTerms[key] = value + other.noiseTerms.getOrDefault(key, BigInteger.ZERO)
         }
-        for ((key, value) in other.twiceNoiseTerms) {
-            if (key !in twiceNoiseTerms) {
-                newTwiceNoiseTerms[key] = value
+        for ((key, value) in other.noiseTerms) {
+            if (key !in noiseTerms) {
+                newNoiseTerms[key] = value
             }
         }
-        return IntegerAffine(newTwiceCenter, newTwiceNoiseTerms)
+        return IntegerAffine(newCenter, newNoiseTerms, numberLimit)
+    }
+
+    /**
+     * Returns at least one pair, possibly two if the range has hit the limit and
+     * had to wrap around.
+     */
+    private fun toRangeInner(): Pair<Pair<BigInteger, BigInteger>, Pair<BigInteger, BigInteger>?> {
+        val radius = noiseTerms.values.fold(BigInteger.ZERO) { acc, it -> acc + it }
+
+        val twiceLimit = numberLimit * BigInteger.TWO
+
+        val lower = (center - radius) / BigInteger.TWO
+        val upper = (center + radius) / BigInteger.TWO
+
+        // Get lower into the range [-numberLimit, numberLimit)
+        val normalizedLower = (lower + numberLimit).mod(twiceLimit) - numberLimit
+        val distMoved = lower - normalizedLower
+        val shiftedUpper = upper - distMoved
+
+        // Now we have two cases — normalizedUpper is greater than or equal to numberLimit or it's not.
+        // If it's not, we're done.
+        if (shiftedUpper < numberLimit) {
+            return Pair(normalizedLower, shiftedUpper) to null
+        } else if (shiftedUpper > twiceLimit) {
+            // If it's greater than 2 * numberLimit, we can just return the whole range.
+            return Pair(-numberLimit, numberLimit - BigInteger.ONE) to null
+        }
+        // otherwise, we need to wrap around.
+        val pair1 = Pair(normalizedLower, numberLimit - BigInteger.ONE)
+        val normalizedUpper = shiftedUpper - twiceLimit
+
+        return pair1 to Pair(-numberLimit, normalizedUpper)
     }
 }

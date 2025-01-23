@@ -21,6 +21,15 @@ class Context {
             }
         }
 
+        /**
+         * Primarily for testing, doesn't have a specific element.
+         */
+        data class EphemeralKey(val key: Any) : Key() {
+            override fun toString(): String {
+                return key.toString()
+            }
+        }
+
         fun getType(): PsiType {
             return when (this) {
                 is VariableKey -> variable.type
@@ -29,6 +38,8 @@ class Context {
                     // One day this will have to deal with lambdas too.
                     returnType ?: throw IllegalArgumentException("Return statement is not inside a method")
                 }
+
+                is EphemeralKey -> throw IllegalArgumentException("Cannot get type of arbitrary key")
             }
         }
 
@@ -40,6 +51,7 @@ class Context {
             return when (this) {
                 is VariableKey -> variable
                 is ReturnKey -> returnMethod
+                is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
             }
         }
 
