@@ -18,39 +18,40 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNum
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet.IntSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet.LongSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet.ShortSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetRangeImpl.ByteSetRange
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetRangeImpl.DoubleSetRange
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetRangeImpl.FloatSetRange
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetRangeImpl.IntSetRange
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetRangeImpl.LongSetRange
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetRangeImpl.ShortSetRange
+import java.math.BigInteger
 import kotlin.reflect.KClass
 
 sealed class NumberSetAffineImpl<T : Number, Self : NumberSetAffineImpl<T, Self>>(
     private val setIndicator: NumberSetIndicator<T, Self>
 ) : FullyTypedNumberSet<T, Self> {
-//    class DoubleSetAffine : NumberSetAffineImpl<Double, DoubleSetAffine>(DoubleSetIndicator), DoubleSet<DoubleSetAffine>
-//    class FloatSetAffine : NumberSetAffineImpl<Float, FloatSetAffine>(FloatSetIndicator), FloatSet<FloatSetAffine>
-//    class IntSetAffine : NumberSetAffineImpl<Int, IntSetAffine>(IntSetIndicator), IntSet<IntSetAffine>
-//    class LongSetAffine : NumberSetAffineImpl<Long, LongSetAffine>(LongSetIndicator), LongSet<LongSetAffine>
-//    class ShortSetAffine : NumberSetAffineImpl<Short, ShortSetAffine>(ShortSetIndicator), ShortSet<ShortSetAffine>
-//    class ByteSetAffine : NumberSetAffineImpl<Byte, ByteSetAffine>(ByteSetIndicator), ByteSet<ByteSetAffine>
+    class DoubleSetAffine : NumberSetAffineImpl<Double, DoubleSetAffine>(DoubleSetIndicator), DoubleSet<DoubleSetAffine>
+    class FloatSetAffine : NumberSetAffineImpl<Float, FloatSetAffine>(FloatSetIndicator), FloatSet<FloatSetAffine>
+    class IntSetAffine : NumberSetAffineImpl<Int, IntSetAffine>(IntSetIndicator), IntSet<IntSetAffine>
+    class LongSetAffine : NumberSetAffineImpl<Long, LongSetAffine>(LongSetIndicator), LongSet<LongSetAffine>
+    class ShortSetAffine : NumberSetAffineImpl<Short, ShortSetAffine>(ShortSetIndicator), ShortSet<ShortSetAffine>
+    class ByteSetAffine : NumberSetAffineImpl<Byte, ByteSetAffine>(ByteSetIndicator), ByteSet<ByteSetAffine>
 
     fun duplicateMe(): Self {
-        TODO()
-//        @Suppress("UNCHECKED_CAST")
-//        return when (this) {
-//            is ByteSetAffine -> ByteSetRange()
-//            is ShortSetAffine -> ShortSetRange()
-//            is IntSetAffine -> IntSetRange()
-//            is LongSetAffine -> LongSetRange()
-//            is FloatSetAffine -> FloatSetRange()
-//            is DoubleSetAffine -> DoubleSetRange()
-//        } as Self
+        @Suppress("UNCHECKED_CAST")
+        return when (this) {
+            is ByteSetAffine -> ByteSetAffine()
+            is ShortSetAffine -> ShortSetAffine()
+            is IntSetAffine -> IntSetAffine()
+            is LongSetAffine -> LongSetAffine()
+            is FloatSetAffine -> FloatSetAffine()
+            is DoubleSetAffine -> DoubleSetAffine()
+        } as Self
+    }
+
+    fun verifyIsInteger() {
+        if (this is DoubleSetAffine || this is FloatSetAffine) {
+            throw IllegalArgumentException("This set is not an integer set")
+        }
     }
 
     override fun addRange(start: T, end: T) {
-        TODO("Not yet implemented")
+        verifyIsInteger()
+
     }
 
     override fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T {
@@ -113,4 +114,5 @@ sealed class NumberSetAffineImpl<T : Number, Self : NumberSetAffineImpl<T, Self>
     override fun contains(element: Any): Boolean {
         TODO("Not yet implemented")
     }
+
 }

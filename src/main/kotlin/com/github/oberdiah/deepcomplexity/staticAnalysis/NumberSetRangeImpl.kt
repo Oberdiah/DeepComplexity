@@ -34,12 +34,12 @@ import kotlin.reflect.KClass
 sealed class NumberSetRangeImpl<T : Number, Self : NumberSetRangeImpl<T, Self>>(
     private val setIndicator: NumberSetIndicator<T, Self>
 ) : FullyTypedNumberSet<T, Self> {
-    class DoubleSetRange : NumberSetRangeImpl<Double, DoubleSetRange>(DoubleSetIndicator), DoubleSet<DoubleSetRange>
-    class FloatSetRange : NumberSetRangeImpl<Float, FloatSetRange>(FloatSetIndicator), FloatSet<FloatSetRange>
-    class IntSetRange : NumberSetRangeImpl<Int, IntSetRange>(IntSetIndicator), IntSet<IntSetRange>
-    class LongSetRange : NumberSetRangeImpl<Long, LongSetRange>(LongSetIndicator), LongSet<LongSetRange>
-    class ShortSetRange : NumberSetRangeImpl<Short, ShortSetRange>(ShortSetIndicator), ShortSet<ShortSetRange>
-    class ByteSetRange : NumberSetRangeImpl<Byte, ByteSetRange>(ByteSetIndicator), ByteSet<ByteSetRange>
+//    class DoubleSetRange : NumberSetRangeImpl<Double, DoubleSetRange>(DoubleSetIndicator), DoubleSet<DoubleSetRange>
+//    class FloatSetRange : NumberSetRangeImpl<Float, FloatSetRange>(FloatSetIndicator), FloatSet<FloatSetRange>
+//    class IntSetRange : NumberSetRangeImpl<Int, IntSetRange>(IntSetIndicator), IntSet<IntSetRange>
+//    class LongSetRange : NumberSetRangeImpl<Long, LongSetRange>(LongSetIndicator), LongSet<LongSetRange>
+//    class ShortSetRange : NumberSetRangeImpl<Short, ShortSetRange>(ShortSetIndicator), ShortSet<ShortSetRange>
+//    class ByteSetRange : NumberSetRangeImpl<Byte, ByteSetRange>(ByteSetIndicator), ByteSet<ByteSetRange>
 
     private val clazz: KClass<*> = setIndicator.clazz
 
@@ -52,15 +52,16 @@ sealed class NumberSetRangeImpl<T : Number, Self : NumberSetRangeImpl<T, Self>>(
     }
 
     fun duplicateMe(): Self {
-        @Suppress("UNCHECKED_CAST")
-        return when (this) {
-            is ByteSetRange -> ByteSetRange()
-            is ShortSetRange -> ShortSetRange()
-            is IntSetRange -> IntSetRange()
-            is LongSetRange -> LongSetRange()
-            is FloatSetRange -> FloatSetRange()
-            is DoubleSetRange -> DoubleSetRange()
-        } as Self
+//        @Suppress("UNCHECKED_CAST")
+//        return when (this) {
+//            is ByteSetRange -> ByteSetRange()
+//            is ShortSetRange -> ShortSetRange()
+//            is IntSetRange -> IntSetRange()
+//            is LongSetRange -> LongSetRange()
+//            is FloatSetRange -> FloatSetRange()
+//            is DoubleSetRange -> DoubleSetRange()
+//        } as Self
+        TODO()
     }
 
     fun me(): Self {
