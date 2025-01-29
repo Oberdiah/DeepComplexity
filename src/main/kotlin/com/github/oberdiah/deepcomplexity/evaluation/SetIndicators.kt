@@ -5,7 +5,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetAffineImpl.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetImpl.*
 import kotlin.reflect.KClass
 
 sealed interface SetIndicator<Set : IMoldableSet<Set>> {
@@ -95,43 +95,43 @@ sealed class NumberSetIndicator<T : Number, Set : FullyTypedNumberSet<T, Set>>(c
     }
 }
 
-data object DoubleSetIndicator : NumberSetIndicator<Double, DoubleSetAffine>(Double::class) {
-    override fun newEmptySet(): DoubleSetAffine = DoubleSetAffine()
+data object DoubleSetIndicator : NumberSetIndicator<Double, DoubleSet>(Double::class) {
+    override fun newEmptySet(): DoubleSet = DoubleSet()
     override fun getMaxValue(): Double = Double.MAX_VALUE
     override fun getMinValue(): Double = Double.MIN_VALUE
     override fun getInt(int: Int): Double = int.toDouble()
 }
 
-data object FloatSetIndicator : NumberSetIndicator<Float, FloatSetAffine>(Float::class) {
-    override fun newEmptySet(): FloatSetAffine = FloatSetAffine()
+data object FloatSetIndicator : NumberSetIndicator<Float, FloatSet>(Float::class) {
+    override fun newEmptySet(): FloatSet = FloatSet()
     override fun getMaxValue(): Float = Float.MAX_VALUE
     override fun getMinValue(): Float = Float.MIN_VALUE
     override fun getInt(int: Int): Float = int.toFloat()
 }
 
-data object IntSetIndicator : NumberSetIndicator<Int, IntSetAffine>(Int::class) {
-    override fun newEmptySet(): IntSetAffine = IntSetAffine()
+data object IntSetIndicator : NumberSetIndicator<Int, IntSet>(Int::class) {
+    override fun newEmptySet(): IntSet = IntSet()
     override fun getMaxValue(): Int = Int.MAX_VALUE
     override fun getMinValue(): Int = Int.MIN_VALUE
     override fun getInt(int: Int): Int = int
 }
 
-data object LongSetIndicator : NumberSetIndicator<Long, LongSetAffine>(Long::class) {
-    override fun newEmptySet(): LongSetAffine = LongSetAffine()
+data object LongSetIndicator : NumberSetIndicator<Long, LongSet>(Long::class) {
+    override fun newEmptySet(): LongSet = LongSet()
     override fun getMaxValue(): Long = Long.MAX_VALUE
     override fun getMinValue(): Long = Long.MIN_VALUE
     override fun getInt(int: Int): Long = int.toLong()
 }
 
-data object ShortSetIndicator : NumberSetIndicator<Short, ShortSetAffine>(Short::class) {
-    override fun newEmptySet(): ShortSetAffine = ShortSetAffine()
+data object ShortSetIndicator : NumberSetIndicator<Short, ShortSet>(Short::class) {
+    override fun newEmptySet(): ShortSet = ShortSet()
     override fun getMaxValue(): Short = Short.MAX_VALUE
     override fun getMinValue(): Short = Short.MIN_VALUE
     override fun getInt(int: Int): Short = int.toShort()
 }
 
-data object ByteSetIndicator : NumberSetIndicator<Byte, ByteSetAffine>(Byte::class) {
-    override fun newEmptySet(): ByteSetAffine = ByteSetAffine()
+data object ByteSetIndicator : NumberSetIndicator<Byte, ByteSet>(Byte::class) {
+    override fun newEmptySet(): ByteSet = ByteSet()
     override fun getMaxValue(): Byte = Byte.MAX_VALUE
     override fun getMinValue(): Byte = Byte.MIN_VALUE
     override fun getInt(int: Int): Byte = int.toByte()

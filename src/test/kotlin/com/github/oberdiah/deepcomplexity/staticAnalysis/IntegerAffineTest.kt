@@ -135,4 +135,82 @@ class IntegerAffineTest {
             }
         }
     }
+
+    @Test
+    fun `Ensure basic multiplication works fine`() {
+        for (i in 0..15) {
+            for (j in 0..15) {
+                val integerAffine1 = IntegerAffine.fromConstant(i.toLong(), 1000)
+                val integerAffine2 = IntegerAffine.fromConstant(j.toLong(), 1000)
+                val integerAffine3 = integerAffine1.multiply(integerAffine2)
+
+                assertEquals((i * j).toLong(), integerAffine3.toRange().first.first)
+            }
+        }
+    }
+
+    @Test
+    fun `Ensure multiplying constants with wrapping works fine`() {
+        for (i in -128..127) {
+            for (j in -128..127) {
+                val integerAffine1 = IntegerAffine.fromConstant(i.toLong(), 128)
+                val integerAffine2 = IntegerAffine.fromConstant(j.toLong(), 128)
+                val integerAffine3 = integerAffine1.multiply(integerAffine2)
+
+                val expected = (i.toByte() * j.toByte()).toByte().toLong()
+                assertEquals(expected, integerAffine3.toRange().first.first, "i = $i, j = $j")
+            }
+        }
+    }
+
+    @Test
+    fun `Multiply range by constant`() {
+        val loopAt = 128L
+        val affine1 = IntegerAffine.fromRange(5, 10, loopAt, key1)
+        val affine2 = IntegerAffine.fromConstant(3, loopAt)
+
+        val result = affine1.multiply(affine2).toRange().first
+
+        assertEquals(15, result.first)
+        assertEquals(30, result.second)
+    }
+
+    @Test
+    fun `Multiply range by range`() {
+        val loopAt = 128L
+        val affine1 = IntegerAffine.fromRange(3, 7, loopAt, key1)
+        val affine2 = IntegerAffine.fromRange(1, 7, loopAt, key2)
+
+        val result = affine1.multiply(affine2).toRange().first
+
+        assertEquals(3, result.first)
+        assertEquals(35, result.second)
+    }
+
+    @Test
+    fun `Multiply range by range 2`() {
+        val loopAt = 128L
+        val affine1 = IntegerAffine.fromRange(2, 4, loopAt, key1)
+        val affine2 = IntegerAffine.fromRange(3, 5, loopAt, key2)
+
+        val result = affine1.multiply(affine2).toRange().first
+
+        assertEquals(6, result.first)
+        assertEquals(20, result.second)
+    }
+
+
+    @Test
+    fun `Multiply ranges that cause wrapping`() {
+        val loopAt = 128L
+        val affine1 = IntegerAffine.fromRange(100, 120, loopAt, key1)
+        val affine2 = IntegerAffine.fromRange(2, 4, loopAt, key2)
+
+        val (result1, result2) = affine1.multiply(affine2).toRange()
+
+        // The range should wrap around since 120 * 4 > 128
+        assertTrue(result1.first >= -128)
+        assertTrue(result1.second <= 127)
+        assertNotNull(result2)
+    }
 }

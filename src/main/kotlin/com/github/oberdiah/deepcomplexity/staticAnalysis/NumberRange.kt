@@ -17,7 +17,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-class NumberRange<T : Number, Self : NumberSetRangeImpl<T, Self>>(
+class NumberRange<T : Number, Self : NumberSetImpl<T, Self>>(
     val start: T,
     val end: T,
     private val setIndicator: NumberSetIndicator<T, Self>

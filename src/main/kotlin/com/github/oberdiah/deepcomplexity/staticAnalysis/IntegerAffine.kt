@@ -13,6 +13,7 @@ class IntegerAffine(
     // This represents twice the constant term. This allows us to represent ranges like [1, 2]
     // where the center is 1.5.
     private val center: BigInteger,
+    // This represents twice the noise terms. Again, this allows us to represent ranges like [1, 2]
     private val noiseTerms: Map<Context.Key, BigInteger>,
     /**
      * This is the negative side of the limit (inclusive), the positive side is one lower.
@@ -38,6 +39,47 @@ class IntegerAffine(
                 valueOf(numberLimit)
             )
         }
+    }
+
+    fun multiply(other: IntegerAffine): IntegerAffine {
+        // Multiply centers (remember they represent twice the value)
+        val newCenter = (center * other.center) / BigInteger.TWO
+
+        val newNoiseTerms = mutableMapOf<Context.Key, BigInteger>()
+
+        // Handle center * noise terms
+        for ((key, value) in other.noiseTerms) {
+            newNoiseTerms[key] = (center * value) / BigInteger.TWO
+        }
+        for ((key, value) in noiseTerms) {
+            val existing = newNoiseTerms.getOrDefault(key, BigInteger.ZERO)
+            newNoiseTerms[key] = existing + (other.center * value) / BigInteger.TWO
+        }
+
+        // Handle noise terms * noise terms
+        var quadraticNoiseSum = BigInteger.ZERO
+        for ((key1, value1) in noiseTerms) {
+            for ((key2, value2) in other.noiseTerms) {
+                val termProduct = (value1 * value2) / BigInteger.TWO
+                if (key1 == key2) {
+                    // Same key, add directly to the corresponding noise term
+                    val existing = newNoiseTerms.getOrDefault(key1, BigInteger.ZERO)
+                    newNoiseTerms[key1] = existing + termProduct
+                } else {
+                    // Differing keys, contribute to the quadratic noise sum
+                    quadraticNoiseSum += termProduct
+                }
+            }
+        }
+
+        // Add the combined quadratic noise term if non-zero
+        if (quadraticNoiseSum != BigInteger.ZERO) {
+            val quadraticKey = Context.Key.EphemeralKey("Quadratic")
+            val existing = newNoiseTerms.getOrDefault(quadraticKey, BigInteger.ZERO)
+            newNoiseTerms[quadraticKey] = existing + quadraticNoiseSum
+        }
+
+        return IntegerAffine(newCenter, newNoiseTerms, numberLimit)
     }
 
     fun toRange(): Pair<Pair<Long, Long>, Pair<Long, Long>?> {
