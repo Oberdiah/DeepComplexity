@@ -48,7 +48,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
     }
 
     companion object {
-        fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>): T {
+        fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
                 set.addRange(indicator.getMinValue(), indicator.getMaxValue())
@@ -58,7 +58,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
-        fun <T : NumberSet<T>> fullPositiveRange(indicator: SetIndicator<T>): T {
+        fun <T : NumberSet<T>> fullPositiveRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
                 set.addRange(indicator.getZero(), indicator.getMaxValue())
@@ -68,7 +68,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
             return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
-        fun <T : NumberSet<T>> fullNegativeRange(indicator: SetIndicator<T>): T {
+        fun <T : NumberSet<T>> fullNegativeRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
                 set.addRange(indicator.getMinValue(), indicator.getZero())

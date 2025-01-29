@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
@@ -12,7 +13,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
     val clazz: KClass<*>
 
     fun newEmptySet(): Set
-    fun newFullSet(): Set
+    fun newFullSet(key: Context.Key): Set
 
     companion object {
         fun <T : IMoldableSet<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
@@ -81,7 +82,7 @@ sealed class SetIndicatorImpl<T : Any, Set : IMoldableSet<Set>>(override val cla
 sealed class NumberSetIndicator<T : Number, Set : FullyTypedNumberSet<T, Set>>(clazz: KClass<T>) :
     SetIndicatorImpl<T, Set>(clazz) {
 
-    override fun newFullSet(): Set = NumberSet.fullRange(this)
+    override fun newFullSet(key: Context.Key): Set = NumberSet.fullRange(this, key)
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
     abstract fun getInt(int: Int): T
@@ -139,10 +140,10 @@ data object ByteSetIndicator : NumberSetIndicator<Byte, ByteSet>(Byte::class) {
 
 data object BooleanSetIndicator : SetIndicatorImpl<Boolean, BooleanSet>(Boolean::class) {
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
-    override fun newFullSet(): BooleanSet = BooleanSet.BOTH
+    override fun newFullSet(key: Context.Key): BooleanSet = BooleanSet.BOTH
 }
 
 data object GenericSetIndicator : SetIndicatorImpl<Any, GenericSet>(Any::class) {
     override fun newEmptySet(): GenericSet = GenericSet.empty()
-    override fun newFullSet(): GenericSet = GenericSet.everyValue()
+    override fun newFullSet(key: Context.Key): GenericSet = GenericSet.everyValue()
 }

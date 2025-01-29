@@ -303,7 +303,7 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
         changeTerms: ConstraintSolver.EvaluatedCollectedTerms<Self>,
         valid: Self
     ): Self {
-        val gaveUp = fullPositiveRange(setIndicator)
+        val gaveUp = fullPositiveRange(setIndicator, TODO())
 
         val linearChange = changeTerms.terms[1] ?: return gaveUp
         val constantChange = changeTerms.terms[0] ?: return gaveUp

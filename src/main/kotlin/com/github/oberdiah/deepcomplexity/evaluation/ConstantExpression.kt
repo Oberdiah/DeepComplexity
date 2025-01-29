@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression.emptySetFromExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
@@ -13,7 +13,8 @@ object ConstantExpression {
     fun <T : NumberSet<T>> zero(expr: IExpr<T>): ConstExpr<T> = ConstExpr(NumberSet.zero(expr.getSetIndicator()))
 
     fun <T : IMoldableSet<T>> emptySetFromExpr(expr: IExpr<T>): T = expr.getSetIndicator().newEmptySet()
-    fun <T : IMoldableSet<T>> fullSetFromExpr(expr: IExpr<T>): T = expr.getSetIndicator().newFullSet()
+    fun <T : IMoldableSet<T>> fullSetFromExpr(expr: IExpr<T>): T =
+        expr.getSetIndicator().newFullSet(Context.Key.ExpressionKey(expr))
 
     fun <T : IMoldableSet<T>> fullExprFromExpr(expr: IExpr<T>): IExpr<T> {
         return ConstExpr(fullSetFromExpr(expr))

@@ -22,6 +22,16 @@ class Context {
         }
 
         /**
+         * Could potentially be used one day to allow us to equate expressions,
+         * for now does nothing.
+         */
+        data class ExpressionKey(val expr: IExpr<*>) : Key() {
+            override fun toString(): String {
+                return expr.toString()
+            }
+        }
+
+        /**
          * Primarily for testing, doesn't have a specific element.
          */
         data class EphemeralKey(val key: Any) : Key() {
@@ -40,6 +50,7 @@ class Context {
                 }
 
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get type of arbitrary key")
+                is ExpressionKey -> throw IllegalArgumentException("Cannot get type of expression key")
             }
         }
 
@@ -52,6 +63,7 @@ class Context {
                 is VariableKey -> variable
                 is ReturnKey -> returnMethod
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
+                is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")
             }
         }
 
