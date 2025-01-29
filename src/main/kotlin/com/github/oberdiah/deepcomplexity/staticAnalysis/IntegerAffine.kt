@@ -57,20 +57,17 @@ class IntegerAffine(
         }
 
         // Handle noise terms * noise terms
-        var quadraticNoiseSum = BigInteger.ZERO
-        for ((key1, value1) in noiseTerms) {
-            for ((key2, value2) in other.noiseTerms) {
-                val termProduct = (value1 * value2) / BigInteger.TWO
-                if (key1 == key2) {
-                    // Same key, add directly to the corresponding noise term
-                    val existing = newNoiseTerms.getOrDefault(key1, BigInteger.ZERO)
-                    newNoiseTerms[key1] = existing + termProduct
-                } else {
-                    // Differing keys, contribute to the quadratic noise sum
-                    quadraticNoiseSum += termProduct
-                }
-            }
+        var quadraticNoiseSumA = BigInteger.ZERO
+        var quadraticNoiseSumB = BigInteger.ZERO
+
+        for (value1 in noiseTerms.values) {
+            quadraticNoiseSumA += value1.abs()
         }
+        for (value2 in other.noiseTerms.values) {
+            quadraticNoiseSumB += value2.abs()
+        }
+
+        val quadraticNoiseSum = quadraticNoiseSumA * quadraticNoiseSumB / BigInteger.TWO
 
         // Add the combined quadratic noise term if non-zero
         if (quadraticNoiseSum != BigInteger.ZERO) {
