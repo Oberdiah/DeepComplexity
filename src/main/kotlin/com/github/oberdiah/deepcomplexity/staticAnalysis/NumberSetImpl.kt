@@ -236,14 +236,15 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
         val newSet = duplicateMe()
         for (range in ranges) {
             for (otherRange in castToThisType(other).ranges) {
-                val values: Iterable<NumberRange<T, Self>> = when (operation) {
+                val (range, possibleSecondRange) = when (operation) {
                     ADDITION -> range.addition(otherRange)
                     SUBTRACTION -> range.subtraction(otherRange)
                     MULTIPLICATION -> range.multiplication(otherRange)
                     DIVISION -> range.division(otherRange)
                 }
 
-                newSet.ranges.addAll(values)
+                newSet.ranges.add(range)
+                possibleSecondRange?.let { newSet.ranges.add(it) }
             }
         }
         newSet.mergeAndDeduplicate()

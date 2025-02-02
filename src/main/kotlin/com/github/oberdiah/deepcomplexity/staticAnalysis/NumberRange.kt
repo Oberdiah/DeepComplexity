@@ -17,6 +17,8 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
+typealias RangePair<T, Self> = Pair<NumberRange<T, Self>, NumberRange<T, Self>?>
+
 class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor(
     val start: T,
     val end: T,
@@ -84,9 +86,9 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
         return "[$start, $end]"
     }
 
-    fun addition(other: NumberRange<T, Self>): Iterable<NumberRange<T, Self>> {
+    fun addition(other: NumberRange<T, Self>): RangePair<T, Self> {
         return if (clazz.isFloatingPoint()) {
-            listOf(newRange(start + other.start, end + other.end))
+            Pair(newRange(start + other.start, end + other.end), null)
         } else {
             resolvePotentialOverflow(
                 BigInteger.valueOf(start.toLong()).add(BigInteger.valueOf(other.start.toLong())),
@@ -95,9 +97,9 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
         }
     }
 
-    fun subtraction(other: NumberRange<T, Self>): Iterable<NumberRange<T, Self>> {
+    fun subtraction(other: NumberRange<T, Self>): RangePair<T, Self> {
         return if (clazz.isFloatingPoint()) {
-            listOf(newRange(start - other.end, end - other.start))
+            Pair(newRange(start - other.end, end - other.start), null)
         } else {
             resolvePotentialOverflow(
                 BigInteger.valueOf(start.toLong()).subtract(BigInteger.valueOf(other.end.toLong())),
@@ -106,17 +108,18 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
         }
     }
 
-    fun multiplication(other: NumberRange<T, Self>): Iterable<NumberRange<T, Self>> {
+    fun multiplication(other: NumberRange<T, Self>): RangePair<T, Self> {
         return if (clazz.isFloatingPoint()) {
             val a = start * other.start
             val b = start * other.end
             val c = end * other.start
             val d = end * other.end
-            listOf(
+            Pair(
                 newRange(
                     a.min(b).min(c).min(d),
                     a.max(b).max(c).max(d),
-                )
+                ),
+                null
             )
         } else {
             val a = multiply(start, other.start)
@@ -131,17 +134,18 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
         }
     }
 
-    fun division(other: NumberRange<T, Self>): Iterable<NumberRange<T, Self>> {
+    fun division(other: NumberRange<T, Self>): RangePair<T, Self> {
         return if (clazz.isFloatingPoint()) {
             val a = start / other.start
             val b = start / other.end
             val c = end / other.start
             val d = end / other.end
-            listOf(
+            Pair(
                 newRange(
                     a.min(b).min(c).min(d),
                     a.max(b).max(c).max(d),
-                )
+                ),
+                null
             )
         } else {
             val a = divide(start, other.start)
@@ -180,17 +184,18 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
     private fun resolvePotentialOverflow(
         min: BigInteger,
         max: BigInteger
-    ): Iterable<NumberRange<T, Self>> {
+    ): RangePair<T, Self> {
         val minValue = BigInteger.valueOf(setIndicator.getMinValue().toLong())
         val maxValue = BigInteger.valueOf(setIndicator.getMaxValue().toLong())
 
         when (Settings.overflowBehaviour) {
             CLAMP -> {
-                return listOf(
+                return Pair(
                     newRange(
                         bigIntToT(min.max(minValue)),
                         bigIntToT(max.min(maxValue))
-                    )
+                    ),
+                    null
                 )
             }
 
@@ -199,15 +204,15 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
                 // If we're overflowing in both directions we can just return the full range.
 
                 if (min < minValue && max > maxValue) {
-                    return listOf(newRange(bigIntToT(minValue), bigIntToT(maxValue)))
+                    return Pair(newRange(bigIntToT(minValue), bigIntToT(maxValue)), null)
                 } else if (min < minValue) {
                     val wrappedMin = min.add(clazz.getSetSize())
                     if (wrappedMin < minValue) {
                         // We're overflowing so much in a single direction
                         // that the overflow will cover the full range anyway.
-                        return listOf(newRange(bigIntToT(minValue), bigIntToT(maxValue)))
+                        return Pair(newRange(bigIntToT(minValue), bigIntToT(maxValue)), null)
                     }
-                    return listOf(
+                    return Pair(
                         newRange(bigIntToT(wrappedMin), bigIntToT(maxValue)),
                         newRange(bigIntToT(minValue), bigIntToT(max))
                     )
@@ -216,14 +221,14 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
                     if (wrappedMax > maxValue) {
                         // We're overflowing so much in a single direction
                         // that the overflow will cover the full range anyway.
-                        return listOf(newRange(bigIntToT(minValue), bigIntToT(maxValue)))
+                        return Pair(newRange(bigIntToT(minValue), bigIntToT(maxValue)), null)
                     }
-                    return listOf(
+                    return Pair(
                         newRange(bigIntToT(minValue), bigIntToT(wrappedMax)),
                         newRange(bigIntToT(min), bigIntToT(maxValue))
                     )
                 } else {
-                    return listOf(newRange(bigIntToT(min), bigIntToT(max)))
+                    return Pair(newRange(bigIntToT(min), bigIntToT(max)), null)
                 }
             }
         }
