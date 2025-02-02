@@ -52,6 +52,9 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
             }
         }
 
+        fun <T : IMoldableSet<T>> newEmptySet(ind: SetIndicator<T>): T = ind.newEmptySet()
+        fun <T : Any, Self : IMoldableSet<Self>> newEmptySetFromValue(v: T): Self = newEmptySet(fromValue(v))
+
         fun <T : Any, Self : IMoldableSet<Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
             @Suppress("UNCHECKED_CAST")
             return when (value) {

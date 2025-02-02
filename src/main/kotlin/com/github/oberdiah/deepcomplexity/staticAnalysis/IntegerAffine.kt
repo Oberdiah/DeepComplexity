@@ -30,6 +30,16 @@ class IntegerAffine(
             )
         }
 
+        fun fromRangeIndependentKey(start: Long, end: Long, numberLimit: Long): IntegerAffine {
+            val twiceCenter = valueOf(start + end)
+            val twiceRadius = valueOf(end - start)
+            return IntegerAffine(
+                twiceCenter,
+                mapOf(Context.Key.EphemeralKey.new() to twiceRadius),
+                valueOf(numberLimit)
+            )
+        }
+
         fun fromRange(start: Long, end: Long, numberLimit: Long, key: Context.Key): IntegerAffine {
             val twiceCenter = valueOf(start + end)
             val twiceRadius = valueOf(end - start)

@@ -17,15 +17,57 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-class NumberRange<T : Number, Self : NumberSetImpl<T, Self>>(
+class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor(
     val start: T,
     val end: T,
-    private val setIndicator: NumberSetIndicator<T, Self>
+    private val setIndicator: NumberSetIndicator<T, Self>,
+    private val affine: IntegerAffine
 ) {
     private val clazz: KClass<*> = setIndicator.clazz
 
     private fun newRange(start: T, end: T): NumberRange<T, Self> {
-        return NumberRange(start, end, setIndicator)
+        return fromRangeIndependentKey(start, end, setIndicator)
+    }
+
+    companion object {
+        fun <T : Number, Self : NumberSetImpl<T, Self>> fromRange(
+            start: T,
+            end: T,
+            setIndicator: NumberSetIndicator<T, Self>,
+            key: Context.Key
+        ): NumberRange<T, Self> {
+            val affine = IntegerAffine.fromRange(
+                start.toLong(),
+                end.toLong(),
+                setIndicator.getMaxValue().toLong(),
+                key
+            )
+            return NumberRange(start, end, setIndicator, affine)
+        }
+
+        fun <T : Number, Self : NumberSetImpl<T, Self>> fromConstant(
+            constant: T,
+            setIndicator: NumberSetIndicator<T, Self>
+        ): NumberRange<T, Self> {
+            val affine = IntegerAffine.fromConstant(
+                constant.toLong(),
+                setIndicator.getMaxValue().toLong()
+            )
+            return NumberRange(constant, constant, setIndicator, affine)
+        }
+
+        fun <T : Number, Self : NumberSetImpl<T, Self>> fromRangeIndependentKey(
+            start: T,
+            end: T,
+            setIndicator: NumberSetIndicator<T, Self>,
+        ): NumberRange<T, Self> {
+            val affine = IntegerAffine.fromRangeIndependentKey(
+                start.toLong(),
+                end.toLong(),
+                setIndicator.getMaxValue().toLong(),
+            )
+            return NumberRange(start, end, setIndicator, affine)
+        }
     }
 
     init {

@@ -38,6 +38,13 @@ class Context {
             override fun toString(): String {
                 return key.toString()
             }
+
+            companion object {
+                var KEY_INDEX = 0
+                fun new(): EphemeralKey {
+                    return EphemeralKey(KEY_INDEX++)
+                }
+            }
         }
 
         fun getType(): PsiType {

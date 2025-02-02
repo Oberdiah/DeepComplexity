@@ -43,7 +43,7 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
     private val clazz: KClass<*> = setIndicator.clazz
 
     private fun newRange(start: T, end: T): NumberRange<T, Self> {
-        return NumberRange(start, end, setIndicator)
+        return NumberRange.fromRangeIndependentKey(start, end, setIndicator)
     }
 
     override fun getSetIndicator(): SetIndicator<Self> {
@@ -90,7 +90,7 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
     }
 
     override fun addRange(start: T, end: T) {
-        ranges.add(NumberRange(start, end, setIndicator))
+        ranges.add(newRange(start, end))
     }
 
     override fun getRange(): Pair<Number, Number>? {

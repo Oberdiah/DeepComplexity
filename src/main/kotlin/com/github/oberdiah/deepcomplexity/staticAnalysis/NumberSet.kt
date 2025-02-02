@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.intellij.psi.compiled.ClassFileDecompilers
 import kotlin.reflect.KClass
 
 // To swap between the two implementations of number sets, you should only have to change the SetIndicators.
@@ -99,10 +100,14 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         }
 
         fun <T : Number, Self : FullyTypedNumberSet<T, Self>> singleValue(value: T): Self {
-            fun <T : NumberSet<T>> newFromIndicator(ind: SetIndicator<T>): T = ind.newEmptySet()
-
-            val set: Self = newFromIndicator(SetIndicator.fromValue(value))
+            val set: Self = SetIndicator.newEmptySetFromValue(value)
             set.addRange(value, value)
+            return set
+        }
+
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromRange(start: T, end: T, key: Context.Key): Self {
+            val set: Self = SetIndicator.newEmptySetFromValue(start)
+            set.addRange(start, end)
             return set
         }
     }

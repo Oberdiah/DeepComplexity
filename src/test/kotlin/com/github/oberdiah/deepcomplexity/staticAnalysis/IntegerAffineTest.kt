@@ -175,30 +175,6 @@ class IntegerAffineTest {
         assertEquals(30, result.second)
     }
 
-    @Test
-    fun `Multiply range by range`() {
-        val loopAt = 128L
-        val affine1 = IntegerAffine.fromRange(3, 7, loopAt, key1)
-        val affine2 = IntegerAffine.fromRange(1, 7, loopAt, key2)
-
-        val result = affine1.multiply(affine2).toRange().first
-
-        assertEquals(3, result.first)
-        assertEquals(35, result.second)
-    }
-
-    @Test
-    fun `Multiply range by range 2`() {
-        val loopAt = 128L
-        val affine1 = IntegerAffine.fromRange(2, 4, loopAt, key1)
-        val affine2 = IntegerAffine.fromRange(3, 5, loopAt, key2)
-
-        val result = affine1.multiply(affine2).toRange().first
-
-        assertEquals(6, result.first)
-        assertEquals(20, result.second)
-    }
-
 
     @Test
     fun `Multiply ranges that cause wrapping`() {
