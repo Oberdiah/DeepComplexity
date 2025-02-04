@@ -7,6 +7,7 @@ import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import org.apache.commons.numbers.core.DD
 import java.math.BigInteger
+import java.math.BigInteger.valueOf
 import kotlin.math.nextDown
 import kotlin.math.nextUp
 import kotlin.reflect.KClass
@@ -82,10 +83,10 @@ object Utilities {
      */
     fun KClass<*>.getSetSize(): BigInteger {
         when (this) {
-            Byte::class -> return BigInteger.valueOf(Byte.MAX_VALUE.toLong() - Byte.MIN_VALUE.toLong())
-            Short::class -> return BigInteger.valueOf(Short.MAX_VALUE.toLong() - Short.MIN_VALUE.toLong())
-            Int::class -> return BigInteger.valueOf(Int.MAX_VALUE.toLong() - Int.MIN_VALUE.toLong())
-            Long::class -> return BigInteger.valueOf(Long.MAX_VALUE).subtract(BigInteger.valueOf(Long.MIN_VALUE))
+            Byte::class -> return valueOf(Byte.MAX_VALUE.toLong() - Byte.MIN_VALUE.toLong() + 1)
+            Short::class -> return valueOf(Short.MAX_VALUE.toLong() - Short.MIN_VALUE.toLong() + 1)
+            Int::class -> return valueOf(Int.MAX_VALUE.toLong() - Int.MIN_VALUE.toLong() + 1)
+            Long::class -> return (valueOf(Long.MAX_VALUE) - valueOf(Long.MIN_VALUE)) + BigInteger.ONE
         }
         throw IllegalArgumentException("Unsupported type for zero value")
     }
@@ -157,6 +158,7 @@ object Utilities {
             is Long -> this + other as Long
             is Float -> this + other as Float
             is Double -> this + other as Double
+            is BigInteger -> this.add(other as BigInteger)
             else -> throw IllegalArgumentException("Unsupported type for addition")
         } as T // This cast shouldn't be necessary.
     }
@@ -169,6 +171,7 @@ object Utilities {
             is Long -> this - other as Long
             is Float -> this - other as Float
             is Double -> this - other as Double
+            is BigInteger -> this.subtract(other as BigInteger)
             else -> throw IllegalArgumentException("Unsupported type for subtraction")
         } as T // This cast shouldn't be necessary.
     }
@@ -181,6 +184,7 @@ object Utilities {
             is Long -> this * other as Long
             is Float -> this * other as Float
             is Double -> this * other as Double
+            is BigInteger -> this.multiply(other as BigInteger)
             else -> throw IllegalArgumentException("Unsupported type for multiplication")
         } as T // This cast shouldn't be necessary.
     }
@@ -193,6 +197,7 @@ object Utilities {
             is Long -> this / other as Long
             is Float -> this / other as Float
             is Double -> this / other as Double
+            is BigInteger -> this.divide(other as BigInteger)
             else -> throw IllegalArgumentException("Unsupported type for division")
         } as T // This cast shouldn't be necessary.
     }

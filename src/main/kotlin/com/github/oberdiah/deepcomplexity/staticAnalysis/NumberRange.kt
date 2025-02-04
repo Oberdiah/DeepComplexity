@@ -15,6 +15,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import java.math.BigInteger
+import java.math.BigInteger.valueOf
 import kotlin.reflect.KClass
 
 typealias RangePair<T, Self> = Pair<NumberRange<T, Self>, NumberRange<T, Self>?>
@@ -23,7 +24,7 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
     val start: T,
     val end: T,
     private val setIndicator: NumberSetIndicator<T, Self>,
-    private val affine: IntegerAffine
+    private val affine: IntegerAffine<T, Self>
 ) {
     private val clazz: KClass<*> = setIndicator.clazz
 
@@ -41,7 +42,7 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
             val affine = IntegerAffine.fromRange(
                 start.toLong(),
                 end.toLong(),
-                setIndicator.getMaxValue().toLong(),
+                setIndicator,
                 key
             )
             return NumberRange(start, end, setIndicator, affine)
@@ -51,10 +52,7 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
             constant: T,
             setIndicator: NumberSetIndicator<T, Self>
         ): NumberRange<T, Self> {
-            val affine = IntegerAffine.fromConstant(
-                constant.toLong(),
-                setIndicator.getMaxValue().toLong()
-            )
+            val affine = IntegerAffine.fromConstant(constant.toLong(), setIndicator)
             return NumberRange(constant, constant, setIndicator, affine)
         }
 
@@ -63,12 +61,49 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
             end: T,
             setIndicator: NumberSetIndicator<T, Self>,
         ): NumberRange<T, Self> {
-            val affine = IntegerAffine.fromRangeIndependentKey(
-                start.toLong(),
-                end.toLong(),
-                setIndicator.getMaxValue().toLong(),
-            )
+            val affine = IntegerAffine.fromRangeIndependentKey(start.toLong(), end.toLong(), setIndicator)
             return NumberRange(start, end, setIndicator, affine)
+        }
+
+        fun <T : Number, Self : NumberSetImpl<T, Self>> resolvePotentialOverflow(
+            min: BigInteger,
+            max: BigInteger,
+            setIndicator: NumberSetIndicator<T, Self>
+        ): Pair<Pair<BigInteger, BigInteger>, Pair<BigInteger, BigInteger>?> {
+            val minValue = valueOf(setIndicator.getMinValue().toLong())
+            val maxValue = valueOf(setIndicator.getMaxValue().toLong())
+
+            when (Settings.overflowBehaviour) {
+                CLAMP -> {
+                    return Pair(min.max(minValue) to max.min(maxValue), null)
+                }
+
+                ALLOW -> {
+                    // If the range is within bounds, return it as is
+                    if (min >= minValue && max <= maxValue) {
+                        return Pair(min to max, null)
+                    }
+
+                    val rangeSize = maxValue - minValue + BigInteger.ONE
+
+                    // If the range spans more than rangeSize, it covers all values
+                    if (max - min >= rangeSize) {
+                        return Pair(minValue to maxValue, null)
+                    }
+
+                    // Normalize the values into the valid range using modulo
+                    val normalizedMin = ((min - minValue).mod(rangeSize) + minValue)
+                    val normalizedMax = ((max - minValue).mod(rangeSize) + minValue)
+
+                    // If normalized min <= normalized max, it's a simple range
+                    if (normalizedMin <= normalizedMax) {
+                        return Pair(normalizedMin to normalizedMax, null)
+                    }
+
+                    // Otherwise, it wraps around, so we split it into two ranges
+                    return Pair(normalizedMin to maxValue, Pair(minValue, normalizedMax))
+                }
+            }
         }
     }
 
@@ -88,11 +123,14 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
 
     fun addition(other: NumberRange<T, Self>): RangePair<T, Self> {
         return if (clazz.isFloatingPoint()) {
-            Pair(newRange(start + other.start, end + other.end), null)
+            Pair(newRange(start + other.end, end + other.start), null)
         } else {
-            resolvePotentialOverflow(
-                BigInteger.valueOf(start.toLong()).add(BigInteger.valueOf(other.start.toLong())),
-                BigInteger.valueOf(end.toLong()).add(BigInteger.valueOf(other.end.toLong())),
+            mapBigIntsToT(
+                resolvePotentialOverflow(
+                    valueOf(start.toLong()) + valueOf(other.start.toLong()),
+                    valueOf(end.toLong()) + valueOf(other.end.toLong()),
+                    setIndicator
+                )
             )
         }
     }
@@ -101,9 +139,12 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
         return if (clazz.isFloatingPoint()) {
             Pair(newRange(start - other.end, end - other.start), null)
         } else {
-            resolvePotentialOverflow(
-                BigInteger.valueOf(start.toLong()).subtract(BigInteger.valueOf(other.end.toLong())),
-                BigInteger.valueOf(end.toLong()).subtract(BigInteger.valueOf(other.start.toLong())),
+            mapBigIntsToT(
+                resolvePotentialOverflow(
+                    valueOf(start.toLong()) - valueOf(other.end.toLong()),
+                    valueOf(end.toLong()) - valueOf(other.start.toLong()),
+                    setIndicator
+                )
             )
         }
     }
@@ -127,9 +168,12 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
             val c = multiply(start, other.end)
             val d = multiply(end, other.end)
 
-            resolvePotentialOverflow(
-                a.min(b).min(c).min(d),
-                a.max(b).max(c).max(d),
+            mapBigIntsToT(
+                resolvePotentialOverflow(
+                    a.min(b).min(c).min(d),
+                    a.max(b).max(c).max(d),
+                    setIndicator
+                )
             )
         }
     }
@@ -153,84 +197,42 @@ class NumberRange<T : Number, Self : NumberSetImpl<T, Self>> private constructor
             val c = divide(start, other.end)
             val d = divide(end, other.end)
 
-            resolvePotentialOverflow(
-                a.min(b).min(c).min(d),
-                a.max(b).max(c).max(d),
+            mapBigIntsToT(
+                resolvePotentialOverflow(
+                    a.min(b).min(c).min(d),
+                    a.max(b).max(c).max(d),
+                    setIndicator
+                )
             )
         }
     }
 
     private fun multiply(a: Number, b: Number): BigInteger {
-        return BigInteger.valueOf(a.toLong()).multiply(BigInteger.valueOf(b.toLong()))
+        return valueOf(a.toLong()).multiply(valueOf(b.toLong()))
     }
 
     private fun divide(a: Number, b: Number): BigInteger {
         if (b.toLong() == 0L) {
             // Could potentially warn of overflow here one day?
             return if (a > 0) {
-                BigInteger.valueOf(setIndicator.getMaxValue().toLong())
+                valueOf(setIndicator.getMaxValue().toLong())
             } else {
-                BigInteger.valueOf(setIndicator.getMinValue().toLong())
+                valueOf(setIndicator.getMinValue().toLong())
             }
         }
 
-        return BigInteger.valueOf(a.toLong()).divide(BigInteger.valueOf(b.toLong()))
+        return valueOf(a.toLong()).divide(valueOf(b.toLong()))
     }
 
     private fun bigIntToT(v: BigInteger): T {
         return v.longValueExact().castInto(clazz)
     }
 
-    private fun resolvePotentialOverflow(
-        min: BigInteger,
-        max: BigInteger
-    ): RangePair<T, Self> {
-        val minValue = BigInteger.valueOf(setIndicator.getMinValue().toLong())
-        val maxValue = BigInteger.valueOf(setIndicator.getMaxValue().toLong())
+    private fun mapBigIntsToT(pairs: Pair<Pair<BigInteger, BigInteger>, Pair<BigInteger, BigInteger>?>): Pair<NumberRange<T, Self>, NumberRange<T, Self>?> {
+        val (pair1, pair2) = pairs
+        return Pair(
+            newRange(bigIntToT(pair1.first), bigIntToT(pair1.second)),
+            pair2?.let { newRange(bigIntToT(it.first), bigIntToT(it.second)) })
 
-        when (Settings.overflowBehaviour) {
-            CLAMP -> {
-                return Pair(
-                    newRange(
-                        bigIntToT(min.max(minValue)),
-                        bigIntToT(max.min(maxValue))
-                    ),
-                    null
-                )
-            }
-
-            ALLOW -> {
-                // Check if we're overflowing and if we are, we must split the range.
-                // If we're overflowing in both directions we can just return the full range.
-
-                if (min < minValue && max > maxValue) {
-                    return Pair(newRange(bigIntToT(minValue), bigIntToT(maxValue)), null)
-                } else if (min < minValue) {
-                    val wrappedMin = min.add(clazz.getSetSize())
-                    if (wrappedMin < minValue) {
-                        // We're overflowing so much in a single direction
-                        // that the overflow will cover the full range anyway.
-                        return Pair(newRange(bigIntToT(minValue), bigIntToT(maxValue)), null)
-                    }
-                    return Pair(
-                        newRange(bigIntToT(wrappedMin), bigIntToT(maxValue)),
-                        newRange(bigIntToT(minValue), bigIntToT(max))
-                    )
-                } else if (max > maxValue) {
-                    val wrappedMax = max.subtract(clazz.getSetSize())
-                    if (wrappedMax > maxValue) {
-                        // We're overflowing so much in a single direction
-                        // that the overflow will cover the full range anyway.
-                        return Pair(newRange(bigIntToT(minValue), bigIntToT(maxValue)), null)
-                    }
-                    return Pair(
-                        newRange(bigIntToT(minValue), bigIntToT(wrappedMax)),
-                        newRange(bigIntToT(min), bigIntToT(maxValue))
-                    )
-                } else {
-                    return Pair(newRange(bigIntToT(min), bigIntToT(max)), null)
-                }
-            }
-        }
     }
 }
