@@ -40,11 +40,15 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
     class ShortSet : NumberSetImpl<Short, ShortSet>(ShortSetIndicator), FullyTypedNumberSet.ShortSet<ShortSet>
     class ByteSet : NumberSetImpl<Byte, ByteSet>(ByteSetIndicator), FullyTypedNumberSet.ByteSet<ByteSet>
 
-    private val clazz: KClass<*> = setIndicator.clazz
-
-    private fun newRange(start: T, end: T): NumberRange<T, Self> {
-        return NumberRange.fromRangeIndependentKey(start, end, setIndicator)
+    override fun addRange(start: T, end: T, key: Context.Key) {
+        ranges.add(NumberRange.fromRange(start, end, setIndicator, key))
     }
+
+    override fun addConstant(value: T) {
+        ranges.add(NumberRange.fromConstant(value, setIndicator))
+    }
+
+    private val clazz: KClass<*> = setIndicator.clazz
 
     override fun getSetIndicator(): SetIndicator<Self> {
         return setIndicator
@@ -89,8 +93,8 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
         return this as T
     }
 
-    override fun addRange(start: T, end: T) {
-        ranges.add(newRange(start, end))
+    private fun addRangeIndependentKey(start: T, end: T) {
+        ranges.add(NumberRange.fromRangeIndependentKey(start, end, setIndicator))
     }
 
     override fun getRange(): Pair<Number, Number>? {
@@ -136,13 +140,11 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
         val newSet = duplicateMe()
 
         when (comp) {
-            LESS_THAN, LESS_THAN_OR_EQUAL -> newSet.ranges.add(
-                newRange(setIndicator.getMinValue(), smallestValue.downOneEpsilon())
-            )
+            LESS_THAN, LESS_THAN_OR_EQUAL -> newSet
+                .addRangeIndependentKey(setIndicator.getMinValue(), smallestValue.downOneEpsilon())
 
-            GREATER_THAN, GREATER_THAN_OR_EQUAL -> newSet.ranges.add(
-                newRange(biggestValue.upOneEpsilon(), setIndicator.getMaxValue())
-            )
+            GREATER_THAN, GREATER_THAN_OR_EQUAL -> newSet
+                .addRangeIndependentKey(biggestValue.upOneEpsilon(), setIndicator.getMaxValue())
         }
 
         if (comp == LESS_THAN_OR_EQUAL || comp == GREATER_THAN_OR_EQUAL) {
@@ -179,7 +181,7 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
 
                 // If there is an overlap, add it
                 if (start <= end) {
-                    newSet.addRange(start, end)
+                    newSet.addRangeIndependentKey(start, end)
                 }
             }
         }
@@ -195,21 +197,21 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
         val maxValue = setIndicator.getMaxValue()
 
         if (ranges.isEmpty()) {
-            newSet.addRange(minValue, maxValue)
+            newSet.addRangeIndependentKey(minValue, maxValue)
             return newSet
         }
 
         var currentMin = minValue
         for (range in ranges) {
             if (currentMin < range.start) {
-                newSet.addRange(currentMin, range.start.downOneEpsilon())
+                newSet.addRangeIndependentKey(currentMin, range.start.downOneEpsilon())
             }
             currentMin = range.end.upOneEpsilon()
         }
 
         // Add final range if necessary
         if (currentMin < maxValue) {
-            newSet.addRange(currentMin, maxValue)
+            newSet.addRangeIndependentKey(currentMin, maxValue)
         }
 
         return newSet
@@ -218,7 +220,7 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
     override fun negate(): Self {
         val newSet = duplicateMe()
         for (range in ranges.reversed()) {
-            newSet.addRange(range.end.negate(), range.start.negate())
+            newSet.addRangeIndependentKey(range.end.negate(), range.start.negate())
         }
         return newSet
     }
@@ -351,7 +353,7 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
 //            }
 
         val newSet = duplicateMe()
-        newSet.addRange(minimumNumberOfLoops, maximumNumberOfLoops)
+        newSet.addRangeIndependentKey(minimumNumberOfLoops, maximumNumberOfLoops)
         return newSet
     }
 
@@ -366,15 +368,17 @@ sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
         for (i in 1 until ranges.size) {
             val nextRange = ranges[i]
             if (currentRange.end >= nextRange.start) {
-                currentRange = newRange(currentRange.start, nextRange.end.max(currentRange.end))
+                currentRange = NumberRange.fromRangeIndependentKey(
+                    currentRange.start,
+                    nextRange.end.max(currentRange.end),
+                    setIndicator
+                )
             } else {
                 newRanges.add(currentRange)
                 currentRange = nextRange
             }
         }
         newRanges.add(currentRange)
-
-        assert(newRanges.size >= 1)
 
         ranges.clear()
         ranges.addAll(newRanges)

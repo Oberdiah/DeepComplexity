@@ -269,4 +269,10 @@ object Utilities {
             else -> throw IllegalArgumentException("Unsupported type for negation")
         } as T
     }
+
+    fun <T : Number> Pair<T, T>.intersect(other: Pair<T, T>): Pair<T, T>? {
+        val start = this.first.max(other.first)
+        val end = this.second.min(other.second)
+        return if (start <= end) Pair(start, end) else null
+    }
 }

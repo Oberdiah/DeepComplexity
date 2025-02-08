@@ -21,6 +21,7 @@ public class MyTestData {
 		}
 	}
 	
+	//	@RequiredScore(1.0)
 	public static int zeroTest(int incoming) {
 		return incoming - incoming;
 	}

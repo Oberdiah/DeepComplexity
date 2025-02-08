@@ -19,6 +19,11 @@ class IntegerAffine<N : Number, NumberSet : NumberSetImpl<N, NumberSet>>(
      */
     private val setIndicator: NumberSetIndicator<N, NumberSet>,
 ) {
+    override fun toString(): String {
+        val (lower, upper) = toRange()
+        return "[$lower, $upper] @ ${noiseTerms.keys}"
+    }
+
     companion object {
         fun <N : Number, NumberSet : NumberSetImpl<N, NumberSet>> fromConstant(
             constant: Long,

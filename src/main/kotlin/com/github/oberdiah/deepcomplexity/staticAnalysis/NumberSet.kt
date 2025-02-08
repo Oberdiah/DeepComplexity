@@ -38,7 +38,8 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
     fun getSetSatisfying(comp: ComparisonOp): Self
 
     sealed interface FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>> : NumberSet<Self> {
-        fun addRange(start: T, end: T)
+        fun addRange(start: T, end: T, key: Context.Key)
+        fun addConstant(value: T)
 
         sealed interface DoubleSet<Self : FullyTypedNumberSet<Double, Self>> : FullyTypedNumberSet<Double, Self>
         sealed interface FloatSet<Self : FullyTypedNumberSet<Float, Self>> : FullyTypedNumberSet<Float, Self>
@@ -52,7 +53,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
-                set.addRange(indicator.getMinValue(), indicator.getMaxValue())
+                set.addRange(indicator.getMinValue(), indicator.getMaxValue(), key)
                 return set
             }
             @Suppress("UNCHECKED_CAST")
@@ -62,7 +63,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         fun <T : NumberSet<T>> fullPositiveRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
-                set.addRange(indicator.getZero(), indicator.getMaxValue())
+                set.addRange(indicator.getZero(), indicator.getMaxValue(), key)
                 return set
             }
             @Suppress("UNCHECKED_CAST")
@@ -72,7 +73,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         fun <T : NumberSet<T>> fullNegativeRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
-                set.addRange(indicator.getMinValue(), indicator.getZero())
+                set.addRange(indicator.getMinValue(), indicator.getZero(), key)
                 return set
             }
             @Suppress("UNCHECKED_CAST")
@@ -82,7 +83,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         fun <T : NumberSet<T>> zero(indicator: SetIndicator<T>): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
-                set.addRange(indicator.getZero(), indicator.getZero())
+                set.addConstant(indicator.getZero())
                 return set
             }
             @Suppress("UNCHECKED_CAST")
@@ -92,7 +93,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         fun <T : NumberSet<T>> one(indicator: SetIndicator<T>): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 val set = indicator.newEmptySet()
-                set.addRange(indicator.getOne(), indicator.getOne())
+                set.addConstant(indicator.getOne())
                 return set
             }
             @Suppress("UNCHECKED_CAST")
@@ -101,13 +102,13 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : Number, Self : FullyTypedNumberSet<T, Self>> singleValue(value: T): Self {
             val set: Self = SetIndicator.newEmptySetFromValue(value)
-            set.addRange(value, value)
+            set.addConstant(value)
             return set
         }
 
         fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromRange(start: T, end: T, key: Context.Key): Self {
             val set: Self = SetIndicator.newEmptySetFromValue(start)
-            set.addRange(start, end)
+            set.addRange(start, end, key)
             return set
         }
     }
