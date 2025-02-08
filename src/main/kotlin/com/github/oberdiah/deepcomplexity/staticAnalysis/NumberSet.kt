@@ -37,18 +37,6 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
      */
     fun getSetSatisfying(comp: ComparisonOp): Self
 
-    sealed interface FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>> : NumberSet<Self> {
-        fun addRange(start: T, end: T, key: Context.Key)
-        fun addConstant(value: T)
-
-        sealed interface DoubleSet<Self : FullyTypedNumberSet<Double, Self>> : FullyTypedNumberSet<Double, Self>
-        sealed interface FloatSet<Self : FullyTypedNumberSet<Float, Self>> : FullyTypedNumberSet<Float, Self>
-        sealed interface IntSet<Self : FullyTypedNumberSet<Int, Self>> : FullyTypedNumberSet<Int, Self>
-        sealed interface LongSet<Self : FullyTypedNumberSet<Long, Self>> : FullyTypedNumberSet<Long, Self>
-        sealed interface ShortSet<Self : FullyTypedNumberSet<Short, Self>> : FullyTypedNumberSet<Short, Self>
-        sealed interface ByteSet<Self : FullyTypedNumberSet<Byte, Self>> : FullyTypedNumberSet<Byte, Self>
-    }
-
     companion object {
         fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {

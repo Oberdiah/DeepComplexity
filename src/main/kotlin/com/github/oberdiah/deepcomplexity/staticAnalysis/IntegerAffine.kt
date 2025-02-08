@@ -7,7 +7,7 @@ import java.math.BigInteger.valueOf
 /**
  * A neat little class that represents an integer affine.
  */
-class IntegerAffine<N : Number, NumberSet : NumberSetImpl<N, NumberSet>>(
+class IntegerAffine<N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>>(
     // This represents twice the constant term. This allows us to represent ranges like [1, 2]
     // where the center is 1.5.
     private val center: BigInteger,
@@ -25,7 +25,7 @@ class IntegerAffine<N : Number, NumberSet : NumberSetImpl<N, NumberSet>>(
     }
 
     companion object {
-        fun <N : Number, NumberSet : NumberSetImpl<N, NumberSet>> fromConstant(
+        fun <N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>> fromConstant(
             constant: Long,
             setIndicator: NumberSetIndicator<N, NumberSet>
         ): IntegerAffine<N, NumberSet> {
@@ -36,7 +36,7 @@ class IntegerAffine<N : Number, NumberSet : NumberSetImpl<N, NumberSet>>(
             )
         }
 
-        fun <N : Number, Self : NumberSetImpl<N, Self>> fromRangeIndependentKey(
+        fun <N : Number, Self : FullyTypedNumberSet<N, Self>> fromRangeIndependentKey(
             start: Long,
             end: Long,
             setIndicator: NumberSetIndicator<N, Self>
@@ -50,7 +50,7 @@ class IntegerAffine<N : Number, NumberSet : NumberSetImpl<N, NumberSet>>(
             )
         }
 
-        fun <N : Number, NumberSet : NumberSetImpl<N, NumberSet>> fromRange(
+        fun <N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>> fromRange(
             start: Long,
             end: Long,
             setIndicator: NumberSetIndicator<N, NumberSet>,
@@ -65,7 +65,7 @@ class IntegerAffine<N : Number, NumberSet : NumberSetImpl<N, NumberSet>>(
             )
         }
 
-        private fun <N : Number, NumberSet : NumberSetImpl<N, NumberSet>> rangeFix(affine: IntegerAffine<N, NumberSet>):
+        private fun <N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>> rangeFix(affine: IntegerAffine<N, NumberSet>):
                 Pair<IntegerAffine<N, NumberSet>, IntegerAffine<N, NumberSet>?> {
             val (lower, upper) = affine.toRangeInner()
             val numberLimit = affine.setIndicator.getMaxValue().toLong()

@@ -20,7 +20,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.Companion.fullPositiveRange
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
@@ -30,21 +29,21 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.negate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
-sealed class NumberSetImpl<T : Number, Self : NumberSetImpl<T, Self>>(
+sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>>(
     private val setIndicator: NumberSetIndicator<T, Self>
-) : FullyTypedNumberSet<T, Self> {
-    class DoubleSet : NumberSetImpl<Double, DoubleSet>(DoubleSetIndicator), FullyTypedNumberSet.DoubleSet<DoubleSet>
-    class FloatSet : NumberSetImpl<Float, FloatSet>(FloatSetIndicator), FullyTypedNumberSet.FloatSet<FloatSet>
-    class IntSet : NumberSetImpl<Int, IntSet>(IntSetIndicator), FullyTypedNumberSet.IntSet<IntSet>
-    class LongSet : NumberSetImpl<Long, LongSet>(LongSetIndicator), FullyTypedNumberSet.LongSet<LongSet>
-    class ShortSet : NumberSetImpl<Short, ShortSet>(ShortSetIndicator), FullyTypedNumberSet.ShortSet<ShortSet>
-    class ByteSet : NumberSetImpl<Byte, ByteSet>(ByteSetIndicator), FullyTypedNumberSet.ByteSet<ByteSet>
+) : NumberSet<Self> {
+    class DoubleSet : FullyTypedNumberSet<Double, DoubleSet>(DoubleSetIndicator)
+    class FloatSet : FullyTypedNumberSet<Float, FloatSet>(FloatSetIndicator)
+    class IntSet : FullyTypedNumberSet<Int, IntSet>(IntSetIndicator)
+    class LongSet : FullyTypedNumberSet<Long, LongSet>(LongSetIndicator)
+    class ShortSet : FullyTypedNumberSet<Short, ShortSet>(ShortSetIndicator)
+    class ByteSet : FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator)
 
-    override fun addRange(start: T, end: T, key: Context.Key) {
+    fun addRange(start: T, end: T, key: Context.Key) {
         ranges.add(NumberRange.fromRange(start, end, setIndicator, key))
     }
 
-    override fun addConstant(value: T) {
+    fun addConstant(value: T) {
         ranges.add(NumberRange.fromConstant(value, setIndicator))
     }
 

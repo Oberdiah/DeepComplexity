@@ -12,7 +12,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoi
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import java.math.BigInteger
@@ -22,7 +21,7 @@ import kotlin.reflect.KClass
 typealias RangePair<T, Self> = WrappedPair<NumberRange<T, Self>>
 typealias WrappedPair<T> = Pair<T, T?>
 
-class NumberRange<T : Number, NumberSet : NumberSetImpl<T, NumberSet>> private constructor(
+class NumberRange<T : Number, NumberSet : FullyTypedNumberSet<T, NumberSet>> private constructor(
     val start: T,
     val end: T,
     private val setIndicator: NumberSetIndicator<T, NumberSet>,
@@ -35,7 +34,7 @@ class NumberRange<T : Number, NumberSet : NumberSetImpl<T, NumberSet>> private c
     }
 
     companion object {
-        fun <T : Number, Self : NumberSetImpl<T, Self>> fromRange(
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromRange(
             start: T,
             end: T,
             setIndicator: NumberSetIndicator<T, Self>,
@@ -50,7 +49,7 @@ class NumberRange<T : Number, NumberSet : NumberSetImpl<T, NumberSet>> private c
             return NumberRange(start, end, setIndicator, affine)
         }
 
-        fun <T : Number, Self : NumberSetImpl<T, Self>> fromConstant(
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromConstant(
             constant: T,
             setIndicator: NumberSetIndicator<T, Self>
         ): NumberRange<T, Self> {
@@ -58,7 +57,7 @@ class NumberRange<T : Number, NumberSet : NumberSetImpl<T, NumberSet>> private c
             return NumberRange(constant, constant, setIndicator, affine)
         }
 
-        fun <T : Number, Self : NumberSetImpl<T, Self>> fromRangeIndependentKey(
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromRangeIndependentKey(
             start: T,
             end: T,
             setIndicator: NumberSetIndicator<T, Self>,
@@ -67,7 +66,7 @@ class NumberRange<T : Number, NumberSet : NumberSetImpl<T, NumberSet>> private c
             return NumberRange(start, end, setIndicator, affine)
         }
 
-        fun <T : Number, Self : NumberSetImpl<T, Self>> resolvePotentialOverflow(
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> resolvePotentialOverflow(
             min: BigInteger,
             max: BigInteger,
             setIndicator: NumberSetIndicator<T, Self>
