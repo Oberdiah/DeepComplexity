@@ -6,6 +6,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.ibm.icu.text.PluralRules.Operand.i
 
 object ExprEvaluate {
     fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
@@ -118,7 +119,7 @@ object ExprEvaluate {
                     return evaluate(it, condition)
                 }
 
-                val range = ConstantExpression.fullSetFromExpr(expr)
+                val range = ConstantExpression.fullSetFromExprAndKey(expr, expr.myKey.key)
                 val constrainedRange = ExprConstrain.getConstraints(condition, expr)?.evaluate(condition)
 
                 if (constrainedRange != null) {

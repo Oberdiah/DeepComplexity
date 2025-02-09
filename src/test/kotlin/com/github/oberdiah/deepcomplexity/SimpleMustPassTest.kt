@@ -17,7 +17,6 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val outputFile: PsiFile = fixture.configureByFile("MyTestData.java")
         val app = ApplicationManager.getApplication()
 
-
         val methods = app.runReadAction<List<Pair<PsiMethod, String>>> {
             if (outputFile is PsiJavaFile) {
                 outputFile.classes.flatMap { psiClass ->
@@ -30,9 +29,15 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
             }
         }
 
-        val testToRun = null //"zeroTest"
+        val testToRun = System.getenv("TEST_FILTER")
 
-        val methodsToRun = testToRun?.let { methods.filter { it.second == testToRun } } ?: methods
+        println("testToRun: $testToRun")
+
+        val methodsToRun = if (testToRun != null) {
+            methods.filter { it.second.contains(testToRun) }
+        } else {
+            methods
+        }
 
         val tests = mutableListOf<DynamicTest>()
 

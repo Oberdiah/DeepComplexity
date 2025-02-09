@@ -23,7 +23,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
-import io.kinference.core.operators.math.Reciprocal
+import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberSimplifier
 import kotlin.reflect.KClass
 
 sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>>(
@@ -49,8 +49,18 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     class ShortSet(data: NumberData<Short> = Empty()) : FullyTypedNumberSet<Short, ShortSet>(ShortSetIndicator, data)
     class ByteSet(data: NumberData<Byte> = Empty()) : FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator, data)
 
-    interface NumberData<T : Number>
-    class Empty<T : Number>() : NumberData<T> {
+    sealed interface NumberData<T : Number> {
+        fun getKeys(): List<Context.Key> = emptyList()
+    }
+
+    sealed interface BinaryNumberData<T : Number> : NumberData<T> {
+        val setA: NumberData<T>
+        val setB: NumberData<T>
+
+        override fun getKeys(): List<Context.Key> = setA.getKeys() + setB.getKeys()
+    }
+
+    data class Empty<T : Number>(val unused: Int = 0) : NumberData<T> {
         override fun toString(): String = "∅"
     }
 
@@ -60,43 +70,57 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
     data class Range<T : Number>(val start: T, val end: T, val key: Context.Key) : NumberData<T> {
         override fun toString(): String = "[$start, $end] @ $key"
+        override fun getKeys(): List<Context.Key> = listOf(key)
     }
 
-    data class Union<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
-        override fun toString(): String = "($setA ∪ $setB)"
-    }
-
-    data class Intersection<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
-        override fun toString(): String = "($setA ∩ $setB)"
+    data class UnkeyedRange<T : Number>(val start: T, val end: T) : NumberData<T> {
+        override fun toString(): String = "[$start, $end]"
     }
 
     data class Inversion<T : Number>(val set: NumberData<T>) : NumberData<T> {
         override fun toString(): String = "¬$set"
     }
 
-    data class Addition<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+    data class Union<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
+        BinaryNumberData<T> {
+        override fun toString(): String = "($setA ∪ $setB)"
+    }
+
+    data class Intersection<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
+        BinaryNumberData<T> {
+        override fun toString(): String = "($setA ∩ $setB)"
+    }
+
+    data class Addition<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
+        BinaryNumberData<T> {
         override fun toString(): String = "($setA + $setB)"
     }
 
-    data class Negation<T : Number>(val set: NumberData<T>) : NumberData<T> {
-        override fun toString(): String = "-$set"
+    data class Subtraction<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
+        BinaryNumberData<T> {
+        override fun toString(): String = "($setA - $setB)"
     }
 
-    data class Multiplication<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+    data class Multiplication<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
+        BinaryNumberData<T> {
         override fun toString(): String = "($setA * $setB)"
     }
 
-    data class Division<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+    data class Division<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
+        BinaryNumberData<T> {
         override fun toString(): String = "($setA / $setB)"
     }
 
     override fun getAsRanges(): List<Pair<Number, Number>> {
-        println(data)
-
-        TODO("Not yet implemented")
+        val ranges = NumberSimplifier(setIndicator).distillToSet(data, true)
+        return ranges.map { Pair(it.first, it.second) }
     }
 
     fun withRange(start: T, end: T, key: Context.Key): Self {
+        if (start == end) {
+            return fromData(Union(data, Constant(start)))
+        }
+
         return fromData(Union(data, Range(start, end, key)))
     }
 
@@ -105,7 +129,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     }
 
     override fun negate(): Self {
-        return fromData(Negation(data))
+        return fromData(Subtraction(Constant(setIndicator.getZero()), data))
     }
 
     override fun union(other: Self): Self {
@@ -127,7 +151,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         return fromData(
             when (operation) {
                 ADDITION -> Addition(data, other.data)
-                SUBTRACTION -> Addition(data, Negation(other.data))
+                SUBTRACTION -> Subtraction(data, other.data)
                 MULTIPLICATION -> Multiplication(data, other.data)
                 DIVISION -> Division(data, other.data)
             }

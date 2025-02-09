@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
@@ -46,7 +47,13 @@ object ExprConstrain {
 
             is ConstExpr -> {
                 when (condition.singleElementSet) {
-                    BooleanSet.TRUE, BooleanSet.BOTH -> ConstantExpression.fullExprFromExpr(variable)
+                    BooleanSet.TRUE, BooleanSet.BOTH -> ConstantExpression.fullExprFromExprAndKey(
+                        variable,
+                        // I'm pretty sure we shouldn't use the variable key here. This is the constraint
+                        // on that variable.
+                        Context.Key.EphemeralKey.new()
+                    )
+
                     BooleanSet.FALSE, BooleanSet.NEITHER -> ConstantExpression.emptyExprFromExpr(variable)
                 }
             }

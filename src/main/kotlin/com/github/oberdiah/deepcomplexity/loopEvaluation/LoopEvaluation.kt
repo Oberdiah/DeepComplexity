@@ -39,7 +39,7 @@ object LoopEvaluation {
 
             val numExpr = expr.tryCastToNumbers()
             if (numExpr == null) {
-                context.assignVar(key, ConstantExpression.fullExprFromExpr(expr))
+                context.assignVar(key, ConstantExpression.fullExprFromExprAndKey(expr, key))
                 continue
             }
 
@@ -54,7 +54,7 @@ object LoopEvaluation {
         psiElement: PsiElement,
         allUnresolved: List<VariableExpression<*>>
     ): IExpr<T> {
-        val gaveUp = ConstantExpression.fullExprFromExpr(expr)
+        val gaveUp = ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.EphemeralKey.new())
 
         if (numLoops == null) {
             // If we don't know the number of loops, we've got absolutely no chance.

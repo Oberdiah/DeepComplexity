@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
 class VariableExpression<T : IMoldableSet<T>>(
-    val myKey: VariableKey?,
+    val myKey: VariableKey,
     val id: Int,
     val setInd: SetIndicator<T>
 ) : Expr<T>() {
@@ -27,8 +27,6 @@ class VariableExpression<T : IMoldableSet<T>>(
     }
 
     fun getKey(): VariableKey {
-        if (myKey == null)
-            throw IllegalStateException("Unresolved expression was created on-the-fly, cannot grab its key.")
         return myKey
     }
 
