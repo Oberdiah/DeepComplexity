@@ -5,23 +5,22 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.intellij.psi.compiled.ClassFileDecompilers
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 import kotlin.reflect.KClass
 
 // To swap between the two implementations of number sets, you should only have to change the SetIndicators.
 sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<Self>, Self : NumberSet<Self> {
     fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T
-    fun arithmeticOperation(other: Self, operation: BinaryNumberOp): Self
-    fun comparisonOperation(other: Self, operation: ComparisonOp): BooleanSet
 
     /**
-     * Returns the range of the set. i.e., the smallest value in the set and the largest.
-     *
-     * Returns null if the set is empty.
+     * Returns the set of ranges that this number set represents.
+     * The ranges are inclusive, in order, and non-overlapping.
      */
-    fun getRange(): Pair<Number, Number>?
+    fun getAsRanges(): List<Pair<Number, Number>>
+
+    fun arithmeticOperation(other: Self, operation: BinaryNumberOp): Self
+    fun comparisonOperation(other: Self, operation: ComparisonOp): BooleanSet
     fun negate(): Self
-    fun isOne(): Boolean
 
     /**
      * Given a set of `terms` to apply to this set on each iteration, evaluate
@@ -37,12 +36,23 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
      */
     fun getSetSatisfying(comp: ComparisonOp): Self
 
+    fun isOne(): Boolean {
+        val ranges = getAsRanges()
+        return ranges.size == 1 && ranges[0].first == ranges[0].second && ranges[0].first.isOne()
+    }
+
+    /**
+     * Returns the full range of this set, from smallest to largest value.
+     */
+    fun getRange(): Pair<Number, Number> {
+        val ranges = getAsRanges()
+        return Pair(ranges.first().first, ranges.last().second)
+    }
+
     companion object {
         fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                val set = indicator.newEmptySet()
-                set.addRange(indicator.getMinValue(), indicator.getMaxValue(), key)
-                return set
+                return indicator.newEmptySet().withRange(indicator.getMinValue(), indicator.getMaxValue(), key)
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -50,9 +60,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> fullPositiveRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                val set = indicator.newEmptySet()
-                set.addRange(indicator.getZero(), indicator.getMaxValue(), key)
-                return set
+                return indicator.newEmptySet().withRange(indicator.getZero(), indicator.getMaxValue(), key)
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -60,9 +68,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> fullNegativeRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                val set = indicator.newEmptySet()
-                set.addRange(indicator.getMinValue(), indicator.getZero(), key)
-                return set
+                return indicator.newEmptySet().withRange(indicator.getMinValue(), indicator.getZero(), key)
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -70,9 +76,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> zero(indicator: SetIndicator<T>): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                val set = indicator.newEmptySet()
-                set.addConstant(indicator.getZero())
-                return set
+                return indicator.newEmptySet().withConstant(indicator.getZero())
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -80,9 +84,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> one(indicator: SetIndicator<T>): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                val set = indicator.newEmptySet()
-                set.addConstant(indicator.getOne())
-                return set
+                return indicator.newEmptySet().withConstant(indicator.getOne())
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -90,14 +92,12 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : Number, Self : FullyTypedNumberSet<T, Self>> singleValue(value: T): Self {
             val set: Self = SetIndicator.newEmptySetFromValue(value)
-            set.addConstant(value)
-            return set
+            return set.withConstant(value)
         }
 
         fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromRange(start: T, end: T, key: Context.Key): Self {
             val set: Self = SetIndicator.newEmptySetFromValue(start)
-            set.addRange(start, end, key)
-            return set
+            return set.withRange(start, end, key)
         }
     }
 }

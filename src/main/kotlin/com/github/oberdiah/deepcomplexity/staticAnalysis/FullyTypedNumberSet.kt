@@ -19,70 +19,18 @@ import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.Companion.fullPositiveRange
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.negate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
+import io.kinference.core.operators.math.Reciprocal
 import kotlin.reflect.KClass
 
 sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>>(
-    private val setIndicator: NumberSetIndicator<T, Self>
+    private val setIndicator: NumberSetIndicator<T, Self>,
+    private val data: NumberData<T>
 ) : NumberSet<Self> {
-    class DoubleSet : FullyTypedNumberSet<Double, DoubleSet>(DoubleSetIndicator)
-    class FloatSet : FullyTypedNumberSet<Float, FloatSet>(FloatSetIndicator)
-    class IntSet : FullyTypedNumberSet<Int, IntSet>(IntSetIndicator)
-    class LongSet : FullyTypedNumberSet<Long, LongSet>(LongSetIndicator)
-    class ShortSet : FullyTypedNumberSet<Short, ShortSet>(ShortSetIndicator)
-    class ByteSet : FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator)
-
-    fun addRange(start: T, end: T, key: Context.Key) {
-        ranges.add(NumberRange.fromRange(start, end, setIndicator, key))
-    }
-
-    fun addConstant(value: T) {
-        ranges.add(NumberRange.fromConstant(value, setIndicator))
-    }
-
     private val clazz: KClass<*> = setIndicator.clazz
-
-    override fun getSetIndicator(): SetIndicator<Self> {
-        return setIndicator
-    }
-
-    fun duplicateMe(): Self {
-        @Suppress("UNCHECKED_CAST")
-        return when (this) {
-            is ByteSet -> ByteSet()
-            is ShortSet -> ShortSet()
-            is IntSet -> IntSet()
-            is LongSet -> LongSet()
-            is FloatSet -> FloatSet()
-            is DoubleSet -> DoubleSet()
-        } as Self
-    }
-
-    fun me(): Self {
-        @Suppress("UNCHECKED_CAST")
-        return this as Self
-    }
-
-    /**
-     * These ranges are always sorted and never overlap.
-     */
-    private val ranges = mutableListOf<NumberRange<T, Self>>()
-
-    override fun contains(element: Any): Boolean {
-        if (element::class != clazz) {
-            return false
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        return contains(element as T)
-    }
 
     override fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T {
         if (clazz != this.clazz) {
@@ -92,171 +40,106 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         return this as T
     }
 
-    private fun addRangeIndependentKey(start: T, end: T) {
-        ranges.add(NumberRange.fromRangeIndependentKey(start, end, setIndicator))
+    class DoubleSet(data: NumberData<Double> = Empty()) :
+        FullyTypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, data)
+
+    class FloatSet(data: NumberData<Float> = Empty()) : FullyTypedNumberSet<Float, FloatSet>(FloatSetIndicator, data)
+    class IntSet(data: NumberData<Int> = Empty()) : FullyTypedNumberSet<Int, IntSet>(IntSetIndicator, data)
+    class LongSet(data: NumberData<Long> = Empty()) : FullyTypedNumberSet<Long, LongSet>(LongSetIndicator, data)
+    class ShortSet(data: NumberData<Short> = Empty()) : FullyTypedNumberSet<Short, ShortSet>(ShortSetIndicator, data)
+    class ByteSet(data: NumberData<Byte> = Empty()) : FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator, data)
+
+    interface NumberData<T : Number>
+    class Empty<T : Number>() : NumberData<T> {
+        override fun toString(): String = "∅"
     }
 
-    override fun getRange(): Pair<Number, Number>? {
-        val (start, end) = getRangeTyped() ?: return null
-        return start to end
+    data class Constant<T : Number>(val value: T) : NumberData<T> {
+        override fun toString(): String = value.toString()
     }
 
-    fun getRangeTyped(): Pair<T, T>? {
-        if (ranges.isEmpty()) {
-            return null
-        }
-
-        return ranges[0].start to ranges[ranges.size - 1].end
+    data class Range<T : Number>(val start: T, val end: T, val key: Context.Key) : NumberData<T> {
+        override fun toString(): String = "[$start, $end] @ $key"
     }
 
-    override fun toString(): String {
-        if (ranges.isEmpty()) {
-            return "∅"
-        }
-
-        if (ranges.size == 1 && ranges[0].start == ranges[0].end) {
-            return ranges[0].start.toString()
-        }
-
-        return ranges.joinToString(", ")
+    data class Union<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+        override fun toString(): String = "($setA ∪ $setB)"
     }
 
-    private fun <Q : IMoldableSet<Q>> castToThisType(other: Q): Self {
-        if (other::class != this::class) {
-            throw IllegalArgumentException("Cannot perform operation on different types ($other != $this)")
-        }
-        @Suppress("UNCHECKED_CAST")
-        return other as Self
+    data class Intersection<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+        override fun toString(): String = "($setA ∩ $setB)"
     }
 
-    /**
-     * Returns a new set that satisfies the comparison operation.
-     * We're the right hand side of the equation.
-     */
-    override fun getSetSatisfying(comp: ComparisonOp): Self {
-        val (smallestValue, biggestValue) = getRangeTyped() ?: return me()
-
-        val newSet = duplicateMe()
-
-        when (comp) {
-            LESS_THAN, LESS_THAN_OR_EQUAL -> newSet
-                .addRangeIndependentKey(setIndicator.getMinValue(), smallestValue.downOneEpsilon())
-
-            GREATER_THAN, GREATER_THAN_OR_EQUAL -> newSet
-                .addRangeIndependentKey(biggestValue.upOneEpsilon(), setIndicator.getMaxValue())
-        }
-
-        if (comp == LESS_THAN_OR_EQUAL || comp == GREATER_THAN_OR_EQUAL) {
-            newSet.ranges.addAll(ranges)
-        }
-
-        newSet.mergeAndDeduplicate()
-
-        return newSet
+    data class Inversion<T : Number>(val set: NumberData<T>) : NumberData<T> {
+        override fun toString(): String = "¬$set"
     }
 
-    override fun union(other: Self): Self {
-        val newSet = duplicateMe()
-        newSet.ranges.addAll(ranges)
-        newSet.ranges.addAll(castToThisType(other).ranges)
-        newSet.mergeAndDeduplicate()
-        return newSet
+    data class Addition<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+        override fun toString(): String = "($setA + $setB)"
     }
 
-    override fun intersect(otherSet: Self): Self {
-        val newSet = duplicateMe()
-
-        // If either set is empty, intersection is empty
-        if (ranges.isEmpty() || otherSet.ranges.isEmpty()) {
-            return newSet
-        }
-
-        // For each range in this set, find overlapping ranges in other set
-        for (range in ranges) {
-            for (otherRange in otherSet.ranges) {
-                // Find overlap
-                val start = range.start.max(otherRange.start)
-                val end = range.end.min(otherRange.end)
-
-                // If there is an overlap, add it
-                if (start <= end) {
-                    newSet.addRangeIndependentKey(start, end)
-                }
-            }
-        }
-
-        newSet.mergeAndDeduplicate()
-        return newSet
+    data class Negation<T : Number>(val set: NumberData<T>) : NumberData<T> {
+        override fun toString(): String = "-$set"
     }
 
-    override fun invert(): Self {
-        val newSet = duplicateMe()
+    data class Multiplication<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+        override fun toString(): String = "($setA * $setB)"
+    }
 
-        val minValue = setIndicator.getMinValue()
-        val maxValue = setIndicator.getMaxValue()
+    data class Division<T : Number>(val setA: NumberData<T>, val setB: NumberData<T>) : NumberData<T> {
+        override fun toString(): String = "($setA / $setB)"
+    }
 
-        if (ranges.isEmpty()) {
-            newSet.addRangeIndependentKey(minValue, maxValue)
-            return newSet
-        }
+    override fun getAsRanges(): List<Pair<Number, Number>> {
+        println(data)
 
-        var currentMin = minValue
-        for (range in ranges) {
-            if (currentMin < range.start) {
-                newSet.addRangeIndependentKey(currentMin, range.start.downOneEpsilon())
-            }
-            currentMin = range.end.upOneEpsilon()
-        }
+        TODO("Not yet implemented")
+    }
 
-        // Add final range if necessary
-        if (currentMin < maxValue) {
-            newSet.addRangeIndependentKey(currentMin, maxValue)
-        }
+    fun withRange(start: T, end: T, key: Context.Key): Self {
+        return fromData(Union(data, Range(start, end, key)))
+    }
 
-        return newSet
+    fun withConstant(value: T): Self {
+        return fromData(Union(data, Constant(value)))
     }
 
     override fun negate(): Self {
-        val newSet = duplicateMe()
-        for (range in ranges.reversed()) {
-            newSet.addRangeIndependentKey(range.end.negate(), range.start.negate())
-        }
-        return newSet
+        return fromData(Negation(data))
     }
 
-    fun contains(value: T): Boolean {
-        for (range in ranges) {
-            if (value >= range.start && value <= range.end) {
-                return true
+    override fun union(other: Self): Self {
+        return fromData(Union(data, other.data))
+    }
+
+    override fun intersect(other: Self): Self {
+        return fromData(Intersection(data, other.data))
+    }
+
+    override fun invert(): Self {
+        return fromData(Inversion(data))
+    }
+
+    override fun arithmeticOperation(
+        other: Self,
+        operation: BinaryNumberOp
+    ): Self {
+        return fromData(
+            when (operation) {
+                ADDITION -> Addition(data, other.data)
+                SUBTRACTION -> Addition(data, Negation(other.data))
+                MULTIPLICATION -> Multiplication(data, other.data)
+                DIVISION -> Division(data, other.data)
             }
-        }
-        return false
+        )
     }
 
-    override fun arithmeticOperation(other: Self, operation: BinaryNumberOp): Self {
-        val newSet = duplicateMe()
-        for (range in ranges) {
-            for (otherRange in castToThisType(other).ranges) {
-                val (range, possibleSecondRange) = when (operation) {
-                    ADDITION -> range.addition(otherRange)
-                    SUBTRACTION -> range.subtraction(otherRange)
-                    MULTIPLICATION -> range.multiplication(otherRange)
-                    DIVISION -> range.division(otherRange)
-                }
-
-                newSet.ranges.add(range)
-                possibleSecondRange?.let { newSet.ranges.add(it) }
-            }
-        }
-        newSet.mergeAndDeduplicate()
-        return newSet
-    }
-
-    override fun comparisonOperation(otherSet: Self, operation: ComparisonOp): BooleanSet {
-        val mySmallestPossibleValue = ranges[0].start
-        val myLargestPossibleValue = ranges[ranges.size - 1].end
-        val otherSmallestPossibleValue = otherSet.ranges[0].start
-        val otherLargestPossibleValue = otherSet.ranges[otherSet.ranges.size - 1].end
+    override fun comparisonOperation(
+        other: Self,
+        operation: ComparisonOp
+    ): BooleanSet {
+        val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
+        val (otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
 
         when (operation) {
             LESS_THAN -> {
@@ -295,95 +178,76 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         return BooleanSet.BOTH
     }
 
-    /**
-     * Given a set of `terms` to apply to this set on each iteration, evaluate
-     * the number of iterations required to exit the `valid` number set.
-     *
-     * You can think of this set as being the 'initial' state.
-     */
     override fun evaluateLoopingRange(
         changeTerms: ConstraintSolver.EvaluatedCollectedTerms<Self>,
         valid: Self
     ): Self {
-        val gaveUp = fullPositiveRange(setIndicator, TODO())
-
-        val linearChange = changeTerms.terms[1] ?: return gaveUp
-        val constantChange = changeTerms.terms[0] ?: return gaveUp
-        if (changeTerms.terms.size > 2) return gaveUp
-        if (!linearChange.isOne()) {
-            // We can deal with this if the constant term is 0, but we're not bothering
-            // with that for now.
-            return gaveUp
-        }
-
-        val zero = setIndicator.getZero()
-
-        if (constantChange.contains(zero)) {
-            // We genuinely can't do a thing, gave up is the best we're ever going to be able to do here.
-            return gaveUp
-        }
-
-        var minimumNumberOfLoops = setIndicator.getMaxValue()
-        var maximumNumberOfLoops = zero
-
-        // This is obviously not a very performant way to do this, but it's a start.
-
-        // This is mostly there, but doesn't consider the possibility of variables overflowing, so I don't
-        // want to make it final yet.
-//            for (deltaRange in constantChange.ranges) {
-//                for (initialRange in ranges) {
-//                    for (invalidRange in invalid.ranges) {
-//                        // As we know deltaRange cannot contain zero, it must either be entirely positive or entirely negative.
-//                        if (deltaRange.start > zero) {
-//                            if (invalidRange.start < initialRange.end) {
-//                                minimumNumberOfLoops = zero
-//                            }
-//
-//                            // Going up
-//                            val minLoopsUp = (invalidRange.start - initialRange.end) / deltaRange.end
-//                            minimumNumberOfLoops = minimumNumberOfLoops.min(minLoopsUp)
-//                            val maxLoopsUp = (invalidRange.start - initialRange.start) / deltaRange.start
-//                            maximumNumberOfLoops = maximumNumberOfLoops.max(maxLoopsUp)
-//                        } else {
-//
-//                        }
-//                    }
-//                }
-//            }
-
-        val newSet = duplicateMe()
-        newSet.addRangeIndependentKey(minimumNumberOfLoops, maximumNumberOfLoops)
-        return newSet
+        // This was half implemented in the old version.
+        TODO("Not yet implemented")
     }
 
-    private fun mergeAndDeduplicate() {
-        if (ranges.size <= 1) {
-            return
+    /**
+     * Returns a new set that satisfies the comparison operation.
+     * We're the right hand side of the equation.
+     */
+    override fun getSetSatisfying(comp: ComparisonOp): Self {
+        val range = getRange()
+        val smallestValue = range.first.castInto<T>(clazz)
+        val biggestValue = range.second.castInto<T>(clazz)
+
+        var newData: NumberData<T> = when (comp) {
+            LESS_THAN, LESS_THAN_OR_EQUAL ->
+                Range(
+                    setIndicator.getMinValue(),
+                    smallestValue.downOneEpsilon(),
+                    Context.Key.EphemeralKey.new()
+                )
+
+            GREATER_THAN, GREATER_THAN_OR_EQUAL ->
+                Range(
+                    biggestValue.upOneEpsilon(),
+                    setIndicator.getMaxValue(),
+                    Context.Key.EphemeralKey.new()
+                )
         }
 
-        ranges.sortWith { a, b -> a.start.compareTo(b.start) }
-        val newRanges = mutableListOf<NumberRange<T, Self>>()
-        var currentRange = ranges[0]
-        for (i in 1 until ranges.size) {
-            val nextRange = ranges[i]
-            if (currentRange.end >= nextRange.start) {
-                currentRange = NumberRange.fromRangeIndependentKey(
-                    currentRange.start,
-                    nextRange.end.max(currentRange.end),
-                    setIndicator
-                )
-            } else {
-                newRanges.add(currentRange)
-                currentRange = nextRange
+        if (comp == LESS_THAN_OR_EQUAL) {
+            newData = Union(newData, data)
+        } else if (comp == GREATER_THAN_OR_EQUAL) {
+            newData = Union(data, newData)
+        }
+
+        return fromData(newData)
+    }
+
+    override fun getSetIndicator(): SetIndicator<Self> {
+        return setIndicator
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun fromData(data: NumberData<T>): Self {
+        return when (this) {
+            is ByteSet -> ByteSet(data as NumberData<Byte>)
+            is ShortSet -> ShortSet(data as NumberData<Short>)
+            is IntSet -> IntSet(data as NumberData<Int>)
+            is LongSet -> LongSet(data as NumberData<Long>)
+            is FloatSet -> FloatSet(data as NumberData<Float>)
+            is DoubleSet -> DoubleSet(data as NumberData<Double>)
+        } as Self
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun contains(element: Any): Boolean {
+        if (element::class != clazz) {
+            return false
+        }
+
+        val value = element as T
+        for (range in getAsRanges()) {
+            if (value >= range.first && value <= range.second) {
+                return true
             }
         }
-        newRanges.add(currentRange)
-
-        ranges.clear()
-        ranges.addAll(newRanges)
-    }
-
-    override fun isOne(): Boolean {
-        return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isOne()
+        return false
     }
 }
