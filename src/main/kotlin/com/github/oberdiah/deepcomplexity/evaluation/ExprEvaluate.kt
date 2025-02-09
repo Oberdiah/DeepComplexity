@@ -6,7 +6,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import com.ibm.icu.text.PluralRules.Operand.i
 
 object ExprEvaluate {
     fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {

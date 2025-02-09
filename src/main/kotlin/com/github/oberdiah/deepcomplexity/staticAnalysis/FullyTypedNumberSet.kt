@@ -51,6 +51,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
     sealed interface NumberData<T : Number> {
         fun getKeys(): List<Context.Key> = emptyList()
+        fun isConfirmedToBe(i: Int): Boolean = false
     }
 
     sealed interface BinaryNumberData<T : Number> : NumberData<T> {
@@ -62,19 +63,6 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
     data class Empty<T : Number>(val unused: Int = 0) : NumberData<T> {
         override fun toString(): String = "∅"
-    }
-
-    data class Constant<T : Number>(val value: T) : NumberData<T> {
-        override fun toString(): String = value.toString()
-    }
-
-    data class Range<T : Number>(val start: T, val end: T, val key: Context.Key) : NumberData<T> {
-        override fun toString(): String = "[$start, $end] @ $key"
-        override fun getKeys(): List<Context.Key> = listOf(key)
-    }
-
-    data class UnkeyedRange<T : Number>(val start: T, val end: T) : NumberData<T> {
-        override fun toString(): String = "[$start, $end]"
     }
 
     data class Inversion<T : Number>(val set: NumberData<T>) : NumberData<T> {
@@ -118,18 +106,18 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
     fun withRange(start: T, end: T, key: Context.Key): Self {
         if (start == end) {
-            return fromData(Union(data, Constant(start)))
+            return fromData(Union(data, Ranges.fromConstant(start, setIndicator)))
         }
 
-        return fromData(Union(data, Range(start, end, key)))
+        return fromData(Union(data, Ranges.fromRange(start, end, key, setIndicator)))
     }
 
     fun withConstant(value: T): Self {
-        return fromData(Union(data, Constant(value)))
+        return fromData(Union(data, Ranges.fromConstant(value, setIndicator)))
     }
 
     override fun negate(): Self {
-        return fromData(Subtraction(Constant(setIndicator.getZero()), data))
+        return fromData(Subtraction(Ranges.fromConstant(setIndicator.getZero(), setIndicator), data))
     }
 
     override fun union(other: Self): Self {
@@ -221,17 +209,19 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
         var newData: NumberData<T> = when (comp) {
             LESS_THAN, LESS_THAN_OR_EQUAL ->
-                Range(
+                Ranges.fromRange(
                     setIndicator.getMinValue(),
                     smallestValue.downOneEpsilon(),
-                    Context.Key.EphemeralKey.new()
+                    Context.Key.EphemeralKey.new(),
+                    setIndicator
                 )
 
             GREATER_THAN, GREATER_THAN_OR_EQUAL ->
-                Range(
+                Ranges.fromRange(
                     biggestValue.upOneEpsilon(),
                     setIndicator.getMaxValue(),
-                    Context.Key.EphemeralKey.new()
+                    Context.Key.EphemeralKey.new(),
+                    setIndicator
                 )
         }
 

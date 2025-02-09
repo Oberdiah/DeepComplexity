@@ -25,7 +25,6 @@ object ExprToString {
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
             is VariableExpression -> {
-                if (expr.myKey == null) return "Unresolved (on-the-fly)"
                 return if (expr.isResolved()) expr.resolvedInto.toString() else (expr.myKey.key.toString() + "[$${expr.id}]")
             }
 

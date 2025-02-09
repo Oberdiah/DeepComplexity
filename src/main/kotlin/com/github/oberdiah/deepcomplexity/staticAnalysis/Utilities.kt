@@ -123,6 +123,7 @@ object Utilities {
     }
 
     fun <T : Number> Number.castInto(target: KClass<*>): T {
+        @Suppress("UNCHECKED_CAST")
         return when (target) {
             Byte::class -> this.toByte()
             Short::class -> this.toShort()
@@ -151,6 +152,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.plus(other: T): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this + other.toByte()).toByte()
             is Short -> (this + other.toShort()).toShort()
@@ -164,6 +166,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.minus(other: T): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this - other.toByte()).toByte()
             is Short -> (this - other.toShort()).toShort()
@@ -177,6 +180,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.times(other: T): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this.toByte() * other.toByte()).toByte()
             is Short -> (this.toShort() * other.toShort()).toShort()
@@ -190,6 +194,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.div(other: T): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this.toByte() / other.toByte()).toByte()
             is Short -> (this.toShort() / other.toShort()).toShort()
@@ -204,6 +209,7 @@ object Utilities {
 
     // Min and max extension functions for Number
     fun <T : Number> T.min(other: T): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> if (this < other.toByte()) this else other.toByte()
             is Short -> if (this < other.toShort()) this else other.toShort()
@@ -216,6 +222,7 @@ object Utilities {
     }
 
     fun <T : Number> T.max(other: T): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> if (this > other.toByte()) this else other.toByte()
             is Short -> if (this > other.toShort()) this else other.toShort()
@@ -232,6 +239,7 @@ object Utilities {
      * Clamps if it's already at the minimum.
      */
     fun <T : Number> T.downOneEpsilon(): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> if (this > Byte.MIN_VALUE) (this - 1).toByte() else Byte.MIN_VALUE
             is Short -> if (this > Short.MIN_VALUE) (this - 1).toShort() else Short.MIN_VALUE
@@ -247,6 +255,7 @@ object Utilities {
      * Goes up the smallest possible increment from the given number to the next.
      */
     fun <T : Number> T.upOneEpsilon(): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> if (this < Byte.MAX_VALUE) (this + 1).toByte() else Byte.MAX_VALUE
             is Short -> if (this < Short.MAX_VALUE) (this + 1).toShort() else Short.MAX_VALUE
@@ -259,6 +268,7 @@ object Utilities {
     }
 
     fun <T : Number> T.negate(): T {
+        @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (-this).toByte()
             is Short -> (-this).toShort()
