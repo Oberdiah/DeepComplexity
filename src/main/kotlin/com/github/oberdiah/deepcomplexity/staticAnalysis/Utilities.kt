@@ -88,7 +88,7 @@ object Utilities {
             Int::class -> return valueOf(Int.MAX_VALUE.toLong() - Int.MIN_VALUE.toLong() + 1)
             Long::class -> return (valueOf(Long.MAX_VALUE) - valueOf(Long.MIN_VALUE)) + BigInteger.ONE
         }
-        throw IllegalArgumentException("Unsupported type for zero value")
+        throw IllegalArgumentException("Unsupported type for set size $this")
     }
 
     fun KClass<*>.isFloatingPoint(): Boolean {

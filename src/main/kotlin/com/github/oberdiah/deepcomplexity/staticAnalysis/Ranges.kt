@@ -9,26 +9,23 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
-import kotlin.collections.map
+import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Affine
+import java.util.stream.Stream
 import kotlin.collections.sortedWith
 
 class Ranges<T : Number> private constructor(
-    // These affines can overlap and must be sorted by their min value.
-    // Their minimum value can be assumed to be within bounds, though their max may not be.
+    // These affines can overlap.
+    // They are not sorted (Primarily because it's a little hard to do when each affine can represent two ranges)
     private val ranges: List<Affine<T>>,
     private val setIndicator: NumberSetIndicator<T, *>
 ) : NumberData<T> {
     override fun toString(): String = "SortedRanges($ranges)"
 
-    fun toRangePairs(): List<Pair<T, T>> {
-        return NumberUtilities.mergeAndDeduplicate(
-            ranges.map { it.toRange() }
-        )
-    }
+    fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
+    private fun pairsStream(): Stream<Pair<T, T>> = ranges.stream().flatMap { it.toRanges().stream() }
+    private fun makeNew(ranges: List<Affine<T>>): Ranges<T> = Ranges(ranges, setIndicator)
 
-    override fun isConfirmedToBe(i: Int): Boolean {
-        return ranges.all { it.isExactly(i) }
-    }
+    override fun isConfirmedToBe(i: Int): Boolean = ranges.all { it.isExactly(i) }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -38,16 +35,7 @@ class Ranges<T : Number> private constructor(
         return true
     }
 
-    override fun hashCode(): Int {
-        return ranges.hashCode()
-    }
-
-    fun makeNew(ranges: List<Affine<T>>): Ranges<T> {
-        return Ranges(
-            ranges.sortedWith { a, b -> a.start().compareTo(b.start()) },
-            setIndicator
-        )
-    }
+    override fun hashCode(): Int = ranges.hashCode()
 
     fun add(other: Ranges<T>): Ranges<T> = doOperation(other, Affine<T>::add)
     fun subtract(other: Ranges<T>): Ranges<T> = doOperation(other, Affine<T>::subtract)
@@ -76,11 +64,11 @@ class Ranges<T : Number> private constructor(
 
         // For each range in this set, find overlapping ranges in other set
         // This could be made much more efficient.
-        for (range in ranges) {
-            for (otherRange in other.ranges) {
+        for (range in pairsStream()) {
+            for (otherRange in other.pairsStream()) {
                 // Find overlap
-                val start = range.start().max(otherRange.start())
-                val end = range.end().min(otherRange.end())
+                val start = range.first.max(otherRange.first)
+                val end = range.second.min(otherRange.second)
 
                 // This could be much smarter to prevent some affine death.
                 // If one range is completely contained within another, we could add the contained range
@@ -88,7 +76,7 @@ class Ranges<T : Number> private constructor(
 
                 // If there is an overlap, add it
                 if (start <= end) {
-                    newList.add(Affine.fromRangeNoKey(start, end))
+                    newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
                 }
             }
         }
@@ -104,62 +92,33 @@ class Ranges<T : Number> private constructor(
         val maxValue = setIndicator.getMaxValue()
 
         if (ranges.isEmpty()) {
-            newList.add(Affine.fromRangeNoKey(minValue, maxValue))
+            newList.add(Affine.fromRangeNoKey(minValue, maxValue, setIndicator))
             return makeNew(newList)
         }
 
         var currentMin = minValue
-        for (range in ranges) {
-            if (currentMin < range.start()) {
-                newList.add(Affine.fromRangeNoKey(currentMin, range.start().downOneEpsilon()))
+
+        val orderedPairs = toRangePairs().sortedWith { a, b -> a.first.compareTo(b.first) }
+        for (range in orderedPairs) {
+            if (currentMin < range.first) {
+                newList.add(Affine.fromRangeNoKey(currentMin, range.first.downOneEpsilon(), setIndicator))
             }
-            currentMin = range.end().upOneEpsilon()
+            currentMin = range.second.upOneEpsilon()
         }
 
         // Add final range if necessary
         if (currentMin < maxValue) {
-            newList.add(Affine.fromRangeNoKey(currentMin, maxValue))
+            newList.add(Affine.fromRangeNoKey(currentMin, maxValue, setIndicator))
         }
 
         return makeNew(newList)
     }
 
     companion object {
-        fun <T : Number> fromConstant(constant: T, setIndicator: NumberSetIndicator<T, *>): Ranges<T> {
-            return Ranges(listOf(Affine.fromConstant(constant)), setIndicator)
-        }
+        fun <T : Number> fromConstant(constant: T, ind: NumberSetIndicator<T, *>): Ranges<T> =
+            Ranges(listOf(Affine.fromConstant(constant, ind)), ind)
 
-        fun <T : Number> fromRange(start: T, end: T, key: Context.Key, ind: NumberSetIndicator<T, *>): Ranges<T> {
-            return Ranges(listOf(Affine.fromRange(start, end, key)), ind)
-        }
-    }
-
-    data class Affine<T : Number>(private val innerAffine: Int) {
-        fun start(): T = TODO()
-        fun end(): T = TODO()
-
-        override fun toString(): String = "Affine($innerAffine)"
-
-        fun isExactly(i: Int): Boolean = TODO()
-        fun toRange(): Pair<T, T> = TODO()
-
-        fun add(other: Affine<T>): Affine<T> = TODO()
-        fun subtract(other: Affine<T>): Affine<T> = TODO()
-        fun multiply(other: Affine<T>): Affine<T> = TODO()
-        fun divide(other: Affine<T>): Affine<T> = TODO()
-
-        companion object {
-            fun <T : Number> fromConstant(constant: T): Affine<T> {
-                return Affine(0)
-            }
-
-            fun <T : Number> fromRangeNoKey(start: T, end: T): Affine<T> {
-                return Affine(0)
-            }
-
-            fun <T : Number> fromRange(start: T, end: T, key: Context.Key): Affine<T> {
-                return Affine(0)
-            }
-        }
+        fun <T : Number> fromRange(start: T, end: T, key: Context.Key, ind: NumberSetIndicator<T, *>): Ranges<T> =
+            Ranges(listOf(Affine.fromRange(start, end, key, ind)), ind)
     }
 }

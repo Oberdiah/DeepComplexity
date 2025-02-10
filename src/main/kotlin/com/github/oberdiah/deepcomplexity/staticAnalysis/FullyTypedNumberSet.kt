@@ -99,10 +99,11 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         override fun toString(): String = "($setA / $setB)"
     }
 
-    override fun getAsRanges(): List<Pair<Number, Number>> {
-        val ranges = NumberSimplifier(setIndicator).distillToSet(data, true)
-        return ranges.map { Pair(it.first, it.second) }
+    val lazyRanges: List<Pair<Number, Number>> by lazy {
+        NumberSimplifier(setIndicator).distillToSet(data, true)
     }
+
+    override fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
 
     fun withRange(start: T, end: T, key: Context.Key): Self {
         if (start == end) {

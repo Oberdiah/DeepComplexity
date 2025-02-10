@@ -1,100 +1,93 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
 import java.math.BigInteger
 import java.math.BigInteger.valueOf
 
 /**
  * A neat little class that represents an integer affine.
  */
-class IntegerAffine<N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>>(
+class IntegerAffine(
     // This represents twice the constant term. This allows us to represent ranges like [1, 2]
     // where the center is 1.5.
     private val center: BigInteger,
     // This represents twice the noise terms. Again, this allows us to represent ranges like [1, 2]
     private val noiseTerms: Map<Context.Key, BigInteger>,
-    /**
-     * This is the negative side of the limit (inclusive), the positive side is one lower.
-     * e.g. if the limit is 128, the range is [-128, 127].
-     */
-    private val setIndicator: NumberSetIndicator<N, NumberSet>,
+    private val setIndicator: NumberSetIndicator<*, *>
 ) {
-    override fun toString(): String {
-        val (lower, upper) = toRange()
-        return "[$lower, $upper] @ ${noiseTerms.keys}"
-    }
-
     companion object {
-        fun <N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>> fromConstant(
-            constant: Long,
-            setIndicator: NumberSetIndicator<N, NumberSet>
-        ): IntegerAffine<N, NumberSet> {
-            return IntegerAffine(
-                valueOf(constant) * BigInteger.TWO,
-                emptyMap(),
-                setIndicator
-            )
+        fun fromConstant(constant: Long, ind: NumberSetIndicator<*, *>): IntegerAffine =
+            IntegerAffine(valueOf(constant.toLong()) * BigInteger.TWO, emptyMap(), ind)
+
+        fun fromRangeNoKey(start: Long, end: Long, ind: NumberSetIndicator<*, *>): IntegerAffine {
+            val twiceCenter = valueOf(start) + valueOf(end)
+            val twiceRadius = valueOf(end) - valueOf(start)
+            return IntegerAffine(twiceCenter, mapOf(Context.Key.EphemeralKey.new() to twiceRadius), ind)
         }
 
-        fun <N : Number, Self : FullyTypedNumberSet<N, Self>> fromRangeIndependentKey(
-            start: Long,
-            end: Long,
-            setIndicator: NumberSetIndicator<N, Self>
-        ): IntegerAffine<N, Self> {
-            val twiceCenter = valueOf(start + end)
-            val twiceRadius = valueOf(end - start)
-            return IntegerAffine(
-                twiceCenter,
-                mapOf(Context.Key.EphemeralKey.new() to twiceRadius),
-                setIndicator
-            )
-        }
-
-        fun <N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>> fromRange(
-            start: Long,
-            end: Long,
-            setIndicator: NumberSetIndicator<N, NumberSet>,
-            key: Context.Key
-        ): IntegerAffine<N, NumberSet> {
-            val twiceCenter = valueOf(start + end)
-            val twiceRadius = valueOf(end - start)
-            return IntegerAffine(
-                twiceCenter,
-                mapOf(key to twiceRadius),
-                setIndicator
-            )
-        }
-
-        private fun <N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>> rangeFix(affine: IntegerAffine<N, NumberSet>):
-                Pair<IntegerAffine<N, NumberSet>, IntegerAffine<N, NumberSet>?> {
-            val (lower, upper) = affine.toRangeInner()
-            val numberLimit = affine.setIndicator.getMaxValue().toLong()
-            if (lower < valueOf(-numberLimit) || upper >= valueOf(numberLimit)) {
-                val (range1, range2) = NumberRange.resolvePotentialOverflow(lower, upper, affine.setIndicator)
-
-                // This is sad news; we've had to leave affine territory and go back to ranges.
-                // I don't think there's a nice way to avoid this in general (although in theory there's something
-                // we could do with addition/subtraction since they're commutative over %), but if this is happening
-                // a lot it might be possible that we can spot expression duplication on the tree somewhere
-                // and lean on that instead of relying entirely on affine.
-                return fromRangeIndependentKey(
-                    range1.first.toLong(),
-                    range1.second.toLong(),
-                    affine.setIndicator
-                ) to range2?.let {
-                    fromRangeIndependentKey(
-                        it.first.toLong(),
-                        it.second.toLong(),
-                        affine.setIndicator
-                    )
-                }
-            }
-
-            return affine to null
+        fun fromRange(start: Long, end: Long, key: Context.Key, ind: NumberSetIndicator<*, *>): IntegerAffine {
+            val twiceCenter = valueOf(start) + valueOf(end)
+            val twiceRadius = valueOf(end) - valueOf(start)
+            return IntegerAffine(twiceCenter, mapOf(key to twiceRadius), ind)
         }
     }
 
-    fun multiply(other: IntegerAffine<N, NumberSet>): Pair<IntegerAffine<N, NumberSet>, IntegerAffine<N, NumberSet>?> {
+    // Still to do — Need to store the idealized range alongside the affine one and
+    // calculate with that as well.
+
+    override fun toString(): String {
+        return "$center + ${noiseTerms.entries.joinToString(" + ") { "${it.value} * ${it.key}" }}"
+    }
+
+    fun toRange(): Pair<BigInteger, BigInteger> {
+        val radius = noiseTerms.values.fold(BigInteger.ZERO) { acc, it -> acc + it }
+        val initialStart = (center - radius) / BigInteger.TWO
+
+        val min = valueOf(setIndicator.getMinValue().toLong())
+        val setSize = valueOf(setIndicator.clazz.getSetSize().toLong())
+        val incrementsToShunt = (initialStart - min) / setSize
+        println("Distance to shunt: $incrementsToShunt")
+        val newCenter = center + incrementsToShunt * setSize * BigInteger.TWO
+
+        val lower = (newCenter - radius) / BigInteger.TWO
+        val upper = (newCenter + radius) / BigInteger.TWO
+        return Pair(lower, upper)
+    }
+
+    fun isExactly(i: Int): Boolean {
+        val (lower, upper) = toRange()
+        return lower == valueOf(i.toLong()) && upper == valueOf(i.toLong())
+    }
+
+    fun subtract(other: IntegerAffine): IntegerAffine {
+        return addOrSubtract(other, shouldAdd = false)
+    }
+
+    fun add(other: IntegerAffine): IntegerAffine {
+        return addOrSubtract(other, shouldAdd = true)
+    }
+
+    private fun addOrSubtract(other: IntegerAffine, shouldAdd: Boolean): IntegerAffine {
+        val newCenter = if (shouldAdd) center + other.center else center - other.center
+        val newNoiseTerms = mutableMapOf<Context.Key, BigInteger>()
+        for ((key, value) in noiseTerms) {
+            if (shouldAdd) {
+                newNoiseTerms[key] = value + other.noiseTerms.getOrDefault(key, BigInteger.ZERO)
+            } else {
+                newNoiseTerms[key] = value - other.noiseTerms.getOrDefault(key, BigInteger.ZERO)
+            }
+        }
+        for ((key, value) in other.noiseTerms) {
+            if (key !in noiseTerms) {
+                newNoiseTerms[key] = value
+            }
+        }
+
+        return IntegerAffine(newCenter, newNoiseTerms, setIndicator)
+    }
+
+    fun multiply(other: IntegerAffine): IntegerAffine {
         // Multiply centers (remember they represent twice the value)
         val newCenter = (center * other.center) / BigInteger.TWO
 
@@ -129,48 +122,6 @@ class IntegerAffine<N : Number, NumberSet : FullyTypedNumberSet<N, NumberSet>>(
             newNoiseTerms[quadraticKey] = existing + quadraticNoiseSum
         }
 
-        return rangeFix(IntegerAffine(newCenter, newNoiseTerms, setIndicator))
-    }
-
-    fun toRange(): Pair<Long, Long> {
-        val (lower, upper) = toRangeInner()
-        return Pair(lower.toLong(), upper.toLong())
-    }
-
-    fun toRangeInner(): Pair<BigInteger, BigInteger> {
-        val radius = noiseTerms.values.fold(BigInteger.ZERO) { acc, it -> acc + it }
-        val lower = (center - radius) / BigInteger.TWO
-        val upper = (center + radius) / BigInteger.TWO
-        return Pair(lower, upper)
-    }
-
-    fun subtract(other: IntegerAffine<N, NumberSet>): Pair<IntegerAffine<N, NumberSet>, IntegerAffine<N, NumberSet>?> {
-        return addOrSubtract(other, shouldAdd = false)
-    }
-
-    fun add(other: IntegerAffine<N, NumberSet>): Pair<IntegerAffine<N, NumberSet>, IntegerAffine<N, NumberSet>?> {
-        return addOrSubtract(other, shouldAdd = true)
-    }
-
-    private fun addOrSubtract(
-        other: IntegerAffine<N, NumberSet>,
-        shouldAdd: Boolean
-    ): Pair<IntegerAffine<N, NumberSet>, IntegerAffine<N, NumberSet>?> {
-        val newCenter = if (shouldAdd) center + other.center else center - other.center
-        val newNoiseTerms = mutableMapOf<Context.Key, BigInteger>()
-        for ((key, value) in noiseTerms) {
-            if (shouldAdd) {
-                newNoiseTerms[key] = value + other.noiseTerms.getOrDefault(key, BigInteger.ZERO)
-            } else {
-                newNoiseTerms[key] = value - other.noiseTerms.getOrDefault(key, BigInteger.ZERO)
-            }
-        }
-        for ((key, value) in other.noiseTerms) {
-            if (key !in noiseTerms) {
-                newNoiseTerms[key] = value
-            }
-        }
-
-        return rangeFix(IntegerAffine(newCenter, newNoiseTerms, setIndicator))
+        return IntegerAffine(newCenter, newNoiseTerms, setIndicator)
     }
 }
