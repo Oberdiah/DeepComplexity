@@ -2,13 +2,15 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
+import com.jetbrains.rd.util.threading.coroutines.RdCoroutineScope.Companion.override
 import java.math.BigInteger
 import java.math.BigInteger.valueOf
 
 /**
  * A neat little class that represents an integer affine.
  */
-class IntegerAffine(
+@ConsistentCopyVisibility
+data class IntegerAffine private constructor(
     // This represents twice the constant term. This allows us to represent ranges like [1, 2]
     // where the center is 1.5.
     private val center: BigInteger,
@@ -33,11 +35,30 @@ class IntegerAffine(
         }
     }
 
+    fun getKeys(): List<Context.Key> = noiseTerms.keys.toList()
+
     // Still to do — Need to store the idealized range alongside the affine one and
     // calculate with that as well.
 
+    private fun formatV(value: BigInteger): String =
+        (value / BigInteger.TWO).toString() +
+                if (value % BigInteger.TWO == BigInteger.ZERO) "" else ".5"
+
+    fun stringOverview(): String {
+        val (min, max) = toRange()
+
+        if (min == max) {
+            return "$min"
+        }
+
+        return "$min..$max (${noiseTerms.keys})"
+    }
+
     override fun toString(): String {
-        return "$center + ${noiseTerms.entries.joinToString(" + ") { "${it.value} * ${it.key}" }}"
+        val (min, max) = toRange()
+        return "$min..$max (${formatV(center)} + ${
+            noiseTerms.entries.joinToString(" + ") { "${formatV(it.value)} * ${it.key}" }
+        })"
     }
 
     fun toRange(): Pair<BigInteger, BigInteger> {
@@ -46,8 +67,12 @@ class IntegerAffine(
 
         val min = valueOf(setIndicator.getMinValue().toLong())
         val setSize = valueOf(setIndicator.clazz.getSetSize().toLong())
-        val incrementsToShunt = (initialStart - min) / setSize
-        println("Distance to shunt: $incrementsToShunt")
+
+        val incrementsToShunt = if (initialStart < min) {
+            (min - initialStart) / setSize + BigInteger.ONE
+        } else {
+            (min - initialStart) / setSize
+        }
         val newCenter = center + incrementsToShunt * setSize * BigInteger.TWO
 
         val lower = (newCenter - radius) / BigInteger.TWO

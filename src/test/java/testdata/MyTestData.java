@@ -21,9 +21,14 @@ public class MyTestData {
 		}
 	}
 	
-	//	@RequiredScore(1.0)
+	@RequiredScore(1.0)
 	public static int zeroTest(int incoming) {
 		return incoming - incoming;
+	}
+	
+	@RequiredScore(0.5) // We've not implemented even/odd/modulo detection yet.
+	public static int simpleAdd(int incoming1) {
+		return incoming1 + incoming1;
 	}
 	
 	public static int test3(int incoming1) {

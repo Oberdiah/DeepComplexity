@@ -5,17 +5,20 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IntegerAffine
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
-import java.math.BigInteger
 import java.math.BigInteger.valueOf
 
-class Affine<T : Number> private constructor(
+@ConsistentCopyVisibility
+data class Affine<T : Number> private constructor(
     private val setIndicator: NumberSetIndicator<T, *>,
     // Obviously at one point we'll want to support floating point too.
     private val affine: IntegerAffine
 ) {
     val clazz = setIndicator.clazz
 
+    fun stringOverview() = affine.stringOverview()
     override fun toString(): String = affine.toString()
+
+    fun getKeys(): List<Context.Key> = affine.getKeys()
 
     fun isExactly(i: Int): Boolean = affine.isExactly(i)
     fun toRanges(): List<Pair<T, T>> {
@@ -27,12 +30,19 @@ class Affine<T : Number> private constructor(
         val min = valueOf(setIndicator.getMinValue().toLong())
         val setSize = valueOf(setIndicator.clazz.getSetSize().toLong())
 
-        if (upper - lower > setSize) {
-            // In this case we're covering the whole range no matter what.
-            return listOf(lower.castInto<T>(clazz) to upper.castInto<T>(clazz))
+        assert(lower >= min) {
+            "Lower bound $lower is below minimum value $min"
+        }
+        assert(lower <= max) {
+            "Lower bound $lower is above maximum value $max"
         }
 
-        if (upper < max) {
+        if (upper - lower >= setSize) {
+            // In this case we're covering the whole range no matter what.
+            return listOf(min.castInto<T>(clazz) to max.castInto<T>(clazz))
+        }
+
+        if (upper <= max) {
             // Easy-peasy, we fit, all is good.
             return listOf(lower.castInto<T>(clazz) to upper.castInto<T>(clazz))
         }

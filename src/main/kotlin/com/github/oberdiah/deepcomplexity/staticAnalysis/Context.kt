@@ -36,7 +36,7 @@ class Context {
          */
         data class EphemeralKey(val key: Any) : Key() {
             override fun toString(): String {
-                return key.toString()
+                return "#$key"
             }
 
             companion object {

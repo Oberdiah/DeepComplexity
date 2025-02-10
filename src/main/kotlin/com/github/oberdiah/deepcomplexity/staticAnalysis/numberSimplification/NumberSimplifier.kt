@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Ranges
+import com.intellij.openapi.actionSystem.DataKey.allKeys
 import kotlin.collections.filter
 import kotlin.to
 
@@ -18,11 +19,7 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
         val maxIterations = 20
 
         for (i in 0..maxIterations) {
-            println("Distillation iteration $i")
-
-            val allKeys = data.getKeys()
-            val lonelyKeys = allKeys.filter { key -> allKeys.count { it == key } == 1 }.toSet()
-            val (result, changed) = applyRules(data, lonelyKeys)
+            val (result, changed) = applyRules(data)
 
             if (!changed) {
                 if (result !is Ranges) {
@@ -38,13 +35,13 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
         throw IllegalStateException("Distillation did not converge after $maxIterations iterations")
     }
 
-    private fun applyRules(data: NumberData<T>, lonelyKeys: Set<Context.Key>): Pair<NumberData<T>, Boolean> {
+    private fun applyRules(data: NumberData<T>): Pair<NumberData<T>, Boolean> {
         return when (data) {
             is Empty -> data to false
             is Ranges -> data to false
             is Union -> {
-                val (lhs, changed1) = applyRules(data.setA, lonelyKeys)
-                val (rhs, changed2) = applyRules(data.setB, lonelyKeys)
+                val (lhs, changed1) = applyRules(data.setA)
+                val (rhs, changed2) = applyRules(data.setB)
 
                 if (lhs is Empty && rhs is Empty) {
                     return Empty<T>() to true
@@ -71,8 +68,8 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Intersection -> {
-                val (lhs, changed1) = applyRules(data.setA, lonelyKeys)
-                val (rhs, changed2) = applyRules(data.setB, lonelyKeys)
+                val (lhs, changed1) = applyRules(data.setA)
+                val (rhs, changed2) = applyRules(data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
@@ -82,6 +79,7 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
                     return lhs to true
                 }
 
+                // priority system to give affines with more priority better chances of survival
                 if (lhs is Ranges && rhs is Ranges) {
                     return lhs.intersection(rhs) to true
                 }
@@ -90,7 +88,7 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Inversion -> {
-                val (set, changed) = applyRules(data.set, lonelyKeys)
+                val (set, changed) = applyRules(data.set)
                 // Double inversion cancels out
                 if (set is Inversion) {
                     return set.set to true
@@ -104,8 +102,8 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Addition -> {
-                val (lhs, changed1) = applyRules(data.setA, lonelyKeys)
-                val (rhs, changed2) = applyRules(data.setB, lonelyKeys)
+                val (lhs, changed1) = applyRules(data.setA)
+                val (rhs, changed2) = applyRules(data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
@@ -127,8 +125,8 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Subtraction -> {
-                val (lhs, changed1) = applyRules(data.setA, lonelyKeys)
-                val (rhs, changed2) = applyRules(data.setB, lonelyKeys)
+                val (lhs, changed1) = applyRules(data.setA)
+                val (rhs, changed2) = applyRules(data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
@@ -146,8 +144,8 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Multiplication -> {
-                val (lhs, changed1) = applyRules(data.setA, lonelyKeys)
-                val (rhs, changed2) = applyRules(data.setB, lonelyKeys)
+                val (lhs, changed1) = applyRules(data.setA)
+                val (rhs, changed2) = applyRules(data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
@@ -173,8 +171,8 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Division -> {
-                val (lhs, changed1) = applyRules(data.setA, lonelyKeys)
-                val (rhs, changed2) = applyRules(data.setB, lonelyKeys)
+                val (lhs, changed1) = applyRules(data.setA)
+                val (rhs, changed2) = applyRules(data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true

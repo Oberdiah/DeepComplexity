@@ -79,7 +79,7 @@ object TestUtilities {
             if (!range.contains(result)) {
                 throw AssertionError(
                     "Method ${method.name} failed for input $s," +
-                            " returned a value of $result which is not in range $range"
+                            " returned a value of $result which is not in range ${range}"
                 )
             } else {
                 if (result !in Short.MIN_VALUE..Short.MAX_VALUE) {

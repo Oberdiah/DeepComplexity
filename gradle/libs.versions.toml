@@ -13,6 +13,7 @@ qodana = "2024.2.6"
 [libraries]
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
 commonsNumbersCore = { group = "org.apache.commons", name = "commons-numbers-core", version.ref = "commonsNumbersCore" }
+kotlinStdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
 
 [plugins]
 changelog = { id = "org.jetbrains.changelog", version.ref = "changelog" }

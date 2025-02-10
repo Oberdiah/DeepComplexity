@@ -19,7 +19,9 @@ class Ranges<T : Number> private constructor(
     private val ranges: List<Affine<T>>,
     private val setIndicator: NumberSetIndicator<T, *>
 ) : NumberData<T> {
-    override fun toString(): String = "SortedRanges($ranges)"
+    fun getKeys(): List<Context.Key> = ranges.flatMap { it.getKeys() }
+
+    override fun toString(): String = ranges.joinToString(", ") { it.stringOverview() }
 
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
     private fun pairsStream(): Stream<Pair<T, T>> = ranges.stream().flatMap { it.toRanges().stream() }
@@ -55,6 +57,11 @@ class Ranges<T : Number> private constructor(
     }
 
     fun union(other: Ranges<T>): Ranges<T> {
+        // Assert the keys are disjoint sets
+        assert(getKeys().intersect(other.getKeys()).isEmpty()) {
+            "This indicates something's gone pretty wrong"
+        }
+
         // No affine killing here :)
         return makeNew(ranges + other.ranges)
     }
@@ -64,19 +71,32 @@ class Ranges<T : Number> private constructor(
 
         // For each range in this set, find overlapping ranges in other set
         // This could be made much more efficient.
-        for (range in pairsStream()) {
-            for (otherRange in other.pairsStream()) {
-                // Find overlap
-                val start = range.first.max(otherRange.first)
-                val end = range.second.min(otherRange.second)
+        for (affine in ranges) {
+            for (otherAffine in other.ranges) {
+                val ranges = affine.toRanges()
+                val otherRanges = otherAffine.toRanges()
+                for (range in ranges) {
+                    for (otherRange in otherRanges) {
+                        // Find overlap
+                        val start = range.first.max(otherRange.first)
+                        val end = range.second.min(otherRange.second)
 
-                // This could be much smarter to prevent some affine death.
-                // If one range is completely contained within another, we could add the contained range
-                // whole.
+                        // If there is an overlap, add it
+                        if (start <= end) {
+                            val avoidedWrapping = ranges.size == 1 && otherRanges.size == 1
+                            val firstRangeEntirelyEnclosed = range.first == start && range.second == end
+                            val secondRangeEntirelyEnclosed = otherRange.first == start && otherRange.second == end
 
-                // If there is an overlap, add it
-                if (start <= end) {
-                    newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
+                            // This prioritizes affine 1 over affine 2. We may want to change this.
+                            if (avoidedWrapping && firstRangeEntirelyEnclosed) {
+                                newList.add(affine)
+                            } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
+                                newList.add(otherAffine)
+                            } else {
+                                newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
+                            }
+                        }
+                    }
                 }
             }
         }

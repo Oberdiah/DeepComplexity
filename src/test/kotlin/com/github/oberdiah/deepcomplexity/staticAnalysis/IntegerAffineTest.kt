@@ -21,41 +21,12 @@ class IntegerAffineTest {
 
     @Test
     fun `Ensure a range gives the range back`() {
-        val integerAffine = IntegerAffine.fromRange(5, 10, ByteSetIndicator, key1)
+        val integerAffine = IntegerAffine.fromRange(5, 10, key1, ByteSetIndicator)
 
         val range = integerAffine.toRange()
 
         assertEquals(5, range.first)
         assertEquals(10, range.second)
-    }
-
-    @Test
-    fun `Add constant to range and cause an upper wrap`() {
-        val affine1 = IntegerAffine.fromRange(5, 127, ByteSetIndicator, key1)
-        val affine2 = IntegerAffine.fromConstant(3, ByteSetIndicator)
-
-        val (resultA, resultB) = affine1.add(affine2)
-        val result1 = resultA.toRange()
-        val result2 = resultB?.toRange()
-
-        assertEquals(8, result1.first)
-        assertEquals(127, result1.second)
-        assertEquals(-128, result2!!.first)
-        assertEquals(-126, result2.second)
-    }
-
-    @Test
-    fun `Add a big range to another big range and cause the final result to take the whole limit`() {
-        val affine1 = IntegerAffine.fromRange(-126, 120, ByteSetIndicator, key1)
-        val affine2 = IntegerAffine.fromRange(-126, 121, ByteSetIndicator, key2)
-
-        val (resultA, resultB) = affine1.add(affine2)
-        val result1 = resultA.toRange()
-        val result2 = resultB?.toRange()
-
-        assertEquals(-128, result1.first)
-        assertEquals(127, result1.second)
-        assertNull(result2)
     }
 
     @Test
@@ -67,21 +38,7 @@ class IntegerAffineTest {
 
                 val integerAffine3 = integerAffine1.add(integerAffine2)
 
-                assertEquals((i + j).toLong(), integerAffine3.first.toRange().first)
-            }
-        }
-    }
-
-    @Test
-    fun `Ensure adding constants with wrapping works fine`() {
-        for (i in -128..127) {
-            for (j in -128..127) {
-                val integerAffine1 = IntegerAffine.fromConstant(i.toLong(), ByteSetIndicator)
-                val integerAffine2 = IntegerAffine.fromConstant(j.toLong(), ByteSetIndicator)
-                val integerAffine3 = integerAffine1.add(integerAffine2)
-
-                val expected = (i.toByte() + j.toByte()).toByte().toLong()
-                assertEquals(expected, integerAffine3.first.toRange().first, "i = $i, j = $j")
+                assertEquals((i + j).toLong(), integerAffine3.toRange().first)
             }
         }
     }
@@ -94,21 +51,7 @@ class IntegerAffineTest {
                 val integerAffine2 = IntegerAffine.fromConstant(j.toLong(), LongSetIndicator)
                 val integerAffine3 = integerAffine1.subtract(integerAffine2)
 
-                assertEquals((i - j).toLong(), integerAffine3.first.toRange().first)
-            }
-        }
-    }
-
-    @Test
-    fun `Ensure subtracting constants with wrapping works fine`() {
-        for (i in -128..127) {
-            for (j in -128..127) {
-                val integerAffine1 = IntegerAffine.fromConstant(i.toLong(), ByteSetIndicator)
-                val integerAffine2 = IntegerAffine.fromConstant(j.toLong(), ByteSetIndicator)
-                val integerAffine3 = integerAffine1.subtract(integerAffine2)
-
-                val expected = (i.toByte() - j.toByte()).toByte().toLong()
-                assertEquals(expected, integerAffine3.first.toRange().first, "i = $i, j = $j")
+                assertEquals((i - j).toLong(), integerAffine3.toRange().first)
             }
         }
     }
@@ -121,47 +64,19 @@ class IntegerAffineTest {
                 val integerAffine2 = IntegerAffine.fromConstant(j.toLong(), LongSetIndicator)
                 val integerAffine3 = integerAffine1.multiply(integerAffine2)
 
-                assertEquals((i * j).toLong(), integerAffine3.first.toRange().first)
-            }
-        }
-    }
-
-    @Test
-    fun `Ensure multiplying constants with wrapping works fine`() {
-        for (i in -128..127) {
-            for (j in -128..127) {
-                val integerAffine1 = IntegerAffine.fromConstant(i.toLong(), ByteSetIndicator)
-                val integerAffine2 = IntegerAffine.fromConstant(j.toLong(), ByteSetIndicator)
-                val integerAffine3 = integerAffine1.multiply(integerAffine2)
-
-                val expected = (i.toByte() * j.toByte()).toByte().toLong()
-                assertEquals(expected, integerAffine3.first.toRange().first, "i = $i, j = $j")
+                assertEquals((i * j).toLong(), integerAffine3.toRange().first)
             }
         }
     }
 
     @Test
     fun `Multiply range by constant`() {
-        val affine1 = IntegerAffine.fromRange(5, 10, ByteSetIndicator, key1)
+        val affine1 = IntegerAffine.fromRange(5, 10, key1, ByteSetIndicator)
         val affine2 = IntegerAffine.fromConstant(3, ByteSetIndicator)
 
-        val result = affine1.multiply(affine2).first.toRange()
+        val result = affine1.multiply(affine2).toRange()
 
         assertEquals(15, result.first)
         assertEquals(30, result.second)
-    }
-
-    @Test
-    fun `Multiply ranges that cause full wrapping`() {
-        val affine1 = IntegerAffine.fromRange(100, 120, ByteSetIndicator, key1)
-        val affine2 = IntegerAffine.fromRange(2, 4, ByteSetIndicator, key2)
-
-        val (resultA, resultB) = affine1.multiply(affine2)
-        val result1 = resultA.toRange()
-        val result2 = resultB?.toRange()
-
-        assertEquals(result1.first, -128L)
-        assertEquals(result1.second, 127L)
-        assertNull(result2)
     }
 }

@@ -32,6 +32,14 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 ) : NumberSet<Self> {
     private val clazz: KClass<*> = setIndicator.clazz
 
+    override fun toString(): String = getAsRanges().joinToString(", ") { (start, end) ->
+        if (start == end) {
+            start.toString()
+        } else {
+            "$start..$end"
+        }
+    }
+
     override fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T {
         if (clazz != this.clazz) {
             throw IllegalArgumentException("Cannot cast to different type — $clazz != ${this.clazz}")
@@ -50,15 +58,20 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     class ByteSet(data: NumberData<Byte> = Empty()) : FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator, data)
 
     sealed interface NumberData<T : Number> {
-        fun getKeys(): List<Context.Key> = emptyList()
+        fun traverse(visitor: (NumberData<T>) -> Unit) = visitor(this)
         fun isConfirmedToBe(i: Int): Boolean = false
     }
 
+    // Note that although setA and setB are ostensibly of equal importance,
+    // when it comes to resolution setA gets priority and its affine is more likely to live.
     sealed interface BinaryNumberData<T : Number> : NumberData<T> {
         val setA: NumberData<T>
         val setB: NumberData<T>
 
-        override fun getKeys(): List<Context.Key> = setA.getKeys() + setB.getKeys()
+        override fun traverse(visitor: (NumberData<T>) -> Unit) {
+            setA.traverse(visitor)
+            setB.traverse(visitor)
+        }
     }
 
     data class Empty<T : Number>(val unused: Int = 0) : NumberData<T> {
@@ -66,12 +79,22 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     }
 
     data class Inversion<T : Number>(val set: NumberData<T>) : NumberData<T> {
+        override fun traverse(visitor: (NumberData<T>) -> Unit) = set.traverse(visitor)
         override fun toString(): String = "¬$set"
     }
 
     data class Union<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
         BinaryNumberData<T> {
-        override fun toString(): String = "($setA ∪ $setB)"
+        override fun toString(): String {
+            if (setA is Empty) {
+                return setB.toString()
+            }
+            if (setB is Empty) {
+                return setA.toString()
+            }
+
+            return "($setA ∪ $setB)"
+        }
     }
 
     data class Intersection<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
