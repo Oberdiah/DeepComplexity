@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
 import com.jetbrains.rd.util.threading.coroutines.RdCoroutineScope.Companion.override
 import java.math.BigInteger
@@ -16,22 +17,21 @@ data class IntegerAffine private constructor(
     private val center: BigInteger,
     // This represents twice the noise terms. Again, this allows us to represent ranges like [1, 2]
     private val noiseTerms: Map<Context.Key, BigInteger>,
-    private val setIndicator: NumberSetIndicator<*, *>
 ) {
     companion object {
-        fun fromConstant(constant: Long, ind: NumberSetIndicator<*, *>): IntegerAffine =
-            IntegerAffine(valueOf(constant.toLong()) * BigInteger.TWO, emptyMap(), ind)
+        fun fromConstant(constant: Long): IntegerAffine =
+            IntegerAffine(valueOf(constant.toLong()) * BigInteger.TWO, emptyMap())
 
-        fun fromRangeNoKey(start: Long, end: Long, ind: NumberSetIndicator<*, *>): IntegerAffine {
+        fun fromRangeNoKey(start: Long, end: Long): IntegerAffine {
             val twiceCenter = valueOf(start) + valueOf(end)
             val twiceRadius = valueOf(end) - valueOf(start)
-            return IntegerAffine(twiceCenter, mapOf(Context.Key.EphemeralKey.new() to twiceRadius), ind)
+            return IntegerAffine(twiceCenter, mapOf(Context.Key.EphemeralKey.new() to twiceRadius))
         }
 
-        fun fromRange(start: Long, end: Long, key: Context.Key, ind: NumberSetIndicator<*, *>): IntegerAffine {
+        fun fromRange(start: Long, end: Long, key: Context.Key): IntegerAffine {
             val twiceCenter = valueOf(start) + valueOf(end)
             val twiceRadius = valueOf(end) - valueOf(start)
-            return IntegerAffine(twiceCenter, mapOf(key to twiceRadius), ind)
+            return IntegerAffine(twiceCenter, mapOf(key to twiceRadius))
         }
     }
 
@@ -63,20 +63,8 @@ data class IntegerAffine private constructor(
 
     fun toRange(): Pair<BigInteger, BigInteger> {
         val radius = noiseTerms.values.fold(BigInteger.ZERO) { acc, it -> acc + it }
-        val initialStart = (center - radius) / BigInteger.TWO
-
-        val min = valueOf(setIndicator.getMinValue().toLong())
-        val setSize = valueOf(setIndicator.clazz.getSetSize().toLong())
-
-        val incrementsToShunt = if (initialStart < min) {
-            (min - initialStart) / setSize + BigInteger.ONE
-        } else {
-            (min - initialStart) / setSize
-        }
-        val newCenter = center + incrementsToShunt * setSize * BigInteger.TWO
-
-        val lower = (newCenter - radius) / BigInteger.TWO
-        val upper = (newCenter + radius) / BigInteger.TWO
+        val lower = (center - radius) / BigInteger.TWO
+        val upper = (center + radius) / BigInteger.TWO
         return Pair(lower, upper)
     }
 
@@ -109,7 +97,7 @@ data class IntegerAffine private constructor(
             }
         }
 
-        return IntegerAffine(newCenter, newNoiseTerms, setIndicator)
+        return IntegerAffine(newCenter, newNoiseTerms)
     }
 
     fun multiply(other: IntegerAffine): IntegerAffine {
@@ -147,6 +135,6 @@ data class IntegerAffine private constructor(
             newNoiseTerms[quadraticKey] = existing + quadraticNoiseSum
         }
 
-        return IntegerAffine(newCenter, newNoiseTerms, setIndicator)
+        return IntegerAffine(newCenter, newNoiseTerms)
     }
 }

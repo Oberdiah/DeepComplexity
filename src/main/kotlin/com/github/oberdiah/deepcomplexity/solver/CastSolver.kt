@@ -5,11 +5,12 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 
 object CastSolver {
     fun <T : IMoldableSet<T>> castFrom(from: IMoldableSet<*>, targetType: SetIndicator<T>, implicit: Boolean): T {
-        if (from.getSetIndicator() == targetType) {
+        val currentType = from.getSetIndicator()
+        if (currentType == targetType) {
             @Suppress("UNCHECKED_CAST")
             return from as T
         }
 
-        TODO()
+        return from.cast(targetType)
     }
 }

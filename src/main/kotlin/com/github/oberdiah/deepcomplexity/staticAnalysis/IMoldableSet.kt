@@ -12,4 +12,10 @@ sealed interface IMoldableSet<T : IMoldableSet<T>> {
     fun intersect(other: T): T
     fun invert(): T
     fun contains(element: Any): Boolean
+
+    /**
+     * Implementations don't need to check for their own type, that's
+     * already been handled.
+     */
+    fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q
 }

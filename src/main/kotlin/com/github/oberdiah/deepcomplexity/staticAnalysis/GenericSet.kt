@@ -45,6 +45,10 @@ interface GenericSet : IMoldableSet<GenericSet> {
             )
         }
 
+        override fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q {
+            TODO("Not yet implemented :)")
+        }
+
         override fun contains(element: Any): Boolean {
             if (element::class != clazz) {
                 return false

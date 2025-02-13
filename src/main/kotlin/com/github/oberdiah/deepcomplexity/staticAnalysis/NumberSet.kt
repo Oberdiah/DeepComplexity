@@ -10,8 +10,6 @@ import kotlin.reflect.KClass
 
 // To swap between the two implementations of number sets, you should only have to change the SetIndicators.
 sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<Self>, Self : NumberSet<Self> {
-    fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T
-
     /**
      * Returns the set of ranges that this number set represents.
      * The ranges are inclusive, in order, and non-overlapping.

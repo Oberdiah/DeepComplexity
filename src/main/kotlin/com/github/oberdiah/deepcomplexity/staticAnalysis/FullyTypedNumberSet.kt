@@ -40,14 +40,6 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         }
     }
 
-    override fun <T : NumberSet<T>> castToType(clazz: KClass<*>): T {
-        if (clazz != this.clazz) {
-            throw IllegalArgumentException("Cannot cast to different type — $clazz != ${this.clazz}")
-        }
-        @Suppress("UNCHECKED_CAST")
-        return this as T
-    }
-
     class DoubleSet(data: NumberData<Double> = Empty()) :
         FullyTypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, data)
 
@@ -58,7 +50,8 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     class ByteSet(data: NumberData<Byte> = Empty()) : FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator, data)
 
     sealed interface NumberData<T : Number> {
-        fun traverse(visitor: (NumberData<T>) -> Unit) = visitor(this)
+        // The visitor is NumberData<*> because it may be cast half-way through.
+        fun traverse(visitor: (NumberData<*>) -> Unit) = visitor(this)
         fun isConfirmedToBe(i: Int): Boolean = false
     }
 
@@ -68,7 +61,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         val setA: NumberData<T>
         val setB: NumberData<T>
 
-        override fun traverse(visitor: (NumberData<T>) -> Unit) {
+        override fun traverse(visitor: (NumberData<*>) -> Unit) {
             setA.traverse(visitor)
             setB.traverse(visitor)
         }
@@ -79,7 +72,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     }
 
     data class Inversion<T : Number>(val set: NumberData<T>) : NumberData<T> {
-        override fun traverse(visitor: (NumberData<T>) -> Unit) = set.traverse(visitor)
+        override fun traverse(visitor: (NumberData<*>) -> Unit) = set.traverse(visitor)
         override fun toString(): String = "¬$set"
     }
 
@@ -95,6 +88,15 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
             return "($setA ∪ $setB)"
         }
+    }
+
+    data class Cast<Outside : Number, Inside : Number>(
+        val set: NumberData<Inside>,
+        val outsideInd: NumberSetIndicator<Outside, *>,
+        val insideInd: NumberSetIndicator<Inside, *>
+    ) : NumberData<Outside> {
+        override fun traverse(visitor: (NumberData<*>) -> Unit) = super.traverse(visitor)
+        override fun toString(): String = "(${outsideInd.clazz}) ($set)"
     }
 
     data class Intersection<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
@@ -123,44 +125,58 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     }
 
     val lazyRanges: List<Pair<Number, Number>> by lazy {
-        NumberSimplifier(setIndicator).distillToSet(data, true)
+        NumberSimplifier.distillToSet(setIndicator, data, true)
     }
 
     override fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
 
     fun withRange(start: T, end: T, key: Context.Key): Self {
         if (start == end) {
-            return fromData(Union(data, Ranges.fromConstant(start, setIndicator)))
+            return newFromData(Union(data, Ranges.fromConstant(start, setIndicator)))
         }
 
-        return fromData(Union(data, Ranges.fromRange(start, end, key, setIndicator)))
+        return newFromData(Union(data, Ranges.fromRange(start, end, key, setIndicator)))
     }
 
     fun withConstant(value: T): Self {
-        return fromData(Union(data, Ranges.fromConstant(value, setIndicator)))
+        return newFromData(Union(data, Ranges.fromConstant(value, setIndicator)))
     }
 
     override fun negate(): Self {
-        return fromData(Subtraction(Ranges.fromConstant(setIndicator.getZero(), setIndicator), data))
+        return newFromData(Subtraction(Ranges.fromConstant(setIndicator.getZero(), setIndicator), data))
     }
 
     override fun union(other: Self): Self {
-        return fromData(Union(data, other.data))
+        return newFromData(Union(data, other.data))
     }
 
     override fun intersect(other: Self): Self {
-        return fromData(Intersection(data, other.data))
+        return newFromData(Intersection(data, other.data))
     }
 
     override fun invert(): Self {
-        return fromData(Inversion(data))
+        return newFromData(Inversion(data))
     }
+
+    override fun <Q : IMoldableSet<Q>> cast(outsideInd: SetIndicator<Q>): Q {
+        if (outsideInd !is NumberSetIndicator<*, *>) {
+            throw IllegalArgumentException("Cannot cast a number to '$outsideInd'.")
+        }
+
+        fun <OutT : Number, OutSelf : FullyTypedNumberSet<OutT, OutSelf>> extra(outsideInd: NumberSetIndicator<OutT, OutSelf>): OutSelf {
+            return newFromDataAndInd(Cast(data, outsideInd, setIndicator), outsideInd)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        return extra(outsideInd) as Q
+    }
+
 
     override fun arithmeticOperation(
         other: Self,
         operation: BinaryNumberOp
     ): Self {
-        return fromData(
+        return newFromData(
             when (operation) {
                 ADDITION -> Addition(data, other.data)
                 SUBTRACTION -> Subtraction(data, other.data)
@@ -255,23 +271,11 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
             newData = Union(data, newData)
         }
 
-        return fromData(newData)
+        return newFromData(newData)
     }
 
     override fun getSetIndicator(): SetIndicator<Self> {
         return setIndicator
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun fromData(data: NumberData<T>): Self {
-        return when (this) {
-            is ByteSet -> ByteSet(data as NumberData<Byte>)
-            is ShortSet -> ShortSet(data as NumberData<Short>)
-            is IntSet -> IntSet(data as NumberData<Int>)
-            is LongSet -> LongSet(data as NumberData<Long>)
-            is FloatSet -> FloatSet(data as NumberData<Float>)
-            is DoubleSet -> DoubleSet(data as NumberData<Double>)
-        } as Self
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -287,5 +291,26 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
             }
         }
         return false
+    }
+
+    private fun newFromData(data: NumberData<T>): Self {
+        return newFromDataAndInd(data, setIndicator)
+    }
+
+    companion object {
+        @Suppress("UNCHECKED_CAST")
+        private fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromDataAndInd(
+            data: NumberData<T>,
+            ind: NumberSetIndicator<T, Self>
+        ): Self {
+            return when (ind) {
+                is ByteSetIndicator -> ByteSet(data as NumberData<Byte>)
+                is ShortSetIndicator -> ShortSet(data as NumberData<Short>)
+                is IntSetIndicator -> IntSet(data as NumberData<Int>)
+                is LongSetIndicator -> LongSet(data as NumberData<Long>)
+                is FloatSetIndicator -> FloatSet(data as NumberData<Float>)
+                is DoubleSetIndicator -> DoubleSet(data as NumberData<Double>)
+            } as Self
+        }
     }
 }

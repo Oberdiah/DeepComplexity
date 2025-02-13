@@ -90,6 +90,13 @@ sealed class NumberSetIndicator<T : Number, Set : FullyTypedNumberSet<T, Set>>(c
     abstract fun getMinValue(): T
     abstract fun getInt(int: Int): T
 
+    fun isWholeNum(): Boolean {
+        return this is IntSetIndicator
+                || this is LongSetIndicator
+                || this is ShortSetIndicator
+                || this is ByteSetIndicator
+    }
+
     fun getZero(): T {
         return getInt(0)
     }

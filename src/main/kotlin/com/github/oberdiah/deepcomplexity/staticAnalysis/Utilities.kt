@@ -6,6 +6,7 @@ import com.intellij.psi.PsiReferenceExpression
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import org.apache.commons.numbers.core.DD
+import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.BigInteger.valueOf
 import kotlin.math.nextDown
@@ -140,18 +141,35 @@ object Utilities {
     }
 
     operator fun <T : Number> T.compareTo(other: T): Int {
-        return when (this) {
-            is Byte -> this.toInt().compareTo(other.toInt())
-            is Short -> this.toInt().compareTo(other.toInt())
-            is Int -> this.compareTo(other as Int)
-            is Long -> this.compareTo(other as Long)
-            is Float -> this.compareTo(other as Float)
-            is Double -> this.compareTo(other as Double)
-            else -> throw IllegalArgumentException("Unsupported type for comparison")
+        if (this is BigInteger && other is BigInteger) {
+            return this.compareTo(other)
+        }
+
+        if (this is BigInteger || other is BigInteger) {
+            throw IllegalArgumentException("Cannot compare BigInteger with non-BigInteger for now. $this $other")
+        }
+
+        val thisIsWhole = this is Byte || this is Short || this is Int || this is Long
+        val otherIsWhole = other is Byte || other is Short || other is Int || other is Long
+
+        if (thisIsWhole && otherIsWhole) {
+            return this.toLong().compareTo(other.toLong())
+        }
+
+        return if (thisIsWhole) {
+            println("Slow comparison warning! $this $other")
+            BigDecimal.valueOf(this.toLong()).compareTo(BigDecimal.valueOf(other.toDouble()))
+        } else if (otherIsWhole) {
+            println("Slow comparison warning! $this $other")
+            BigDecimal.valueOf(this.toDouble()).compareTo(BigDecimal.valueOf(other.toLong()))
+        } else {
+            this.toDouble().compareTo(other.toDouble())
         }
     }
 
     operator fun <T : Number> T.plus(other: T): T {
+        assert(this::class == other::class)
+
         @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this + other.toByte()).toByte()
@@ -166,6 +184,8 @@ object Utilities {
     }
 
     operator fun <T : Number> T.minus(other: T): T {
+        assert(this::class == other::class)
+
         @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this - other.toByte()).toByte()
@@ -180,6 +200,8 @@ object Utilities {
     }
 
     operator fun <T : Number> T.times(other: T): T {
+        assert(this::class == other::class)
+
         @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this.toByte() * other.toByte()).toByte()
@@ -194,6 +216,8 @@ object Utilities {
     }
 
     operator fun <T : Number> T.div(other: T): T {
+        assert(this::class == other::class)
+
         @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> (this.toByte() / other.toByte()).toByte()
@@ -209,6 +233,8 @@ object Utilities {
 
     // Min and max extension functions for Number
     fun <T : Number> T.min(other: T): T {
+        assert(this::class == other::class)
+
         @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> if (this < other.toByte()) this else other.toByte()
@@ -222,6 +248,8 @@ object Utilities {
     }
 
     fun <T : Number> T.max(other: T): T {
+        assert(this::class == other::class)
+
         @Suppress("UNCHECKED_CAST")
         return when (this) {
             is Byte -> if (this > other.toByte()) this else other.toByte()

@@ -6,20 +6,25 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Ranges
 import com.intellij.openapi.actionSystem.DataKey.allKeys
+import com.intellij.refactoring.introduceVariable.IntroduceVariableUsagesCollector.changed
 import kotlin.collections.filter
 import kotlin.to
 
-class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private val setIndicator: NumberSetIndicator<T, Self>) {
+object NumberSimplifier {
     /**
      * The ranges are inclusive, in order, and non-overlapping.
      */
-    fun distillToSet(data: NumberData<T>, shouldWrap: Boolean): List<Pair<T, T>> {
+    fun <T : Number, Self : FullyTypedNumberSet<T, Self>> distillToSet(
+        ind: NumberSetIndicator<T, Self>,
+        data: NumberData<T>,
+        shouldWrap: Boolean
+    ): List<Pair<T, T>> {
         var data = data
 
         val maxIterations = 20
 
         for (i in 0..maxIterations) {
-            val (result, changed) = applyRules(data)
+            val (result, changed) = applyRules(ind, data)
 
             if (!changed) {
                 if (result !is Ranges) {
@@ -35,13 +40,31 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
         throw IllegalStateException("Distillation did not converge after $maxIterations iterations")
     }
 
-    private fun applyRules(data: NumberData<T>): Pair<NumberData<T>, Boolean> {
+    private fun <T : Number, Self : FullyTypedNumberSet<T, Self>> applyRules(
+        ind: NumberSetIndicator<T, Self>,
+        data: NumberData<T>
+    ): Pair<NumberData<T>, Boolean> {
         return when (data) {
             is Empty -> data to false
             is Ranges -> data to false
+            is Cast<*, *> -> {
+                // Somehow we got away without a single suppress here!
+                fun <Q : Number> extra(cast: Cast<T, Q>): Pair<NumberData<T>, Boolean> {
+                    val (set, changed) = applyRules(cast.insideInd, cast.set)
+
+                    if (set is Ranges) {
+                        return set.castTo(ind) to true
+                    }
+
+                    return Cast(set, cast.outsideInd, cast.insideInd) to changed
+                }
+
+                return extra(data as Cast<T, *>)
+            }
+
             is Union -> {
-                val (lhs, changed1) = applyRules(data.setA)
-                val (rhs, changed2) = applyRules(data.setB)
+                val (lhs, changed1) = applyRules(ind, data.setA)
+                val (rhs, changed2) = applyRules(ind, data.setB)
 
                 if (lhs is Empty && rhs is Empty) {
                     return Empty<T>() to true
@@ -68,8 +91,8 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Intersection -> {
-                val (lhs, changed1) = applyRules(data.setA)
-                val (rhs, changed2) = applyRules(data.setB)
+                val (lhs, changed1) = applyRules(ind, data.setA)
+                val (rhs, changed2) = applyRules(ind, data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
@@ -88,7 +111,7 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Inversion -> {
-                val (set, changed) = applyRules(data.set)
+                val (set, changed) = applyRules(ind, data.set)
                 // Double inversion cancels out
                 if (set is Inversion) {
                     return set.set to true
@@ -102,8 +125,8 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Addition -> {
-                val (lhs, changed1) = applyRules(data.setA)
-                val (rhs, changed2) = applyRules(data.setB)
+                val (lhs, changed1) = applyRules(ind, data.setA)
+                val (rhs, changed2) = applyRules(ind, data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
@@ -125,15 +148,15 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Subtraction -> {
-                val (lhs, changed1) = applyRules(data.setA)
-                val (rhs, changed2) = applyRules(data.setB)
+                val (lhs, changed1) = applyRules(ind, data.setA)
+                val (rhs, changed2) = applyRules(ind, data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
                 }
 
                 if (lhs == rhs) {
-                    return Ranges.fromConstant(setIndicator.getZero(), setIndicator) to true
+                    return Ranges.fromConstant(ind.getZero(), ind) to true
                 }
 
                 if (lhs is Ranges && rhs is Ranges) {
@@ -144,15 +167,15 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Multiplication -> {
-                val (lhs, changed1) = applyRules(data.setA)
-                val (rhs, changed2) = applyRules(data.setB)
+                val (lhs, changed1) = applyRules(ind, data.setA)
+                val (rhs, changed2) = applyRules(ind, data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
                 }
 
                 if (lhs.isConfirmedToBe(0) || rhs.isConfirmedToBe(0)) {
-                    return Ranges.fromConstant(setIndicator.getZero(), setIndicator) to true
+                    return Ranges.fromConstant(ind.getZero(), ind) to true
                 }
 
                 if (lhs.isConfirmedToBe(1)) {
@@ -171,15 +194,15 @@ class NumberSimplifier<T : Number, Self : FullyTypedNumberSet<T, Self>>(private 
             }
 
             is Division -> {
-                val (lhs, changed1) = applyRules(data.setA)
-                val (rhs, changed2) = applyRules(data.setB)
+                val (lhs, changed1) = applyRules(ind, data.setA)
+                val (rhs, changed2) = applyRules(ind, data.setB)
 
                 if (lhs is Empty || rhs is Empty) {
                     return Empty<T>() to true
                 }
 
                 if (lhs.isConfirmedToBe(0)) {
-                    return Ranges.fromConstant(setIndicator.getZero(), setIndicator) to true
+                    return Ranges.fromConstant(ind.getZero(), ind) to true
                 }
 
                 if (rhs.isConfirmedToBe(1)) {

@@ -23,6 +23,37 @@ class Ranges<T : Number> private constructor(
 
     override fun toString(): String = ranges.joinToString(", ") { it.stringOverview() }
 
+    fun <NewT : Number> castTo(newInd: NumberSetIndicator<NewT, *>): Ranges<NewT> {
+        assert(newInd.isWholeNum()) // We can't handle/haven't thought about floating point yet.
+
+        if (newInd.getMaxValue() > setIndicator.getMaxValue()) {
+            // We're enlarging the possibility space. This means our optimization of keeping unlimited-sized affines
+            // around until the final range-pairs step is no longer valid.
+            // For example, (short) ((byte) x) + 5 has a range of [-123, 132]
+            val newRanges = mutableListOf<Affine<NewT>>()
+            for (affine in ranges) {
+                val newAffine = affine.castTo(newInd)
+                val affineRanges = newAffine.toRanges()
+
+                if (affineRanges.size == 1) {
+                    // We don't wrap under the new casting, we can keep the affine alive :)
+                    newRanges.add(newAffine)
+                } else {
+                    // We need to split the affine into multiple affines.
+                    for (range in affineRanges) {
+                        newRanges.add(Affine.fromRangeNoKey(range.first, range.second, newInd))
+                    }
+                }
+            }
+
+            return Ranges(newRanges, newInd)
+        } else {
+            // When we're shrinking things, I think (?) we're fine to stay as-is and just label with the new indicator.
+            // I could be wrong here, but this feels intuitively correct to me.
+            return Ranges(ranges.map { it.castTo(newInd) }, newInd)
+        }
+    }
+
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
     private fun pairsStream(): Stream<Pair<T, T>> = ranges.stream().flatMap { it.toRanges().stream() }
     private fun makeNew(ranges: List<Affine<T>>): Ranges<T> = Ranges(ranges, setIndicator)

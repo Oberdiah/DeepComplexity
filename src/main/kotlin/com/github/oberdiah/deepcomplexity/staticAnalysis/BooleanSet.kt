@@ -65,6 +65,10 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
         }
     }
 
+    override fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q {
+        throw IllegalArgumentException("Cannot cast boolean to $indicator")
+    }
+
     override fun getSetIndicator(): SetIndicator<BooleanSet> {
         return BooleanSetIndicator
     }
