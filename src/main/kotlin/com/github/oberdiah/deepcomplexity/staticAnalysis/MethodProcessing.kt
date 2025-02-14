@@ -7,9 +7,8 @@ import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteExcepti
 import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
+import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.intellij.psi.*
-import com.intellij.psi.impl.source.tree.java.PsiParenthesizedExpressionImpl
-import org.jetbrains.kotlin.idea.util.CommentSaver.Companion.tokenType
 
 object MethodProcessing {
     fun printMethod(method: PsiMethod, evaluate: Boolean) {
@@ -205,22 +204,24 @@ object MethodProcessing {
                 val lhsOperand = psi.lOperand
                 val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()
 
-                val lhs = buildExpressionFromPsi(lhsOperand, context).tryCastTo(IntSetIndicator)
-                    ?: TODO("Failed to cast to NumberSet: ${lhsOperand.text} while parsing ${psi.text}")
-
-                val rhs = buildExpressionFromPsi(rhsOperand, context).tryCastTo(IntSetIndicator)
-                    ?: TODO("Failed to cast to NumberSet: ${rhsOperand.text} while parsing ${psi.text}")
+                val lhsPrecast = buildExpressionFromPsi(lhsOperand, context).tryCastToNumbers()
+                    ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${lhsOperand.text}")
+                val rhsPrecast = buildExpressionFromPsi(rhsOperand, context).tryCastToNumbers()
+                    ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${rhsOperand.text}")
 
                 val tokenType = psi.operationSign.tokenType
 
                 val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
                 val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
 
-                return when {
-                    comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
-                    binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
-                    else -> TODO("Unsupported binary operation: ${psi.operationSign} (${psi.text})")
-                }
+                return ConversionsAndPromotion.binaryNumericPromotion(lhsPrecast, rhsPrecast)
+                    .map { lhs, rhs ->
+                        return@map when {
+                            comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
+                            binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
+                            else -> TODO("Unsupported binary operation: ${psi.operationSign} (${psi.text})")
+                        }
+                    }
             }
 
             is PsiTypeCastExpression -> {

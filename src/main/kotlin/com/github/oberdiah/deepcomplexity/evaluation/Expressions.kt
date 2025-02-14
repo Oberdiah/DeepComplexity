@@ -38,6 +38,15 @@ inline fun <Set : IMoldableSet<Set>, reified T : IExpr<Set>> IExpr<*>.tryCastExa
     }
 }
 
+fun <T : IMoldableSet<T>> IExpr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): IExpr<T> {
+    return if (this.getSetIndicator() == indicator) {
+        @Suppress("UNCHECKED_CAST")
+        this as IExpr<T>
+    } else {
+        TypeCastExpression(this, indicator, explicit)
+    }
+}
+
 fun <T : IMoldableSet<T>> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<T>? {
     return if (this.getSetIndicator() == indicator) {
         @Suppress("UNCHECKED_CAST")
