@@ -13,8 +13,8 @@ class IntegerAffineTest {
 
         val range = integerAffine.toRange()
 
-        assertEquals(5, range.first)
-        assertEquals(5, range.second)
+        assertEquals(5, range.first.toInt())
+        assertEquals(5, range.second.toInt())
     }
 
     @Test
@@ -23,8 +23,8 @@ class IntegerAffineTest {
 
         val range = integerAffine.toRange()
 
-        assertEquals(5, range.first)
-        assertEquals(10, range.second)
+        assertEquals(5, range.first.toInt())
+        assertEquals(10, range.second.toInt())
     }
 
     @Test
@@ -36,7 +36,7 @@ class IntegerAffineTest {
 
                 val integerAffine3 = integerAffine1.add(integerAffine2)
 
-                assertEquals((i + j).toLong(), integerAffine3.toRange().first)
+                assertEquals((i + j).toLong(), integerAffine3.toRange().first.toLong())
             }
         }
     }
@@ -49,7 +49,7 @@ class IntegerAffineTest {
                 val integerAffine2 = IntegerAffine.fromConstant(j.toLong())
                 val integerAffine3 = integerAffine1.subtract(integerAffine2)
 
-                assertEquals((i - j).toLong(), integerAffine3.toRange().first)
+                assertEquals((i - j).toLong(), integerAffine3.toRange().first.toLong())
             }
         }
     }
@@ -62,7 +62,7 @@ class IntegerAffineTest {
                 val integerAffine2 = IntegerAffine.fromConstant(j.toLong())
                 val integerAffine3 = integerAffine1.multiply(integerAffine2)
 
-                assertEquals((i * j).toLong(), integerAffine3.toRange().first)
+                assertEquals((i * j).toLong(), integerAffine3.toRange().first.toLong())
             }
         }
     }
@@ -74,7 +74,7 @@ class IntegerAffineTest {
 
         val result = affine1.multiply(affine2).toRange()
 
-        assertEquals(15, result.first)
-        assertEquals(30, result.second)
+        assertEquals(15, result.first.toInt())
+        assertEquals(30, result.second.toInt())
     }
 }
