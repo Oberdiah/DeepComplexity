@@ -9,7 +9,8 @@ import java.lang.reflect.Method
 import kotlin.jvm.java
 
 object TestUtilities {
-    private val boolArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
+    private val predictedArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
+    private val actualArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
 
     fun testMethod(method: PsiMethod, methodName: String) {
         println("Processing method ${method.name}:")
@@ -66,12 +67,8 @@ object TestUtilities {
             return 0.0
         }
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
-            boolArray[s - Short.MIN_VALUE] = range.contains(s.toShort())
-        }
-
-        val numEntriesRangeCovers = boolArray.count { it }
-        if (numEntriesRangeCovers == 0) {
-            return 0.0
+            predictedArray[s - Short.MIN_VALUE] = range.contains(s.toShort())
+            actualArray[s - Short.MIN_VALUE] = false
         }
 
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
@@ -84,17 +81,57 @@ object TestUtilities {
                 )
             } else {
                 if (result !in Short.MIN_VALUE..Short.MAX_VALUE) {
-                    // println("This is a temporary issue and will be fixed soon.")
-                } else {
-                    boolArray[result - Short.MIN_VALUE] = false
+                    throw AssertionError(
+                        "Method ${method.name} failed for input $s," +
+                                " returned a value of $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}"
+                    )
                 }
+                actualArray[result - Short.MIN_VALUE] = true
             }
         }
 
-        val score = numEntriesRangeCovers - boolArray.count { it }
-        val scoreFraction = score.toDouble() / numEntriesRangeCovers
+        val printLen = 50
 
-        print("\tReceived a score of $score/$numEntriesRangeCovers (${String.format("%.2f", scoreFraction * 100)}%)")
+        print("\n\t")
+        for (i in 1..printLen) {
+            val index = i - printLen / 2
+            print(if (index in 0..9) "$index" else ".")
+        }
+        print("\n\t")
+        for (i in 1..printLen) {
+            val index = i - Short.MIN_VALUE - printLen / 2
+            print(if (actualArray[index]) "X" else " ")
+        }
+        print("\n\t")
+        for (i in 1..printLen) {
+            val index = i - Short.MIN_VALUE - printLen / 2
+            print(if (predictedArray[index]) "X" else " ")
+        }
+        println()
+        println()
+
+        val numEntriesPredicted = predictedArray.count { it }
+        if (numEntriesPredicted == 0) {
+            return 0.0
+        }
+
+        var numEntriesCorrect = 0
+        for (i in 0 until predictedArray.size) {
+            if (predictedArray[i] && actualArray[i]) {
+                numEntriesCorrect++
+            }
+        }
+
+        val scoreFraction = numEntriesCorrect.toDouble() / numEntriesPredicted
+
+        print(
+            "\tReceived a score of $numEntriesCorrect/$numEntriesPredicted (${
+                String.format(
+                    "%.2f",
+                    scoreFraction * 100
+                )
+            }%)"
+        )
 
         return scoreFraction
     }
