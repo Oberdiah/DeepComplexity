@@ -7,6 +7,7 @@ import com.intellij.psi.PsiMethod
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase5
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
+import java.net.URI
 
 
 class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
@@ -42,7 +43,9 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val tests = mutableListOf<DynamicTest>()
 
         for (method in methodsToRun) {
-            tests.add(DynamicTest.dynamicTest(method.second) {
+            val testSourceUri = URI.create("method:testdata.MyTestData#" + method.second)
+
+            tests.add(DynamicTest.dynamicTest(method.second, testSourceUri) {
                 app.runReadAction {
                     TestUtilities.testMethod(method.first, method.second)
                 }
