@@ -4,6 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstraintSolver {
@@ -33,6 +34,14 @@ object ConstraintSolver {
                 }
             }
         }
+
+        fun <Q : NumberSet<Q>> castTo(setIndicator: SetIndicator<Q>): CollectedTerms<Q> =
+            CollectedTerms(
+                setIndicator,
+                // I'm suspicious of this. It feels like the most obvious thing to do
+                // but I'm not 100% sure it's actually fine.
+                terms.mapValues { (_, term) -> term.performACastTo(setIndicator, true) }.toMutableMap()
+            )
 
         fun negate(): CollectedTerms<T> {
             val newTerms = mutableMapOf<Int, IExpr<T>>()
@@ -104,11 +113,11 @@ object ConstraintSolver {
      *
      * Returns null if accurate constraints could not be ascertained.
      */
-    fun <T : NumberSet<T>> getVariableConstraints(
-        expr: ComparisonExpression<T>,
-        varKey: VariableKey,
+    fun <T : FullyTypedNumberSet<*, T>> getVariableConstraints(
+        expr: ComparisonExpression<*>,
+        variable: VariableExpression<T>,
     ): IExpr<T>? {
-        val (lhs, constant) = normalizeComparisonExpression(expr, varKey)
+        val (lhs, constant) = normalizeComparisonExpression(expr, variable)
 
         return if (lhs.terms.size == 1) {
             // This is good, we can solve this now.
@@ -116,7 +125,7 @@ object ConstraintSolver {
 
             val coeffLZ = ComparisonExpression(
                 coefficient,
-                ConstantExpression.zero(expr.lhs),
+                ConstantExpression.zero(variable.getNumberSetIndicator()),
                 ComparisonOp.LESS_THAN
             )
 
@@ -133,6 +142,7 @@ object ConstraintSolver {
             println("Cannot constraint solve yet: $lhs")
             null
         }
+        TODO()
     }
 
     /**
@@ -140,45 +150,57 @@ object ConstraintSolver {
      * side is a constant.
      */
     private fun <T : NumberSet<T>> normalizeComparisonExpression(
-        expr: ComparisonExpression<T>,
-        varKey: VariableKey,
+        expr: ComparisonExpression<*>,
+        variable: VariableExpression<T>,
     ): Pair<CollectedTerms<T>, IExpr<T>> {
         // Collect terms from both sides
-        val leftTerms = expandTerms(expr.lhs, varKey)
-        val rightTerms = expandTerms(expr.rhs, varKey)
+        val leftTerms = expandTerms(expr.lhs, variable)
+        val rightTerms = expandTerms(expr.rhs, variable)
 
         // Subtract right from left
         val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
 
-        val indicator = expr.lhs.getSetIndicator()
+        val indicator = variable.getSetIndicator()
         val constant = NegateExpression(lhs.terms.remove(0) ?: ConstExpr(NumberSet.zero(indicator)))
 
         return lhs to constant
     }
 
-    fun <T : NumberSet<T>> expandTerms(expr: IExpr<T>, varKey: VariableKey): CollectedTerms<T> {
-        val setIndicator = expr.getSetIndicator()
+    fun <T : NumberSet<T>> expandTerms(expr: IExpr<*>, variable: VariableExpression<T>): CollectedTerms<T> {
+        val setIndicator = variable.getSetIndicator() as NumberSetIndicator<*, T>
+        val castExpr = TypeCastExpression(expr, setIndicator, true)
         return when (expr) {
             is ArithmeticExpression -> {
-                val lhs = expandTerms(expr.lhs, varKey)
-                val rhs = expandTerms(expr.rhs, varKey)
+                val lhs = expandTerms(expr.lhs, variable)
+                val rhs = expandTerms(expr.rhs, variable)
 
                 lhs.combine(rhs, expr.op)
             }
 
-            is ConstExpr -> CollectedTerms(setIndicator, terms = mutableMapOf(0 to expr))
+            is ConstExpr -> CollectedTerms(
+                setIndicator,
+                terms = mutableMapOf(0 to castExpr)
+            )
+
             is VariableExpression -> {
-                if (expr.getKey() == varKey) {
-                    CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstExpr(NumberSet.one(expr.setInd))))
+                if (expr.getKey() == variable.getKey()) {
+                    CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstExpr(NumberSet.one(setIndicator))))
                 } else {
-                    CollectedTerms(setIndicator, terms = mutableMapOf(0 to expr))
+                    CollectedTerms(setIndicator, terms = mutableMapOf(0 to castExpr))
                 }
             }
 
             // I think this is correct?
-            is NegateExpression -> expandTerms(expr.expr, varKey).negate()
+            is NegateExpression -> expandTerms(expr.expr, variable).negate()
             is NumberLimitsExpression -> throw IllegalStateException("Uuh ... this can maybe happen?")
             is NumIterationTimesExpression -> TODO("Maybe one day? Unsure if this is possible")
+            is TypeCastExpression<*, *> -> {
+                fun <Q : NumberSet<Q>> extra(expr: IExpr<Q>): CollectedTerms<T> =
+                    expandTerms(expr, variable).castTo(setIndicator)
+
+                extra(expr.expr.tryCastToNumbers()!!)
+            }
+
             else -> TODO("Not implemented constraints for $expr")
         }
     }

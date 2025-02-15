@@ -2,12 +2,11 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ExprConstrain {
     /**
@@ -15,7 +14,6 @@ object ExprConstrain {
      * or the constraints were too complex to be determined.
      */
     fun <T : IMoldableSet<T>> getConstraints(condition: IExpr<BooleanSet>, variable: VariableExpression<T>): IExpr<T>? {
-        val varKey = variable.getKey()
         return when (condition) {
             is BooleanExpression -> {
                 val lhsConstrained = condition.lhs.getConstraints(variable)
@@ -40,9 +38,13 @@ object ExprConstrain {
                     "Variable must be a number set. This requires more thought if we've hit this."
                 }
 
+                // Safety: We've asserted above that the variable is a NumberSet.
                 @Suppress("UNCHECKED_CAST")
-                // We can only cast back like this because we've verified it's a number set.
-                ConstraintSolver.getVariableConstraints(condition, varKey) as IExpr<T>?
+                ConstraintSolver.getVariableConstraints(
+                    condition,
+                    variable as VariableExpression<out FullyTypedNumberSet<*, *>>
+                )
+                    ?.let { it.tryCastTo(variable.getSetIndicator())!! }
             }
 
             is ConstExpr -> {

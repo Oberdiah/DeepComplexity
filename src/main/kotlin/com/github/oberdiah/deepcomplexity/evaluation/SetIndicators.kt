@@ -35,7 +35,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
 
                 is ConstExpr -> expr.singleElementSet.getSetIndicator()
                 is VariableExpression -> expr.setInd
-                is TypeCastExpression -> expr.setInd
+                is TypeCastExpression<*, *> -> expr.setInd
             } as SetIndicator<T>
         }
 
@@ -47,6 +47,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
                 Long::class -> LongSetIndicator
                 Short::class -> ShortSetIndicator
                 Byte::class -> ByteSetIndicator
+                Char::class -> TODO()
                 Boolean::class -> BooleanSetIndicator
                 else -> GenericSetIndicator
             }
@@ -74,7 +75,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
                 is Long -> LongSetIndicator
                 is Short -> ShortSetIndicator
                 is Byte -> ByteSetIndicator
-                else -> throw IllegalArgumentException("Unsupported number type: ${value::class}")
+                else -> TODO()
             } as SetIndicatorImpl<T, Self>
         }
     }

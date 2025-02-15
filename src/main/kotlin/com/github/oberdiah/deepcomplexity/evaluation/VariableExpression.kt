@@ -2,8 +2,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import com.intellij.psi.PsiType
-import com.intellij.psi.PsiTypes
-import kotlin.reflect.KClass
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.

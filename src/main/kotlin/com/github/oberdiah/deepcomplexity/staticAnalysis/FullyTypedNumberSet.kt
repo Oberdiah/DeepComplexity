@@ -147,10 +147,12 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     }
 
     override fun union(other: Self): Self {
+        assert(setIndicator == other.setIndicator)
         return newFromData(Union(data, other.data))
     }
 
     override fun intersect(other: Self): Self {
+        assert(setIndicator == other.setIndicator)
         return newFromData(Intersection(data, other.data))
     }
 
@@ -176,6 +178,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         other: Self,
         operation: BinaryNumberOp
     ): Self {
+        assert(setIndicator == other.setIndicator)
         return newFromData(
             when (operation) {
                 ADDITION -> Addition(data, other.data)
@@ -190,6 +193,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         other: Self,
         operation: ComparisonOp
     ): BooleanSet {
+        assert(setIndicator == other.setIndicator)
         val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
         val (otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
 

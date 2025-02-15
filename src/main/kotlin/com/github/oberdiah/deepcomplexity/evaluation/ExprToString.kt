@@ -30,7 +30,7 @@ object ExprToString {
 
             is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
-            is TypeCastExpression -> {
+            is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {
                     "(${expr.setInd}) ${expr.expr}"
                 } else {

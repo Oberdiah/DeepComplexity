@@ -105,7 +105,7 @@ object ExprEvaluate {
                 }
             }
 
-            is TypeCastExpression -> CastSolver.castFrom(
+            is TypeCastExpression<*, *> -> CastSolver.castFrom(
                 evaluate(expr.expr, condition),
                 expr.getSetIndicator(),
                 expr.explicit

@@ -5,18 +5,69 @@ import com.github.oberdiah.deepcomplexity.evaluation.FloatSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.IExpr
 import com.github.oberdiah.deepcomplexity.evaluation.IntSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.LongSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.performACastTo
+import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConversionsAndPromotion {
-    class TypedPair<T : NumberSet<T>>(val first: IExpr<T>, val second: IExpr<T>) {
+    class TypedPair<T : IMoldableSet<T>>(val first: IExpr<T>, val second: IExpr<T>) {
         fun <R> map(operation: (IExpr<T>, IExpr<T>) -> R): R = operation(first, second)
+    }
+
+    fun castAToB(exprA: IExpr<*>, exprB: IExpr<*>, explicit: Boolean): TypedPair<*> {
+        fun <T : IMoldableSet<T>> castTo(exprB: IExpr<T>): TypedPair<*> {
+            val castExprA: IExpr<T> = exprA.performACastTo(exprB.getSetIndicator(), explicit)
+            return TypedPair(exprB, castExprA)
+        }
+        return castTo(exprB)
+    }
+
+    fun castNumbersAToB(
+        exprA: IExpr<out NumberSet<*>>,
+        exprB: IExpr<out NumberSet<*>>,
+        explicit: Boolean
+    ): TypedPair<out NumberSet<*>> {
+        fun <T : NumberSet<T>> castTo(exprB: IExpr<T>): TypedPair<out NumberSet<*>> {
+            val castExprA: IExpr<T> = exprA.performACastTo(exprB.getSetIndicator(), explicit)
+            return TypedPair(exprB, castExprA)
+        }
+        return castTo(exprB)
+    }
+
+    fun <T : Number, Set : FullyTypedNumberSet<T, Set>> castBothNumbersTo(
+        exprA: IExpr<out NumberSet<*>>,
+        exprB: IExpr<out NumberSet<*>>,
+        indicator: NumberSetIndicator<T, Set>,
+        explicit: Boolean
+    ): TypedPair<Set> {
+        val castExprA: IExpr<Set> = exprA.performACastTo(indicator, explicit)
+        val castExprB: IExpr<Set> = exprB.performACastTo(indicator, explicit)
+        return TypedPair(castExprA, castExprB)
+    }
+
+    // This applies to:
+    // - Array dimension declaration
+    // - Array indexing
+    // - Unary plus/minus
+    // - Bitwise complement: ~
+    // - >>, >>>, or <<, but only >>> in some cases.
+    fun unaryNumericPromotion(expr: IExpr<out NumberSet<*>>): IExpr<out NumberSet<*>> {
+        // Java Spec 5.6.1:
+        // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
+        val indicator = expr.getSetIndicator()
+
+        return when (indicator) {
+            DoubleSetIndicator, FloatSetIndicator, LongSetIndicator, IntSetIndicator -> expr
+            else -> expr.performACastTo(IntSetIndicator, false)
+        }
     }
 
     fun binaryNumericPromotion(
         exprA: IExpr<out NumberSet<*>>,
         exprB: IExpr<out NumberSet<*>>,
-    ): TypedPair<*> {
+    ): TypedPair<out NumberSet<*>> {
         // Java Spec 5.6.2:
         // If either operand is of type double, the other is converted to double.
         // Otherwise, if either operand is of type float, the other is converted to float.
@@ -25,37 +76,13 @@ object ConversionsAndPromotion {
         val indicatorA = exprA.getSetIndicator()
         val indicatorB = exprB.getSetIndicator()
 
-
-        // It would be nice to be able to simplify this to calculate the indicator first and then create the typed pair,
-        // but Kotlin doesn't allow for this yet.
-        return when {
-            indicatorA == DoubleSetIndicator || indicatorB == DoubleSetIndicator -> {
-                TypedPair(
-                    exprA.performACastTo(DoubleSetIndicator, false),
-                    exprB.performACastTo(DoubleSetIndicator, false)
-                )
-            }
-
-            indicatorA == FloatSetIndicator || indicatorB == FloatSetIndicator -> {
-                TypedPair(
-                    exprA.performACastTo(FloatSetIndicator, false),
-                    exprB.performACastTo(FloatSetIndicator, false)
-                )
-            }
-
-            indicatorA == LongSetIndicator || indicatorB == LongSetIndicator -> {
-                TypedPair(
-                    exprA.performACastTo(LongSetIndicator, false),
-                    exprB.performACastTo(LongSetIndicator, false)
-                )
-            }
-
-            else -> {
-                TypedPair(
-                    exprA.performACastTo(IntSetIndicator, false),
-                    exprB.performACastTo(IntSetIndicator, false)
-                )
-            }
+        val targetIndicator = when {
+            indicatorA == DoubleSetIndicator || indicatorB == DoubleSetIndicator -> DoubleSetIndicator
+            indicatorA == FloatSetIndicator || indicatorB == FloatSetIndicator -> FloatSetIndicator
+            indicatorA == LongSetIndicator || indicatorB == LongSetIndicator -> LongSetIndicator
+            else -> IntSetIndicator
         }
+
+        return castBothNumbersTo(exprA, exprB, targetIndicator, false)
     }
 }

@@ -3,9 +3,7 @@ package com.github.oberdiah.deepcomplexity
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
-import com.intellij.debugger.impl.DebuggerUtilsEx.methodName
 import com.intellij.psi.PsiMethod
-import jdk.internal.org.jline.utils.Colors.s
 import testdata.MyTestData
 import java.lang.reflect.Method
 import kotlin.jvm.java
@@ -35,7 +33,7 @@ object TestUtilities {
             println("\tAww no :( ($errorMessage)\n")
             e.printStackTrace()
 
-            methodScore = 1.0
+            methodScore = 0.0
         }
 
         range?.let { methodScore = getMethodScore(reflectMethod, range) }
@@ -61,20 +59,23 @@ object TestUtilities {
     fun getMethodScore(method: Method, range: IMoldableSet<*>): Double {
         // For now, int-only. Short is the goal though.
         if (method.parameterCount != 1 ||
-            method.parameterTypes[0] != Int::class.java ||
-            method.returnType != Int::class.java
+            method.parameterTypes[0] != Short::class.java ||
+            method.returnType != Short::class.java
         ) {
             print("\tSkipped method ${method.name} as it's not valid for testing.")
             return 0.0
         }
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
-            boolArray[s - Short.MIN_VALUE] = range.contains(s)
+            boolArray[s - Short.MIN_VALUE] = range.contains(s.toShort())
         }
 
-        val highestScore = boolArray.count { it }
+        val numEntriesRangeCovers = boolArray.count { it }
+        if (numEntriesRangeCovers == 0) {
+            return 0.0
+        }
 
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
-            val result = method.invoke(null, s.toInt()) as Int
+            val result = method.invoke(null, s.toShort()) as Short
 
             if (!range.contains(result)) {
                 throw AssertionError(
@@ -90,11 +91,10 @@ object TestUtilities {
             }
         }
 
-        val score = highestScore - boolArray.count { it }
+        val score = numEntriesRangeCovers - boolArray.count { it }
+        val scoreFraction = score.toDouble() / numEntriesRangeCovers
 
-        val scoreFraction = score.toDouble() / highestScore
-
-        print("\tReceived a score of $score/$highestScore (${String.format("%.2f", scoreFraction * 100)}%)")
+        print("\tReceived a score of $score/$numEntriesRangeCovers (${String.format("%.2f", scoreFraction * 100)}%)")
 
         return scoreFraction
     }

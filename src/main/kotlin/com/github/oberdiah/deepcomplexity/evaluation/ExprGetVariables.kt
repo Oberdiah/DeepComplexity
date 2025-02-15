@@ -30,7 +30,7 @@ object ExprGetVariables {
             is NumberLimitsExpression -> expr.limit.getVariables(resolved) + expr.shouldFlipCmp.getVariables(resolved)
             is InvertExpression -> expr.expr.getVariables(resolved)
             is NumIterationTimesExpression -> expr.constraint.getVariables(resolved) + expr.variable
-            is TypeCastExpression -> expr.expr.getVariables(resolved)
+            is TypeCastExpression<*, *> -> expr.expr.getVariables(resolved)
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator.Companion.getSetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
@@ -19,6 +21,8 @@ sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
         return ExprToString.toString(this)
     }
 }
+
+fun <T : FullyTypedNumberSet<*, T>> IExpr<T>.getNumberSetIndicator() = getSetIndicator() as NumberSetIndicator<*, T>
 
 fun IExpr<*>.tryCastToNumbers(): IExpr<out NumberSet<*>>? {
     if (this.getSetIndicator() is NumberSetIndicator<*, *>) {
@@ -59,9 +63,22 @@ fun <T : IMoldableSet<T>> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<
 fun <T : IMoldableSet<T>> IExpr<BooleanSet>.getConstraints(varKey: VariableExpression<T>): IExpr<T>? =
     ExprConstrain.getConstraints(this, varKey)
 
-class ArithmeticExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>()
+class ArithmeticExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>() {
+    init {
+        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
+            "Adding expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        }
+    }
+}
+
 class ComparisonExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val comp: ComparisonOp) :
-    Expr<BooleanSet>()
+    Expr<BooleanSet>() {
+    init {
+        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
+            "Comparing expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        }
+    }
+}
 
 /**
  * Tries to cast the expression to the given set indicator.
@@ -70,14 +87,23 @@ class ComparisonExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T
  * Given that there's an assumption baked into all of this that we're working on a compilable program,
  * explicit isn't strictly necessary, but it's nice debugging and printing purposes.
  */
-class TypeCastExpression<T : IMoldableSet<T>>(val expr: IExpr<*>, val setInd: SetIndicator<T>, val explicit: Boolean) :
-    Expr<T>()
+class TypeCastExpression<T : IMoldableSet<T>, Q : IMoldableSet<Q>>(
+    val expr: IExpr<Q>,
+    val setInd: SetIndicator<T>,
+    val explicit: Boolean
+) : Expr<T>()
 
 class IfExpression<T : IMoldableSet<T>>(
     val trueExpr: IExpr<T>,
     val falseExpr: IExpr<T>,
     val thisCondition: IExpr<BooleanSet>
 ) : Expr<T>() {
+    init {
+        assert(trueExpr.getSetIndicator() == falseExpr.getSetIndicator()) {
+            "Incompatible types in if statement: ${trueExpr.getSetIndicator()} and ${falseExpr.getSetIndicator()}"
+        }
+    }
+
     companion object {
         fun <A : IMoldableSet<A>, B : IMoldableSet<B>> new(
             a: IExpr<A>,
@@ -94,7 +120,32 @@ class IfExpression<T : IMoldableSet<T>>(
     }
 }
 
-class IntersectExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
+class IntersectExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
+    init {
+        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
+            "Intersecting expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        }
+    }
+}
+
+class UnionExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
+    init {
+        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
+            "Unioning expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        }
+    }
+}
+
+class BooleanExpression(val lhs: IExpr<BooleanSet>, val rhs: IExpr<BooleanSet>, val op: BooleanOp) :
+    Expr<BooleanSet>() {
+    init {
+        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
+            "Boolean expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        }
+    }
+}
+
+class ConstExpr<T : IMoldableSet<T>>(val singleElementSet: T) : Expr<T>()
 class BooleanInvertExpression(val expr: IExpr<BooleanSet>) : Expr<BooleanSet>()
 class InvertExpression<T : IMoldableSet<T>>(val expr: IExpr<T>) : Expr<T>()
 class NegateExpression<T : NumberSet<T>>(val expr: IExpr<T>) : Expr<T>()
@@ -143,8 +194,3 @@ class NumIterationTimesExpression<T : NumberSet<T>>(
         }
     }
 }
-
-class UnionExpression<T : IMoldableSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
-class BooleanExpression(val lhs: IExpr<BooleanSet>, val rhs: IExpr<BooleanSet>, val op: BooleanOp) : Expr<BooleanSet>()
-
-class ConstExpr<T : IMoldableSet<T>>(val singleElementSet: T) : Expr<T>()

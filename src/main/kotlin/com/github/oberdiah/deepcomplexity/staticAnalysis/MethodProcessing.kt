@@ -89,25 +89,24 @@ object MethodProcessing {
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
-                            val lhs = context.getVar(resolvedLhs).tryCastTo(IntSetIndicator) ?: TODO(
-                                "Failed to cast to NumberSet: ${psi.lExpression.text} while parsing ${psi.text}"
-                            )
+                            val lhs = context.getVar(resolvedLhs).tryCastToNumbers()
+                                ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${psi.lExpression.text}")
+                            val rhs = buildExpressionFromPsi(rExpression, context).tryCastToNumbers()
+                                ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${rExpression.text}")
 
-                            val rhs = buildExpressionFromPsi(rExpression, context).tryCastTo(IntSetIndicator) ?: TODO(
-                                "Failed to cast to NumberSet: ${rExpression.text} while parsing ${psi.text}"
-                            )
-
-                            context.assignVar(
-                                resolvedLhs,
-                                ArithmeticExpression(
-                                    lhs,
-                                    rhs,
-                                    BinaryNumberOp.fromJavaTokenType(psi.operationSign.tokenType)
-                                        ?: throw IllegalArgumentException(
-                                            "As-yet unsupported assignment operation: ${psi.operationSign}"
-                                        )
+                            ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { lhs, rhs ->
+                                context.assignVar(
+                                    resolvedLhs,
+                                    ArithmeticExpression(
+                                        lhs,
+                                        rhs,
+                                        BinaryNumberOp.fromJavaTokenType(psi.operationSign.tokenType)
+                                            ?: throw IllegalArgumentException(
+                                                "As-yet unsupported assignment operation: ${psi.operationSign}"
+                                            )
+                                    )
                                 )
-                            )
+                            }
                         }
 
                         else -> {

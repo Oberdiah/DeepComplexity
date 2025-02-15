@@ -193,10 +193,22 @@ class Context {
         return variables[element] ?: VariableExpression.fromKey(element, this)
     }
 
+    /**
+     * Performs a cast if necessary.
+     */
     fun assignVar(key: Key, expr: IExpr<*>) {
-        variables[key] = expr
+        assert(alive)
+
+        val clazz = Utilities.psiTypeToKClass(key.getType())
+            ?: throw IllegalArgumentException("Unsupported type for variable expression")
+        // We're just going to always perform this cast for now.
+        // If the code compiles it's reasonable to do so.
+        variables[key] = expr.performACastTo(SetIndicator.fromClass(clazz), false)
     }
 
+    /**
+     * Performs a cast if necessary.
+     */
     fun assignVar(element: PsiElement, expr: IExpr<*>) {
         assert(alive)
         assignVar(keyFromElement(element), expr)
