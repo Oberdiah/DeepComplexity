@@ -32,8 +32,6 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
         val testToRun = System.getenv("TEST_FILTER")
 
-        println("testToRun: $testToRun")
-
         val methodsToRun = if (testToRun != null) {
             methods.filter { it.second.contains(testToRun) }
         } else {
