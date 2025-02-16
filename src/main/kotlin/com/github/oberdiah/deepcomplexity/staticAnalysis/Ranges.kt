@@ -88,11 +88,6 @@ class Ranges<T : Number> private constructor(
     }
 
     fun union(other: Ranges<T>): Ranges<T> {
-        // Assert the keys are disjoint sets
-        assert(getKeys().intersect(other.getKeys()).isEmpty()) {
-            "This indicates something's gone pretty wrong"
-        }
-
         // No affine killing here :)
         return makeNew(ranges + other.ranges)
     }

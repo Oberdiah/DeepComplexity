@@ -35,7 +35,7 @@ data class Affine<T : Number> private constructor(
 
         val (initialLower, initialUpper) = affine.toRange()
         val distanceToShunt = setSize * if (initialLower < min) {
-            (min - initialLower) / setSize + BigInteger.ONE
+            (min - initialLower - BigInteger.ONE) / setSize + BigInteger.ONE
         } else {
             (min - initialLower) / setSize
         }

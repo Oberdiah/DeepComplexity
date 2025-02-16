@@ -26,6 +26,10 @@ object ConstraintSolver {
         }
 
         override fun toString(): String {
+            if (terms.entries.isEmpty()) {
+                return "0"
+            }
+
             return terms.entries.joinToString(" + ") { (exp, term) ->
                 when (exp) {
                     0 -> term.toString()
@@ -117,7 +121,17 @@ object ConstraintSolver {
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
     ): IExpr<T>? {
-        val (lhs, constant) = normalizeComparisonExpression(expr, variable)
+        if (expr.getVariables(false).none { it.getKey() == variable.getKey() }) {
+            // The variable wasn't found in the expression.
+            return null
+        }
+
+        val (lhs, constant) = normalizeComparisonExpression(expr, variable) ?: return null
+
+        if (lhs.terms.isEmpty()) {
+            // The variable wasn't found in the expression, but we should have caught this earlier.
+            throw IllegalStateException("Variable $variable was not found in the expression $lhs")
+        }
 
         return if (lhs.terms.size == 1) {
             // This is good, we can solve this now.
@@ -134,12 +148,12 @@ object ConstraintSolver {
             return if (exponent == 1) {
                 NumberLimitsExpression(rhs, coeffLZ, expr.comp)
             } else {
-                println("Cannot constraint solve yet: $lhs")
+                println("Cannot constraint solve yet: $lhs (exponent $exponent)")
                 null
             }
         } else {
             // We might be able to solve this in future, for now we'll not bother.
-            println("Cannot constraint solve yet: $lhs")
+            println("Cannot constraint solve yet as it has zero terms: $lhs")
             null
         }
         TODO()
@@ -152,10 +166,14 @@ object ConstraintSolver {
     private fun <T : NumberSet<T>> normalizeComparisonExpression(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
-    ): Pair<CollectedTerms<T>, IExpr<T>> {
+    ): Pair<CollectedTerms<T>, IExpr<T>>? {
         // Collect terms from both sides
         val leftTerms = expandTerms(expr.lhs, variable)
         val rightTerms = expandTerms(expr.rhs, variable)
+
+        if (leftTerms == null || rightTerms == null) {
+            return null
+        }
 
         // Subtract right from left
         val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
@@ -166,7 +184,7 @@ object ConstraintSolver {
         return lhs to constant
     }
 
-    fun <T : NumberSet<T>> expandTerms(expr: IExpr<*>, variable: VariableExpression<T>): CollectedTerms<T> {
+    fun <T : NumberSet<T>> expandTerms(expr: IExpr<*>, variable: VariableExpression<T>): CollectedTerms<T>? {
         val setIndicator = variable.getSetIndicator() as NumberSetIndicator<*, T>
         val castExpr = TypeCastExpression(expr, setIndicator, true)
         return when (expr) {
@@ -174,7 +192,7 @@ object ConstraintSolver {
                 val lhs = expandTerms(expr.lhs, variable)
                 val rhs = expandTerms(expr.rhs, variable)
 
-                lhs.combine(rhs, expr.op)
+                lhs?.let { rhs?.let { lhs.combine(rhs, expr.op) } }
             }
 
             is ConstExpr -> CollectedTerms(
@@ -183,24 +201,28 @@ object ConstraintSolver {
             )
 
             is VariableExpression -> {
+                if (expr.isResolved()) {
+                    return expandTerms(expr.resolvedInto!!, variable)
+                }
+
                 if (expr.getKey() == variable.getKey()) {
                     CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstExpr(NumberSet.one(setIndicator))))
                 } else {
                     CollectedTerms(setIndicator, terms = mutableMapOf(0 to castExpr))
                 }
             }
-
             // I think this is correct?
-            is NegateExpression -> expandTerms(expr.expr, variable).negate()
+            is NegateExpression -> expandTerms(expr.expr, variable)?.negate()
             is NumberLimitsExpression -> throw IllegalStateException("Uuh ... this can maybe happen?")
             is NumIterationTimesExpression -> TODO("Maybe one day? Unsure if this is possible")
             is TypeCastExpression<*, *> -> {
-                fun <Q : NumberSet<Q>> extra(expr: IExpr<Q>): CollectedTerms<T> =
-                    expandTerms(expr, variable).castTo(setIndicator)
+                fun <Q : NumberSet<Q>> extra(expr: IExpr<Q>): CollectedTerms<T>? =
+                    expandTerms(expr, variable)?.castTo(setIndicator)
 
                 extra(expr.expr.tryCastToNumbers()!!)
             }
-
+            // This is quite solidly beyond our abilities.
+            is IfExpression<*> -> null
             else -> TODO("Not implemented constraints for $expr")
         }
     }

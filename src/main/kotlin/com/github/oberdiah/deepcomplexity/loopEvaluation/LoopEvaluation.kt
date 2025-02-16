@@ -100,6 +100,8 @@ object LoopEvaluation {
         // I'm not going to bother for now.
         if (!unresolved.getKey().key.matchesElement(psiElement)) return null
 
-        return ConstraintSolver.expandTerms(expr, unresolved) to unresolved
+        val terms = ConstraintSolver.expandTerms(expr, unresolved)
+        if (terms == null) return null
+        return terms to unresolved
     }
 }

@@ -31,6 +31,7 @@ public class MyTestData {
 		return (short) (incoming1 + incoming1);
 	}
 	
+	@RequiredScore(0.74) // We've not implemented even/odd/modulo detection yet.
 	public static short test3(short incoming1) {
 		int foo = 0;
 		int bar = incoming1;
@@ -60,25 +61,56 @@ public class MyTestData {
 	public static short shortTest3(short incoming) {
 		return (short) (incoming + 1);
 	}
-
-//	public static int test2(int incoming1, int incoming2) {
-//		int foo = 0;
-//		int bar = incoming1;
-//		incoming2 += 1;
-//
-//		if (incoming1 > 2) {
-//			incoming2 = incoming1 * incoming2;
-//			incoming1 = 0 - incoming1;
-//			bar += incoming1;
-//			foo += 3;
-//		} else if (incoming2 < 3) {
-//			foo += 4;
-//		} else {
-//			bar += 5;
-//		}
-//
-//		incoming1 += incoming2 * foo;
-//
-//		return incoming1 + bar * 2;
-//	}
+	
+	public static short largeTest1(short incoming1) {
+		int foo = 0;
+		int bar = 0;
+		int incoming2 = incoming1;
+		if (incoming1 < 0 - 10) {
+			incoming2 = 0;
+		}
+		
+		incoming2 += 1;
+		
+		if (incoming1 > 2) {
+			incoming2 = (short) (incoming1 * incoming2);
+			incoming1 = (short) (0 - incoming1);
+			bar += incoming1;
+			foo += 3;
+		} else if (incoming2 < 3) {
+			foo += 4;
+		} else {
+			bar += 5;
+		}
+		
+		return (short) (bar * 2);
+	}
+	
+	public static short largeTest2(short incoming1) {
+		int foo = 0;
+		int bar = 0;
+		int incoming2 = incoming1;
+		if (incoming1 < 0 - 10) {
+			incoming2 = 0;
+		}
+		
+		incoming2 += 1;
+		
+		if (incoming1 > 2) {
+			incoming2 = (short) (incoming1 * incoming2);
+			incoming1 = (short) (0 - incoming1);
+			bar += incoming1;
+			foo += 3;
+		} else if (incoming2 < 3) {
+			foo += 4;
+		} else {
+			bar += 5;
+		}
+		
+		return (short) (incoming2 * foo + bar * 2);
+	}
+	
+	public static short multiplicationTest1(short incoming1) {
+		return (short) (incoming1 * (incoming1 + 1));
+	}
 }
