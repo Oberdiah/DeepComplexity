@@ -37,19 +37,28 @@ object TestUtilities {
             methodScore = 0.0
         }
 
-        range?.let { methodScore = getMethodScore(reflectMethod, range) }
+        try {
+            range?.let { methodScore = getMethodScore(reflectMethod, range) }
+        } catch (e: Throwable) {
+            println("\tAww no 2! :( ($errorMessage)\n")
+            e.printStackTrace()
+            methodScore = 0.0
+        }
 
         val annotation = reflectMethod.getAnnotation(RequiredScore::class.java)
         if (annotation != null) {
             val requiredScore = annotation.value
 
-            if (methodScore < requiredScore) {
+            val methodScoreStr = String.format("%.2f", methodScore * 100)
+            val requiredScoreStr = String.format("%.2f", requiredScore * 100)
+
+            if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {
                 throw AssertionError(
                     "Method ${reflectMethod.name} failed with a score of $methodScore, " +
                             "which is less than the required score of $requiredScore"
                 )
             } else {
-                println(" which was sufficient (>=${String.format("%.2f", requiredScore * 100)}%)")
+                println(" which was sufficient (>=$requiredScoreStr%)")
             }
         } else {
             println("\n\tThis method was not required to reach a score threshold and as such it passed by default.")
