@@ -12,6 +12,13 @@ plugins {
     alias(libs.plugins.kover) // Gradle Kover Plugin
 }
 
+tasks.withType<Test> {
+    doFirst {
+        println("Test JVM arguments:")
+        println(allJvmArgs.joinToString(" ") { "$it" })
+    }
+}
+
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
