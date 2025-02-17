@@ -28,6 +28,7 @@ object TestUtilities {
             println(context.toString().prependIndent())
             errorMessage = "Failed to evaluate return value range"
             range = context.evaluateKey(Context.Key.ReturnKey(method))
+            println("\tFinal range: ${range.debugString()}")
             println("\tRange of return value: $range")
             errorMessage = "Failed to verify method"
         } catch (e: Throwable) {

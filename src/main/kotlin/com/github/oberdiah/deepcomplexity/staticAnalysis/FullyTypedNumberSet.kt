@@ -32,6 +32,8 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 ) : NumberSet<Self> {
     private val clazz: KClass<*> = setIndicator.clazz
 
+    override fun debugString(): String = data.toString()
+
     override fun toString(): String = getAsRanges().joinToString(", ") { (start, end) ->
         if (start == end) {
             start.toString()
