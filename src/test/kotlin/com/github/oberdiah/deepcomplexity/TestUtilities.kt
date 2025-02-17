@@ -23,11 +23,16 @@ object TestUtilities {
 
         var range: IMoldableSet<*>? = null
         try {
+            val returnKey = Context.Key.ReturnKey(method)
+
+
             errorMessage = "Failed to get method context"
             val context = MethodProcessing.getMethodContext(method)
-            println(context.toString().prependIndent())
+            println(context.debugKey(returnKey).prependIndent())
+
             errorMessage = "Failed to evaluate return value range"
-            range = context.evaluateKey(Context.Key.ReturnKey(method))
+
+            range = context.evaluateKey(returnKey)
             println("\tFinal range: ${range.debugString()}")
             println("\tRange of return value: $range")
             errorMessage = "Failed to verify method"

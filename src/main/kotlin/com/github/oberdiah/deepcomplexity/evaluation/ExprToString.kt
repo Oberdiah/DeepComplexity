@@ -65,4 +65,40 @@ object ExprToString {
 
         return "(${expr.lhs} ${expr.op} ${expr.rhs})"
     }
+
+    fun <T : IMoldableSet<T>> toDebugString(expr: IExpr<T>): String {
+        val myResult = "| ${expr.evaluate(ConstantExpression.TRUE)} |"
+        return when (expr) {
+            is ArithmeticExpression -> "(${expr.lhs.dStr()} ${expr.op} ${expr.rhs.dStr()}) = $myResult"
+            is ComparisonExpression<*> -> "(${expr.lhs.dStr()} ${expr.comp} ${expr.rhs.dStr()}) = $myResult"
+            is ConstExpr<*> -> expr.singleElementSet.toString()
+            is IfExpression -> {
+                return "(if ${expr.thisCondition} {\n${
+                    expr.trueExpr.dStr().prependIndent()
+                }\n} else {\n${
+                    expr.falseExpr.dStr().prependIndent()
+                }\n}) = $myResult"
+            }
+
+            is IntersectExpression -> "(${expr.lhs.dStr()} ∩ ${expr.rhs.dStr()}) = $myResult"
+            is BooleanInvertExpression -> "!${expr.expr.dStr()} = $myResult"
+            is InvertExpression -> "!${expr.expr.dStr()} = $myResult"
+            is NegateExpression -> "-${expr.expr.dStr()} = $myResult"
+            is UnionExpression -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
+            is BooleanExpression -> booleanExprToString(expr)
+            is VariableExpression -> {
+                return if (expr.isResolved()) expr.resolvedInto?.dStr() ?: "null" else expr.myKey.key.toString()
+            }
+
+            is NumberLimitsExpression -> "(${expr.cmp}${expr.limit.dStr()}) = $myResult"
+            is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint.dStr()}) = $myResult"
+            is TypeCastExpression<*, *> -> {
+                return if (expr.explicit) {
+                    "(${expr.setInd}) ${expr.expr.dStr()}"
+                } else {
+                    expr.expr.dStr()
+                }
+            }
+        }
+    }
 }

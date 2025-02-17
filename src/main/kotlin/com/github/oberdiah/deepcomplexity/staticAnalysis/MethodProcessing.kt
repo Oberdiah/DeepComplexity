@@ -22,7 +22,7 @@ object MethodProcessing {
         method.body?.let { body ->
             processPsiElement(body, context)
         }
-        println(context.convertToString(evaluate))
+        println(context.toString())
     }
 
     fun getMethodContext(method: PsiMethod): Context {

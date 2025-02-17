@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator.Companion.getSetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
@@ -14,6 +13,7 @@ sealed interface IExpr<T : IMoldableSet<T>> {
     fun getSetIndicator(): SetIndicator<T> = SetIndicator.getSetIndicator(this)
     fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
     fun evaluate(condition: IExpr<BooleanSet>): T = ExprEvaluate.evaluate(this, condition)
+    fun dStr(): String = ExprToString.toDebugString(this)
 }
 
 sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {

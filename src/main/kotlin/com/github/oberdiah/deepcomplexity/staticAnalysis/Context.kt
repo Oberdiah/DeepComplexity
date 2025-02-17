@@ -122,25 +122,23 @@ class Context {
     }
 
     override fun toString(): String {
-        return convertToString(false)
-    }
-
-    fun canResolve(variable: VariableExpression<*>): Boolean {
-        assert(alive)
-        return variables.containsKey(variable.getKey().key) && variable.getKey().context == this
-    }
-
-    fun convertToString(evaluate: Boolean): String {
         val variablesString =
             variables.entries.joinToString("\n") { entry ->
                 val expr = entry.value
                 val key = entry.key
 
-                val evalStr = if (evaluate) " (${ExprEvaluate.evaluate(expr, ConstantExpression.TRUE)})" else ""
-
-                "$key$evalStr:\n${expr.toString().prependIndent()}"
+                "$key:\n${expr.toString().prependIndent()}"
             }
         return "Context: {\n${variablesString.prependIndent()}\n}"
+    }
+
+    fun debugKey(key: Key): String {
+        return variables[key]?.dStr() ?: "Key not found"
+    }
+
+    fun canResolve(variable: VariableExpression<*>): Boolean {
+        assert(alive)
+        return variables.containsKey(variable.getKey().key) && variable.getKey().context == this
     }
 
     fun evaluateKey(key: Key): IMoldableSet<*> {
