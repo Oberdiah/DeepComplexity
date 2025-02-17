@@ -88,7 +88,11 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
                 return setA.toString()
             }
 
-            return "($setA ∪ $setB)"
+            return "(\n${
+                setA.toString().prependIndent()
+            }\n\t∪\n${
+                setB.toString().prependIndent()
+            }\n)"
         }
     }
 
@@ -103,27 +107,47 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
     data class Intersection<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
         BinaryNumberData<T> {
-        override fun toString(): String = "($setA ∩ $setB)"
+        override fun toString(): String = "(\n${
+            setA.toString().prependIndent()
+        }\n\t∩\n${
+            setB.toString().prependIndent()
+        }\n)"
     }
 
     data class Addition<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
         BinaryNumberData<T> {
-        override fun toString(): String = "($setA + $setB)"
+        override fun toString(): String = "(\n${
+            setA.toString().prependIndent()
+        }\n\t+\n${
+            setB.toString().prependIndent()
+        }\n)"
     }
 
     data class Subtraction<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
         BinaryNumberData<T> {
-        override fun toString(): String = "($setA - $setB)"
+        override fun toString(): String = "(\n${
+            setA.toString().prependIndent()
+        }\n\t-\n${
+            setB.toString().prependIndent()
+        }\n)"
     }
 
     data class Multiplication<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
         BinaryNumberData<T> {
-        override fun toString(): String = "($setA * $setB)"
+        override fun toString(): String = "(\n${
+            setA.toString().prependIndent()
+        }\n\t*\n${
+            setB.toString().prependIndent()
+        }\n)"
     }
 
     data class Division<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
         BinaryNumberData<T> {
-        override fun toString(): String = "($setA / $setB)"
+        override fun toString(): String = "(\n${
+            setA.toString().prependIndent()
+        }\n\t/\n${
+            setB.toString().prependIndent()
+        }\n)"
     }
 
     val lazyRanges: List<Pair<Number, Number>> by lazy {

@@ -33,7 +33,7 @@ object TestUtilities {
             errorMessage = "Failed to evaluate return value range"
 
             range = context.evaluateKey(returnKey)
-            println("\tFinal range: ${range.debugString()}")
+            println("\tFinal range:\n${range.debugString().prependIndent()}")
             println("\tRange of return value: $range")
             errorMessage = "Failed to verify method"
         } catch (e: Throwable) {
