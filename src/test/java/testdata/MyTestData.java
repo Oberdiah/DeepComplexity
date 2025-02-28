@@ -150,6 +150,7 @@ public class MyTestData {
 		return (short) (a + b);
 	}
 	
+	@RequiredScore(0.0597)
 	public static short combinedIfs2(short incoming1) {
 		int a = incoming1;
 		if (incoming1 < 0) {
@@ -163,6 +164,24 @@ public class MyTestData {
 			b = 0;
 		} else if (incoming1 > 20) {
 			b = 10;
+		}
+		
+		return (short) (a * b);
+	}
+	
+	public static short combinedIfs3(short incoming1) {
+		int a = incoming1;
+		if (incoming1 < 0) {
+			a = 0;
+		} else if (incoming1 >= 10) {
+			a = 0;
+		}
+		
+		int b = incoming1;
+		if (incoming1 < 10) {
+			b = 0;
+		} else if (incoming1 > 20) {
+			b = 0;
 		}
 		
 		return (short) (a * b);

@@ -1,10 +1,9 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
-import com.jetbrains.rd.util.threading.coroutines.RdCoroutineScope.Companion.override
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
 import java.math.BigInteger
+import java.math.BigInteger.TWO
+import java.math.BigInteger.ZERO
 import java.math.BigInteger.valueOf
 
 /**
@@ -13,36 +12,107 @@ import java.math.BigInteger.valueOf
 @ConsistentCopyVisibility
 data class IntegerAffine private constructor(
     // This represents twice the constant term. This allows us to represent ranges like [1, 2]
-    // where the center is 1.5.
-    private val center: BigInteger,
-    // This represents twice the noise terms. Again, this allows us to represent ranges like [1, 2]
-    private val noiseTerms: Map<Context.Key, BigInteger>,
+    // where the center is 1.5. Any variable that starts with d is doubled.
+    private val dCenter: BigInteger,
+    private val noiseTerms: Map<Context.Key, AffineNoiseTerm>,
 ) {
+    // The way to think of this is the range is the full range the unknown could be.
+    // The min is any constraints we've applied to the unknown to make it smaller, vice versa with max.
+    // Max & min will always be in the interval [-range, range].
+    // Remember: this represents twice the noise terms. The range, min, and max are all doubled.
+    // This allows us to represent ranges like [1, 2]
+    class AffineNoiseTerm(val dRange: BigInteger, val dMin: BigInteger, val dMax: BigInteger) {
+        companion object {
+            fun findDMin(vs: Collection<AffineNoiseTerm>): BigInteger =
+                vs.fold(ZERO) { acc, it -> acc + it.dMin }
+
+            fun findDMax(vs: Collection<AffineNoiseTerm>): BigInteger =
+                vs.fold(ZERO) { acc, it -> acc + it.dMax }
+
+            fun findDRange(vs: Collection<AffineNoiseTerm>): BigInteger =
+                vs.fold(ZERO) { acc, it -> acc + it.dRange }
+        }
+
+        override fun toString(): String {
+            return "±${formatV(dRange)} [${formatV(dMin)}, ${formatV(dMax)}]"
+        }
+
+        fun grab(sign: Int): BigInteger = when (sign) {
+            -1 -> dMin
+            1 -> dMax
+            else -> throw IllegalArgumentException("Sign must be -1 or 1")
+        }
+
+        fun addOrSubtract(other: AffineNoiseTerm, shouldAdd: Boolean): AffineNoiseTerm {
+            val newDRange = if (shouldAdd) dRange + other.dRange else dRange - other.dRange
+            val newDMin = if (shouldAdd) dMin + other.dMin else dMin - other.dMin
+            val newDMax = if (shouldAdd) dMax + other.dMax else dMax - other.dMax
+            return AffineNoiseTerm(newDRange, newDMin, newDMax)
+        }
+
+        fun multByDCenter(dCenter: BigInteger): AffineNoiseTerm {
+            // Divide by two because 2 * 2 = 4 so we need to compensate back to two.
+            return AffineNoiseTerm(dRange * dCenter / TWO, dMin * dCenter / TWO, dMax * dCenter / TWO)
+        }
+
+        fun mult(other: AffineNoiseTerm): AffineNoiseTerm {
+            val newDRange = dRange * other.dRange / TWO
+            val dMinA = dMin * other.dMin / TWO
+            val dMinB = dMin * other.dMax / TWO
+            val dMaxA = dMax * other.dMin / TWO
+            val dMaxB = dMax * other.dMax / TWO
+            val newDMin = dMinA.min(dMinB).min(dMaxA).min(dMaxB)
+            val newDMax = dMinA.max(dMinB).max(dMaxA).max(dMaxB)
+
+            return AffineNoiseTerm(newDRange, newDMin, newDMax)
+        }
+
+        fun constrainDMin(dMin: BigInteger): AffineNoiseTerm =
+            if (dMin > this.dMin) AffineNoiseTerm(dRange, dMin, dMax) else this
+
+        fun constrainDMax(dMax: BigInteger): AffineNoiseTerm =
+            if (dMax < this.dMax) AffineNoiseTerm(dRange, dMin, dMax) else this
+    }
+
     companion object {
+        private fun formatV(value: BigInteger): String =
+            (value / TWO).toString() +
+                    if (value % TWO == ZERO) "" else ".5"
+
+        fun noiseTerm(doubledRange: BigInteger): AffineNoiseTerm =
+            AffineNoiseTerm(doubledRange, -doubledRange, doubledRange)
+
         fun fromConstant(constant: Long): IntegerAffine =
-            IntegerAffine(valueOf(constant.toLong()) * BigInteger.TWO, emptyMap())
+            IntegerAffine(valueOf(constant.toLong()) * TWO, emptyMap())
 
         fun fromRangeNoKey(start: Long, end: Long): IntegerAffine {
             val twiceCenter = valueOf(start) + valueOf(end)
             val twiceRadius = valueOf(end) - valueOf(start)
-            return IntegerAffine(twiceCenter, mapOf(Context.Key.EphemeralKey.new() to twiceRadius))
+            return IntegerAffine(
+                twiceCenter,
+                mapOf(Context.Key.EphemeralKey.new() to noiseTerm(twiceRadius))
+            )
         }
 
         fun fromRange(start: Long, end: Long, key: Context.Key): IntegerAffine {
             val twiceCenter = valueOf(start) + valueOf(end)
             val twiceRadius = valueOf(end) - valueOf(start)
-            return IntegerAffine(twiceCenter, mapOf(key to twiceRadius))
+            return IntegerAffine(twiceCenter, mapOf(key to noiseTerm(twiceRadius)))
         }
     }
 
+    fun canRangeConstrain(): Boolean = noiseTerms.size == 1
+    fun rangeConstrain(start: BigInteger, end: BigInteger): IntegerAffine {
+        assert(canRangeConstrain())
+        val key = noiseTerms.keys.first()
+        val noiseTerm = noiseTerms.values.first()
+        val newNoiseTerm = noiseTerm
+            .constrainDMin(start * TWO - dCenter)
+            .constrainDMax(end * TWO - dCenter)
+        return IntegerAffine(dCenter, mapOf(key to newNoiseTerm))
+    }
+
     fun getKeys(): List<Context.Key> = noiseTerms.keys.toList()
-
-    // Still to do — Need to store the idealized range alongside the affine one and
-    // calculate with that as well.
-
-    private fun formatV(value: BigInteger): String =
-        (value / BigInteger.TWO).toString() +
-                if (value % BigInteger.TWO == BigInteger.ZERO) "" else ".5"
 
     fun stringOverview(): String {
         val (min, max) = toRange()
@@ -56,15 +126,16 @@ data class IntegerAffine private constructor(
 
     override fun toString(): String {
         val (min, max) = toRange()
-        return "$min..$max (${formatV(center)} + ${
-            noiseTerms.entries.joinToString(" + ") { "${formatV(it.value)} * ${it.key}" }
+        return "$min..$max (${formatV(dCenter)} + ${
+            noiseTerms.entries.joinToString(" + ") { "${formatV(it.value.dRange)} * ${it.key}" }
         })"
     }
 
     fun toRange(): Pair<BigInteger, BigInteger> {
-        val radius = noiseTerms.values.fold(BigInteger.ZERO) { acc, it -> acc + it }
-        val lower = (center - radius) / BigInteger.TWO
-        val upper = (center + radius) / BigInteger.TWO
+        val negDRadius = AffineNoiseTerm.findDMin(noiseTerms.values)
+        val posDRadius = AffineNoiseTerm.findDMax(noiseTerms.values)
+        val lower = (dCenter + negDRadius) / TWO
+        val upper = (dCenter + posDRadius) / TWO
         return Pair(lower, upper)
     }
 
@@ -82,13 +153,13 @@ data class IntegerAffine private constructor(
     }
 
     private fun addOrSubtract(other: IntegerAffine, shouldAdd: Boolean): IntegerAffine {
-        val newCenter = if (shouldAdd) center + other.center else center - other.center
-        val newNoiseTerms = mutableMapOf<Context.Key, BigInteger>()
+        val newCenter = if (shouldAdd) dCenter + other.dCenter else dCenter - other.dCenter
+        val newNoiseTerms = mutableMapOf<Context.Key, AffineNoiseTerm>()
         for ((key, value) in noiseTerms) {
-            if (shouldAdd) {
-                newNoiseTerms[key] = value + other.noiseTerms.getOrDefault(key, BigInteger.ZERO)
-            } else {
-                newNoiseTerms[key] = value - other.noiseTerms.getOrDefault(key, BigInteger.ZERO)
+            other.noiseTerms[key]?.let {
+                newNoiseTerms[key] = value.addOrSubtract(it, shouldAdd)
+            }.orElse {
+                newNoiseTerms[key] = value
             }
         }
         for ((key, value) in other.noiseTerms) {
@@ -102,39 +173,76 @@ data class IntegerAffine private constructor(
 
     fun multiply(other: IntegerAffine): IntegerAffine {
         // Multiply centers (remember they represent twice the value)
-        val newCenter = (center * other.center) / BigInteger.TWO
+        val newCenter = (dCenter * other.dCenter) / TWO
 
-        val newNoiseTerms = mutableMapOf<Context.Key, BigInteger>()
+        val newNoiseTerms = mutableMapOf<Context.Key, AffineNoiseTerm>()
 
         // Handle center * noise terms
         for ((key, value) in other.noiseTerms) {
-            newNoiseTerms[key] = (center * value) / BigInteger.TWO
+            newNoiseTerms[key] = value.multByDCenter(dCenter)
         }
         for ((key, value) in noiseTerms) {
-            val existing = newNoiseTerms.getOrDefault(key, BigInteger.ZERO)
-            newNoiseTerms[key] = existing + (other.center * value) / BigInteger.TWO
+            val newTerm = value.multByDCenter(other.dCenter)
+            newNoiseTerms[key] = newNoiseTerms[key]?.addOrSubtract(newTerm, true) ?: newTerm
         }
 
-        // Handle noise terms * noise terms
-        var quadraticNoiseSumA = BigInteger.ZERO
-        var quadraticNoiseSumB = BigInteger.ZERO
+        // Don't need to worry about noise * noise if one of them is empty.
+        if (!noiseTerms.isEmpty() && !other.noiseTerms.isEmpty()) {
+            // Solving even simple affines isn't possible to do easily generally, as seen by
+            // `min (x + 5y) * (3x + 6y) subject to -10 <= x <= 10, -10 <= y <= 10` which has two
+            // troughs at y=-7/2 and y=7/2.
 
-        for (value1 in noiseTerms.values) {
-            quadraticNoiseSumA += value1.abs()
+            // However, what you can do, if you've both got independent noise terms, is to figure out what would need
+            // to be what for min and max and then calculate those ahead-of-time for multiplication.
+            val hasIndependentKeys = noiseTerms.keys.intersect(other.noiseTerms.keys).isEmpty()
+            val quadraticTerm = let {
+                val myDMin = AffineNoiseTerm.findDMin(noiseTerms.values)
+                val myDMax = AffineNoiseTerm.findDMax(noiseTerms.values)
+                val myDRange = AffineNoiseTerm.findDRange(noiseTerms.values)
+
+                val otherDMin = AffineNoiseTerm.findDMin(other.noiseTerms.values)
+                val otherDMax = AffineNoiseTerm.findDMax(other.noiseTerms.values)
+                val otherDRange = AffineNoiseTerm.findDRange(other.noiseTerms.values)
+
+                val myDMinOtherDMin = myDMin * otherDMin / TWO
+                val myDMinOtherDMax = myDMin * otherDMax / TWO
+                val myDMaxOtherDMin = myDMax * otherDMin / TWO
+                val myDMaxOtherDMax = myDMax * otherDMax / TWO
+
+                val newDMin = myDMinOtherDMin.min(myDMinOtherDMax).min(myDMaxOtherDMin).min(myDMaxOtherDMax)
+                val newDMax = myDMinOtherDMin.max(myDMinOtherDMax).max(myDMaxOtherDMin).max(myDMaxOtherDMax)
+                val newDRange = myDRange * otherDRange / TWO
+                if (!hasIndependentKeys) {
+                    AffineNoiseTerm(newDRange, newDMin, newDMax)
+                } else {
+                    // Step 1: For min and max, figure out which needs to be negative and which needs to be positive.
+                    val myMinSign = if (newDMin == myDMinOtherDMin || newDMin == myDMinOtherDMax) -1 else 1
+                    val otherMinSign = if (newDMin == myDMinOtherDMin || newDMin == myDMaxOtherDMin) -1 else 1
+                    val myMaxSign = if (newDMax == myDMaxOtherDMin || newDMax == myDMaxOtherDMax) 1 else -1
+                    val otherMaxSign = if (newDMax == myDMinOtherDMax || newDMax == myDMaxOtherDMax) 1 else -1
+
+                    // Step 2: Now we know what the signs of our terms are, we can multiply them.
+                    var newQuadraticDMin = ZERO
+                    var newQuadraticDMax = ZERO
+                    for (myNoise in noiseTerms.values) {
+                        for (otherNoise in other.noiseTerms.values) {
+                            newQuadraticDMin += myNoise.grab(myMinSign) * otherNoise.grab(otherMinSign) / TWO
+                            newQuadraticDMax += myNoise.grab(myMaxSign) * otherNoise.grab(otherMaxSign) / TWO
+                        }
+                    }
+
+                    AffineNoiseTerm(newDRange, newQuadraticDMin, newQuadraticDMax)
+                }
+            }
+
+            // todo: We could re-center the quadratic based on its ranges.
+
+            val key = Context.Key.EphemeralKey("Quadratic")
+            newNoiseTerms[key] = newNoiseTerms[key]?.addOrSubtract(quadraticTerm, true) ?: quadraticTerm
         }
-        for (value2 in other.noiseTerms.values) {
-            quadraticNoiseSumB += value2.abs()
-        }
 
-        val quadraticNoiseSum = quadraticNoiseSumA * quadraticNoiseSumB / BigInteger.TWO
+        val finalAffine = IntegerAffine(newCenter, newNoiseTerms)
 
-        // Add the combined quadratic noise term if non-zero
-        if (quadraticNoiseSum != BigInteger.ZERO) {
-            val quadraticKey = Context.Key.EphemeralKey("Quadratic")
-            val existing = newNoiseTerms.getOrDefault(quadraticKey, BigInteger.ZERO)
-            newNoiseTerms[quadraticKey] = existing + quadraticNoiseSum
-        }
-
-        return IntegerAffine(newCenter, newNoiseTerms)
+        return finalAffine
     }
 }

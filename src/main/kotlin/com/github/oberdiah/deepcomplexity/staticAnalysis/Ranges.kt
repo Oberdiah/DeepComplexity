@@ -99,27 +99,33 @@ class Ranges<T : Number> private constructor(
         // This could be made much more efficient.
         for (affine in ranges) {
             for (otherAffine in other.ranges) {
-                val ranges = affine.toRanges()
                 val otherRanges = otherAffine.toRanges()
-                for (range in ranges) {
+                if (affine.canRangeConstrain() && false) {
                     for (otherRange in otherRanges) {
-                        // Find overlap
-                        val start = range.first.max(otherRange.first)
-                        val end = range.second.min(otherRange.second)
+                        newList.add(affine.rangeConstrain(otherRange))
+                    }
+                } else {
+                    val ranges = affine.toRanges()
+                    for (range in ranges) {
+                        for (otherRange in otherRanges) {
+                            // Find overlap
+                            val start = range.first.max(otherRange.first)
+                            val end = range.second.min(otherRange.second)
 
-                        // If there is an overlap, add it
-                        if (start <= end) {
-                            val avoidedWrapping = ranges.size == 1 && otherRanges.size == 1
-                            val firstRangeEntirelyEnclosed = range.first == start && range.second == end
-                            val secondRangeEntirelyEnclosed = otherRange.first == start && otherRange.second == end
+                            // If there is an overlap, add it
+                            if (start <= end) {
+                                val avoidedWrapping = ranges.size == 1 && otherRanges.size == 1
+                                val firstRangeEntirelyEnclosed = range.first == start && range.second == end
+                                val secondRangeEntirelyEnclosed = otherRange.first == start && otherRange.second == end
 
-                            // This prioritizes affine 1 over affine 2. We may want to change this.
-                            if (avoidedWrapping && firstRangeEntirelyEnclosed) {
-                                newList.add(affine)
-                            } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
-                                newList.add(otherAffine)
-                            } else {
-                                newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
+                                // This prioritizes affine 1 over affine 2. We may want to change this.
+                                if (avoidedWrapping && firstRangeEntirelyEnclosed) {
+                                    newList.add(affine)
+                                } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
+                                    newList.add(otherAffine)
+                                } else {
+                                    newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
+                                }
                             }
                         }
                     }

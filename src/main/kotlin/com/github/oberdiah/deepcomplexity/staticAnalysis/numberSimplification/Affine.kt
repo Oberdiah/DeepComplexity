@@ -25,6 +25,14 @@ data class Affine<T : Number> private constructor(
 
     fun getKeys(): List<Context.Key> = affine.getKeys()
 
+    fun canRangeConstrain(): Boolean = affine.canRangeConstrain()
+    fun rangeConstrain(range: Pair<T, T>): Affine<T> {
+        assert(canRangeConstrain())
+        val start = valueOf(range.first.toLong())
+        val end = valueOf(range.second.toLong())
+        return Affine(setIndicator, affine.rangeConstrain(start, end))
+    }
+
     fun isExactly(i: Int): Boolean = affine.isExactly(i)
     fun toRanges(): List<Pair<T, T>> {
         assert(setIndicator.isWholeNum()) // We can't handle/haven't thought about floating point yet.

@@ -12,6 +12,9 @@ object TestUtilities {
     private val predictedArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
     private val actualArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
 
+    // Can be disabled to avoid double-calculating values when debugging.
+    const val ADDITIONAL_DEBUG_INFO = true
+
     fun testMethod(method: PsiMethod, methodName: String) {
         println("Processing method ${method.name}:")
         var errorMessage = ""
@@ -25,10 +28,9 @@ object TestUtilities {
         try {
             val returnKey = Context.Key.ReturnKey(method)
 
-
             errorMessage = "Failed to get method context"
             val context = MethodProcessing.getMethodContext(method)
-            println(context.debugKey(returnKey).prependIndent())
+            if (ADDITIONAL_DEBUG_INFO) println(context.debugKey(returnKey).prependIndent())
 
             errorMessage = "Failed to evaluate return value range"
 
@@ -105,8 +107,10 @@ object TestUtilities {
             }
         }
 
-        val printLen = 50
+        val numEntriesActual = actualArray.count { it }
+        val numEntriesPredicted = predictedArray.count { it }
 
+        val printLen = 50
         print("\n\t")
         for (i in 1..printLen) {
             val index = i - printLen / 2
@@ -117,15 +121,22 @@ object TestUtilities {
             val index = i - Short.MIN_VALUE - printLen / 2
             print(if (actualArray[index]) "X" else " ")
         }
+        if (numEntriesActual < 20) {
+            print("(" + actualArray.indices.filter { actualArray[it] }
+                .joinToString(", ") { (it + Short.MIN_VALUE).toString() } + ")")
+        }
         print("\n\t")
         for (i in 1..printLen) {
             val index = i - Short.MIN_VALUE - printLen / 2
             print(if (predictedArray[index]) "X" else " ")
         }
+        if (numEntriesPredicted < 20) {
+            print("(" + predictedArray.indices.filter { predictedArray[it] }
+                .joinToString(", ") { (it + Short.MIN_VALUE).toString() } + ")")
+        }
         println()
         println()
 
-        val numEntriesPredicted = predictedArray.count { it }
         if (numEntriesPredicted == 0) {
             return 0.0
         }
@@ -138,6 +149,18 @@ object TestUtilities {
         }
 
         val scoreFraction = numEntriesCorrect.toDouble() / numEntriesPredicted
+
+        if (scoreFraction != 1.0) {
+            // Print out all values if there are few enough.
+            val filtered = predictedArray.indices.filter { predictedArray[it] && !actualArray[it] }
+            val joined = filtered.take(20).joinToString(", ") { (it + Short.MIN_VALUE).toString() }
+            print("\tLost score for: $joined")
+            if (filtered.size > 20) {
+                println(" and ${filtered.size - 20} more")
+            } else {
+                println()
+            }
+        }
 
         print(
             "\tReceived a score of $numEntriesCorrect/$numEntriesPredicted (${
