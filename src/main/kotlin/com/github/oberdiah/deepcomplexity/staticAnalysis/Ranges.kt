@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet.NumberData
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
@@ -18,7 +17,8 @@ class Ranges<T : Number> private constructor(
     // They are not sorted (Primarily because it's a little hard to do when each affine can represent two ranges)
     private val ranges: List<Affine<T>>,
     private val setIndicator: NumberSetIndicator<T, *>
-) : NumberData<T> {
+) {
+    fun indicator(): NumberSetIndicator<T, *> = setIndicator
     fun getKeys(): List<Context.Key> = ranges.flatMap { it.getKeys() }
 
     override fun toString(): String = ranges.joinToString(", ") { it.stringOverview() }
@@ -57,8 +57,6 @@ class Ranges<T : Number> private constructor(
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
     private fun pairsStream(): Stream<Pair<T, T>> = ranges.stream().flatMap { it.toRanges().stream() }
     private fun makeNew(ranges: List<Affine<T>>): Ranges<T> = Ranges(ranges, setIndicator)
-
-    override fun isConfirmedToBe(i: Int): Boolean = ranges.all { it.isExactly(i) }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -163,6 +161,8 @@ class Ranges<T : Number> private constructor(
     }
 
     companion object {
+        fun <T : Number> empty(ind: NumberSetIndicator<T, *>): Ranges<T> = Ranges(emptyList(), ind)
+
         fun <T : Number> fromConstant(constant: T, ind: NumberSetIndicator<T, *>): Ranges<T> =
             Ranges(listOf(Affine.fromConstant(constant, ind)), ind)
 

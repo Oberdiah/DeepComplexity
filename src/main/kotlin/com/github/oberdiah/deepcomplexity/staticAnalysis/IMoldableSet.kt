@@ -7,11 +7,6 @@ import kotlin.reflect.KClass
  * This is the set of possible values an expression can take.
  */
 sealed interface IMoldableSet<T : IMoldableSet<T>> {
-    /**
-     * Might return additional information beyond simply what the set contains.
-     */
-    fun debugString(): String
-
     fun getSetIndicator(): SetIndicator<T>
     fun union(other: T): T
 

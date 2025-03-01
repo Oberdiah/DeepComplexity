@@ -20,8 +20,6 @@ interface GenericSet : IMoldableSet<GenericSet> {
     }
 
     class GenericSetImpl<T : Any>(private val clazz: KClass<T>, private val values: Set<T>) : GenericSet {
-        override fun debugString(): String = toString()
-
         override fun getSetIndicator(): SetIndicator<GenericSet> {
             return GenericSetIndicator
         }

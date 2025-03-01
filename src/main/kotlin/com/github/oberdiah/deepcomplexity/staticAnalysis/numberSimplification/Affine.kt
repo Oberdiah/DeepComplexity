@@ -68,7 +68,13 @@ data class Affine<T : Number> private constructor(
     fun add(other: Affine<T>): Affine<T>? = affine.add(other.affine)?.let { Affine(setIndicator, it) }
     fun subtract(other: Affine<T>): Affine<T>? = affine.subtract(other.affine)?.let { Affine(setIndicator, it) }
     fun multiply(other: Affine<T>): Affine<T>? = affine.multiply(other.affine)?.let { Affine(setIndicator, it) }
-    fun divide(other: Affine<T>): Affine<T>? = TODO()
+    fun divide(other: Affine<T>): Affine<T>? {
+        if (other.isExactly(1)) {
+            return this
+        }
+
+        TODO()
+    }
 
     companion object {
         fun <T : Number> fromConstant(constant: T, ind: NumberSetIndicator<T, *>): Affine<T> =
