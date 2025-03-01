@@ -6,7 +6,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
-import kotlin.reflect.KClass
 
 // To swap between the two implementations of number sets, you should only have to change the SetIndicators.
 sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<Self>, Self : NumberSet<Self> {
@@ -50,7 +49,8 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
     companion object {
         fun <T : NumberSet<T>> fullRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                return indicator.newEmptySet().withRange(indicator.getMinValue(), indicator.getMaxValue(), key)
+                return indicator.newEmptySet()
+                    .withAdditionalRange(indicator.getMinValue(), indicator.getMaxValue(), key)
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -58,7 +58,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> fullPositiveRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                return indicator.newEmptySet().withRange(indicator.getZero(), indicator.getMaxValue(), key)
+                return indicator.newEmptySet().withAdditionalRange(indicator.getZero(), indicator.getMaxValue(), key)
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -66,7 +66,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> fullNegativeRange(indicator: SetIndicator<T>, key: Context.Key): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                return indicator.newEmptySet().withRange(indicator.getMinValue(), indicator.getZero(), key)
+                return indicator.newEmptySet().withAdditionalRange(indicator.getMinValue(), indicator.getZero(), key)
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -74,7 +74,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> zero(indicator: SetIndicator<T>): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                return indicator.newEmptySet().withConstant(indicator.getZero())
+                return indicator.newEmptySet().withAdditionalConstant(indicator.getZero())
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -82,7 +82,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : NumberSet<T>> one(indicator: SetIndicator<T>): T {
             fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
-                return indicator.newEmptySet().withConstant(indicator.getOne())
+                return indicator.newEmptySet().withAdditionalConstant(indicator.getOne())
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
@@ -90,12 +90,12 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
         fun <T : Number, Self : FullyTypedNumberSet<T, Self>> singleValue(value: T): Self {
             val set: Self = SetIndicator.newEmptySetFromValue(value)
-            return set.withConstant(value)
+            return set.withAdditionalConstant(value)
         }
 
         fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromRange(start: T, end: T, key: Context.Key): Self {
             val set: Self = SetIndicator.newEmptySetFromValue(start)
-            return set.withRange(start, end, key)
+            return set.withAdditionalRange(start, end, key)
         }
     }
 }

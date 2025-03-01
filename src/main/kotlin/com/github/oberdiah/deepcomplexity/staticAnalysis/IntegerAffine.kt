@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
 import java.math.BigInteger
+import java.math.BigInteger.ONE
 import java.math.BigInteger.TWO
 import java.math.BigInteger.ZERO
 import java.math.BigInteger.valueOf
@@ -244,5 +245,14 @@ data class IntegerAffine private constructor(
         val finalAffine = IntegerAffine(newCenter, newNoiseTerms)
 
         return finalAffine
+    }
+
+    fun divide(other: IntegerAffine): IntegerAffine {
+        // Quick return for the easy case :)
+        if (other.dCenter == TWO && other.noiseTerms.isEmpty()) {
+            return this
+        }
+
+        TODO()
     }
 }

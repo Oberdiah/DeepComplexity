@@ -23,16 +23,15 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
-import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberSimplifier
 import kotlin.reflect.KClass
 
 sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>>(
     private val setIndicator: NumberSetIndicator<T, Self>,
-    private val data: NumberData<T>
+    private val ranges: Ranges<T>
 ) : NumberSet<Self> {
     private val clazz: KClass<*> = setIndicator.clazz
 
-    override fun debugString(): String = data.toString()
+    override fun debugString(): String = ranges.toString()
 
     override fun toString(): String = getAsRanges().joinToString(", ") { (start, end) ->
         if (start == end) {
@@ -42,148 +41,59 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         }
     }
 
-    class DoubleSet(data: NumberData<Double> = Empty()) :
-        FullyTypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, data)
+    class DoubleSet(ranges: Ranges<Double> = Ranges.empty(DoubleSetIndicator)) :
+        FullyTypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, ranges)
 
-    class FloatSet(data: NumberData<Float> = Empty()) : FullyTypedNumberSet<Float, FloatSet>(FloatSetIndicator, data)
-    class IntSet(data: NumberData<Int> = Empty()) : FullyTypedNumberSet<Int, IntSet>(IntSetIndicator, data)
-    class LongSet(data: NumberData<Long> = Empty()) : FullyTypedNumberSet<Long, LongSet>(LongSetIndicator, data)
-    class ShortSet(data: NumberData<Short> = Empty()) : FullyTypedNumberSet<Short, ShortSet>(ShortSetIndicator, data)
-    class ByteSet(data: NumberData<Byte> = Empty()) : FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator, data)
+    class FloatSet(ranges: Ranges<Float> = Ranges.empty(FloatSetIndicator)) :
+        FullyTypedNumberSet<Float, FloatSet>(FloatSetIndicator, ranges)
 
-    sealed interface NumberData<T : Number> {
-        // The visitor is NumberData<*> because it may be cast half-way through.
-        fun traverse(visitor: (NumberData<*>) -> Unit) = visitor(this)
-        fun isConfirmedToBe(i: Int): Boolean = false
-    }
+    class IntSet(ranges: Ranges<Int> = Ranges.empty(IntSetIndicator)) :
+        FullyTypedNumberSet<Int, IntSet>(IntSetIndicator, ranges)
 
-    // Note that although setA and setB are ostensibly of equal importance,
-    // when it comes to resolution setA gets priority and its affine is more likely to live.
-    sealed interface BinaryNumberData<T : Number> : NumberData<T> {
-        val setA: NumberData<T>
-        val setB: NumberData<T>
+    class LongSet(ranges: Ranges<Long> = Ranges.empty(LongSetIndicator)) :
+        FullyTypedNumberSet<Long, LongSet>(LongSetIndicator, ranges)
 
-        override fun traverse(visitor: (NumberData<*>) -> Unit) {
-            setA.traverse(visitor)
-            setB.traverse(visitor)
-        }
-    }
+    class ShortSet(ranges: Ranges<Short> = Ranges.empty(ShortSetIndicator)) :
+        FullyTypedNumberSet<Short, ShortSet>(ShortSetIndicator, ranges)
 
-    data class Empty<T : Number>(val unused: Int = 0) : NumberData<T> {
-        override fun toString(): String = "∅"
-    }
-
-    data class Inversion<T : Number>(val set: NumberData<T>) : NumberData<T> {
-        override fun traverse(visitor: (NumberData<*>) -> Unit) = set.traverse(visitor)
-        override fun toString(): String = "¬$set"
-    }
-
-    data class Union<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
-        BinaryNumberData<T> {
-        override fun toString(): String {
-            if (setA is Empty) {
-                return setB.toString()
-            }
-            if (setB is Empty) {
-                return setA.toString()
-            }
-
-            return "(\n${
-                setA.toString().prependIndent()
-            }\n\t∪\n${
-                setB.toString().prependIndent()
-            }\n)"
-        }
-    }
-
-    data class Cast<Outside : Number, Inside : Number>(
-        val set: NumberData<Inside>,
-        val outsideInd: NumberSetIndicator<Outside, *>,
-        val insideInd: NumberSetIndicator<Inside, *>
-    ) : NumberData<Outside> {
-        override fun traverse(visitor: (NumberData<*>) -> Unit) = super.traverse(visitor)
-        override fun toString(): String = "(${outsideInd.clazz}) ($set)"
-    }
-
-    data class Intersection<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
-        BinaryNumberData<T> {
-        override fun toString(): String = "(\n${
-            setA.toString().prependIndent()
-        }\n\t∩\n${
-            setB.toString().prependIndent()
-        }\n)"
-    }
-
-    data class Addition<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
-        BinaryNumberData<T> {
-        override fun toString(): String = "(\n${
-            setA.toString().prependIndent()
-        }\n\t+\n${
-            setB.toString().prependIndent()
-        }\n)"
-    }
-
-    data class Subtraction<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
-        BinaryNumberData<T> {
-        override fun toString(): String = "(\n${
-            setA.toString().prependIndent()
-        }\n\t-\n${
-            setB.toString().prependIndent()
-        }\n)"
-    }
-
-    data class Multiplication<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
-        BinaryNumberData<T> {
-        override fun toString(): String = "(\n${
-            setA.toString().prependIndent()
-        }\n\t*\n${
-            setB.toString().prependIndent()
-        }\n)"
-    }
-
-    data class Division<T : Number>(override val setA: NumberData<T>, override val setB: NumberData<T>) :
-        BinaryNumberData<T> {
-        override fun toString(): String = "(\n${
-            setA.toString().prependIndent()
-        }\n\t/\n${
-            setB.toString().prependIndent()
-        }\n)"
-    }
+    class ByteSet(ranges: Ranges<Byte> = Ranges.empty(ByteSetIndicator)) :
+        FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator, ranges)
 
     val lazyRanges: List<Pair<Number, Number>> by lazy {
-        NumberSimplifier.distillToSet(setIndicator, data, true)
+        ranges.toRangePairs()
     }
 
     override fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
 
-    fun withRange(start: T, end: T, key: Context.Key): Self {
-        if (start == end) {
-            return newFromData(Union(data, Ranges.fromConstant(start, setIndicator)))
-        }
-
-        return newFromData(Union(data, Ranges.fromRange(start, end, key, setIndicator)))
+    fun withAdditionalRange(start: T, end: T, key: Context.Key): Self {
+        return withAdditionalRanges(Ranges.fromRange(start, end, key, setIndicator))
     }
 
-    fun withConstant(value: T): Self {
-        return newFromData(Union(data, Ranges.fromConstant(value, setIndicator)))
+    fun withAdditionalRanges(ranges: Ranges<T>): Self {
+        assert(setIndicator == ranges.indicator())
+        return newFromRanges(this.ranges.union(ranges))
+    }
+
+    fun withAdditionalConstant(value: T): Self {
+        return withAdditionalRanges(Ranges.fromConstant(value, setIndicator))
     }
 
     override fun negate(): Self {
-        return newFromData(Subtraction(Ranges.fromConstant(setIndicator.getZero(), setIndicator), data))
+        return newFromRanges(Ranges.fromConstant(setIndicator.getZero(), setIndicator).subtract(ranges))
     }
 
     override fun union(other: Self): Self {
         assert(setIndicator == other.setIndicator)
-        return newFromData(Union(data, other.data))
+        return withAdditionalRanges(other.ranges)
     }
 
     override fun intersect(other: Self): Self {
         assert(setIndicator == other.setIndicator)
-        return newFromData(Intersection(data, other.data))
+        return newFromRanges(ranges.intersection(other.ranges))
     }
 
     override fun invert(): Self {
-        return newFromData(Inversion(data))
+        return newFromRanges(ranges.invert())
     }
 
     override fun <Q : IMoldableSet<Q>> cast(outsideInd: SetIndicator<Q>): Q {
@@ -192,7 +102,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         }
 
         fun <OutT : Number, OutSelf : FullyTypedNumberSet<OutT, OutSelf>> extra(outsideInd: NumberSetIndicator<OutT, OutSelf>): OutSelf {
-            return newFromDataAndInd(Cast(data, outsideInd, setIndicator), outsideInd)
+            return newFromDataAndInd(ranges.castTo(outsideInd), outsideInd)
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -205,12 +115,12 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         operation: BinaryNumberOp
     ): Self {
         assert(setIndicator == other.setIndicator)
-        return newFromData(
+        return newFromRanges(
             when (operation) {
-                ADDITION -> Addition(data, other.data)
-                SUBTRACTION -> Subtraction(data, other.data)
-                MULTIPLICATION -> Multiplication(data, other.data)
-                DIVISION -> Division(data, other.data)
+                ADDITION -> ranges.add(other.ranges)
+                SUBTRACTION -> ranges.subtract(other.ranges)
+                MULTIPLICATION -> ranges.multiply(other.ranges)
+                DIVISION -> ranges.divide(other.ranges)
             }
         )
     }
@@ -277,7 +187,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
 
-        var newData: NumberData<T> = when (comp) {
+        var newData: Ranges<T> = when (comp) {
             LESS_THAN, LESS_THAN_OR_EQUAL ->
                 Ranges.fromRange(
                     setIndicator.getMinValue(),
@@ -296,12 +206,12 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         }
 
         if (comp == LESS_THAN_OR_EQUAL) {
-            newData = Union(newData, data)
+            newData = newData.union(ranges)
         } else if (comp == GREATER_THAN_OR_EQUAL) {
-            newData = Union(data, newData)
+            newData = ranges.union(newData)
         }
 
-        return newFromData(newData)
+        return newFromRanges(newData)
     }
 
     override fun getSetIndicator(): SetIndicator<Self> {
@@ -323,23 +233,23 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         return false
     }
 
-    private fun newFromData(data: NumberData<T>): Self {
-        return newFromDataAndInd(data, setIndicator)
+    private fun newFromRanges(ranges: Ranges<T>): Self {
+        return newFromDataAndInd(ranges, setIndicator)
     }
 
     companion object {
         @Suppress("UNCHECKED_CAST")
         private fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromDataAndInd(
-            data: NumberData<T>,
+            ranges: Ranges<T>,
             ind: NumberSetIndicator<T, Self>
         ): Self {
             return when (ind) {
-                is ByteSetIndicator -> ByteSet(data as NumberData<Byte>)
-                is ShortSetIndicator -> ShortSet(data as NumberData<Short>)
-                is IntSetIndicator -> IntSet(data as NumberData<Int>)
-                is LongSetIndicator -> LongSet(data as NumberData<Long>)
-                is FloatSetIndicator -> FloatSet(data as NumberData<Float>)
-                is DoubleSetIndicator -> DoubleSet(data as NumberData<Double>)
+                is ByteSetIndicator -> ByteSet(ranges as Ranges<Byte>)
+                is ShortSetIndicator -> ShortSet(ranges as Ranges<Short>)
+                is IntSetIndicator -> IntSet(ranges as Ranges<Int>)
+                is LongSetIndicator -> LongSet(ranges as Ranges<Long>)
+                is FloatSetIndicator -> FloatSet(ranges as Ranges<Float>)
+                is DoubleSetIndicator -> DoubleSet(ranges as Ranges<Double>)
             } as Self
         }
     }
