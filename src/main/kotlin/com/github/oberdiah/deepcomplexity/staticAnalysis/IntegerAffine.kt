@@ -19,6 +19,10 @@ data class IntegerAffine private constructor(
     // The way to think of this is the range is the full range the unknown could be.
     // The min is any constraints we've applied to the unknown to make it smaller, vice versa with max.
     // Max & min will always be in the interval [-range, range].
+    // It is important to remember that a min/max means that the underlying key can never be less/greater than that
+    // value in this situation. It's not a 'this is clamped between these', it's a hard limit.
+    // If we try to do x[1, 5] + x[7, 10], that isn't possible and results in the empty set.
+    //
     // Remember: this represents twice the noise terms. The range, min, and max are all doubled.
     // This allows us to represent ranges like [1, 2]
     class AffineNoiseTerm(val dRange: BigInteger, val dMin: BigInteger, val dMax: BigInteger) {
@@ -31,6 +35,8 @@ data class IntegerAffine private constructor(
 
             fun findDRange(vs: Collection<AffineNoiseTerm>): BigInteger =
                 vs.fold(ZERO) { acc, it -> acc + it.dRange }
+
+            val zero = AffineNoiseTerm(ZERO, ZERO, ZERO)
         }
 
         override fun toString(): String {
@@ -47,7 +53,7 @@ data class IntegerAffine private constructor(
             val newDRange = if (shouldAdd) dRange + other.dRange else dRange - other.dRange
             val newDMin = if (shouldAdd) dMin + other.dMin else dMin - other.dMin
             val newDMax = if (shouldAdd) dMax + other.dMax else dMax - other.dMax
-            return AffineNoiseTerm(newDRange, newDMin, newDMax)
+            return AffineNoiseTerm(newDRange, newDMin.min(newDMax), newDMin.max(newDMax))
         }
 
         fun multByDCenter(dCenter: BigInteger): AffineNoiseTerm {
@@ -155,17 +161,11 @@ data class IntegerAffine private constructor(
     private fun addOrSubtract(other: IntegerAffine, shouldAdd: Boolean): IntegerAffine {
         val newCenter = if (shouldAdd) dCenter + other.dCenter else dCenter - other.dCenter
         val newNoiseTerms = mutableMapOf<Context.Key, AffineNoiseTerm>()
-        for ((key, value) in noiseTerms) {
-            other.noiseTerms[key]?.let {
-                newNoiseTerms[key] = value.addOrSubtract(it, shouldAdd)
-            }.orElse {
-                newNoiseTerms[key] = value
-            }
-        }
-        for ((key, value) in other.noiseTerms) {
-            if (key !in noiseTerms) {
-                newNoiseTerms[key] = value
-            }
+
+        for (key in noiseTerms.keys.union(other.noiseTerms.keys)) {
+            val lhs = noiseTerms[key] ?: AffineNoiseTerm.zero
+            val rhs = other.noiseTerms[key] ?: AffineNoiseTerm.zero
+            newNoiseTerms[key] = lhs.addOrSubtract(rhs, shouldAdd)
         }
 
         return IntegerAffine(newCenter, newNoiseTerms)
