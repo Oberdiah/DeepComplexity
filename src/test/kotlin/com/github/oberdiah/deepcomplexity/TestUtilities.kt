@@ -12,6 +12,9 @@ object TestUtilities {
     private val predictedArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
     private val actualArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
 
+    // Can be disabled to avoid double-calculating values when debugging.
+    const val ADDITIONAL_DEBUG_INFO = true
+
     fun testMethod(method: PsiMethod, methodName: String) {
         println("Processing method ${method.name}:")
         var errorMessage = ""
@@ -27,7 +30,7 @@ object TestUtilities {
 
             errorMessage = "Failed to get method context"
             val context = MethodProcessing.getMethodContext(method)
-            println(context.debugKey(returnKey).prependIndent())
+            if (ADDITIONAL_DEBUG_INFO) println(context.debugKey(returnKey).prependIndent())
 
             errorMessage = "Failed to evaluate return value range"
 

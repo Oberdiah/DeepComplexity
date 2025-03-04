@@ -78,7 +78,7 @@ data class Affine<T : Number> private constructor(
     fun add(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.add(other.affine))
     fun subtract(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.subtract(other.affine))
     fun multiply(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.multiply(other.affine))
-    fun divide(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.divide(other.affine))
+    fun divide(other: Affine<T>): Affine<T> = TODO()
 
     companion object {
         fun <T : Number> fromConstant(constant: T, ind: NumberSetIndicator<T, *>): Affine<T> =
