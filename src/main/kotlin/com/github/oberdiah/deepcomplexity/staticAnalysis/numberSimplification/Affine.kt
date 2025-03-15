@@ -5,10 +5,8 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IntegerAffine
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
-import org.jetbrains.kotlin.backend.common.FileLoweringPass.Empty.lower
 import java.math.BigInteger
 import java.math.BigInteger.valueOf
-import kotlin.text.toLong
 
 @ConsistentCopyVisibility
 data class Affine<T : Number> private constructor(
@@ -24,14 +22,6 @@ data class Affine<T : Number> private constructor(
     fun <NewT : Number> castTo(newInd: NumberSetIndicator<NewT, *>): Affine<NewT> = Affine(newInd, affine)
 
     fun getKeys(): List<Context.Key> = affine.getKeys()
-
-    fun canRangeConstrain(): Boolean = affine.canRangeConstrain()
-    fun rangeConstrain(range: Pair<T, T>): Affine<T> {
-        assert(canRangeConstrain())
-        val start = valueOf(range.first.toLong())
-        val end = valueOf(range.second.toLong())
-        return Affine(setIndicator, affine.rangeConstrain(start, end))
-    }
 
     fun isExactly(i: Int): Boolean = affine.isExactly(i)
     fun toRanges(): List<Pair<T, T>> {
@@ -75,19 +65,20 @@ data class Affine<T : Number> private constructor(
         )
     }
 
-    fun add(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.add(other.affine))
-    fun subtract(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.subtract(other.affine))
-    fun multiply(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.multiply(other.affine))
-    fun divide(other: Affine<T>): Affine<T> = TODO()
+    fun add(other: Affine<T>): Affine<T>? = affine.add(other.affine)?.let { Affine(setIndicator, it) }
+    fun subtract(other: Affine<T>): Affine<T>? = affine.subtract(other.affine)?.let { Affine(setIndicator, it) }
+    fun multiply(other: Affine<T>): Affine<T>? = affine.multiply(other.affine)?.let { Affine(setIndicator, it) }
+    fun divide(other: Affine<T>): Affine<T>? = TODO()
 
     companion object {
         fun <T : Number> fromConstant(constant: T, ind: NumberSetIndicator<T, *>): Affine<T> =
             Affine(ind, IntegerAffine.fromConstant(constant.toLong()))
 
+        // todo investigate if usages of this can be converted to fromConstraints
         fun <T : Number> fromRangeNoKey(start: T, end: T, ind: NumberSetIndicator<T, *>): Affine<T> =
             Affine(ind, IntegerAffine.fromRangeNoKey(start.toLong(), end.toLong()))
 
-        fun <T : Number> fromRange(start: T, end: T, key: Context.Key, ind: NumberSetIndicator<T, *>): Affine<T> =
-            Affine(ind, IntegerAffine.fromRange(start.toLong(), end.toLong(), key))
+        fun <T : Number> fromConstraints(start: T, end: T, key: Context.Key, ind: NumberSetIndicator<T, *>): Affine<T> =
+            Affine(ind, IntegerAffine.fromConstraints(ind, start.toLong(), end.toLong(), key))
     }
 }

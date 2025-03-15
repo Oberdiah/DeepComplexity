@@ -75,12 +75,14 @@ class Ranges<T : Number> private constructor(
     fun multiply(other: Ranges<T>): Ranges<T> = doOperation(other, Affine<T>::multiply)
     fun divide(other: Ranges<T>): Ranges<T> = doOperation(other, Affine<T>::divide)
 
-    fun doOperation(other: Ranges<T>, operation: (Affine<T>, Affine<T>) -> Affine<T>): Ranges<T> {
+    fun doOperation(other: Ranges<T>, operation: (Affine<T>, Affine<T>) -> Affine<T>?): Ranges<T> {
         val newList: MutableList<Affine<T>> = mutableListOf()
 
         for (range in ranges) {
             for (otherRange in other.ranges) {
-                newList.add(operation(range, otherRange))
+                operation(range, otherRange)?.let {
+                    newList.add(it)
+                }
             }
         }
 
@@ -100,32 +102,26 @@ class Ranges<T : Number> private constructor(
         for (affine in ranges) {
             for (otherAffine in other.ranges) {
                 val otherRanges = otherAffine.toRanges()
-                if (affine.canRangeConstrain() && false) {
+                val ranges = affine.toRanges()
+                for (range in ranges) {
                     for (otherRange in otherRanges) {
-                        newList.add(affine.rangeConstrain(otherRange))
-                    }
-                } else {
-                    val ranges = affine.toRanges()
-                    for (range in ranges) {
-                        for (otherRange in otherRanges) {
-                            // Find overlap
-                            val start = range.first.max(otherRange.first)
-                            val end = range.second.min(otherRange.second)
+                        // Find overlap
+                        val start = range.first.max(otherRange.first)
+                        val end = range.second.min(otherRange.second)
 
-                            // If there is an overlap, add it
-                            if (start <= end) {
-                                val avoidedWrapping = ranges.size == 1 && otherRanges.size == 1
-                                val firstRangeEntirelyEnclosed = range.first == start && range.second == end
-                                val secondRangeEntirelyEnclosed = otherRange.first == start && otherRange.second == end
+                        // If there is an overlap, add it
+                        if (start <= end) {
+                            val avoidedWrapping = ranges.size == 1 && otherRanges.size == 1
+                            val firstRangeEntirelyEnclosed = range.first == start && range.second == end
+                            val secondRangeEntirelyEnclosed = otherRange.first == start && otherRange.second == end
 
-                                // This prioritizes affine 1 over affine 2. We may want to change this.
-                                if (avoidedWrapping && firstRangeEntirelyEnclosed) {
-                                    newList.add(affine)
-                                } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
-                                    newList.add(otherAffine)
-                                } else {
-                                    newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
-                                }
+                            // This prioritizes affine 1 over affine 2. We may want to change this.
+                            if (avoidedWrapping && firstRangeEntirelyEnclosed) {
+                                newList.add(affine)
+                            } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
+                                newList.add(otherAffine)
+                            } else {
+                                newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
                             }
                         }
                     }
@@ -170,7 +166,10 @@ class Ranges<T : Number> private constructor(
         fun <T : Number> fromConstant(constant: T, ind: NumberSetIndicator<T, *>): Ranges<T> =
             Ranges(listOf(Affine.fromConstant(constant, ind)), ind)
 
-        fun <T : Number> fromRange(start: T, end: T, key: Context.Key, ind: NumberSetIndicator<T, *>): Ranges<T> =
-            Ranges(listOf(Affine.fromRange(start, end, key, ind)), ind)
+        fun <T : Number> fromRangeNoKey(start: T, end: T, ind: NumberSetIndicator<T, *>): Ranges<T> =
+            Ranges(listOf(Affine.fromRangeNoKey(start, end, ind)), ind)
+
+        fun <T : Number> fromConstraints(start: T, end: T, key: Context.Key, ind: NumberSetIndicator<T, *>): Ranges<T> =
+            Ranges(listOf(Affine.fromConstraints(start, end, key, ind)), ind)
     }
 }

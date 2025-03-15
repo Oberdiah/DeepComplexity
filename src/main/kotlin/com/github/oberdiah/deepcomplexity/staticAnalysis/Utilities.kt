@@ -1,6 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.weisj.jsvg.T
+import com.github.oberdiah.deepcomplexity.utilities.BigFraction
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceExpression
 import com.intellij.psi.PsiType
@@ -181,7 +181,8 @@ object Utilities {
             is Float -> this + other as Float
             is Double -> this + other as Double
             is BigInteger -> this.add(other as BigInteger)
-            else -> throw IllegalArgumentException("Unsupported type for addition")
+            is BigFraction -> this.add(other as BigFraction)
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for addition")
         } as T // This cast shouldn't be necessary.
     }
 
@@ -199,7 +200,8 @@ object Utilities {
             is Float -> this - other as Float
             is Double -> this - other as Double
             is BigInteger -> this.subtract(other as BigInteger)
-            else -> throw IllegalArgumentException("Unsupported type for subtraction")
+            is BigFraction -> this.subtract(other as BigFraction)
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for subtraction")
         } as T // This cast shouldn't be necessary.
     }
 
@@ -217,7 +219,8 @@ object Utilities {
             is Float -> this * other as Float
             is Double -> this * other as Double
             is BigInteger -> this.multiply(other as BigInteger)
-            else -> throw IllegalArgumentException("Unsupported type for multiplication")
+            is BigFraction -> this.multiply(other as BigFraction)
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for multiplication")
         } as T // This cast shouldn't be necessary.
     }
 
@@ -235,7 +238,8 @@ object Utilities {
             is Float -> this / other as Float
             is Double -> this / other as Double
             is BigInteger -> this.divide(other as BigInteger)
-            else -> throw IllegalArgumentException("Unsupported type for division")
+            is BigFraction -> this.divide(other as BigFraction)
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for division")
         } as T // This cast shouldn't be necessary.
     }
 
@@ -253,7 +257,8 @@ object Utilities {
             is Long -> if (this < other.toLong()) this else other.toLong()
             is Float -> if (this < other.toFloat()) this else other.toFloat()
             is Double -> if (this < other.toDouble()) this else other.toDouble()
-            else -> throw IllegalArgumentException("Unsupported type for min")
+            is BigFraction -> if (this < other as BigFraction) this else other as BigFraction
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for min")
         } as T
     }
 
@@ -270,7 +275,8 @@ object Utilities {
             is Long -> if (this > other.toLong()) this else other.toLong()
             is Float -> if (this > other.toFloat()) this else other.toFloat()
             is Double -> if (this > other.toDouble()) this else other.toDouble()
-            else -> throw IllegalArgumentException("Unsupported type for max")
+            is BigFraction -> if (this > other as BigFraction) this else other as BigFraction
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for max")
         } as T
     }
 
@@ -287,7 +293,7 @@ object Utilities {
             is Long -> if (this > Long.MIN_VALUE) this - 1 else Long.MIN_VALUE
             is Float -> this.nextDown()
             is Double -> this.nextDown()
-            else -> throw IllegalArgumentException("Unsupported type for downOneEpsilon")
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for downOneEpsilon")
         } as T
     }
 
@@ -303,7 +309,7 @@ object Utilities {
             is Long -> if (this < Long.MAX_VALUE) this + 1 else Long.MAX_VALUE
             is Float -> this.nextUp()
             is Double -> this.nextUp()
-            else -> throw IllegalArgumentException("Unsupported type for upOneEpsilon")
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for upOneEpsilon")
         } as T
     }
 
@@ -316,7 +322,7 @@ object Utilities {
             is Long -> -this
             is Float -> -this
             is Double -> -this
-            else -> throw IllegalArgumentException("Unsupported type for negation")
+            else -> throw IllegalArgumentException("Unsupported type (${this::class}) for negation")
         } as T
     }
 
@@ -325,4 +331,6 @@ object Utilities {
         val end = this.second.min(other.second)
         return if (start <= end) Pair(start, end) else null
     }
+
+    fun BigFraction.half(): BigFraction = this.divide(2)
 }

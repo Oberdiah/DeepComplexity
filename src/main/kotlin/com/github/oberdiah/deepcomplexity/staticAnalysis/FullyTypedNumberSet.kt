@@ -150,22 +150,17 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         }\n)"
     }
 
-    val lazyRanges: List<Pair<Number, Number>> by lazy {
+    override fun getRange(): Pair<Number, Number> = getRangeTyped()
+    override fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
+
+    val lazyRanges: List<Pair<T, T>> by lazy {
         NumberSimplifier.distillToSet(setIndicator, data, true)
     }
 
-    override fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
-
-    fun withRange(start: T, end: T, key: Context.Key): Self {
-        if (start == end) {
-            return newFromData(Union(data, Ranges.fromConstant(start, setIndicator)))
-        }
-
-        return newFromData(Union(data, Ranges.fromRange(start, end, key, setIndicator)))
-    }
-
-    fun withConstant(value: T): Self {
-        return newFromData(Union(data, Ranges.fromConstant(value, setIndicator)))
+    fun getAsRangesTyped(): List<Pair<T, T>> = lazyRanges
+    fun getRangeTyped(): Pair<T, T> {
+        val ranges = getAsRangesTyped()
+        return Pair(ranges.first().first, ranges.last().second)
     }
 
     override fun negate(): Self {
@@ -279,18 +274,16 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
         var newData: NumberData<T> = when (comp) {
             LESS_THAN, LESS_THAN_OR_EQUAL ->
-                Ranges.fromRange(
+                Ranges.fromRangeNoKey(
                     setIndicator.getMinValue(),
                     smallestValue.downOneEpsilon(),
-                    Context.Key.EphemeralKey.new(),
                     setIndicator
                 )
 
             GREATER_THAN, GREATER_THAN_OR_EQUAL ->
-                Ranges.fromRange(
+                Ranges.fromRangeNoKey(
                     biggestValue.upOneEpsilon(),
                     setIndicator.getMaxValue(),
-                    Context.Key.EphemeralKey.new(),
                     setIndicator
                 )
         }
@@ -328,6 +321,21 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     }
 
     companion object {
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromConstant(
+            ind: NumberSetIndicator<T, Self>,
+            value: T
+        ): Self {
+            return newFromDataAndInd(Ranges.fromConstant(value, ind), ind)
+        }
+
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromConstraints(
+            ind: NumberSetIndicator<T, Self>,
+            pair: Pair<T, T>,
+            key: Context.Key
+        ): Self {
+            return newFromDataAndInd(Ranges.fromConstraints(pair.first, pair.second, key, ind), ind)
+        }
+
         @Suppress("UNCHECKED_CAST")
         private fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromDataAndInd(
             data: NumberData<T>,

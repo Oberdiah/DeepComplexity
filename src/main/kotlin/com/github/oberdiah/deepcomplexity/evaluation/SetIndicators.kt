@@ -6,7 +6,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import kotlin.reflect.KClass
 
 sealed interface SetIndicator<Set : IMoldableSet<Set>> {
@@ -14,6 +13,13 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
 
     fun newEmptySet(): Set
     fun newFullSet(key: Context.Key): Set
+
+    /**
+     * Creates a set that is pre-constrained to the given constraint.
+     * That is, there is a guarantee created that the set will only contain
+     * values that are in the given constraint.
+     */
+    fun newConstrainedSet(key: Context.Key, constraint: Set): Set
 
     companion object {
         fun <T : IMoldableSet<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
@@ -66,7 +72,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
             } as SetIndicatorImpl<T, Self>
         }
 
-        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
+        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromValue(value: T): NumberSetIndicator<T, Self> {
             @Suppress("UNCHECKED_CAST")
             return when (value) {
                 is Double -> DoubleSetIndicator
@@ -76,7 +82,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
                 is Short -> ShortSetIndicator
                 is Byte -> ByteSetIndicator
                 else -> TODO()
-            } as SetIndicatorImpl<T, Self>
+            } as NumberSetIndicator<T, Self>
         }
     }
 }
@@ -86,7 +92,14 @@ sealed class SetIndicatorImpl<T : Any, Set : IMoldableSet<Set>>(override val cla
 sealed class NumberSetIndicator<T : Number, Set : FullyTypedNumberSet<T, Set>>(clazz: KClass<T>) :
     SetIndicatorImpl<T, Set>(clazz) {
 
-    override fun newFullSet(key: Context.Key): Set = NumberSet.fullRange(this, key)
+    override fun newFullSet(key: Context.Key): Set =
+        FullyTypedNumberSet.newFromConstraints(this, this.getMinValue() to this.getMaxValue(), key)
+
+    override fun newConstrainedSet(key: Context.Key, constraint: Set): Set =
+        FullyTypedNumberSet.newFromConstraints(this, constraint.getRangeTyped(), key)
+
+    fun newFromConstant(value: T) = FullyTypedNumberSet.newFromConstant(this, value)
+
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
     abstract fun getInt(int: Int): T
@@ -152,9 +165,11 @@ data object ByteSetIndicator : NumberSetIndicator<Byte, ByteSet>(Byte::class) {
 data object BooleanSetIndicator : SetIndicatorImpl<Boolean, BooleanSet>(Boolean::class) {
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
     override fun newFullSet(key: Context.Key): BooleanSet = BooleanSet.BOTH
+    override fun newConstrainedSet(key: Context.Key, constraint: BooleanSet): BooleanSet = TODO()
 }
 
 data object GenericSetIndicator : SetIndicatorImpl<Any, GenericSet>(Any::class) {
     override fun newEmptySet(): GenericSet = GenericSet.empty()
     override fun newFullSet(key: Context.Key): GenericSet = GenericSet.everyValue()
+    override fun newConstrainedSet(key: Context.Key, constraint: GenericSet): GenericSet = TODO()
 }
