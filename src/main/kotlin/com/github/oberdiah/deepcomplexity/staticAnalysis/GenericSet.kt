@@ -31,6 +31,10 @@ interface GenericSet : IMoldableSet<GenericSet> {
             return GenericSetImpl(clazz, values.union(other.values))
         }
 
+        override fun toDebugString(): String {
+            return toString()
+        }
+
         override fun intersect(other: GenericSet): GenericSet {
             if (other !is GenericSetImpl<T>) {
                 throw IllegalArgumentException("Cannot intersect with a different set type")

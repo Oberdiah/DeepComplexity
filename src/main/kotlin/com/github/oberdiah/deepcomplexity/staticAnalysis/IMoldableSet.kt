@@ -11,6 +11,11 @@ sealed interface IMoldableSet<T : IMoldableSet<T>> {
     fun union(other: T): T
 
     /**
+     * Might return additional information beyond simply what the set contains.
+     */
+    fun toDebugString(): String
+
+    /**
      * Although intersect is a commutative operation, calculations and optimizations
      * are implemented assuming the left hand side (this set) is the more complex set and
      * the right hand side (`other`) is a constraint on that set.

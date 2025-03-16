@@ -54,15 +54,20 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     class ByteSet(ranges: List<Affine<Byte>> = emptyList()) :
         TypedNumberSet<Byte, ByteSet>(ByteSetIndicator, ranges)
 
-    val lazyRanges: List<Pair<T, T>> by lazy {
-        toRangePairs()
+
+    override fun toDebugString(): String = pairsStream().toList().joinToString(", ") { (start, end) ->
+        if (start == end) {
+            start.toString()
+        } else {
+            "$start..$end"
+        }
     }
 
     override fun toString(): String = getAsRanges().joinToString(", ") { (start, end) ->
         if (start == end) {
             start.toString()
         } else {
-            affines.joinToString(", ") { it.stringOverview() }
+            "$start..$end"
         }
     }
 
@@ -75,6 +80,10 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     fun getRangeTyped(): Pair<T, T> {
         val ranges = getAsRangesTyped()
         return Pair(ranges.first().first, ranges.last().second)
+    }
+
+    val lazyRanges: List<Pair<T, T>> by lazy {
+        toRangePairs()
     }
 
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
