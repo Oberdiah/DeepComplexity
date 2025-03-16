@@ -103,6 +103,7 @@ public class MyTestData {
 		return (short) ((bar * 2) / 2);
 	}
 	
+	@RequiredScore(0.3334)
 	public static short largeTest1(short incoming1) {
 		int foo = 0;
 		int bar = 0;
@@ -127,6 +128,7 @@ public class MyTestData {
 		return (short) (incoming2 * foo + bar * 2);
 	}
 	
+	@RequiredScore(0.5)
 	public static short multiplicationTest1(short incoming1) {
 		return (short) (incoming1 * (incoming1 + 1));
 	}
