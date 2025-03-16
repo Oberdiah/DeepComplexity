@@ -2,7 +2,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
@@ -22,7 +22,7 @@ sealed class Expr<T : IMoldableSet<T>> : IExpr<T> {
     }
 }
 
-fun <T : FullyTypedNumberSet<*, T>> IExpr<T>.getNumberSetIndicator() = getSetIndicator() as NumberSetIndicator<*, T>
+fun <T : TypedNumberSet<*, T>> IExpr<T>.getNumberSetIndicator() = getSetIndicator() as NumberSetIndicator<*, T>
 
 fun IExpr<*>.tryCastToNumbers(): IExpr<out NumberSet<*>>? {
     if (this.getSetIndicator() is NumberSetIndicator<*, *>) {

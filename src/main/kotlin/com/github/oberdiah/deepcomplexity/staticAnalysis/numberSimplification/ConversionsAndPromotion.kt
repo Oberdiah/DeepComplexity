@@ -7,7 +7,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.IntSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.LongSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.performACastTo
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
@@ -36,7 +36,7 @@ object ConversionsAndPromotion {
         return castTo(exprB)
     }
 
-    fun <T : Number, Set : FullyTypedNumberSet<T, Set>> castBothNumbersTo(
+    fun <T : Number, Set : TypedNumberSet<T, Set>> castBothNumbersTo(
         exprA: IExpr<out NumberSet<*>>,
         exprB: IExpr<out NumberSet<*>>,
         indicator: NumberSetIndicator<T, Set>,

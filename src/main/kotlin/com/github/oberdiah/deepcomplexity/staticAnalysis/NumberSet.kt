@@ -4,7 +4,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator.Companion.newEmptySetFromValue
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 
@@ -46,7 +45,7 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
 
     companion object {
         fun <T : NumberSet<T>> zero(indicator: SetIndicator<T>): T {
-            fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
+            fun <T : Number, Set : TypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 return indicator.newFromConstant(indicator.getZero())
             }
             @Suppress("UNCHECKED_CAST")
@@ -54,14 +53,14 @@ sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<
         }
 
         fun <T : NumberSet<T>> one(indicator: SetIndicator<T>): T {
-            fun <T : Number, Set : FullyTypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
+            fun <T : Number, Set : TypedNumberSet<T, Set>> extra(indicator: NumberSetIndicator<T, Set>): Set {
                 return indicator.newFromConstant(indicator.getOne())
             }
             @Suppress("UNCHECKED_CAST")
             return extra(indicator as NumberSetIndicator<*, *>) as T
         }
 
-        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> singleValue(value: T): Self {
+        fun <T : Number, Self : TypedNumberSet<T, Self>> singleValue(value: T): Self {
             return SetIndicator.fromValue<T, Self>(value).newFromConstant(value)
         }
     }

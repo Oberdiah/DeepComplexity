@@ -2,9 +2,8 @@ package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression.VariableKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstraintSolver {
@@ -117,7 +116,7 @@ object ConstraintSolver {
      *
      * Returns null if accurate constraints could not be ascertained.
      */
-    fun <T : FullyTypedNumberSet<*, T>> getVariableConstraints(
+    fun <T : TypedNumberSet<*, T>> getVariableConstraints(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
     ): IExpr<T>? {

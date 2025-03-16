@@ -1,9 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression.emptySetFromExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
@@ -12,7 +11,7 @@ object ConstantExpression {
     val TRUE = ConstExpr(BooleanSet.TRUE)
     val FALSE = ConstExpr(BooleanSet.FALSE)
 
-    fun <T : FullyTypedNumberSet<*, T>> zero(setIndicator: NumberSetIndicator<*, T>): ConstExpr<T> =
+    fun <T : TypedNumberSet<*, T>> zero(setIndicator: NumberSetIndicator<*, T>): ConstExpr<T> =
         ConstExpr(NumberSet.zero(setIndicator))
 
     fun <T : NumberSet<T>> zero(expr: IExpr<T>): ConstExpr<T> =

@@ -2,8 +2,8 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import java.math.BigInteger
@@ -73,7 +73,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
             } as SetIndicatorImpl<T, Self>
         }
 
-        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> fromValue(value: T): NumberSetIndicator<T, Self> {
+        fun <T : Number, Self : TypedNumberSet<T, Self>> fromValue(value: T): NumberSetIndicator<T, Self> {
             @Suppress("UNCHECKED_CAST")
             return when (value) {
                 is Double -> DoubleSetIndicator
@@ -90,16 +90,16 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
 
 sealed class SetIndicatorImpl<T : Any, Set : IMoldableSet<Set>>(override val clazz: KClass<T>) : SetIndicator<Set>
 
-sealed class NumberSetIndicator<T : Number, Set : FullyTypedNumberSet<T, Set>>(clazz: KClass<T>) :
+sealed class NumberSetIndicator<T : Number, Set : TypedNumberSet<T, Set>>(clazz: KClass<T>) :
     SetIndicatorImpl<T, Set>(clazz) {
 
     override fun newFullSet(key: Context.Key): Set =
-        FullyTypedNumberSet.newFromConstraints(this, this.getMinValue() to this.getMaxValue(), key)
+        TypedNumberSet.newFromConstraints(this, this.getMinValue() to this.getMaxValue(), key)
 
     override fun newConstrainedSet(key: Context.Key, constraint: Set): Set =
-        FullyTypedNumberSet.newFromConstraints(this, constraint.getRangeTyped(), key)
+        TypedNumberSet.newFromConstraints(this, constraint.getRangeTyped(), key)
 
-    fun newFromConstant(value: T) = FullyTypedNumberSet.newFromConstant(this, value)
+    fun newFromConstant(value: T) = TypedNumberSet.newFromConstant(this, value)
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T

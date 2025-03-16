@@ -5,7 +5,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 
 object ExprConstrain {
@@ -42,7 +42,7 @@ object ExprConstrain {
                 @Suppress("UNCHECKED_CAST")
                 ConstraintSolver.getVariableConstraints(
                     condition,
-                    variable as VariableExpression<out FullyTypedNumberSet<*, *>>
+                    variable as VariableExpression<out TypedNumberSet<*, *>>
                 )
                     ?.let { it.tryCastTo(variable.getSetIndicator())!! }
             }

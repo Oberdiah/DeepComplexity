@@ -30,29 +30,29 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Nu
 import java.util.stream.Stream
 import kotlin.reflect.KClass
 
-sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>>(
+sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     private val setIndicator: NumberSetIndicator<T, Self>,
     private val affines: List<Affine<T>>
 ) : NumberSet<Self> {
     private val clazz: KClass<*> = setIndicator.clazz
 
     class DoubleSet(ranges: List<Affine<Double>> = emptyList()) :
-        FullyTypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, ranges)
+        TypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, ranges)
 
     class FloatSet(ranges: List<Affine<Float>> = emptyList()) :
-        FullyTypedNumberSet<Float, FloatSet>(FloatSetIndicator, ranges)
+        TypedNumberSet<Float, FloatSet>(FloatSetIndicator, ranges)
 
     class IntSet(ranges: List<Affine<Int>> = emptyList()) :
-        FullyTypedNumberSet<Int, IntSet>(IntSetIndicator, ranges)
+        TypedNumberSet<Int, IntSet>(IntSetIndicator, ranges)
 
     class LongSet(ranges: List<Affine<Long>> = emptyList()) :
-        FullyTypedNumberSet<Long, LongSet>(LongSetIndicator, ranges)
+        TypedNumberSet<Long, LongSet>(LongSetIndicator, ranges)
 
     class ShortSet(ranges: List<Affine<Short>> = emptyList()) :
-        FullyTypedNumberSet<Short, ShortSet>(ShortSetIndicator, ranges)
+        TypedNumberSet<Short, ShortSet>(ShortSetIndicator, ranges)
 
     class ByteSet(ranges: List<Affine<Byte>> = emptyList()) :
-        FullyTypedNumberSet<Byte, ByteSet>(ByteSetIndicator, ranges)
+        TypedNumberSet<Byte, ByteSet>(ByteSetIndicator, ranges)
 
     val lazyRanges: List<Pair<T, T>> by lazy {
         toRangePairs()
@@ -86,7 +86,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is FullyTypedNumberSet<*, *>) return false
+        if (other !is TypedNumberSet<*, *>) return false
         if (affines != other.affines) return false
 
         return true
@@ -102,7 +102,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
             throw IllegalArgumentException("Cannot cast a number to '$outsideInd'.")
         }
 
-        fun <OutT : Number, OutSelf : FullyTypedNumberSet<OutT, OutSelf>> extra(outsideInd: NumberSetIndicator<OutT, OutSelf>): OutSelf {
+        fun <OutT : Number, OutSelf : TypedNumberSet<OutT, OutSelf>> extra(outsideInd: NumberSetIndicator<OutT, OutSelf>): OutSelf {
             assert(outsideInd.isWholeNum()) // We can't handle/haven't thought about floating point yet.
 
             if (outsideInd.getMaxValue() > setIndicator.getMaxValue()) {
@@ -350,14 +350,14 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
     }
 
     companion object {
-        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromConstant(
+        fun <T : Number, Self : TypedNumberSet<T, Self>> newFromConstant(
             ind: NumberSetIndicator<T, Self>,
             value: T
         ): Self {
             return newFromDataAndInd(listOf(Affine.fromConstant(value, ind)), ind)
         }
 
-        fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromConstraints(
+        fun <T : Number, Self : TypedNumberSet<T, Self>> newFromConstraints(
             ind: NumberSetIndicator<T, Self>,
             pair: Pair<T, T>,
             key: Context.Key
@@ -366,7 +366,7 @@ sealed class FullyTypedNumberSet<T : Number, Self : FullyTypedNumberSet<T, Self>
         }
 
         @Suppress("UNCHECKED_CAST")
-        private fun <T : Number, Self : FullyTypedNumberSet<T, Self>> newFromDataAndInd(
+        private fun <T : Number, Self : TypedNumberSet<T, Self>> newFromDataAndInd(
             affines: List<Affine<T>>,
             ind: NumberSetIndicator<T, Self>
         ): Self {
