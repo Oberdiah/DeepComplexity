@@ -1,17 +1,19 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.half
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction
-import com.github.oberdiah.deepcomplexity.utilities.BigFraction.of
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction.ZERO
+import com.github.oberdiah.deepcomplexity.utilities.BigFraction.of
 import java.math.BigInteger
+import java.math.MathContext
+import java.math.RoundingMode
 
 /**
  * A neat little class that represents an integer affine.
@@ -179,10 +181,10 @@ data class IntegerAffine private constructor(
         val lower = (center + negRadius)
         val upper = (center + posRadius)
 
-        require(lower.denominator.toLong() == 1L)
-        require(upper.denominator.toLong() == 1L)
+        val lowerRounded = lower.bigDecimalValue().setScale(0, RoundingMode.FLOOR).toBigIntegerExact()
+        val upperRounded = upper.bigDecimalValue().setScale(0, RoundingMode.CEILING).toBigIntegerExact()
 
-        return Pair(lower.numerator, upper.numerator)
+        return Pair(lowerRounded, upperRounded)
     }
 
     fun isExactly(i: Int): Boolean {

@@ -1072,9 +1072,11 @@ public final class BigFraction extends Number implements Comparable<BigFraction>
 			return 0;
 		}
 		// Compare absolute magnitude
-		final BigInteger nOd = numerator.multiply(other.denominator);
-		final BigInteger dOn = denominator.multiply(other.numerator);
-		return nOd.compareTo(dOn);
+		final BigInteger nOd = numerator.abs().multiply(other.denominator.abs());
+		final BigInteger dOn = denominator.abs().multiply(other.numerator.abs());
+		return lhsSigNum > 0 ?
+				nOd.compareTo(dOn) :
+				dOn.compareTo(nOd);
 	}
 	
 	/**
