@@ -48,7 +48,7 @@ object TestUtilities {
         try {
             range?.let { methodScore = getMethodScore(reflectMethod, range) }
         } catch (e: Throwable) {
-            println("\tAww no 2! :( ($errorMessage)\n")
+            println("\tAww no! :( ($errorMessage)\n")
             e.printStackTrace()
             methodScore = 0.0
         }

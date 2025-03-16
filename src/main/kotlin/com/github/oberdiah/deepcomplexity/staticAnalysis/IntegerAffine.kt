@@ -1,18 +1,17 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.half
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction.ZERO
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction.of
 import java.math.BigInteger
-import java.math.MathContext
 import java.math.RoundingMode
 
 /**
@@ -23,11 +22,21 @@ data class IntegerAffine private constructor(
     private val center: BigFraction,
     private val noiseTerms: Map<Context.Key, AffineNoiseTerm>,
 ) {
-    // The minimum and the maximum are *post*-multiplication. Obviously. The underlying var only goes between 0 and 1.
-    // You can imagine this as the original variable only going between -1 to 1, and then multi takes that up to the
-    // full range of the variable.
-    // That is, they're immediately comparable with other terms of the same key.
-    class AffineNoiseTerm(val multi: BigFraction, val min: BigFraction, val max: BigFraction) {
+    // The minimum and the maximum are pre-multiplication. (e.g. they're always between -1 and 1)
+    // This is conceptually far less confusing, plus we can have multi=0 constraints for
+    // constants. That doesn't really work post-multiplication.
+    class AffineNoiseTerm private constructor(
+        val multi: BigFraction,
+        val normalizedMin: BigFraction,
+        val normalizedMax: BigFraction
+    ) {
+        // The min and max are post-multiplication.
+        val min
+            get() = if (multi > ZERO) multi * normalizedMin else multi * normalizedMax
+
+        val max
+            get() = if (multi > ZERO) multi * normalizedMax else multi * normalizedMin
+
         companion object {
             fun updateMinMaxForLikeTerms(
                 lhs: Map<Context.Key, AffineNoiseTerm>,
@@ -61,31 +70,36 @@ data class IntegerAffine private constructor(
                 lhs: AffineNoiseTerm,
                 rhs: AffineNoiseTerm
             ): Pair<AffineNoiseTerm, AffineNoiseTerm>? {
-                val (myScaledMin, myScaledMax) = lhs.min / lhs.multi to lhs.max / lhs.multi
-                val (otherScaledMin, otherScaledMax) = rhs.min / rhs.multi to rhs.max / rhs.multi
+                val newNormalizedMin = lhs.normalizedMin.max(rhs.normalizedMin)
+                val newNormalizedMax = lhs.normalizedMax.min(rhs.normalizedMax)
 
-                val newScaledMin = myScaledMin.max(otherScaledMin)
-                val newScaledMax = myScaledMax.min(otherScaledMax)
-
-                val newLhsMin = newScaledMin * lhs.multi
-                val newLhsMax = newScaledMax * lhs.multi
-                val newRhsMin = newScaledMin * rhs.multi
-                val newRhsMax = newScaledMax * rhs.multi
+                if (newNormalizedMin > newNormalizedMax) {
+                    return null
+                }
 
                 return Pair(
-                    AffineNoiseTerm(lhs.multi, newLhsMin, newLhsMax),
-                    AffineNoiseTerm(rhs.multi, newRhsMin, newRhsMax)
+                    AffineNoiseTerm(lhs.multi, newNormalizedMin, newNormalizedMax),
+                    AffineNoiseTerm(rhs.multi, newNormalizedMin, newNormalizedMax)
                 )
+            }
+
+            fun fromRadius(radius: BigFraction): AffineNoiseTerm {
+                return AffineNoiseTerm(radius, BigFraction.ONE.negate(), BigFraction.ONE)
+            }
+
+            fun constrainedRadius(radius: BigFraction, min: BigFraction, max: BigFraction): AffineNoiseTerm {
+                return AffineNoiseTerm(radius, min / radius, max / radius)
             }
         }
 
         init {
-            require(multi >= ZERO) { "Multi ($multi) must be non-negative" }
             require(min <= max) { "Min ($min) must be less than or equal to max ($max)" }
-            require(min >= multi.negate()) {
-                "Min ($min) must be greater than or equal to negative multi ($multi) ${multi.negate()} ${min >= multi.negate()}"
+            require(normalizedMin >= BigFraction.ONE.negate()) {
+                "Unscaled min ($normalizedMin) must be greater than or equal to -1"
             }
-            require(max <= multi) { "Max($max) must be less than or equal to multi ($multi)" }
+            require(normalizedMax <= BigFraction.ONE) {
+                "Unscaled max ($normalizedMax) must be less than or equal to 1"
+            }
         }
 
         override fun toString(): String {
@@ -107,14 +121,12 @@ data class IntegerAffine private constructor(
             val (newMe, newOther) = updateMinMaxFromLikeTerms(this, other) ?: return null
 
             val newRange = if (shouldAdd) multi + other.multi else multi - other.multi
-            val newMin = if (shouldAdd) newMe.min + newOther.min else newMe.min - newOther.min
-            val newMax = if (shouldAdd) newMe.max + newOther.max else newMe.max - newOther.max
 
-            return AffineNoiseTerm(newRange, newMin, newMax)
+            return AffineNoiseTerm(newRange, newMe.normalizedMin, newMe.normalizedMax)
         }
 
         fun multBy(center: BigFraction): AffineNoiseTerm {
-            return AffineNoiseTerm(multi * center, min * center, max * center)
+            return AffineNoiseTerm(multi * center, normalizedMin, normalizedMax)
         }
     }
 
@@ -129,29 +141,22 @@ data class IntegerAffine private constructor(
             val radius = (of(end) - of(start)).half()
             val affine = IntegerAffine(
                 center,
-                mapOf(key to AffineNoiseTerm(radius, radius.negate(), radius)),
+                mapOf(key to AffineNoiseTerm.fromRadius(radius)),
             )
 
             return affine
         }
 
-        /**
-         * When calling this it's obviously assumed that the start and end values constrain the variable
-         * directly, rather than after any transformations.
-         */
         fun fromConstraints(ind: NumberSetIndicator<*, *>, start: Long, end: Long, key: Context.Key): IntegerAffine {
-            val maxInd = ind.getMaxValue().toLong()
-            val minInd = ind.getMinValue().toLong()
-            val center: BigFraction = (of(start) + of(end)).half()
-
-            val multi: BigFraction = (of(maxInd) - of(minInd)).half()
-            // might be + instead
-            val noiseMin = of(start) - center
-            val noiseMax = of(end) - center
-
             return IntegerAffine(
-                center,
-                mapOf(key to AffineNoiseTerm(multi, noiseMin, noiseMax))
+                ZERO,
+                mapOf(
+                    key to AffineNoiseTerm.constrainedRadius(
+                        of(ind.getRadius()),
+                        of(start),
+                        of(end)
+                    )
+                )
             )
         }
     }
@@ -218,7 +223,7 @@ data class IntegerAffine private constructor(
             val rhs = other.noiseTerms[key]
             newNoiseTerms[key] = let {
                 if (lhs == null) {
-                    rhs!!
+                    if (shouldAdd) rhs!! else rhs!!.multBy(of(-1))
                 } else if (rhs == null) {
                     lhs
                 } else {
@@ -295,7 +300,7 @@ data class IntegerAffine private constructor(
                     }
                 }
 
-                AffineNoiseTerm(newRange, newQuadraticMin, newQuadraticMax)
+                AffineNoiseTerm.constrainedRadius(newRange, newQuadraticMin, newQuadraticMax)
             }
 
             val key = Context.Key.EphemeralKey("Quadratic")

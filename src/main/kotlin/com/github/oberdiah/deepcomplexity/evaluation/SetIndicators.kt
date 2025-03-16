@@ -6,6 +6,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.FullyTypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import java.math.BigInteger
 import kotlin.reflect.KClass
 
 sealed interface SetIndicator<Set : IMoldableSet<Set>> {
@@ -102,7 +103,18 @@ sealed class NumberSetIndicator<T : Number, Set : FullyTypedNumberSet<T, Set>>(c
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
+
     abstract fun getInt(int: Int): T
+
+    /**
+     * Returns max(abs(minValue), abs(maxValue))
+     */
+    fun getRadius(): BigInteger {
+        return maxOf(
+            BigInteger.valueOf(getMaxValue().toLong()).abs(),
+            BigInteger.valueOf(getMinValue().toLong()).abs()
+        )
+    }
 
     fun isWholeNum(): Boolean {
         return this is IntSetIndicator

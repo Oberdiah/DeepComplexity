@@ -168,9 +168,14 @@ public class MyTestData {
 		}
 		// 0 U 10 U x[10, 20]
 		
+		// (0 U 10 U x[0, 10]) * (0 U 10 U x[10, 20])
+		
+		// = 0 U 100 U x[0, 10] * 10 U x[10, 20] * 10 U 10 * 10
+		
 		return (short) (a * b);
 	}
 	
+	@RequiredScore(1.0)
 	public static short combinedIfs3(short incoming1) {
 		int a = incoming1;
 		if (incoming1 < 0) {
