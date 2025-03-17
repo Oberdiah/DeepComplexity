@@ -19,6 +19,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.AbstractSet.ConstrainedSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
@@ -30,11 +31,12 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Nu
 import java.util.stream.Stream
 import kotlin.reflect.KClass
 
+typealias Elements<T> = List<ConstrainedSet<Affine<T>>>
+
 sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
-    private val setIndicator: NumberSetIndicator<T, Self>,
-    private val affines: List<Affine<T>>
-) : NumberSet<Self> {
-    private val clazz: KClass<*> = setIndicator.clazz
+    private val ind: NumberSetIndicator<T, Self>,
+    affines: List<Affine<T>>
+) : AbstractSet<Self, Affine<T>>(ind, affines), NumberSet<Self> {
 
     class DoubleSet(ranges: List<Affine<Double>> = emptyList()) :
         TypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, ranges)
@@ -54,7 +56,6 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     class ByteSet(ranges: List<Affine<Byte>> = emptyList()) :
         TypedNumberSet<Byte, ByteSet>(ByteSetIndicator, ranges)
 
-
     override fun toDebugString(): String = pairsStream().toList().joinToString(", ") { (start, end) ->
         if (start == end) {
             start.toString()
@@ -71,8 +72,6 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         }
     }
 
-    override fun hashCode(): Int = affines.hashCode()
-
     override fun getRange(): Pair<Number, Number> = getRangeTyped()
     override fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
 
@@ -86,23 +85,18 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         toRangePairs()
     }
 
+    val affines: List<Affine<T>>
+        get() = elements.map { it.set }
+
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
     private fun pairsStream(): Stream<Pair<T, T>> = affines.stream().flatMap { it.toRanges().stream() }
 
     private fun makeNew(ranges: List<Affine<T>>): Self {
-        return newFromDataAndInd(ranges, setIndicator)
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is TypedNumberSet<*, *>) return false
-        if (affines != other.affines) return false
-
-        return true
+        return newFromDataAndInd(ranges, ind)
     }
 
     override fun negate(): Self {
-        val zero = Affine.fromConstant(setIndicator.getZero(), setIndicator)
+        val zero = Affine.fromConstant(ind.getZero(), ind)
         return makeNew(affines.map { zero.subtract(it)!! })
     }
 
@@ -114,7 +108,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         fun <OutT : Number, OutSelf : TypedNumberSet<OutT, OutSelf>> extra(outsideInd: NumberSetIndicator<OutT, OutSelf>): OutSelf {
             assert(outsideInd.isWholeNum()) // We can't handle/haven't thought about floating point yet.
 
-            if (outsideInd.getMaxValue() > setIndicator.getMaxValue()) {
+            if (outsideInd.getMaxValue() > ind.getMaxValue()) {
                 // We're enlarging the possibility space. This means our optimization of keeping unlimited-sized affines
                 // around until the final range-pairs step is no longer valid.
                 // For example, (short) ((byte) x) + 5 has a range of [-123, 132]
@@ -150,7 +144,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         other: Self,
         operation: BinaryNumberOp
     ): Self {
-        assert(setIndicator == other.setIndicator)
+        assert(ind == other.ind)
 
         val affineOp = when (operation) {
             ADDITION -> Affine<T>::add
@@ -175,7 +169,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         other: Self,
         operation: ComparisonOp
     ): BooleanSet {
-        assert(setIndicator == other.setIndicator)
+        assert(ind == other.ind)
         val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
         val (otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
 
@@ -237,9 +231,9 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
             LESS_THAN, LESS_THAN_OR_EQUAL ->
                 listOf(
                     Affine.fromRangeNoKey(
-                        setIndicator.getMinValue(),
+                        ind.getMinValue(),
                         smallestValue.downOneEpsilon(),
-                        setIndicator
+                        ind
                     )
                 )
 
@@ -247,8 +241,8 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
                 listOf(
                     Affine.fromRangeNoKey(
                         biggestValue.upOneEpsilon(),
-                        setIndicator.getMaxValue(),
-                        setIndicator
+                        ind.getMaxValue(),
+                        ind
                     )
                 )
         }
@@ -260,10 +254,6 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         }
 
         return makeNew(newData)
-    }
-
-    override fun getSetIndicator(): SetIndicator<Self> {
-        return setIndicator
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -282,14 +272,14 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     }
 
     override fun union(other: Self): Self {
-        assert(setIndicator == other.setIndicator)
+        assert(ind == other.ind)
 
         // No affine killing here :)
         return makeNew(affines + other.affines)
     }
 
     override fun intersect(other: Self): Self {
-        assert(setIndicator == other.setIndicator)
+        assert(ind == other.ind)
 
         val newList: MutableList<Affine<T>> = mutableListOf()
 
@@ -317,7 +307,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
                             } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
                                 newList.add(otherAffine)
                             } else {
-                                newList.add(Affine.fromRangeNoKey(start, end, setIndicator))
+                                newList.add(Affine.fromRangeNoKey(start, end, ind))
                             }
                         }
                     }
@@ -332,11 +322,11 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         val newList: MutableList<Affine<T>> = mutableListOf()
         // Affine death is inevitable here.
 
-        val minValue = setIndicator.getMinValue()
-        val maxValue = setIndicator.getMaxValue()
+        val minValue = ind.getMinValue()
+        val maxValue = ind.getMaxValue()
 
         if (affines.isEmpty()) {
-            newList.add(Affine.fromRangeNoKey(minValue, maxValue, setIndicator))
+            newList.add(Affine.fromRangeNoKey(minValue, maxValue, ind))
             return makeNew(newList)
         }
 
@@ -345,14 +335,14 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         val orderedPairs = toRangePairs().sortedWith { a, b -> a.first.compareTo(b.first) }
         for (range in orderedPairs) {
             if (currentMin < range.first) {
-                newList.add(Affine.fromRangeNoKey(currentMin, range.first.downOneEpsilon(), setIndicator))
+                newList.add(Affine.fromRangeNoKey(currentMin, range.first.downOneEpsilon(), ind))
             }
             currentMin = range.second.upOneEpsilon()
         }
 
         // Add final range if necessary
         if (currentMin < maxValue) {
-            newList.add(Affine.fromRangeNoKey(currentMin, maxValue, setIndicator))
+            newList.add(Affine.fromRangeNoKey(currentMin, maxValue, ind))
         }
 
         return makeNew(newList)

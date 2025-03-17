@@ -1,14 +1,13 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import kotlin.reflect.KClass
 
 /**
  * This is the set of possible values an expression can take.
  */
-sealed interface IMoldableSet<T : IMoldableSet<T>> {
-    fun getSetIndicator(): SetIndicator<T>
-    fun union(other: T): T
+sealed interface IMoldableSet<Self : IMoldableSet<Self>> {
+    fun getSetIndicator(): SetIndicator<Self>
+    fun union(other: Self): Self
 
     /**
      * Might return additional information beyond simply what the set contains.
@@ -20,8 +19,8 @@ sealed interface IMoldableSet<T : IMoldableSet<T>> {
      * are implemented assuming the left hand side (this set) is the more complex set and
      * the right hand side (`other`) is a constraint on that set.
      */
-    fun intersect(other: T): T
-    fun invert(): T
+    fun intersect(other: Self): Self
+    fun invert(): Self
     fun contains(element: Any): Boolean
 
     /**

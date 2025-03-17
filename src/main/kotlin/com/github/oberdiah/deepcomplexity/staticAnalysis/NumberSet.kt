@@ -7,7 +7,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 
-// To swap between the two implementations of number sets, you should only have to change the SetIndicators.
 sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<Self>, Self : NumberSet<Self> {
     /**
      * Returns the set of ranges that this number set represents.

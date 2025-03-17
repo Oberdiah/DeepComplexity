@@ -197,4 +197,24 @@ public class MyTestData {
 		
 		return (short) (a * b);
 	}
+	
+	public static short intelliJTest1(short incoming) {
+		int a = 0;
+		int b = 0;
+		if (incoming > 0) {
+			a = 1;
+		}
+		if (incoming * 5 > 0) {
+			b = 1;
+		}
+		
+		short v = 0;
+		if (a + b > 1) {
+			if (incoming < 0) {
+				v = 1;
+			}
+		}
+		
+		return v;
+	}
 }
