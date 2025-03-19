@@ -34,17 +34,8 @@ object ExprConstrain {
             }
 
             is ComparisonExpression<*> -> {
-                assert(variable.getSetIndicator() is NumberSetIndicator<*, *>) {
-                    "Variable must be a number set. This requires more thought if we've hit this."
-                }
-
-                // Safety: We've asserted above that the variable is a NumberSet.
-                @Suppress("UNCHECKED_CAST")
-                ConstraintSolver.getVariableConstraints(
-                    condition,
-                    variable as VariableExpression<out TypedNumberSet<*, *>>
-                )
-                    ?.let { it.tryCastTo(variable.getSetIndicator())!! }
+                val constraints = ConstraintSolver.getConstraints(condition)
+                constraints[variable.getKey().key]?.let { it.tryCastTo(variable.getSetIndicator())!! }
             }
 
             is ConstExpr -> {

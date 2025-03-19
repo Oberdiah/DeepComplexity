@@ -72,8 +72,11 @@ data class Affine<T : Number> private constructor(
         if (other.isExactly(1)) {
             return this
         }
+        if (this.isExactly(0)) {
+            return this
+        }
 
-        TODO()
+        TODO("Attempted to divide $this by $other")
     }
 
     companion object {

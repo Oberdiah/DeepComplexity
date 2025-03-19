@@ -1,8 +1,10 @@
 package com.github.oberdiah.deepcomplexity.solver
 
+import ai.grazie.text.TextTemplate.variable
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
@@ -114,9 +116,34 @@ object ConstraintSolver {
      * It is important this method is confident in its values — these can be inverted down the line,
      * so returning the full set is essentially saying the other branch is never taken.
      *
-     * Returns null if accurate constraints could not be ascertained.
+     * Does not return a given constraint if it could not be ascertained accurately.
      */
-    fun <T : TypedNumberSet<*, T>> getVariableConstraints(
+    fun getConstraints(
+        expr: ComparisonExpression<*>,
+    ): Map<Context.Key, IExpr<*>> {
+        val constraints = mutableMapOf<Context.Key, IExpr<*>>()
+
+        val variables = expr.getVariables(false)
+        for (variable in variables) {
+            assert(variable.getSetIndicator() is NumberSetIndicator<*, *>) {
+                "All variables must be number sets. This requires more thought if we've hit this."
+            }
+
+            // Safety: We know the variable is a number set.
+            @Suppress("UNCHECKED_CAST")
+            val castVariable = variable as VariableExpression<out TypedNumberSet<*, *>>
+
+            val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
+            constraints[variable.getKey().key] = variableConstraints
+        }
+
+        return constraints
+    }
+
+    /**
+     * Does not return a given constraint if it could not be ascertained accurately.
+     */
+    private fun <T : TypedNumberSet<*, T>> getVariableConstraints(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
     ): IExpr<T>? {

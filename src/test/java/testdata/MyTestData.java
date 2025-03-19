@@ -198,6 +198,32 @@ public class MyTestData {
 		return (short) (a * b);
 	}
 	
+	public static short chainedConstraintTest1(short incoming) {
+		int x = 0;
+		int y = incoming + 5;
+		
+		if (incoming > y) {
+			if (y > 5) {
+				x = incoming;
+			}
+		}
+		
+		return (short) (x);
+	}
+	
+	public static short chainedConstraintTest2(short incoming) {
+		int x = 0;
+		int y = incoming * 5;
+		
+		if (incoming > y) {
+			if (y > 5) {
+				x = incoming;
+			}
+		}
+		
+		return (short) (x);
+	}
+	
 	public static short intelliJTest1(short incoming) {
 		int a = 0;
 		int b = 0;
