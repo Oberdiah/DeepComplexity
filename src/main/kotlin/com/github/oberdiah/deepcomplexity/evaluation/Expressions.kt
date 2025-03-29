@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 
 sealed interface IExpr<T : IMoldableSet<T>> {
     /**
@@ -60,8 +61,8 @@ fun <T : IMoldableSet<T>> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<
     }
 }
 
-fun <T : IMoldableSet<T>> IExpr<BooleanSet>.getConstraints(varKey: VariableExpression<T>): IExpr<T>? =
-    ExprConstrain.getConstraints(this, varKey)
+fun IExpr<BooleanSet>.getConstraints(): List<Constraints> =
+    ExprConstrain.getConstraints(this)
 
 class ArithmeticExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>() {
     init {

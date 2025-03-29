@@ -120,8 +120,8 @@ object ConstraintSolver {
      */
     fun getConstraints(
         expr: ComparisonExpression<*>,
-    ): Map<Context.Key, IExpr<*>> {
-        val constraints = mutableMapOf<Context.Key, IExpr<*>>()
+    ): Constraints {
+        var constraints = Constraints.completelyUnconstrained()
 
         val variables = expr.getVariables(false)
         for (variable in variables) {
@@ -134,7 +134,7 @@ object ConstraintSolver {
             val castVariable = variable as VariableExpression<out TypedNumberSet<*, *>>
 
             val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
-            constraints[variable.getKey().key] = variableConstraints
+            constraints = constraints.addConstraint(variable.getKey().key, variableConstraints)
         }
 
         return constraints

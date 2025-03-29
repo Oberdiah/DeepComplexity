@@ -26,7 +26,10 @@ object LoopEvaluation {
             // We now have an expression that is looping stuff.
             val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: continue
 
-            val constraint = ExprConstrain.getConstraints(condition, variable)?.tryCastToNumbers() ?: continue
+            val constraints = ExprConstrain.getConstraints(condition)
+            // Temporary
+            assert(constraints.size == 1)
+            val constraint = constraints[0].getConstraint(variable)?.tryCastToNumbers() ?: continue
 
             numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
         }

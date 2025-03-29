@@ -117,8 +117,12 @@ object ExprEvaluate {
                     return evaluate(it, condition)
                 }
 
-                val constraints = ExprConstrain.getConstraints(condition, expr)
-                val constrainedRange = constraints?.evaluate(condition)
+                val constraints = ExprConstrain.getConstraints(condition)
+
+                // Temporary
+                assert(constraints.size == 1)
+
+                val constrainedRange = constraints[0].getConstraint(expr)?.evaluate(condition)
 
                 if (constrainedRange != null) {
                     expr.getSetIndicator().newConstrainedSet(expr.myKey.key, constrainedRange)
