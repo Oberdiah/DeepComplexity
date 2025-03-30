@@ -36,26 +36,26 @@ typealias MutableElements<T> = MutableList<ConstrainedSet<Affine<T>>>
 
 sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     private val ind: NumberSetIndicator<T, Self>,
-    affines: List<Affine<T>>
-) : AbstractSet<Self, Affine<T>>(ind, affines), NumberSet<Self> {
+    elements: Elements<T>
+) : AbstractSet<Self, Affine<T>>(ind, elements), NumberSet<Self> {
 
-    class DoubleSet(ranges: List<Affine<Double>> = emptyList()) :
-        TypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, ranges)
+    class DoubleSet(elements: Elements<Double> = emptyList()) :
+        TypedNumberSet<Double, DoubleSet>(DoubleSetIndicator, elements)
 
-    class FloatSet(ranges: List<Affine<Float>> = emptyList()) :
-        TypedNumberSet<Float, FloatSet>(FloatSetIndicator, ranges)
+    class FloatSet(elements: Elements<Float> = emptyList()) :
+        TypedNumberSet<Float, FloatSet>(FloatSetIndicator, elements)
 
-    class IntSet(ranges: List<Affine<Int>> = emptyList()) :
-        TypedNumberSet<Int, IntSet>(IntSetIndicator, ranges)
+    class IntSet(elements: Elements<Int> = emptyList()) :
+        TypedNumberSet<Int, IntSet>(IntSetIndicator, elements)
 
-    class LongSet(ranges: List<Affine<Long>> = emptyList()) :
-        TypedNumberSet<Long, LongSet>(LongSetIndicator, ranges)
+    class LongSet(elements: Elements<Long> = emptyList()) :
+        TypedNumberSet<Long, LongSet>(LongSetIndicator, elements)
 
-    class ShortSet(ranges: List<Affine<Short>> = emptyList()) :
-        TypedNumberSet<Short, ShortSet>(ShortSetIndicator, ranges)
+    class ShortSet(elements: Elements<Short> = emptyList()) :
+        TypedNumberSet<Short, ShortSet>(ShortSetIndicator, elements)
 
-    class ByteSet(ranges: List<Affine<Byte>> = emptyList()) :
-        TypedNumberSet<Byte, ByteSet>(ByteSetIndicator, ranges)
+    class ByteSet(elements: Elements<Byte> = emptyList()) :
+        TypedNumberSet<Byte, ByteSet>(ByteSetIndicator, elements)
 
     override fun toDebugString(): String = pairsStream().toList().joinToString(", ") { (start, end) ->
         if (start == end) {
@@ -87,10 +87,11 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     }
 
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
-    private fun pairsStream(): Stream<Pair<T, T>> = elements.stream().flatMap { it.set.toRanges().stream() }
+    private fun pairsStream(): Stream<Pair<T, T>> =
+        elements.stream().flatMap { it.set.toRanges().stream() }
 
     private fun makeNew(elements: Elements<T>): Self {
-        return newFromDataAndInd(elements.map { it.set }, ind)
+        return newFromDataAndInd(elements, ind)
     }
 
     override fun negate(): Self {
@@ -110,18 +111,23 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
                 // We're enlarging the possibility space. This means our optimization of keeping unlimited-sized affines
                 // around until the final range-pairs step is no longer valid.
                 // For example, (short) ((byte) x) + 5 has a range of [-123, 132]
-                val newAffines = mutableListOf<Affine<OutT>>()
-                for (affine in elements) {
-                    val newAffine = affine.set.castTo(outsideInd)
+                val newAffines: MutableElements<OutT> = mutableListOf()
+                for (element in elements) {
+                    val newAffine = element.set.castTo(outsideInd)
                     val affineRanges = newAffine.toRanges()
 
                     if (affineRanges.size == 1) {
                         // We don't wrap under the new casting, we can keep the affine alive :)
-                        newAffines.add(newAffine)
+                        newAffines.add(ConstrainedSet(element.constraints, newAffine))
                     } else {
                         // We need to split the affine into multiple affines.
                         for (range in affineRanges) {
-                            newAffines.add(Affine.fromRangeNoKey(range.first, range.second, outsideInd))
+                            newAffines.add(
+                                ConstrainedSet(
+                                    element.constraints,
+                                    Affine.fromRangeNoKey(range.first, range.second, outsideInd)
+                                )
+                            )
                         }
                     }
                 }
@@ -130,7 +136,10 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
             } else {
                 // When we're shrinking things, I think (?) we're fine to stay as-is and just label with the new indicator.
                 // I could be wrong here, but this feels intuitively correct to me.
-                return newFromDataAndInd(elements.map { it.set.castTo(outsideInd) }, outsideInd)
+                return newFromDataAndInd(
+                    elements.map { ConstrainedSet(it.constraints, it.set.castTo(outsideInd)) },
+                    outsideInd
+                )
             }
         }
 
@@ -382,7 +391,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
             ind: NumberSetIndicator<T, Self>,
             value: T
         ): Self {
-            return newFromDataAndInd(listOf(Affine.fromConstant(value, ind)), ind)
+            return newFromDataAndInd(listOf(ConstrainedSet.unconstrained(Affine.fromConstant(value, ind))), ind)
         }
 
         fun <T : Number, Self : TypedNumberSet<T, Self>> newFromConstraints(
@@ -390,21 +399,33 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
             pair: Pair<T, T>,
             key: Context.Key
         ): Self {
-            return newFromDataAndInd(listOf(Affine.fromConstraints(pair.first, pair.second, key, ind)), ind)
+            // Obviously this should be updated so it actually takes the new constraints.
+            return newFromDataAndInd(
+                listOf(
+                    ConstrainedSet.unconstrained(
+                        Affine.fromConstraints(
+                            pair.first,
+                            pair.second,
+                            key,
+                            ind
+                        )
+                    )
+                ), ind
+            )
         }
 
         @Suppress("UNCHECKED_CAST")
         private fun <T : Number, Self : TypedNumberSet<T, Self>> newFromDataAndInd(
-            affines: List<Affine<T>>,
+            elements: Elements<T>,
             ind: NumberSetIndicator<T, Self>
         ): Self {
             return when (ind) {
-                is ByteSetIndicator -> ByteSet(affines as List<Affine<Byte>>)
-                is ShortSetIndicator -> ShortSet(affines as List<Affine<Short>>)
-                is IntSetIndicator -> IntSet(affines as List<Affine<Int>>)
-                is LongSetIndicator -> LongSet(affines as List<Affine<Long>>)
-                is FloatSetIndicator -> FloatSet(affines as List<Affine<Float>>)
-                is DoubleSetIndicator -> DoubleSet(affines as List<Affine<Double>>)
+                is ByteSetIndicator -> ByteSet(elements as Elements<Byte>)
+                is ShortSetIndicator -> ShortSet(elements as Elements<Short>)
+                is IntSetIndicator -> IntSet(elements as Elements<Int>)
+                is LongSetIndicator -> LongSet(elements as Elements<Long>)
+                is FloatSetIndicator -> FloatSet(elements as Elements<Float>)
+                is DoubleSetIndicator -> DoubleSet(elements as Elements<Double>)
             } as Self
         }
     }
