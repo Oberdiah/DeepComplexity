@@ -11,6 +11,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.GREATER_THAN
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.GREATER_THAN_OR_EQUAL
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.LESS_THAN
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.LESS_THAN_OR_EQUAL
+import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.FloatSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.IntSetIndicator
@@ -29,9 +30,9 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Affine
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import java.util.stream.Stream
-import kotlin.reflect.KClass
 
 typealias Elements<T> = List<ConstrainedSet<Affine<T>>>
+typealias MutableElements<T> = MutableList<ConstrainedSet<Affine<T>>>
 
 sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     private val ind: NumberSetIndicator<T, Self>,
@@ -85,19 +86,20 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         toRangePairs()
     }
 
-    val affines: List<Affine<T>>
-        get() = elements.map { it.set }
-
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
-    private fun pairsStream(): Stream<Pair<T, T>> = affines.stream().flatMap { it.toRanges().stream() }
+    private fun pairsStream(): Stream<Pair<T, T>> = elements.stream().flatMap { it.set.toRanges().stream() }
 
-    private fun makeNew(ranges: List<Affine<T>>): Self {
+    private fun makeNewOld(ranges: List<Affine<T>>): Self {
         return newFromDataAndInd(ranges, ind)
+    }
+
+    private fun makeNew(elements: Elements<T>): Self {
+        return newFromDataAndInd(elements.map { it.set }, ind)
     }
 
     override fun negate(): Self {
         val zero = Affine.fromConstant(ind.getZero(), ind)
-        return makeNew(affines.map { zero.subtract(it)!! })
+        return makeNewOld(elements.map { zero.subtract(it.set)!! })
     }
 
     override fun <Q : IMoldableSet<Q>> cast(outsideInd: SetIndicator<Q>): Q {
@@ -113,8 +115,8 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
                 // around until the final range-pairs step is no longer valid.
                 // For example, (short) ((byte) x) + 5 has a range of [-123, 132]
                 val newAffines = mutableListOf<Affine<OutT>>()
-                for (affine in affines) {
-                    val newAffine = affine.castTo(outsideInd)
+                for (affine in elements) {
+                    val newAffine = affine.set.castTo(outsideInd)
                     val affineRanges = newAffine.toRanges()
 
                     if (affineRanges.size == 1) {
@@ -132,7 +134,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
             } else {
                 // When we're shrinking things, I think (?) we're fine to stay as-is and just label with the new indicator.
                 // I could be wrong here, but this feels intuitively correct to me.
-                return newFromDataAndInd(affines.map { it.castTo(outsideInd) }, outsideInd)
+                return newFromDataAndInd(elements.map { it.set.castTo(outsideInd) }, outsideInd)
             }
         }
 
@@ -154,15 +156,15 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         }
 
         val newList: MutableList<Affine<T>> = mutableListOf()
-        for (range in affines) {
-            for (otherRange in other.affines) {
-                affineOp(range, otherRange)?.let {
+        for (range in elements) {
+            for (otherRange in other.elements) {
+                affineOp(range.set, otherRange.set)?.let {
                     newList.add(it)
                 }
             }
         }
 
-        return makeNew(newList)
+        return makeNewOld(newList)
     }
 
     override fun comparisonOperation(
@@ -227,30 +229,36 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
 
-        var newData: List<Affine<T>> = when (comp) {
+        var newData: List<ConstrainedSet<Affine<T>>> = when (comp) {
             LESS_THAN, LESS_THAN_OR_EQUAL ->
                 listOf(
-                    Affine.fromRangeNoKey(
-                        ind.getMinValue(),
-                        smallestValue.downOneEpsilon(),
-                        ind
+                    ConstrainedSet(
+                        Constraints.completelyUnconstrained(),
+                        Affine.fromRangeNoKey(
+                            ind.getMinValue(),
+                            smallestValue.downOneEpsilon(),
+                            ind
+                        )
                     )
                 )
 
             GREATER_THAN, GREATER_THAN_OR_EQUAL ->
                 listOf(
-                    Affine.fromRangeNoKey(
-                        biggestValue.upOneEpsilon(),
-                        ind.getMaxValue(),
-                        ind
+                    ConstrainedSet(
+                        Constraints.completelyUnconstrained(),
+                        Affine.fromRangeNoKey(
+                            biggestValue.upOneEpsilon(),
+                            ind.getMaxValue(),
+                            ind
+                        )
                     )
                 )
         }
 
         if (comp == LESS_THAN_OR_EQUAL) {
-            newData = newData + affines
+            newData = newData + elements
         } else if (comp == GREATER_THAN_OR_EQUAL) {
-            newData = affines + newData
+            newData = elements + newData
         }
 
         return makeNew(newData)
@@ -275,20 +283,20 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         assert(ind == other.ind)
 
         // No affine killing here :)
-        return makeNew(affines + other.affines)
+        return makeNew(elements + other.elements)
     }
 
     override fun intersect(other: Self): Self {
         assert(ind == other.ind)
 
-        val newList: MutableList<Affine<T>> = mutableListOf()
+        val newList: MutableElements<T> = mutableListOf()
 
         // For each range in this set, find overlapping ranges in other set
         // This could be made much more efficient.
-        for (affine in affines) {
-            for (otherAffine in other.affines) {
-                val otherRanges = otherAffine.toRanges()
-                val ranges = affine.toRanges()
+        for (affine in elements) {
+            for (otherAffine in other.elements) {
+                val otherRanges = otherAffine.set.toRanges()
+                val ranges = affine.set.toRanges()
                 for (range in ranges) {
                     for (otherRange in otherRanges) {
                         // Find overlap
@@ -302,13 +310,18 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
                             val secondRangeEntirelyEnclosed = otherRange.first == start && otherRange.second == end
 
                             // This prioritizes affine 1 over affine 2. We may want to change this.
-                            if (avoidedWrapping && firstRangeEntirelyEnclosed) {
-                                newList.add(affine)
-                            } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
-                                newList.add(otherAffine)
-                            } else {
-                                newList.add(Affine.fromRangeNoKey(start, end, ind))
-                            }
+                            newList.add(
+                                ConstrainedSet(
+                                    affine.constraints.and(otherAffine.constraints),
+                                    if (avoidedWrapping && firstRangeEntirelyEnclosed) {
+                                        affine.set
+                                    } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
+                                        otherAffine.set
+                                    } else {
+                                        Affine.fromRangeNoKey(start, end, ind)
+                                    }
+                                )
+                            )
                         }
                     }
                 }
@@ -325,9 +338,9 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         val minValue = ind.getMinValue()
         val maxValue = ind.getMaxValue()
 
-        if (affines.isEmpty()) {
+        if (elements.isEmpty()) {
             newList.add(Affine.fromRangeNoKey(minValue, maxValue, ind))
-            return makeNew(newList)
+            return makeNewOld(newList)
         }
 
         var currentMin = minValue
@@ -345,7 +358,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
             newList.add(Affine.fromRangeNoKey(currentMin, maxValue, ind))
         }
 
-        return makeNew(newList)
+        return makeNewOld(newList)
     }
 
     companion object {
