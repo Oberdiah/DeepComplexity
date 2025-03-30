@@ -242,8 +242,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         var newData: List<ConstrainedSet<Affine<T>>> = when (comp) {
             LESS_THAN, LESS_THAN_OR_EQUAL ->
                 listOf(
-                    ConstrainedSet(
-                        Constraints.completelyUnconstrained(),
+                    ConstrainedSet.unconstrained(
                         Affine.fromRangeNoKey(
                             ind.getMinValue(),
                             smallestValue.downOneEpsilon(),
@@ -254,8 +253,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
 
             GREATER_THAN, GREATER_THAN_OR_EQUAL ->
                 listOf(
-                    ConstrainedSet(
-                        Constraints.completelyUnconstrained(),
+                    ConstrainedSet.unconstrained(
                         Affine.fromRangeNoKey(
                             biggestValue.upOneEpsilon(),
                             ind.getMaxValue(),
@@ -351,8 +349,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         if (elements.isEmpty()) {
             return makeNew(
                 listOf(
-                    ConstrainedSet(
-                        Constraints.completelyUnconstrained(),
+                    ConstrainedSet.unconstrained(
                         Affine.fromRangeNoKey(minValue, maxValue, ind)
                     )
                 )
@@ -365,8 +362,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         for (range in orderedPairs) {
             if (currentMin < range.first) {
                 newList.add(
-                    ConstrainedSet(
-                        Constraints.completelyUnconstrained(),
+                    ConstrainedSet.unconstrained(
                         Affine.fromRangeNoKey(currentMin, range.first.downOneEpsilon(), ind)
                     )
                 )
@@ -377,8 +373,8 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         // Add final range if necessary
         if (currentMin < maxValue) {
             newList.add(
-                ConstrainedSet(
-                    Constraints.completelyUnconstrained(), Affine.fromRangeNoKey(currentMin, maxValue, ind)
+                ConstrainedSet.unconstrained(
+                    Affine.fromRangeNoKey(currentMin, maxValue, ind)
                 )
             )
         }
