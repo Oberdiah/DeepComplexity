@@ -89,17 +89,13 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
     private fun pairsStream(): Stream<Pair<T, T>> = elements.stream().flatMap { it.set.toRanges().stream() }
 
-    private fun makeNewOld(ranges: List<Affine<T>>): Self {
-        return newFromDataAndInd(ranges, ind)
-    }
-
     private fun makeNew(elements: Elements<T>): Self {
         return newFromDataAndInd(elements.map { it.set }, ind)
     }
 
     override fun negate(): Self {
         val zero = Affine.fromConstant(ind.getZero(), ind)
-        return makeNewOld(elements.map { zero.subtract(it.set)!! })
+        return makeNew(elements.map { elem -> elem.map { zero.subtract(it)!! } })
     }
 
     override fun <Q : IMoldableSet<Q>> cast(outsideInd: SetIndicator<Q>): Q {
@@ -155,16 +151,21 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
             DIVISION -> Affine<T>::divide
         }
 
-        val newList: MutableList<Affine<T>> = mutableListOf()
+        val newList: MutableElements<T> = mutableListOf()
         for (range in elements) {
             for (otherRange in other.elements) {
                 affineOp(range.set, otherRange.set)?.let {
-                    newList.add(it)
+                    newList.add(
+                        ConstrainedSet(
+                            range.constraints.and(otherRange.constraints),
+                            it
+                        )
+                    )
                 }
             }
         }
 
-        return makeNewOld(newList)
+        return makeNew(newList)
     }
 
     override fun comparisonOperation(
@@ -332,15 +333,21 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
     }
 
     override fun invert(): Self {
-        val newList: MutableList<Affine<T>> = mutableListOf()
-        // Affine death is inevitable here.
+        val newList: MutableElements<T> = mutableListOf()
 
+        // Affine death is inevitable here.
         val minValue = ind.getMinValue()
         val maxValue = ind.getMaxValue()
 
         if (elements.isEmpty()) {
-            newList.add(Affine.fromRangeNoKey(minValue, maxValue, ind))
-            return makeNewOld(newList)
+            return makeNew(
+                listOf(
+                    ConstrainedSet(
+                        Constraints.completelyUnconstrained(),
+                        Affine.fromRangeNoKey(minValue, maxValue, ind)
+                    )
+                )
+            )
         }
 
         var currentMin = minValue
@@ -348,17 +355,26 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         val orderedPairs = toRangePairs().sortedWith { a, b -> a.first.compareTo(b.first) }
         for (range in orderedPairs) {
             if (currentMin < range.first) {
-                newList.add(Affine.fromRangeNoKey(currentMin, range.first.downOneEpsilon(), ind))
+                newList.add(
+                    ConstrainedSet(
+                        Constraints.completelyUnconstrained(),
+                        Affine.fromRangeNoKey(currentMin, range.first.downOneEpsilon(), ind)
+                    )
+                )
             }
             currentMin = range.second.upOneEpsilon()
         }
 
         // Add final range if necessary
         if (currentMin < maxValue) {
-            newList.add(Affine.fromRangeNoKey(currentMin, maxValue, ind))
+            newList.add(
+                ConstrainedSet(
+                    Constraints.completelyUnconstrained(), Affine.fromRangeNoKey(currentMin, maxValue, ind)
+                )
+            )
         }
 
-        return makeNewOld(newList)
+        return makeNew(newList)
     }
 
     companion object {

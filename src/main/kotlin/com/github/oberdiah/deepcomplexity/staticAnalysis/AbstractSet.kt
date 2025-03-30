@@ -20,7 +20,9 @@ abstract class AbstractSet<Self : AbstractSet<Self, PureSet>, PureSet>(
     val elements: List<ConstrainedSet<PureSet>> =
         elements.map { ConstrainedSet(Constraints.completelyUnconstrained(), it) }
 
-    data class ConstrainedSet<PureSet>(val constraints: Constraints, val set: PureSet)
+    data class ConstrainedSet<PureSet>(val constraints: Constraints, val set: PureSet) {
+        fun map(f: (PureSet) -> PureSet): ConstrainedSet<PureSet> = ConstrainedSet(constraints, f(set))
+    }
 
     override fun getSetIndicator(): SetIndicator<Self> = ind
     protected val clazz: KClass<*> = ind.clazz
