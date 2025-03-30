@@ -16,11 +16,9 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
     fun newFullSet(key: Context.Key): Set
 
     /**
-     * Creates a set that is pre-constrained to the given constraint.
-     * That is, there is a guarantee created that the set will only contain
-     * values that are in the given constraint.
+     * Creates a set that is constrained to the given constraints.
      */
-    fun newConstrainedSet(key: Context.Key, constraint: Set): Set
+    fun newConstrainedSet(key: Context.Key, constraints: List<Constraints>): Set
 
     companion object {
         fun <T : IMoldableSet<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
@@ -94,10 +92,10 @@ sealed class NumberSetIndicator<T : Number, Set : TypedNumberSet<T, Set>>(clazz:
     SetIndicatorImpl<T, Set>(clazz) {
 
     override fun newFullSet(key: Context.Key): Set =
-        TypedNumberSet.newFromConstraints(this, this.getMinValue() to this.getMaxValue(), key)
+        TypedNumberSet.newFromConstraints(this, key, listOf(Constraints.completelyUnconstrained()))
 
-    override fun newConstrainedSet(key: Context.Key, constraint: Set): Set =
-        TypedNumberSet.newFromConstraints(this, constraint.getRangeTyped(), key)
+    override fun newConstrainedSet(key: Context.Key, constraints: List<Constraints>): Set =
+        TypedNumberSet.newFromConstraints(this, key, constraints)
 
     fun newFromConstant(value: T) = TypedNumberSet.newFromConstant(this, value)
 
@@ -177,11 +175,11 @@ data object ByteSetIndicator : NumberSetIndicator<Byte, ByteSet>(Byte::class) {
 data object BooleanSetIndicator : SetIndicatorImpl<Boolean, BooleanSet>(Boolean::class) {
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
     override fun newFullSet(key: Context.Key): BooleanSet = BooleanSet.BOTH
-    override fun newConstrainedSet(key: Context.Key, constraint: BooleanSet): BooleanSet = TODO()
+    override fun newConstrainedSet(key: Context.Key, constraint: List<Constraints>): BooleanSet = TODO()
 }
 
 data object GenericSetIndicator : SetIndicatorImpl<Any, GenericSet>(Any::class) {
     override fun newEmptySet(): GenericSet = GenericSet.empty()
     override fun newFullSet(key: Context.Key): GenericSet = GenericSet.everyValue()
-    override fun newConstrainedSet(key: Context.Key, constraint: GenericSet): GenericSet = TODO()
+    override fun newConstrainedSet(key: Context.Key, constraint: List<Constraints>): GenericSet = TODO()
 }

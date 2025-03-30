@@ -11,6 +11,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.GREATER_THAN
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.GREATER_THAN_OR_EQUAL
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.LESS_THAN
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.LESS_THAN_OR_EQUAL
+import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
 import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.FloatSetIndicator
@@ -392,21 +393,24 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
 
         fun <T : Number, Self : TypedNumberSet<T, Self>> newFromConstraints(
             ind: NumberSetIndicator<T, Self>,
-            pair: Pair<T, T>,
-            key: Context.Key
+            key: Context.Key,
+            constraints: List<Constraints>
         ): Self {
-            // Obviously this should be updated so it actually takes the new constraints.
             return newFromDataAndInd(
-                listOf(
-                    ConstrainedSet.unconstrained(
+                constraints.map {
+                    val constraint =
+                        it.getConstraint(ind, key)?.getRangeTyped() ?: (ind.getMinValue() to ind.getMaxValue())
+                    
+                    ConstrainedSet(
+                        it,
                         Affine.fromConstraints(
-                            pair.first,
-                            pair.second,
+                            constraint.first,
+                            constraint.second,
                             key,
                             ind
                         )
                     )
-                ), ind
+                }, ind
             )
         }
 

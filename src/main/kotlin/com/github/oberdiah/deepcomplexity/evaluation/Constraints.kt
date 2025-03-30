@@ -43,6 +43,10 @@ class Constraints private constructor(
         return constraints[variable.getKey().key]?.cast(variable.getSetIndicator())
     }
 
+    fun <T : IMoldableSet<T>> getConstraint(ind: SetIndicator<T>, key: Context.Key): T? {
+        return constraints[key]?.cast(ind)
+    }
+
     fun addConstraint(key: Context.Key, expr: IMoldableSet<*>): Constraints {
         return and(constrainedBy(mapOf(key to expr)))
     }
