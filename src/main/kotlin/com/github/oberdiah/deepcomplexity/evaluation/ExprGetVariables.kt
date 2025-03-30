@@ -29,7 +29,7 @@ object ExprGetVariables {
             is UnionExpression -> expr.lhs.getVariables(resolved) + expr.rhs.getVariables(resolved)
             is NumberLimitsExpression -> expr.limit.getVariables(resolved) + expr.shouldFlipCmp.getVariables(resolved)
             is InvertExpression -> expr.expr.getVariables(resolved)
-            is NumIterationTimesExpression -> expr.constraint.getVariables(resolved) + expr.variable
+            is NumIterationTimesExpression -> setOf(expr.variable)
             is TypeCastExpression<*, *> -> expr.expr.getVariables(resolved)
         }
     }

@@ -134,7 +134,10 @@ object ConstraintSolver {
             val castVariable = variable as VariableExpression<out TypedNumberSet<*, *>>
 
             val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
-            constraints = constraints.addConstraint(variable.getKey().key, variableConstraints)
+            constraints = constraints.addConstraint(
+                variable.getKey().key,
+                variableConstraints.evaluate(expr)
+            )
         }
 
         return constraints

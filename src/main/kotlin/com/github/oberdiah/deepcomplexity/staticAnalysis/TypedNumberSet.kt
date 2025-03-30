@@ -99,9 +99,9 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         return makeNew(elements.map { elem -> elem.map { zero.subtract(it)!! } })
     }
 
-    override fun <Q : IMoldableSet<Q>> cast(outsideInd: SetIndicator<Q>): Q {
+    override fun <Q : IMoldableSet<Q>> cast(outsideInd: SetIndicator<Q>): Q? {
         if (outsideInd !is NumberSetIndicator<*, *>) {
-            throw IllegalArgumentException("Cannot cast a number to '$outsideInd'.")
+            return null
         }
 
         fun <OutT : Number, OutSelf : TypedNumberSet<OutT, OutSelf>> extra(outsideInd: NumberSetIndicator<OutT, OutSelf>): OutSelf {

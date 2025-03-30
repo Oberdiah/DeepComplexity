@@ -42,10 +42,9 @@ object ExprEvaluate {
                 // The plan here is to figure out, based on the set of numbers we are allowed to have,
                 // the maximum number of times this could occur.
                 // This could get pretty complex, but we'll keep it relatively simple for now.
-                val constrainingValues = expr.constraint.evaluate(condition)
-                val startingValue = expr.variable.evaluate(condition)
 
-                startingValue.evaluateLoopingRange(terms.evaluate(condition), constrainingValues)
+                val startingValue = expr.variable.evaluate(condition)
+                startingValue.evaluateLoopingRange(terms.evaluate(condition), expr.constraint)
             }
 
             else -> evaluateAnythings(expr, condition)
@@ -122,7 +121,7 @@ object ExprEvaluate {
                 // Temporary
                 assert(constraints.size == 1)
 
-                val constrainedRange = constraints[0].getConstraint(expr)?.evaluate(condition)
+                val constrainedRange = constraints[0].getConstraint(expr)
 
                 if (constrainedRange != null) {
                     expr.getSetIndicator().newConstrainedSet(expr.myKey.key, constrainedRange)

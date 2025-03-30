@@ -23,9 +23,5 @@ sealed interface IMoldableSet<Self : IMoldableSet<Self>> {
     fun invert(): Self
     fun contains(element: Any): Boolean
 
-    /**
-     * Implementations don't need to check for their own type, that's
-     * already been handled.
-     */
-    fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q
+    fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q?
 }

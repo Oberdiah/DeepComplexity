@@ -20,18 +20,21 @@ object LoopEvaluation {
             val variablesMatchingCondition = expr.getVariables(false)
                 .filter { vari -> conditionVariables.any { vari.getKey() == it.getKey() } }
 
+            fun <T : NumberSet<T>> ugly(numExpr: IExpr<T>) {
+                if (variablesMatchingCondition.isEmpty()) return
+                // We now have an expression that is looping stuff.
+                val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: return
+
+                val constraints = ExprConstrain.getConstraints(condition)
+                // Temporary
+                assert(constraints.size == 1)
+                val constraint = constraints[0].getConstraint(variable) ?: return
+
+                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
+            }
+
             val numExpr = expr.tryCastToNumbers() ?: continue
-            if (variablesMatchingCondition.isEmpty()) continue
-
-            // We now have an expression that is looping stuff.
-            val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: continue
-
-            val constraints = ExprConstrain.getConstraints(condition)
-            // Temporary
-            assert(constraints.size == 1)
-            val constraint = constraints[0].getConstraint(variable)?.tryCastToNumbers() ?: continue
-
-            numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
+            ugly(numExpr)
         }
 
         for ((key, expr) in context.getVariables()) {

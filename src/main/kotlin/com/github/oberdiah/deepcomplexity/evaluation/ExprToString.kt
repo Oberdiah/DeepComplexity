@@ -91,7 +91,7 @@ object ExprToString {
             }
 
             is NumberLimitsExpression -> "(${expr.cmp}${expr.limit.dStr()}) = $myResult"
-            is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint.dStr()}) = $myResult"
+            is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {
                     "(${expr.setInd}) ${expr.expr.dStr()}"

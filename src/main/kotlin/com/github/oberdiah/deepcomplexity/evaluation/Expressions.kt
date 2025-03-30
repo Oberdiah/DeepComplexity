@@ -166,7 +166,7 @@ class NumberLimitsExpression<T : NumberSet<T>>(
 class NumIterationTimesExpression<T : NumberSet<T>>(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.
-    val constraint: IExpr<T>,
+    val constraint: T,
     // The variable that's being modified as it changes inside the loop.
     val variable: VariableExpression<T>,
     // How the variable is changing each iteration.
@@ -174,7 +174,7 @@ class NumIterationTimesExpression<T : NumberSet<T>>(
 ) : Expr<T>() {
     companion object {
         fun <T : NumberSet<T>> new(
-            constraint: IExpr<T>,
+            constraint: T,
             variable: VariableExpression<out NumberSet<*>>,
             terms: ConstraintSolver.CollectedTerms<out NumberSet<*>>
         ): NumIterationTimesExpression<T> {

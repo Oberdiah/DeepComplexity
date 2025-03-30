@@ -1,10 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import ai.grazie.text.TextTemplate.variable
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.utilities.Functional
-import org.codehaus.groovy.ast.expr.NotExpression
 
 /**
  * All constraints in the map must be true, it in-effect acts as an AND.
@@ -22,13 +20,13 @@ import org.codehaus.groovy.ast.expr.NotExpression
  */
 class Constraints private constructor(
     // A key that isn't in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    private val constraints: Map<Context.Key, IExpr<*>>,
+    private val constraints: Map<Context.Key, IMoldableSet<*>>,
     // If this is true these constraints have been proven to be unsatisfiable.
     // Currently, this is the constraint you get when you do something like `if (false) { ... }`
     private val unreachable: Boolean
 ) {
     companion object {
-        fun constrainedBy(constraints: Map<Context.Key, IExpr<*>>): Constraints {
+        fun constrainedBy(constraints: Map<Context.Key, IMoldableSet<*>>): Constraints {
             return Constraints(constraints, false)
         }
 
@@ -41,11 +39,11 @@ class Constraints private constructor(
         }
     }
 
-    fun <T : IMoldableSet<T>> getConstraint(variable: VariableExpression<T>): IExpr<T>? {
-        return constraints[variable.getKey().key]?.let { it.tryCastTo(variable.getSetIndicator())!! }
+    fun <T : IMoldableSet<T>> getConstraint(variable: VariableExpression<T>): T? {
+        return constraints[variable.getKey().key]?.cast(variable.getSetIndicator())
     }
 
-    fun addConstraint(key: Context.Key, expr: IExpr<*>): Constraints {
+    fun addConstraint(key: Context.Key, expr: IMoldableSet<*>): Constraints {
         return and(constrainedBy(mapOf(key to expr)))
     }
 
@@ -54,7 +52,7 @@ class Constraints private constructor(
 
         // You may be wondering why aren't you dealing with the non-map values?
         // I don't believe that's necessary, e.g. if (!(x > 5)) still doesn't constrain y.
-        return Constraints(constraints.mapValues { (_, v) -> InvertExpression(v) }, false)
+        return Constraints(constraints.mapValues { (_, v) -> v.invert() }, false)
     }
 
     /**
@@ -65,10 +63,10 @@ class Constraints private constructor(
         if (other.unreachable) return other
 
         return Constraints(Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
-            fun <T : IMoldableSet<T>> ugly(l: IExpr<T>): IExpr<T> =
+            fun <T : IMoldableSet<T>> ugly(l: IMoldableSet<T>): IMoldableSet<T> =
                 // Safety: We've asserted that the types are the same.
                 @Suppress("UNCHECKED_CAST")
-                IntersectExpression(l, rhs as IExpr<T>)
+                l.intersect(rhs as T)
 
             assert(lhs.getSetIndicator() == rhs.getSetIndicator())
 

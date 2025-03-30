@@ -11,6 +11,6 @@ object CastSolver {
             return from as T
         }
 
-        return from.cast(targetType)
+        return from.cast(targetType)!!
     }
 }

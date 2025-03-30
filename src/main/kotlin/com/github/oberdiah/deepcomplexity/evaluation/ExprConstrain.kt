@@ -36,7 +36,9 @@ object ExprConstrain {
                 outputConstraints
             }
 
-            is ComparisonExpression<*> -> listOf(ConstraintSolver.getConstraints(condition))
+            is ComparisonExpression<*> -> listOf(
+                ConstraintSolver.getConstraints(condition)
+            )
 
             is ConstExpr -> {
                 return when (condition.singleElementSet) {
