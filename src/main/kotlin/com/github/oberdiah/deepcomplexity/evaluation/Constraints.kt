@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**
@@ -20,13 +20,13 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  */
 class Constraints private constructor(
     // A key that isn't in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    private val constraints: Map<Context.Key, IMoldableSet<*>>,
+    private val constraints: Map<Context.Key, ConstrainedSet<*>>,
     // If this is true these constraints have been proven to be unsatisfiable.
     // Currently, this is the constraint you get when you do something like `if (false) { ... }`
     private val unreachable: Boolean
 ) {
     companion object {
-        fun constrainedBy(constraints: Map<Context.Key, IMoldableSet<*>>): Constraints {
+        fun constrainedBy(constraints: Map<Context.Key, ConstrainedSet<*>>): Constraints {
             return Constraints(constraints, false)
         }
 
@@ -39,15 +39,15 @@ class Constraints private constructor(
         }
     }
 
-    fun <T : IMoldableSet<T>> getConstraint(variable: VariableExpression<T>): T? {
+    fun <T : ConstrainedSet<T>> getConstraint(variable: VariableExpression<T>): T? {
         return constraints[variable.getKey().key]?.cast(variable.getSetIndicator())
     }
 
-    fun <T : IMoldableSet<T>> getConstraint(ind: SetIndicator<T>, key: Context.Key): T? {
+    fun <T : ConstrainedSet<T>> getConstraint(ind: SetIndicator<T>, key: Context.Key): T? {
         return constraints[key]?.cast(ind)
     }
 
-    fun addConstraint(key: Context.Key, expr: IMoldableSet<*>): Constraints {
+    fun addConstraint(key: Context.Key, expr: ConstrainedSet<*>): Constraints {
         return and(constrainedBy(mapOf(key to expr)))
     }
 
@@ -67,7 +67,7 @@ class Constraints private constructor(
         if (other.unreachable) return other
 
         return Constraints(Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
-            fun <T : IMoldableSet<T>> ugly(l: IMoldableSet<T>): IMoldableSet<T> =
+            fun <T : ConstrainedSet<T>> ugly(l: ConstrainedSet<T>): ConstrainedSet<T> =
                 // Safety: We've asserted that the types are the same.
                 @Suppress("UNCHECKED_CAST")
                 l.intersect(rhs as T)

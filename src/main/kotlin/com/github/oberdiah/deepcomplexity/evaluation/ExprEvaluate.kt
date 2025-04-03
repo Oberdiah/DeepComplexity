@@ -4,11 +4,11 @@ import com.github.oberdiah.deepcomplexity.solver.CastSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ExprEvaluate {
-    fun <T : IMoldableSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+    fun <T : ConstrainedSet<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
         @Suppress("UNCHECKED_CAST")
         return when (expr.getSetIndicator()) {
             is NumberSetIndicator<*, *> -> evaluateNums(expr.tryCastToNumbers()!!, condition) as T
@@ -79,7 +79,7 @@ object ExprEvaluate {
         return evaluateAnythings(expr, condition)
     }
 
-    private fun <T : IMoldableSet<T>> evaluateAnythings(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+    private fun <T : ConstrainedSet<T>> evaluateAnythings(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
         return when (expr) {
             is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))

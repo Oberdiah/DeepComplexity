@@ -7,7 +7,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 
-sealed interface NumberSet<Self> : IMoldableSet<Self> where Self : IMoldableSet<Self>, Self : NumberSet<Self> {
+sealed interface NumberSet<Self> : ConstrainedSet<Self> where Self : ConstrainedSet<Self>, Self : NumberSet<Self> {
     /**
      * Returns the set of ranges that this number set represents.
      * The ranges are inclusive, in order, and non-overlapping.

@@ -5,7 +5,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 /**
  * This is the set of possible values an expression can take.
  */
-sealed interface IMoldableSet<Self : IMoldableSet<Self>> {
+sealed interface ConstrainedSet<Self : ConstrainedSet<Self>> {
     fun getSetIndicator(): SetIndicator<Self>
     fun union(other: Self): Self
 
@@ -23,5 +23,5 @@ sealed interface IMoldableSet<Self : IMoldableSet<Self>> {
     fun invert(): Self
     fun contains(element: Any): Boolean
 
-    fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q?
+    fun <Q : ConstrainedSet<Q>> cast(indicator: SetIndicator<Q>): Q?
 }

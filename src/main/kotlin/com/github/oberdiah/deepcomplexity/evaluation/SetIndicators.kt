@@ -5,11 +5,11 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-sealed interface SetIndicator<Set : IMoldableSet<Set>> {
+sealed interface SetIndicator<Set : ConstrainedSet<Set>> {
     val clazz: KClass<*>
 
     fun newEmptySet(): Set
@@ -21,7 +21,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
     fun newConstrainedSet(key: Context.Key, constraints: List<Constraints>): Set
 
     companion object {
-        fun <T : IMoldableSet<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
+        fun <T : ConstrainedSet<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
                 is IfExpression -> expr.trueExpr.getSetIndicator()
@@ -58,10 +58,10 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
             }
         }
 
-        fun <T : IMoldableSet<T>> newEmptySet(ind: SetIndicator<T>): T = ind.newEmptySet()
-        fun <T : Any, Self : IMoldableSet<Self>> newEmptySetFromValue(v: T): Self = newEmptySet(fromValue(v))
+        fun <T : ConstrainedSet<T>> newEmptySet(ind: SetIndicator<T>): T = ind.newEmptySet()
+        fun <T : Any, Self : ConstrainedSet<Self>> newEmptySetFromValue(v: T): Self = newEmptySet(fromValue(v))
 
-        fun <T : Any, Self : IMoldableSet<Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
+        fun <T : Any, Self : ConstrainedSet<Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
             @Suppress("UNCHECKED_CAST")
             return when (value) {
                 is Number -> fromValue(value)
@@ -86,7 +86,7 @@ sealed interface SetIndicator<Set : IMoldableSet<Set>> {
     }
 }
 
-sealed class SetIndicatorImpl<T : Any, Set : IMoldableSet<Set>>(override val clazz: KClass<T>) : SetIndicator<Set>
+sealed class SetIndicatorImpl<T : Any, Set : ConstrainedSet<Set>>(override val clazz: KClass<T>) : SetIndicator<Set>
 
 sealed class NumberSetIndicator<T : Number, Set : TypedNumberSet<T, Set>>(clazz: KClass<T>) :
     SetIndicatorImpl<T, Set>(clazz) {

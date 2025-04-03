@@ -11,7 +11,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.GREATER_THAN
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.GREATER_THAN_OR_EQUAL
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.LESS_THAN
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.LESS_THAN_OR_EQUAL
-import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
 import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.FloatSetIndicator
@@ -100,7 +99,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
         return makeNew(elements.map { elem -> elem.map { zero.subtract(it)!! } })
     }
 
-    override fun <Q : IMoldableSet<Q>> cast(outsideInd: SetIndicator<Q>): Q? {
+    override fun <Q : ConstrainedSet<Q>> cast(outsideInd: SetIndicator<Q>): Q? {
         if (outsideInd !is NumberSetIndicator<*, *>) {
             return null
         }
@@ -400,7 +399,7 @@ sealed class TypedNumberSet<T : Number, Self : TypedNumberSet<T, Self>>(
                 constraints.map {
                     val constraint =
                         it.getConstraint(ind, key)?.getRangeTyped() ?: (ind.getMinValue() to ind.getMaxValue())
-                    
+
                     ConstrainedSet(
                         it,
                         Affine.fromConstraints(

@@ -4,7 +4,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstantExpression {
@@ -17,16 +17,16 @@ object ConstantExpression {
     fun <T : NumberSet<T>> zero(expr: IExpr<T>): ConstExpr<T> =
         ConstExpr(NumberSet.zero(expr.getSetIndicator()))
 
-    fun <T : IMoldableSet<T>> fullSetFromExprAndKey(expr: IExpr<T>, key: Context.Key): T =
+    fun <T : ConstrainedSet<T>> fullSetFromExprAndKey(expr: IExpr<T>, key: Context.Key): T =
         expr.getSetIndicator().newFullSet(key)
 
-    fun <T : IMoldableSet<T>> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
+    fun <T : ConstrainedSet<T>> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
         ConstExpr(fullSetFromExprAndKey(expr, key))
 
-    fun <T : IMoldableSet<T>> emptySetFromExpr(expr: IExpr<T>): T =
+    fun <T : ConstrainedSet<T>> emptySetFromExpr(expr: IExpr<T>): T =
         expr.getSetIndicator().newEmptySet()
 
-    fun <T : IMoldableSet<T>> emptyExprFromExpr(expr: IExpr<T>): IExpr<T> =
+    fun <T : ConstrainedSet<T>> emptyExprFromExpr(expr: IExpr<T>): IExpr<T> =
         ConstExpr(emptySetFromExpr(expr))
 
     fun fromAny(value: Any): IExpr<*> {

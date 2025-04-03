@@ -16,7 +16,7 @@ import kotlin.reflect.KClass
 abstract class AbstractSet<Self : AbstractSet<Self, PureSet>, PureSet>(
     private val ind: SetIndicator<Self>,
     protected val elements: List<ConstrainedSet<PureSet>>
-) : IMoldableSet<Self> {
+) : ConstrainedSet<Self> {
     data class ConstrainedSet<PureSet>(val constraints: Constraints, val set: PureSet) {
         companion object {
             fun <PureSet> unconstrained(set: PureSet): ConstrainedSet<PureSet> =

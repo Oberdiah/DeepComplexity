@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
 
 object ExprGetVariables {
-    fun <T : IMoldableSet<T>> getVariables(expr: IExpr<T>, resolved: Boolean): Set<VariableExpression<*>> {
+    fun <T : ConstrainedSet<T>> getVariables(expr: IExpr<T>, resolved: Boolean): Set<VariableExpression<*>> {
         return when (expr) {
             is ConstExpr -> emptySet()
             is VariableExpression -> {

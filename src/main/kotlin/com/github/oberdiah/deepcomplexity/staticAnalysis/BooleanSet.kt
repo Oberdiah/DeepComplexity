@@ -3,9 +3,8 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import kotlin.reflect.KClass
 
-enum class BooleanSet : IMoldableSet<BooleanSet> {
+enum class BooleanSet : ConstrainedSet<BooleanSet> {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
@@ -69,7 +68,7 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
         return toString()
     }
 
-    override fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q {
+    override fun <Q : ConstrainedSet<Q>> cast(indicator: SetIndicator<Q>): Q {
         throw IllegalArgumentException("Cannot cast boolean to $indicator")
     }
 

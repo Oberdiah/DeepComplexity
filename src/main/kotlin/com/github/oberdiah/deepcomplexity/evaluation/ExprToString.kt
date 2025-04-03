@@ -2,10 +2,10 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
 
 object ExprToString {
-    fun <T : IMoldableSet<T>> toString(expr: IExpr<T>): String {
+    fun <T : ConstrainedSet<T>> toString(expr: IExpr<T>): String {
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is ComparisonExpression<*> -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
@@ -66,7 +66,7 @@ object ExprToString {
         return "(${expr.lhs} ${expr.op} ${expr.rhs})"
     }
 
-    fun <T : IMoldableSet<T>> toDebugString(expr: IExpr<T>): String {
+    fun <T : ConstrainedSet<T>> toDebugString(expr: IExpr<T>): String {
         val myResult = "| ${expr.evaluate(ConstantExpression.TRUE).toDebugString()} |"
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs.dStr()} ${expr.op} ${expr.rhs.dStr()}) = $myResult"
