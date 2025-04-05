@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSetCollection
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
 import com.intellij.psi.PsiMethod
 import testdata.MyTestData
@@ -21,7 +21,7 @@ object TestUtilities {
         val reflectMethod = clazz.declaredMethods.find { it.name == methodName }
             ?: throw NoSuchMethodException("Method $methodName not found in class ${clazz.name}")
 
-        var range: ConstrainedSet<*>? = null
+        var range: ConstrainedSetCollection<*>? = null
         try {
             val returnKey = Context.Key.ReturnKey(method)
 
@@ -70,7 +70,7 @@ object TestUtilities {
 
     }
 
-    fun getMethodScore(method: Method, range: ConstrainedSet<*>): Double {
+    fun getMethodScore(method: Method, range: ConstrainedSetCollection<*>): Double {
         // For now, int-only. Short is the goal though.
         if (method.parameterCount != 1 ||
             method.parameterTypes[0] != Short::class.java ||

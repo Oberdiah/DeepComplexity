@@ -4,7 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import kotlin.reflect.KClass
 
-interface GenericSet : ConstrainedSet<GenericSet> {
+interface GenericSet : ConstrainedSetCollection<GenericSet> {
     companion object {
         inline fun <reified T : Any> singleValue(value: T): GenericSetImpl<T> {
             return GenericSetImpl(T::class, setOf(value))
@@ -49,7 +49,7 @@ interface GenericSet : ConstrainedSet<GenericSet> {
             )
         }
 
-        override fun <Q : ConstrainedSet<Q>> cast(indicator: SetIndicator<Q>): Q {
+        override fun <Q : ConstrainedSetCollection<Q>> cast(indicator: SetIndicator<Q>): Q {
             TODO("Not yet implemented :)")
         }
 

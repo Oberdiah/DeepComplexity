@@ -5,7 +5,7 @@ import com.intellij.psi.PsiType
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
-class VariableExpression<T : ConstrainedSet<T>>(
+class VariableExpression<T : ConstrainedSetCollection<T>>(
     val myKey: VariableKey,
     val id: Int,
     val setInd: SetIndicator<T>

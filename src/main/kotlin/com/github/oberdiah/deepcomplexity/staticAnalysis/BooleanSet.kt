@@ -4,7 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
-enum class BooleanSet : ConstrainedSet<BooleanSet> {
+enum class BooleanSet : ConstrainedSetCollection<BooleanSet> {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
@@ -68,7 +68,7 @@ enum class BooleanSet : ConstrainedSet<BooleanSet> {
         return toString()
     }
 
-    override fun <Q : ConstrainedSet<Q>> cast(indicator: SetIndicator<Q>): Q {
+    override fun <Q : ConstrainedSetCollection<Q>> cast(indicator: SetIndicator<Q>): Q {
         throw IllegalArgumentException("Cannot cast boolean to $indicator")
     }
 

@@ -1,10 +1,14 @@
 package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSetCollection
 
 object CastSolver {
-    fun <T : ConstrainedSet<T>> castFrom(from: ConstrainedSet<*>, targetType: SetIndicator<T>, implicit: Boolean): T {
+    fun <T : ConstrainedSetCollection<T>> castFrom(
+        from: ConstrainedSetCollection<*>,
+        targetType: SetIndicator<T>,
+        implicit: Boolean
+    ): T {
         val currentType = from.getSetIndicator()
         if (currentType == targetType) {
             @Suppress("UNCHECKED_CAST")

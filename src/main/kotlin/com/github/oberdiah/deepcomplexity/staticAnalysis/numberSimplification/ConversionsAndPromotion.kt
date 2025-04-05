@@ -8,16 +8,16 @@ import com.github.oberdiah.deepcomplexity.evaluation.LongSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.performACastTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSetCollection
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConversionsAndPromotion {
-    class TypedPair<T : ConstrainedSet<T>>(val first: IExpr<T>, val second: IExpr<T>) {
+    class TypedPair<T : ConstrainedSetCollection<T>>(val first: IExpr<T>, val second: IExpr<T>) {
         fun <R> map(operation: (IExpr<T>, IExpr<T>) -> R): R = operation(first, second)
     }
 
     fun castAToB(exprA: IExpr<*>, exprB: IExpr<*>, explicit: Boolean): TypedPair<*> {
-        fun <T : ConstrainedSet<T>> castTo(exprB: IExpr<T>): TypedPair<*> {
+        fun <T : ConstrainedSetCollection<T>> castTo(exprB: IExpr<T>): TypedPair<*> {
             val castExprA: IExpr<T> = exprA.performACastTo(exprB.getSetIndicator(), explicit)
             return TypedPair(exprB, castExprA)
         }

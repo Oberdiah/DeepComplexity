@@ -3,10 +3,10 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSetCollection
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
-sealed interface IExpr<T : ConstrainedSet<T>> {
+sealed interface IExpr<T : ConstrainedSetCollection<T>> {
     /**
      * The indicator represents what the expression will be once evaluated.
      */
@@ -16,7 +16,7 @@ sealed interface IExpr<T : ConstrainedSet<T>> {
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
-sealed class Expr<T : ConstrainedSet<T>> : IExpr<T> {
+sealed class Expr<T : ConstrainedSetCollection<T>> : IExpr<T> {
     override fun toString(): String {
         return ExprToString.toString(this)
     }
@@ -33,7 +33,7 @@ fun IExpr<*>.tryCastToNumbers(): IExpr<out NumberSet<*>>? {
     }
 }
 
-inline fun <Set : ConstrainedSet<Set>, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
+inline fun <Set : ConstrainedSetCollection<Set>, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
     return if (this::class == T::class && indicator == this.getSetIndicator()) {
         @Suppress("UNCHECKED_CAST")
         this as T
@@ -42,7 +42,7 @@ inline fun <Set : ConstrainedSet<Set>, reified T : IExpr<Set>> IExpr<*>.tryCastE
     }
 }
 
-fun <T : ConstrainedSet<T>> IExpr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): IExpr<T> {
+fun <T : ConstrainedSetCollection<T>> IExpr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): IExpr<T> {
     return if (this.getSetIndicator() == indicator) {
         @Suppress("UNCHECKED_CAST")
         this as IExpr<T>
@@ -51,7 +51,7 @@ fun <T : ConstrainedSet<T>> IExpr<*>.performACastTo(indicator: SetIndicator<T>, 
     }
 }
 
-fun <T : ConstrainedSet<T>> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<T>? {
+fun <T : ConstrainedSetCollection<T>> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<T>? {
     return if (this.getSetIndicator() == indicator) {
         @Suppress("UNCHECKED_CAST")
         this as IExpr<T>
@@ -87,13 +87,13 @@ class ComparisonExpression<T : NumberSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T
  * Given that there's an assumption baked into all of this that we're working on a compilable program,
  * explicit isn't strictly necessary, but it's nice debugging and printing purposes.
  */
-class TypeCastExpression<T : ConstrainedSet<T>, Q : ConstrainedSet<Q>>(
+class TypeCastExpression<T : ConstrainedSetCollection<T>, Q : ConstrainedSetCollection<Q>>(
     val expr: IExpr<Q>,
     val setInd: SetIndicator<T>,
     val explicit: Boolean
 ) : Expr<T>()
 
-class IfExpression<T : ConstrainedSet<T>>(
+class IfExpression<T : ConstrainedSetCollection<T>>(
     val trueExpr: IExpr<T>,
     val falseExpr: IExpr<T>,
     val thisCondition: IExpr<BooleanSet>
@@ -105,7 +105,7 @@ class IfExpression<T : ConstrainedSet<T>>(
     }
 
     companion object {
-        fun <A : ConstrainedSet<A>, B : ConstrainedSet<B>> new(
+        fun <A : ConstrainedSetCollection<A>, B : ConstrainedSetCollection<B>> new(
             a: IExpr<A>,
             b: IExpr<B>,
             condition: IExpr<BooleanSet>
@@ -120,7 +120,7 @@ class IfExpression<T : ConstrainedSet<T>>(
     }
 }
 
-class IntersectExpression<T : ConstrainedSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
+class IntersectExpression<T : ConstrainedSetCollection<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
     init {
         assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
             "Intersecting expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
@@ -128,7 +128,7 @@ class IntersectExpression<T : ConstrainedSet<T>>(val lhs: IExpr<T>, val rhs: IEx
     }
 }
 
-class UnionExpression<T : ConstrainedSet<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
+class UnionExpression<T : ConstrainedSetCollection<T>>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
     init {
         assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
             "Unioning expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
@@ -145,9 +145,9 @@ class BooleanExpression(val lhs: IExpr<BooleanSet>, val rhs: IExpr<BooleanSet>, 
     }
 }
 
-class ConstExpr<T : ConstrainedSet<T>>(val singleElementSet: T) : Expr<T>()
+class ConstExpr<T : ConstrainedSetCollection<T>>(val singleElementSet: T) : Expr<T>()
 class BooleanInvertExpression(val expr: IExpr<BooleanSet>) : Expr<BooleanSet>()
-class InvertExpression<T : ConstrainedSet<T>>(val expr: IExpr<T>) : Expr<T>()
+class InvertExpression<T : ConstrainedSetCollection<T>>(val expr: IExpr<T>) : Expr<T>()
 class NegateExpression<T : NumberSet<T>>(val expr: IExpr<T>) : Expr<T>()
 
 /**

@@ -5,11 +5,11 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSetCollection
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-sealed interface SetIndicator<Set : ConstrainedSet<Set>> {
+sealed interface SetIndicator<Set : ConstrainedSetCollection<Set>> {
     val clazz: KClass<*>
 
     fun newEmptySet(): Set
@@ -21,7 +21,7 @@ sealed interface SetIndicator<Set : ConstrainedSet<Set>> {
     fun newConstrainedSet(key: Context.Key, constraints: List<Constraints>): Set
 
     companion object {
-        fun <T : ConstrainedSet<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
+        fun <T : ConstrainedSetCollection<T>> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
                 is IfExpression -> expr.trueExpr.getSetIndicator()
@@ -58,10 +58,11 @@ sealed interface SetIndicator<Set : ConstrainedSet<Set>> {
             }
         }
 
-        fun <T : ConstrainedSet<T>> newEmptySet(ind: SetIndicator<T>): T = ind.newEmptySet()
-        fun <T : Any, Self : ConstrainedSet<Self>> newEmptySetFromValue(v: T): Self = newEmptySet(fromValue(v))
+        fun <T : ConstrainedSetCollection<T>> newEmptySet(ind: SetIndicator<T>): T = ind.newEmptySet()
+        fun <T : Any, Self : ConstrainedSetCollection<Self>> newEmptySetFromValue(v: T): Self =
+            newEmptySet(fromValue(v))
 
-        fun <T : Any, Self : ConstrainedSet<Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
+        fun <T : Any, Self : ConstrainedSetCollection<Self>> fromValue(value: T): SetIndicatorImpl<T, Self> {
             @Suppress("UNCHECKED_CAST")
             return when (value) {
                 is Number -> fromValue(value)
@@ -86,7 +87,8 @@ sealed interface SetIndicator<Set : ConstrainedSet<Set>> {
     }
 }
 
-sealed class SetIndicatorImpl<T : Any, Set : ConstrainedSet<Set>>(override val clazz: KClass<T>) : SetIndicator<Set>
+sealed class SetIndicatorImpl<T : Any, Set : ConstrainedSetCollection<Set>>(override val clazz: KClass<T>) :
+    SetIndicator<Set>
 
 sealed class NumberSetIndicator<T : Number, Set : TypedNumberSet<T, Set>>(clazz: KClass<T>) :
     SetIndicatorImpl<T, Set>(clazz) {
