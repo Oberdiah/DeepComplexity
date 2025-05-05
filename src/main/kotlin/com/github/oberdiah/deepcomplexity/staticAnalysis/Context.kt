@@ -141,7 +141,7 @@ class Context {
         return variables.containsKey(variable.getKey().key) && variable.getKey().context == this
     }
 
-    fun evaluateKey(key: Key): ConstrainedSetCollection<*> {
+    fun evaluateKey(key: Key): BundleSet<*> {
         assert(alive)
         val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
         return expr.evaluate(ConstantExpression.TRUE)

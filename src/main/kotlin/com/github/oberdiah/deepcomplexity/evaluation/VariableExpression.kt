@@ -1,11 +1,12 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities
 import com.intellij.psi.PsiType
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
-class VariableExpression<T : ConstrainedSetCollection<T>>(
+class VariableExpression<T : Any>(
     val myKey: VariableKey,
     val id: Int,
     val setInd: SetIndicator<T>

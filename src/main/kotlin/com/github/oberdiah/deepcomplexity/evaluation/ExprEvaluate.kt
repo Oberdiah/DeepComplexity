@@ -1,23 +1,20 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.CastSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSetCollection
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ExprEvaluate {
-    fun <T : ConstrainedSetCollection<T>> evaluate(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+    fun <T : Any> evaluate(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         @Suppress("UNCHECKED_CAST")
         return when (expr.getSetIndicator()) {
-            is NumberSetIndicator<*, *> -> evaluateNums(expr.tryCastToNumbers()!!, condition) as T
-            BooleanSetIndicator -> evaluateBools(expr as IExpr<BooleanSet>, condition) as T
-            GenericSetIndicator -> evaluateGenerics(expr as IExpr<GenericSet>, condition) as T
+            is NumberSetIndicator<*> -> evaluateNums(expr.tryCastToNumbers()!!, condition) as BundleSet<T>
+            is GenericSetIndicator -> evaluateGenerics(expr as IExpr<*>, condition) as BundleSet<T>
+            BooleanSetIndicator -> evaluateBools(expr as IExpr<Boolean>, condition) as BundleSet<T>
         }
     }
 
-    private fun <T : NumberSet<T>> evaluateNums(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+    private fun <T : Number> evaluateNums(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         return when (expr) {
             is ArithmeticExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
@@ -29,11 +26,15 @@ object ExprEvaluate {
             is NegateExpression -> evaluate(expr.expr, condition).negate()
             is NumberLimitsExpression -> {
                 val rhs = expr.limit.evaluate(condition)
-                when (expr.shouldFlipCmp.evaluate(condition)) {
-                    TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
-                    FALSE -> rhs.getSetSatisfying(expr.cmp)
-                    BOTH -> rhs.getSetSatisfying(expr.cmp).union(rhs.getSetSatisfying(expr.cmp.flip()))
-                    NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                val bundleSet = expr.shouldFlipCmp.evaluate(condition)
+
+                bundleSet.unaryMapAndUnion(rhs.ind) { bundle ->
+                    when (bundle.into()) {
+                        TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
+                        FALSE -> rhs.getSetSatisfying(expr.cmp)
+                        BOTH -> rhs.getSetSatisfying(expr.cmp).union(rhs.getSetSatisfying(expr.cmp.flip()))
+                        NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                    }
                 }
             }
 
@@ -44,14 +45,17 @@ object ExprEvaluate {
                 // This could get pretty complex, but we'll keep it relatively simple for now.
 
                 val startingValue = expr.variable.evaluate(condition)
-                startingValue.evaluateLoopingRange(terms.evaluate(condition), expr.constraint)
+                startingValue.evaluateLoopingRange(
+                    terms.evaluate(condition),
+                    expr.constraint
+                )
             }
 
             else -> evaluateAnythings(expr, condition)
         }
     }
 
-    private fun evaluateBools(expr: IExpr<BooleanSet>, condition: IExpr<BooleanSet>): BooleanSet {
+    private fun evaluateBools(expr: IExpr<Boolean>, condition: IExpr<Boolean>): BundleSet<Boolean> {
         return when (expr) {
             is BooleanExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
@@ -61,7 +65,7 @@ object ExprEvaluate {
             }
 
             is ComparisonExpression<*> -> {
-                fun <T : NumberSet<T>> evalC(expr: ComparisonExpression<T>, condition: IExpr<BooleanSet>): BooleanSet {
+                fun <T : Number> evalC(expr: ComparisonExpression<T>, condition: IExpr<Boolean>): BundleSet<Boolean> {
                     val lhs = evaluate(expr.lhs, condition)
                     val rhs = evaluate(expr.rhs, condition)
 
@@ -75,11 +79,11 @@ object ExprEvaluate {
         }
     }
 
-    private fun evaluateGenerics(expr: IExpr<GenericSet>, condition: IExpr<BooleanSet>): GenericSet {
+    private fun <T : Any> evaluateGenerics(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         return evaluateAnythings(expr, condition)
     }
 
-    private fun <T : ConstrainedSetCollection<T>> evaluateAnythings(expr: IExpr<T>, condition: IExpr<BooleanSet>): T {
+    private fun <T : Any> evaluateAnythings(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         return when (expr) {
             is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
@@ -90,16 +94,19 @@ object ExprEvaluate {
                 val trueCondition = BooleanExpression(ifCondition, condition, BooleanOp.AND)
                 val falseCondition =
                     BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
-                when (evaluatedCond) {
-                    TRUE -> evaluate(expr.trueExpr, trueCondition)
-                    FALSE -> evaluate(expr.falseExpr, falseCondition)
-                    BOTH -> {
-                        val trueValue = evaluate(expr.trueExpr, trueCondition)
-                        val falseValue = evaluate(expr.falseExpr, falseCondition)
-                        trueValue.union(falseValue)
-                    }
 
-                    NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
+                evaluatedCond.unaryMapAndUnion(expr.trueExpr.getSetIndicator()) { bundle ->
+                    when (bundle.into()) {
+                        TRUE -> evaluate(expr.trueExpr, trueCondition)
+                        FALSE -> evaluate(expr.falseExpr, falseCondition)
+                        BOTH -> {
+                            val trueValue = evaluate(expr.trueExpr, trueCondition)
+                            val falseValue = evaluate(expr.falseExpr, falseCondition)
+                            trueValue.union(falseValue)
+                        }
+
+                        NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
+                    }
                 }
             }
 
@@ -109,15 +116,17 @@ object ExprEvaluate {
                 expr.explicit
             )
 
-            is ConstExpr -> expr.singleElementSet
-
+            is ConstExpr -> expr.constSet
             is VariableExpression -> {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
                 }
 
                 val constraints = ExprConstrain.getConstraints(condition)
-                expr.getSetIndicator().newConstrainedSet(expr.myKey.key, constraints)
+                BundleSet.unconstrainedBundle(
+                    expr.getSetIndicator().newVarianceDefinedBundle(expr.myKey.key),
+                    constraints
+                )
             }
 
             else -> {

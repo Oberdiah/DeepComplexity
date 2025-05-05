@@ -10,8 +10,8 @@ import java.math.BigInteger.valueOf
 
 @ConsistentCopyVisibility
 data class Affine<T : Number> private constructor(
-    private val setIndicator: NumberSetIndicator<T, *>,
-    // Obviously at one point we'll want to support floating point too.
+    private val setIndicator: NumberSetIndicator<T>,
+    // At one point we'll want to support floating point too.
     private val affine: IntegerAffine
 ) {
     val clazz = setIndicator.clazz
@@ -19,7 +19,7 @@ data class Affine<T : Number> private constructor(
     fun stringOverview() = affine.stringOverview()
     override fun toString(): String = affine.toString()
 
-    fun <NewT : Number> castTo(newInd: NumberSetIndicator<NewT, *>): Affine<NewT> = Affine(newInd, affine)
+    fun <NewT : Number> castTo(newInd: NumberSetIndicator<NewT>): Affine<NewT> = Affine(newInd, affine)
 
     fun getKeys(): List<Context.Key> = affine.getKeys()
 
@@ -65,10 +65,10 @@ data class Affine<T : Number> private constructor(
         )
     }
 
-    fun add(other: Affine<T>): Affine<T>? = affine.add(other.affine)?.let { Affine(setIndicator, it) }
-    fun subtract(other: Affine<T>): Affine<T>? = affine.subtract(other.affine)?.let { Affine(setIndicator, it) }
-    fun multiply(other: Affine<T>): Affine<T>? = affine.multiply(other.affine)?.let { Affine(setIndicator, it) }
-    fun divide(other: Affine<T>): Affine<T>? {
+    fun add(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.add(other.affine))
+    fun subtract(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.subtract(other.affine))
+    fun multiply(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.multiply(other.affine))
+    fun divide(other: Affine<T>): Affine<T> {
         if (other.isExactly(1)) {
             return this
         }
@@ -80,14 +80,31 @@ data class Affine<T : Number> private constructor(
     }
 
     companion object {
-        fun <T : Number> fromConstant(constant: T, ind: NumberSetIndicator<T, *>): Affine<T> =
+        fun <T : Number> fromConstant(ind: NumberSetIndicator<T>, constant: T): Affine<T> =
             Affine(ind, IntegerAffine.fromConstant(constant.toLong()))
 
-        // todo investigate if usages of this can be converted to fromConstraints
-        fun <T : Number> fromRangeNoKey(start: T, end: T, ind: NumberSetIndicator<T, *>): Affine<T> =
-            Affine(ind, IntegerAffine.fromRangeNoKey(start.toLong(), end.toLong()))
+        fun <T : Number> fromVariance(ind: NumberSetIndicator<T>, key: Context.Key): Affine<T> =
+            Affine(
+                ind,
+                IntegerAffine.fromRange(
+                    ind.getMinValue().toLong(),
+                    ind.getMaxValue().toLong(),
+                    key
+                )
+            )
 
-        fun <T : Number> fromConstraints(start: T, end: T, key: Context.Key, ind: NumberSetIndicator<T, *>): Affine<T> =
-            Affine(ind, IntegerAffine.fromConstraints(ind, start.toLong(), end.toLong(), key))
+        /**
+         * Try to avoid using if possible, creates an ephemeral key and so
+         * drops any variance information.
+         */
+        fun <T : Number> fromRange(ind: NumberSetIndicator<T>, lower: T, upper: T): Affine<T> =
+            Affine(
+                ind,
+                IntegerAffine.fromRange(
+                    lower.toLong(),
+                    upper.toLong(),
+                    Context.Key.EphemeralKey.new()
+                )
+            )
     }
 }

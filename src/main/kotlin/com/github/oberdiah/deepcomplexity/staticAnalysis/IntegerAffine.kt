@@ -1,13 +1,12 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.half
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction.ZERO
 import com.github.oberdiah.deepcomplexity.utilities.BigFraction.of
@@ -27,6 +26,8 @@ data class IntegerAffine private constructor(
     // constants. That doesn't really work post-multiplication.
     class AffineNoiseTerm private constructor(
         val multi: BigFraction,
+        // todo this class is moving away from keeping min and max around like this.
+        //      We're gonna go back to just multi.
         val normalizedMin: BigFraction,
         val normalizedMax: BigFraction
     ) {
@@ -134,9 +135,9 @@ data class IntegerAffine private constructor(
         fun fromConstant(constant: Long): IntegerAffine =
             IntegerAffine(of(constant), emptyMap())
 
-        fun fromRangeNoKey(start: Long, end: Long): IntegerAffine {
-            val key = Context.Key.EphemeralKey.new()
-
+        // todo this likely shouldn't be fromRange anymore, should probably be fromVariance?
+        //      Edit: Unsure about this now, maybe should stay fromRange given how much it is used.
+        fun fromRange(start: Long, end: Long, key: Context.Key): IntegerAffine {
             val center = (of(start) + of(end)).half()
             val radius = (of(end) - of(start)).half()
             val affine = IntegerAffine(
@@ -145,19 +146,6 @@ data class IntegerAffine private constructor(
             )
 
             return affine
-        }
-
-        fun fromConstraints(ind: NumberSetIndicator<*, *>, start: Long, end: Long, key: Context.Key): IntegerAffine {
-            return IntegerAffine(
-                ZERO,
-                mapOf(
-                    key to AffineNoiseTerm.constrainedRadius(
-                        of(ind.getRadius()),
-                        of(start),
-                        of(end)
-                    )
-                )
-            )
         }
     }
 
@@ -202,7 +190,7 @@ data class IntegerAffine private constructor(
      * Returns null if the addition could not have occurred based on the constraints
      * we have.
      */
-    fun subtract(other: IntegerAffine): IntegerAffine? {
+    fun subtract(other: IntegerAffine): IntegerAffine {
         return addOrSubtract(other, shouldAdd = false)
     }
 
@@ -210,11 +198,11 @@ data class IntegerAffine private constructor(
      * Returns null if the addition could not have occurred based on the constraints
      * we have.
      */
-    fun add(other: IntegerAffine): IntegerAffine? {
+    fun add(other: IntegerAffine): IntegerAffine {
         return addOrSubtract(other, shouldAdd = true)
     }
 
-    private fun addOrSubtract(other: IntegerAffine, shouldAdd: Boolean): IntegerAffine? {
+    private fun addOrSubtract(other: IntegerAffine, shouldAdd: Boolean): IntegerAffine {
         val newCenter = if (shouldAdd) center + other.center else center - other.center
         val newNoiseTerms = mutableMapOf<Context.Key, AffineNoiseTerm>()
 
@@ -228,7 +216,7 @@ data class IntegerAffine private constructor(
                     lhs
                 } else {
                     val additionResult = lhs.addOrSubtractLikeTerms(rhs, shouldAdd)
-                    if (additionResult == null) return null
+                    if (additionResult == null) TODO("Hopefully this won't happen until we remove this feature")
                     additionResult
                 }
             }
@@ -237,7 +225,7 @@ data class IntegerAffine private constructor(
         return IntegerAffine(newCenter, newNoiseTerms)
     }
 
-    fun multiply(other: IntegerAffine): IntegerAffine? {
+    fun multiply(other: IntegerAffine): IntegerAffine {
         // Multiply centers
         val newCenter = center * other.center
 
@@ -256,7 +244,8 @@ data class IntegerAffine private constructor(
         if (!noiseTerms.isEmpty() && !other.noiseTerms.isEmpty()) {
             val quadraticTerm = let {
                 val (myNoise, otherNoise) =
-                    AffineNoiseTerm.updateMinMaxForLikeTerms(noiseTerms, other.noiseTerms) ?: return null
+                    AffineNoiseTerm.updateMinMaxForLikeTerms(noiseTerms, other.noiseTerms)
+                        ?: TODO("Hopefully this won't happen until we remove this feature")
 
                 val myRange = noiseTerms.values.fold(ZERO) { acc, it -> acc + it.multi }
                 val myMin = myNoise.values.fold(ZERO) { acc, it -> acc + it.min }

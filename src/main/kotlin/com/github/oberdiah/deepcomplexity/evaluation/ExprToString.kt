@@ -2,14 +2,13 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ConstrainedSetCollection
 
 object ExprToString {
-    fun <T : ConstrainedSetCollection<T>> toString(expr: IExpr<T>): String {
+    fun <T : Any> toString(expr: IExpr<T>): String {
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is ComparisonExpression<*> -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
-            is ConstExpr<*> -> expr.singleElementSet.toString()
+            is ConstExpr<*> -> expr.constSet.toString()
             is IfExpression -> {
                 return "if ${expr.thisCondition} {\n${
                     expr.trueExpr.toString().prependIndent()
@@ -66,12 +65,12 @@ object ExprToString {
         return "(${expr.lhs} ${expr.op} ${expr.rhs})"
     }
 
-    fun <T : ConstrainedSetCollection<T>> toDebugString(expr: IExpr<T>): String {
+    fun <T : Any> toDebugString(expr: IExpr<T>): String {
         val myResult = "| ${expr.evaluate(ConstantExpression.TRUE).toDebugString()} |"
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs.dStr()} ${expr.op} ${expr.rhs.dStr()}) = $myResult"
             is ComparisonExpression<*> -> "(${expr.lhs.dStr()} ${expr.comp} ${expr.rhs.dStr()}) = $myResult"
-            is ConstExpr<*> -> expr.singleElementSet.toString()
+            is ConstExpr<*> -> expr.constSet.toString()
             is IfExpression -> {
                 return "(if ${expr.thisCondition} {\n${
                     expr.trueExpr.dStr().prependIndent()
