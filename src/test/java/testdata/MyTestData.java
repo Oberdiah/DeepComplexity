@@ -174,7 +174,7 @@ public class MyTestData {
 		return (short) (a + b);
 	}
 	
-	@RequiredScore(0.0597)
+	@RequiredScore(0.129)
 	public static short combinedIfs2(short x) {
 		int a = x;
 		if (x < 0) {
@@ -182,19 +182,13 @@ public class MyTestData {
 		} else if (x > 10) {
 			a = 10;
 		}
-		// 0 U 10 U x[0, 10]
 		
 		int b = x;
-		if (x < 10) {
+		if (x <= 10) {
 			b = 0;
 		} else if (x > 20) {
 			b = 10;
 		}
-		// 0 U 10 U x[10, 20]
-		
-		// (0 U 10 U x[0, 10]) * (0 U 10 U x[10, 20])
-		
-		// = 0 U 100 U x[0, 10] * 10 U x[10, 20] * 10 U 10 * 10
 		
 		return (short) (a * b);
 	}
@@ -207,7 +201,6 @@ public class MyTestData {
 		} else if (incoming1 >= 10) {
 			a = 0;
 		}
-		// 0 U incoming1[0, 9]
 		
 		int b = incoming1;
 		if (incoming1 < 10) {
@@ -215,7 +208,25 @@ public class MyTestData {
 		} else if (incoming1 > 20) {
 			b = 0;
 		}
-		// 0 U incoming1[10, 19]
+		
+		return (short) (a * b);
+	}
+	
+	@RequiredScore(0.0597)
+	public static short combinedIfs4(short x) {
+		int a = x;
+		if (x < 0) {
+			a = 0;
+		} else if (x > 10) {
+			a = 10;
+		}
+		
+		int b = x;
+		if (x < 10) {
+			b = 0;
+		} else if (x > 20) {
+			b = 10;
+		}
 		
 		return (short) (a * b);
 	}
