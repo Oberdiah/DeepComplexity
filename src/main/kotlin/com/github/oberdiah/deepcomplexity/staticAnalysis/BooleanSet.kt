@@ -64,6 +64,10 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     }
 
+    override fun isEmpty(): Boolean {
+        return this == NEITHER
+    }
+
     override fun toDebugString(): String {
         return toString()
     }

@@ -58,6 +58,8 @@ sealed class NumberSet<T : Number>(
         }
     }
 
+    override fun isEmpty(): Boolean = affines.isEmpty()
+
     fun getRange(): Pair<Number, Number> = getRangeTyped()
     fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
 
@@ -202,15 +204,15 @@ sealed class NumberSet<T : Number>(
         changeTerms: ConstraintSolver.EvaluatedCollectedTerms<T>,
         valid: NumberSet<T>
     ): NumberSet<T> {
-        // This was half implemented in the old version.
+        // This was half-implemented in the old version.
         TODO("Not yet implemented")
     }
 
     /**
      * Returns a new set that satisfies the comparison operation.
-     * We're the right hand side of the equation.
+     * We're the right-hand side of the equation.
      */
-    fun getSetSatisfying(comp: ComparisonOp): NumberSet<T> {
+    fun getSetSatisfying(comp: ComparisonOp, key: Context.Key): NumberSet<T> {
         val range = getRange()
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
@@ -220,6 +222,7 @@ sealed class NumberSet<T : Number>(
                 listOf(
                     Affine.fromRange(
                         ind,
+                        key,
                         ind.getMinValue(),
                         smallestValue.downOneEpsilon()
                     )
@@ -229,6 +232,7 @@ sealed class NumberSet<T : Number>(
                 listOf(
                     Affine.fromRange(
                         ind,
+                        key,
                         biggestValue.upOneEpsilon(),
                         ind.getMaxValue()
                     )

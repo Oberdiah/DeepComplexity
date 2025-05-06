@@ -1,6 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
@@ -20,13 +20,13 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  */
 class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    private val constraints: Map<Context.Key, BundleSet<*>>,
+    private val constraints: Map<Context.Key, Bundle<*>>,
     // If this is true these constraints have been proven to be unsatisfiable.
     // Currently, this is the constraint you get when you do something like `if (false) { ... }`
     private val unreachable: Boolean
 ) {
     companion object {
-        fun constrainedBy(constraints: Map<Context.Key, BundleSet<*>>): Constraints {
+        fun constrainedBy(constraints: Map<Context.Key, Bundle<*>>): Constraints {
             return Constraints(constraints, false)
         }
 
@@ -39,19 +39,31 @@ class Constraints private constructor(
         }
     }
 
+    override fun toString(): String {
+        if (unreachable) return "unreachable"
+        if (constraints.isEmpty()) return "unconstrained"
+        return constraints.entries.joinToString("\n") { (key, bundle) ->
+            "($key: $bundle)"
+        }
+    }
+
     fun isUnreachable(): Boolean {
         return unreachable
     }
 
-    fun <T : Any> getConstraint(variable: VariableExpression<T>): BundleSet<T>? {
+    fun isUnconstrained(): Boolean {
+        return constraints.isEmpty()
+    }
+
+    fun <T : Any> getConstraint(variable: VariableExpression<T>): Bundle<T>? {
         return constraints[variable.getKey().key]?.cast(variable.getSetIndicator())
     }
 
-    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Context.Key): BundleSet<T>? {
+    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Context.Key): Bundle<T>? {
         return constraints[key]?.cast(ind)
     }
 
-    fun addConstraint(key: Context.Key, expr: BundleSet<*>): Constraints {
+    fun addConstraint(key: Context.Key, expr: Bundle<*>): Constraints {
         return and(constrainedBy(mapOf(key to expr)))
     }
 
@@ -73,15 +85,17 @@ class Constraints private constructor(
         // todo: Actually check here and make sure the resulting constraints are still doable
         //  (i.e. none are the empty set)
 
-        return Constraints(Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
-            fun <T : Any> ugly(l: BundleSet<T>): BundleSet<T> =
+        val newConstraints = Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
+            fun <T : Any> ugly(l: Bundle<T>): Bundle<T> =
                 // Safety: We've asserted that the types are the same.
                 @Suppress("UNCHECKED_CAST")
-                l.intersect(rhs as BundleSet<T>)
+                l.intersect(rhs as Bundle<T>)
 
-            assert(lhs.ind == rhs.ind)
+            assert(lhs.getIndicator() == rhs.getIndicator())
 
             ugly(lhs)
-        }, false)
+        }.filter { !it.value.isEmpty() }
+
+        return Constraints(newConstraints, false)
     }
 }

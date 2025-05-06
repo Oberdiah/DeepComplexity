@@ -132,7 +132,10 @@ object ConstraintSolver {
             val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
             constraints = constraints.addConstraint(
                 variable.getKey().key,
-                variableConstraints.evaluate(expr)
+                // We can't pass `expr` in here, if we did, we'd be evaluating constraints
+                // forever.
+                // todo worth only collapsing to states possible to reach
+                variableConstraints.evaluate(ConstantExpression.TRUE).collapse()
             )
         }
 
@@ -171,7 +174,7 @@ object ConstraintSolver {
             val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
 
             return if (exponent == 1) {
-                NumberLimitsExpression(rhs, coeffLZ, expr.comp)
+                NumberLimitsExpression(rhs, coeffLZ, expr.comp, variable.myKey.key)
             } else {
                 println("Cannot constraint solve yet: $lhs (exponent $exponent)")
                 null

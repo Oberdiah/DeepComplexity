@@ -94,16 +94,19 @@ data class Affine<T : Number> private constructor(
             )
 
         /**
-         * Try to avoid using if possible, creates an ephemeral key and so
+         * Try to avoid using if possible, creates an ephemeral key and therefore
          * drops any variance information.
          */
         fun <T : Number> fromRange(ind: NumberSetIndicator<T>, lower: T, upper: T): Affine<T> =
+            fromRange(ind, Context.Key.EphemeralKey.new(), lower, upper)
+
+        fun <T : Number> fromRange(ind: NumberSetIndicator<T>, key: Context.Key, lower: T, upper: T): Affine<T> =
             Affine(
                 ind,
                 IntegerAffine.fromRange(
                     lower.toLong(),
                     upper.toLong(),
-                    Context.Key.EphemeralKey.new()
+                    key
                 )
             )
     }

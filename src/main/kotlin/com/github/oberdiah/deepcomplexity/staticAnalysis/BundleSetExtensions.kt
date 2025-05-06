@@ -30,9 +30,9 @@ fun <T : Number> BundleSet<T>.negate(): BundleSet<T> =
         a.into().negate()
     }
 
-fun <T : Number> BundleSet<T>.getSetSatisfying(comp: ComparisonOp): BundleSet<T> =
+fun <T : Number> BundleSet<T>.getSetSatisfying(comp: ComparisonOp, key: Context.Key): BundleSet<T> =
     this.performUnaryOperation { a ->
-        a.into().getSetSatisfying(comp)
+        a.into().getSetSatisfying(comp, key)
     }
 
 fun <T : Number> BundleSet<T>.evaluateLoopingRange(

@@ -1,6 +1,8 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.Constraints
+import com.github.oberdiah.deepcomplexity.evaluation.ExprConstrain
+import com.github.oberdiah.deepcomplexity.evaluation.IExpr
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
 /**
@@ -22,9 +24,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
  * Now, when an operation is performed between two BundleSets we effectively do an O(n^2) operation,
  * running each bundle against each other bundle.
  *
- * It is meaningless to have a BundleSet with no bundles in it. If you want to represent
- * an empty set, you're going to want bundles = [{bundle: {}, constraints: {true}}]
- *
  * NOTE: The bundle's constraints are not necessarily mutually exclusive and should be considered
  * OR'd together. Take, for example,
  * ```
@@ -40,7 +39,7 @@ class BundleSet<T : Any> private constructor(
             return BundleSet(
                 ind,
                 listOf(
-                    ConstrainedBundle(ind.newEmptyBundle(), Constraints.completelyUnconstrained())
+//                    ConstrainedBundle(ind.newEmptyBundle(), Constraints.completelyUnconstrained())
                 )
             )
         }
@@ -54,7 +53,7 @@ class BundleSet<T : Any> private constructor(
             )
         }
 
-        fun <T : Any> unconstrainedBundle(bundle: Bundle<T>, constraints: Constraints): BundleSet<T> {
+        fun <T : Any> constrained(bundle: Bundle<T>, constraints: Constraints): BundleSet<T> {
             return BundleSet(
                 bundle.getIndicator(),
                 listOf(
@@ -63,20 +62,35 @@ class BundleSet<T : Any> private constructor(
             )
         }
 
-        fun <T : Any> unconstrainedBundle(bundle: Bundle<T>, constraints: List<Constraints>): BundleSet<T> = BundleSet(
+        fun <T : Any> constrained(bundle: Bundle<T>, constraints: List<Constraints>): BundleSet<T> = BundleSet(
             bundle.getIndicator(),
             constraints.map { ConstrainedBundle(bundle, it) }
         )
     }
 
-    data class ConstrainedBundle<T : Any>(val bundle: Bundle<T>, val constraints: Constraints)
+    data class ConstrainedBundle<T : Any>(val bundle: Bundle<T>, val constraints: Constraints) {
+        fun toDebugString(): String {
+            if (constraints.isUnconstrained()) {
+                return bundle.toDebugString()
+            }
+            return "$constraints -> $bundle"
+        }
+    }
+
+    override fun toString(): String {
+        return toDebugString()
+    }
 
     /**
      * Might return additional information beyond simply what the set contains.
      */
     fun toDebugString(): String {
+        if (bundles.size == 1) {
+            return bundles.first().toDebugString()
+        }
+
         return bundles.joinToString(prefix = "[", postfix = "]") {
-            "${it.bundle}"
+            it.toDebugString()
         }
     }
 
@@ -134,6 +148,19 @@ class BundleSet<T : Any> private constructor(
     fun constrainWith(constraints: Constraints): BundleSet<T> {
         return BundleSet(ind, bundles.map {
             ConstrainedBundle(it.bundle, it.constraints.and(constraints))
+        })
+    }
+
+    /**
+     * The expression you provide is converted into a set of constraints and then
+     * combined with this bundle set.
+     */
+    fun constrainWith(constraintExpr: IExpr<Boolean>): BundleSet<T> {
+        val constraints = ExprConstrain.getConstraints(constraintExpr)
+        return BundleSet(ind, bundles.flatMap { bundle ->
+            constraints.map { constraint ->
+                ConstrainedBundle(bundle.bundle, bundle.constraints.and(constraint))
+            }
         })
     }
 

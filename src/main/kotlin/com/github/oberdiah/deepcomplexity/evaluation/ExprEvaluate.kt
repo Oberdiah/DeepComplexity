@@ -30,9 +30,11 @@ object ExprEvaluate {
 
                 bundleSet.unaryMapAndUnion(rhs.ind) { bundle ->
                     when (bundle.into()) {
-                        TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
-                        FALSE -> rhs.getSetSatisfying(expr.cmp)
-                        BOTH -> rhs.getSetSatisfying(expr.cmp).union(rhs.getSetSatisfying(expr.cmp.flip()))
+                        TRUE -> rhs.getSetSatisfying(expr.cmp.flip(), expr.key)
+                        FALSE -> rhs.getSetSatisfying(expr.cmp, expr.key)
+                        BOTH -> rhs.getSetSatisfying(expr.cmp, expr.key)
+                            .union(rhs.getSetSatisfying(expr.cmp.flip(), expr.key))
+
                         NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                     }
                 }
@@ -116,17 +118,27 @@ object ExprEvaluate {
                 expr.explicit
             )
 
-            is ConstExpr -> expr.constSet
+            is ConstExpr -> expr.constSet.constrainWith(condition)
             is VariableExpression -> {
                 expr.resolvedInto?.let {
                     return evaluate(it, condition)
                 }
 
-                val constraints = ExprConstrain.getConstraints(condition)
-                BundleSet.unconstrainedBundle(
-                    expr.getSetIndicator().newVarianceDefinedBundle(expr.myKey.key),
-                    constraints
-                )
+                val constraintsList = ExprConstrain.getConstraints(condition)
+
+                var bundleSet = BundleSet.empty(expr.getSetIndicator())
+                for (constraints in constraintsList) {
+                    val validValuesBundle = constraints.getConstraint(expr)
+                    val newBundle = validValuesBundle
+                    // If the variable does not appear in the constraints,
+                    // create a new 'full' bundle.
+                        ?: expr.getSetIndicator().newVarianceDefinedBundle(expr.myKey.key)
+
+                    // Constrain with the entire set of constraints.
+                    bundleSet = bundleSet.union(BundleSet.constrained(newBundle, constraints))
+                }
+
+                bundleSet
             }
 
             else -> {

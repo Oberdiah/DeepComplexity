@@ -10,7 +10,13 @@ class Context {
         // either PsiLocalVariable, PsiParameter, or PsiField
         data class VariableKey(val variable: PsiVariable) : Key() {
             override fun toString(): String {
-                return "$variable"
+                val name = "$variable"
+                // If ":" exists, we want to remove it and everything before it
+                return if (name.contains(":")) {
+                    name.substring(name.indexOf(":") + 1)
+                } else {
+                    name
+                }
             }
         }
 

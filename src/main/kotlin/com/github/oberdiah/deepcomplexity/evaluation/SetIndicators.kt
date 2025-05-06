@@ -45,7 +45,6 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
       - Create a bundle with a variance origin (unknown or known)
     */
 
-
     /**
      * Instantiate a bundle with no valid values.
      */
@@ -57,7 +56,17 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     abstract fun newConstantBundle(constant: T): Bundle<T>
 
     /**
-     * Instantiate a bundle that says 'my value is always equal to this variance source'
+     * Instantiate a bundle that says 'my value is always equal to this variance source'.
+     * This is effectively a 'full' bundle.
+     *
+     * It's important to note that any constraints on this bundle, even under the correct key,
+     * will not constrain these values alone, and indeed they should not. A set needs to be able
+     * to act correctly regardless of its constraint status, and tracking a variance source
+     * for its entire life is not part of that remit.
+     *
+     * Set restrictions like that should originate from within; see NumberSet::getSetSatisfying
+     * for an example.
+     *
      * If you don't know where the variance came from (e.g., you've given up),
      * you can use an unknown key instead.
      */

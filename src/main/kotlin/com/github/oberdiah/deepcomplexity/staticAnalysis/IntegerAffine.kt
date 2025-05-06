@@ -22,12 +22,9 @@ data class IntegerAffine private constructor(
     private val noiseTerms: Map<Context.Key, AffineNoiseTerm>,
 ) {
     // The minimum and the maximum are pre-multiplication. (e.g. they're always between -1 and 1)
-    // This is conceptually far less confusing, plus we can have multi=0 constraints for
-    // constants. That doesn't really work post-multiplication.
+    // This is conceptually far less confusing
     class AffineNoiseTerm private constructor(
         val multi: BigFraction,
-        // todo this class is moving away from keeping min and max around like this.
-        //      We're gonna go back to just multi.
         val normalizedMin: BigFraction,
         val normalizedMax: BigFraction
     ) {
@@ -135,8 +132,6 @@ data class IntegerAffine private constructor(
         fun fromConstant(constant: Long): IntegerAffine =
             IntegerAffine(of(constant), emptyMap())
 
-        // todo this likely shouldn't be fromRange anymore, should probably be fromVariance?
-        //      Edit: Unsure about this now, maybe should stay fromRange given how much it is used.
         fun fromRange(start: Long, end: Long, key: Context.Key): IntegerAffine {
             val center = (of(start) + of(end)).half()
             val radius = (of(end) - of(start)).half()
