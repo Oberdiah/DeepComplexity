@@ -276,4 +276,21 @@ public class MyTestData {
 		
 		return v;
 	}
+	
+	public static short constraintTest1(short incoming) {
+		int a = 0;
+		int b = 0;
+		if (incoming > 0) {
+			if (incoming < 10) {
+				a = incoming;
+			}
+		}
+		if (incoming > 0) {
+			if (incoming < 30) {
+				b = incoming;
+			}
+		}
+		
+		return (short) (a * b);
+	}
 }

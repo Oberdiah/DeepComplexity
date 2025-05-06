@@ -347,8 +347,7 @@ sealed class NumberSet<T : Number>(
     }
 
     fun isOne(): Boolean {
-        val range = getAsRanges()
-        return range.size == 1 && range[0].first == ind.getOne() && range[0].second == ind.getOne()
+        return affines.all { it.isExactly(1) }
     }
 
     companion object {

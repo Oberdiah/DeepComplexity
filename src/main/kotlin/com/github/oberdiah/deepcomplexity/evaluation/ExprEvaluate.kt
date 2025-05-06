@@ -128,8 +128,7 @@ object ExprEvaluate {
 
                 var bundleSet = BundleSet.empty(expr.getSetIndicator())
                 for (constraints in constraintsList) {
-                    val validValuesBundle = constraints.getConstraint(expr)
-                    val newBundle = validValuesBundle
+                    val newBundle = constraints.getConstraint(expr)
                     // If the variable does not appear in the constraints,
                     // create a new 'full' bundle.
                         ?: expr.getSetIndicator().newVarianceDefinedBundle(expr.myKey.key)

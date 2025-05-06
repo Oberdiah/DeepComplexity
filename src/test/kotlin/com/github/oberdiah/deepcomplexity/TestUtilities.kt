@@ -33,7 +33,7 @@ object TestUtilities {
             errorMessage = "Failed to evaluate return value range"
 
             range = context.evaluateKey(returnKey).cast(ShortSetIndicator)
-            println("\tRange of return value: $range")
+            println("\tRange of return value: ${range?.collapse()}")
             errorMessage = "Failed to verify method"
         } catch (e: Throwable) {
             println("\tAww no :( ($errorMessage)\n")
