@@ -293,4 +293,37 @@ public class MyTestData {
 		
 		return (short) (a * b);
 	}
+	
+	@RequiredScore(1.0)
+	public static short constraintTest2(short incoming) {
+		int a = 0;
+		if (incoming > 10) {
+			a = incoming;
+		}
+		if (incoming < 20) {
+			a = incoming + 5;
+		}
+		
+		int b = 0;
+		if (incoming < 10) {
+			b = a;
+		}
+		return (short) b;
+	}
+	
+	public static short constraintTest3(short incoming) {
+		int a = 0;
+		if (incoming > 10) {
+			a = incoming;
+		}
+		if (incoming < 20) {
+			a = incoming + 5;
+		}
+		
+		int b = 0;
+		if (incoming < 10) {
+			b = a;
+		}
+		return (short) b;
+	}
 }

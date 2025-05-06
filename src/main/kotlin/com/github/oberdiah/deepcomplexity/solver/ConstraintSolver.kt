@@ -174,7 +174,7 @@ object ConstraintSolver {
             val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
 
             return if (exponent == 1) {
-                NumberLimitsExpression(rhs, coeffLZ, expr.comp, variable.myKey.key)
+                NumberLimitsExpression(rhs, coeffLZ, expr.comp)
             } else {
                 println("Cannot constraint solve yet: $lhs (exponent $exponent)")
                 null

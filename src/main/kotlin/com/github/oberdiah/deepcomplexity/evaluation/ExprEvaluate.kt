@@ -30,10 +30,10 @@ object ExprEvaluate {
 
                 bundleSet.unaryMapAndUnion(rhs.ind) { bundle ->
                     when (bundle.into()) {
-                        TRUE -> rhs.getSetSatisfying(expr.cmp.flip(), expr.key)
-                        FALSE -> rhs.getSetSatisfying(expr.cmp, expr.key)
-                        BOTH -> rhs.getSetSatisfying(expr.cmp, expr.key)
-                            .union(rhs.getSetSatisfying(expr.cmp.flip(), expr.key))
+                        TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
+                        FALSE -> rhs.getSetSatisfying(expr.cmp)
+                        BOTH -> rhs.getSetSatisfying(expr.cmp)
+                            .union(rhs.getSetSatisfying(expr.cmp.flip()))
 
                         NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                     }
@@ -128,11 +128,13 @@ object ExprEvaluate {
 
                 var bundleSet = BundleSet.empty(expr.getSetIndicator())
                 for (constraints in constraintsList) {
-                    val newBundle = constraints.getConstraint(expr)
                     // If the variable does not appear in the constraints,
                     // create a new 'full' bundle.
-                        ?: expr.getSetIndicator().newVarianceDefinedBundle(expr.myKey.key)
 
+                    val constraint = constraints.getConstraint(expr)
+                        ?: expr.getSetIndicator().newFullBundle()
+
+                    val newBundle = constraint.associateVariance(expr.myKey.key)
                     // Constrain with the entire set of constraints.
                     bundleSet = bundleSet.union(BundleSet.constrained(newBundle, constraints))
                 }

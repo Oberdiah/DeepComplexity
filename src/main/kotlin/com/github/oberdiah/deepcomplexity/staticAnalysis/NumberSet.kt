@@ -206,11 +206,19 @@ sealed class NumberSet<T : Number>(
         TODO("Not yet implemented")
     }
 
+    override fun associateVariance(key: Context.Key): Bundle<T> = makeNew(
+        affines.flatMap { affine ->
+            affine.toRanges().map { range ->
+                Affine.fromRange(ind, key, range.first, range.second)
+            }
+        }
+    )
+
     /**
      * Returns a new set that satisfies the comparison operation.
      * We're the right-hand side of the equation.
      */
-    fun getSetSatisfying(comp: ComparisonOp, key: Context.Key): NumberSet<T> {
+    fun getSetSatisfying(comp: ComparisonOp): NumberSet<T> {
         val range = getRange()
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
@@ -220,7 +228,6 @@ sealed class NumberSet<T : Number>(
                 listOf(
                     Affine.fromRange(
                         ind,
-                        key,
                         ind.getMinValue(),
                         smallestValue.downOneEpsilon()
                     )
@@ -230,7 +237,6 @@ sealed class NumberSet<T : Number>(
                 listOf(
                     Affine.fromRange(
                         ind,
-                        key,
                         biggestValue.upOneEpsilon(),
                         ind.getMaxValue()
                     )
@@ -371,14 +377,8 @@ sealed class NumberSet<T : Number>(
             )
         }
 
-        fun <T : Number> newFromVariance(
-            ind: NumberSetIndicator<T>,
-            varianceSource: Context.Key
-        ): NumberSet<T> =
-            newFromDataAndInd(
-                ind,
-                listOf(Affine.fromVariance(ind, varianceSource)),
-            )
+        fun <T : Number> newFull(ind: NumberSetIndicator<T>): NumberSet<T> =
+            newFromDataAndInd(ind, listOf(Affine.full(ind)))
 
         @Suppress("UNCHECKED_CAST")
         private fun <T : Number> newFromDataAndInd(

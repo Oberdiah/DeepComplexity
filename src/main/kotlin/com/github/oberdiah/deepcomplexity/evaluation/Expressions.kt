@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 sealed interface IExpr<T : Any> {
@@ -165,7 +164,6 @@ class NumberLimitsExpression<T : Number>(
     val shouldFlipCmp: IExpr<Boolean>,
     // The comparison operator to use.
     val cmp: ComparisonOp,
-    val key: Context.Key
 ) : Expr<T>()
 
 class NumIterationTimesExpression<T : Number>(

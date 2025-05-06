@@ -3,6 +3,10 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
 class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
+    override fun associateVariance(key: Context.Key): Bundle<T> {
+        TODO("Not yet implemented")
+    }
+
     override fun isEmpty(): Boolean {
         TODO("Not yet implemented")
     }

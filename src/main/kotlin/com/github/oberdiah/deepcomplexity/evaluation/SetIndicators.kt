@@ -1,6 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.*
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -34,15 +37,13 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
          It's tracking where our variance came from. This is optional for a bundle type implementation to do
          but can improve resolution.
 
-     You can create new empty bundles (this can be no values), and it might be sometimes necessary to create an
-     unknown variance where we just throw our hands up and say 'I have no idea what's going on'.
-     A bundle with variance matching another variable is also a common need. For example, `a = b`.
-     You can, of course, also create constant bundles.
+     You can create new empty bundles (this can be no values), constant bundles, and full bundles.
+     All complicated constraints stuff comes from within.
 
      That should be all. So we've really just got three options:
       - Create an empty bundle
       - Create a constant bundle
-      - Create a bundle with a variance origin (unknown or known)
+      - Create a full bundle
     */
 
     /**
@@ -56,21 +57,9 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     abstract fun newConstantBundle(constant: T): Bundle<T>
 
     /**
-     * Instantiate a bundle that says 'my value is always equal to this variance source'.
-     * This is effectively a 'full' bundle.
-     *
-     * It's important to note that any constraints on this bundle, even under the correct key,
-     * will not constrain these values alone, and indeed they should not. A set needs to be able
-     * to act correctly regardless of its constraint status, and tracking a variance source
-     * for its entire life is not part of that remit.
-     *
-     * Set restrictions like that should originate from within; see NumberSet::getSetSatisfying
-     * for an example.
-     *
-     * If you don't know where the variance came from (e.g., you've given up),
-     * you can use an unknown key instead.
+     * Instantiate a bundle representing a full set of values.
      */
-    abstract fun newVarianceDefinedBundle(varianceSource: Context.Key): Bundle<T>
+    abstract fun newFullBundle(): Bundle<T>
 
     companion object {
         fun <T : Any> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
@@ -136,10 +125,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 }
 
 sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
-    override fun newVarianceDefinedBundle(varianceSource: Context.Key): Bundle<T> {
-        return NumberSet.newFromVariance(this, varianceSource)
-    }
-
+    override fun newFullBundle(): Bundle<T> = NumberSet.newFull(this)
     override fun newConstantBundle(constant: T): Bundle<T> = NumberSet.newFromConstant(constant)
 
     abstract fun getMaxValue(): T
@@ -216,8 +202,8 @@ data object ByteSetIndicator : NumberSetIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
+    override fun newFullBundle(): Bundle<Boolean> = BooleanSet.BOTH
     override fun newEmptyBundle(): BooleanSet = BooleanSet.NEITHER
-    override fun newVarianceDefinedBundle(varianceSource: Context.Key): Bundle<Boolean> = BooleanSet.BOTH
     override fun newConstantBundle(constant: Boolean): Bundle<Boolean> =
         BooleanSet.fromBoolean(constant)
 }
@@ -225,7 +211,5 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
 class GenericSetIndicator<T : Any>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     override fun newConstantBundle(constant: T): Bundle<T> = GenericSet(setOf(constant))
     override fun newEmptyBundle(): Bundle<T> = GenericSet(emptySet())
-    override fun newVarianceDefinedBundle(varianceSource: Context.Key): Bundle<T> {
-        TODO("Not yet implemented")
-    }
+    override fun newFullBundle(): Bundle<T> = TODO()
 }

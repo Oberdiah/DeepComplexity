@@ -64,6 +64,8 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     }
 
+    override fun associateVariance(key: Context.Key): Bundle<Boolean> = this
+
     override fun isEmpty(): Boolean {
         return this == NEITHER
     }

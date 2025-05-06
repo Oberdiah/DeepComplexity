@@ -22,7 +22,7 @@ object ConstantExpression {
         zero(expr.getNumberSetIndicator())
 
     fun <T : Any> fullSetFromExprAndKey(expr: IExpr<T>, key: Context.Key): Bundle<T> =
-        expr.getSetIndicator().newVarianceDefinedBundle(key)
+        expr.getSetIndicator().newFullBundle().associateVariance(key)
 
     fun <T : Any> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
         ConstExpr.new((fullSetFromExprAndKey(expr, key)))

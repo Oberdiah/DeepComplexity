@@ -83,13 +83,13 @@ data class Affine<T : Number> private constructor(
         fun <T : Number> fromConstant(ind: NumberSetIndicator<T>, constant: T): Affine<T> =
             Affine(ind, IntegerAffine.fromConstant(constant.toLong()))
 
-        fun <T : Number> fromVariance(ind: NumberSetIndicator<T>, key: Context.Key): Affine<T> =
+        fun <T : Number> full(ind: NumberSetIndicator<T>): Affine<T> =
             Affine(
                 ind,
                 IntegerAffine.fromRange(
                     ind.getMinValue().toLong(),
                     ind.getMaxValue().toLong(),
-                    key
+                    Context.Key.EphemeralKey.new()
                 )
             )
 
