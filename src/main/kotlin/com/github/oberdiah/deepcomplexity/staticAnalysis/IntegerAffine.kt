@@ -243,12 +243,12 @@ data class IntegerAffine private constructor(
                         ?: TODO("Hopefully this won't happen until we remove this feature")
 
                 val myRange = noiseTerms.values.fold(ZERO) { acc, it -> acc + it.multi }
-                val myMin = myNoise.values.fold(ZERO) { acc, it -> acc + it.min }
-                val myMax = myNoise.values.fold(ZERO) { acc, it -> acc + it.max }
+                val myMin = center + myNoise.values.fold(ZERO) { acc, it -> acc + it.min }
+                val myMax = center + myNoise.values.fold(ZERO) { acc, it -> acc + it.max }
 
                 val otherRange = other.noiseTerms.values.fold(ZERO) { acc, it -> acc + it.multi }
-                val otherMin = otherNoise.values.fold(ZERO) { acc, it -> acc + it.min }
-                val otherMax = otherNoise.values.fold(ZERO) { acc, it -> acc + it.max }
+                val otherMin = other.center + otherNoise.values.fold(ZERO) { acc, it -> acc + it.min }
+                val otherMax = other.center + otherNoise.values.fold(ZERO) { acc, it -> acc + it.max }
 
                 val myMinOtherMin = myMin * otherMin
                 val myMinOtherMax = myMin * otherMax
@@ -269,10 +269,37 @@ data class IntegerAffine private constructor(
                 // calculate those ahead-of-time for multiplication.
 
                 // Step 1: For min and max, figure out which needs to be negative and which needs to be positive.
-                val myMinSign = if (newMin == myMinOtherMin || newMin == myMinOtherMax) -1 else 1
-                val otherMinSign = if (newMin == myMinOtherMin || newMin == myMaxOtherMin) -1 else 1
-                val myMaxSign = if (newMax == myMaxOtherMin || newMax == myMaxOtherMax) 1 else -1
-                val otherMaxSign = if (newMax == myMinOtherMax || newMax == myMaxOtherMax) 1 else -1
+                val myMinSign = when (newMin) {
+                    myMinOtherMin -> -1
+                    myMinOtherMax -> -1
+                    myMaxOtherMin -> 1
+                    myMaxOtherMax -> 1
+                    else -> throw IllegalArgumentException("This shouldn't happen")
+                }
+
+                val otherMinSign = when (newMin) {
+                    myMinOtherMin -> -1
+                    myMinOtherMax -> 1
+                    myMaxOtherMin -> -1
+                    myMaxOtherMax -> 1
+                    else -> throw IllegalArgumentException("This shouldn't happen")
+                }
+
+                val myMaxSign = when (newMax) {
+                    myMinOtherMin -> -1
+                    myMinOtherMax -> -1
+                    myMaxOtherMin -> 1
+                    myMaxOtherMax -> 1
+                    else -> throw IllegalArgumentException("This shouldn't happen")
+                }
+
+                val otherMaxSign = when (newMax) {
+                    myMinOtherMin -> -1
+                    myMinOtherMax -> 1
+                    myMaxOtherMin -> -1
+                    myMaxOtherMax -> 1
+                    else -> throw IllegalArgumentException("This shouldn't happen")
+                }
 
                 // Step 2: Now we know what the signs of our terms are, we can multiply them.
                 var newQuadraticMin = ZERO
