@@ -30,9 +30,4 @@ class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
     override fun union(other: Bundle<T>): Bundle<T> {
         TODO("Not yet implemented")
     }
-
-    override fun toDebugString(): String {
-        TODO("Not yet implemented")
-    }
-
 }

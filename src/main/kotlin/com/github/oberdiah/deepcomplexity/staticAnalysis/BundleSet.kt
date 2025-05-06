@@ -71,9 +71,9 @@ class BundleSet<T : Any> private constructor(
     data class ConstrainedBundle<T : Any>(val bundle: Bundle<T>, val constraints: Constraints) {
         fun toDebugString(): String {
             if (constraints.isUnconstrained()) {
-                return bundle.toDebugString()
+                return "$bundle"
             }
-            return "$constraints -> $bundle"
+            return "($bundle | $constraints)"
         }
     }
 
@@ -89,7 +89,7 @@ class BundleSet<T : Any> private constructor(
             return bundles.first().toDebugString()
         }
 
-        return bundles.joinToString(prefix = "[", postfix = "]") {
+        return bundles.joinToString {
             it.toDebugString()
         }
     }

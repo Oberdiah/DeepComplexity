@@ -133,6 +133,8 @@ data class IntegerAffine private constructor(
             IntegerAffine(of(constant), emptyMap())
 
         fun fromRange(start: Long, end: Long, key: Context.Key): IntegerAffine {
+            // TODO this is definitely completely wrong if we want keys to be
+            //      consistent, which we do. Center should really always be zero.
             val center = (of(start) + of(end)).half()
             val radius = (of(end) - of(start)).half()
             val affine = IntegerAffine(
@@ -211,7 +213,7 @@ data class IntegerAffine private constructor(
                     lhs
                 } else {
                     val additionResult = lhs.addOrSubtractLikeTerms(rhs, shouldAdd)
-                    if (additionResult == null) TODO("Hopefully this won't happen until we remove this feature")
+                    if (additionResult == null) TODO("Hopefully this won't happen anymore")
                     additionResult
                 }
             }
@@ -240,7 +242,7 @@ data class IntegerAffine private constructor(
             val quadraticTerm = let {
                 val (myNoise, otherNoise) =
                     AffineNoiseTerm.updateMinMaxForLikeTerms(noiseTerms, other.noiseTerms)
-                        ?: TODO("Hopefully this won't happen until we remove this feature")
+                        ?: TODO("Hopefully this won't happen anymore")
 
                 val myRange = noiseTerms.values.fold(ZERO) { acc, it -> acc + it.multi }
                 val myMin = center + myNoise.values.fold(ZERO) { acc, it -> acc + it.min }

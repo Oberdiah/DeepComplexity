@@ -42,17 +42,15 @@ sealed class NumberSet<T : Number>(
     class ByteSet(affines: Affines<Byte> = emptyList()) :
         NumberSet<Byte>(ByteSetIndicator, affines)
 
-    override fun toDebugString(): String = pairsStream().toList().joinToString(", ") { (start, end) ->
-        if (start == end) {
-            start.toString()
-        } else {
-            "$start..$end"
-        }
-    }
-
     override fun toString(): String = getAsRanges().joinToString(", ") { (start, end) ->
         if (start == end) {
             start.toString()
+        } else if (start == ind.getMinValue() && end == ind.getMaxValue()) {
+            "*"
+        } else if (start == ind.getMinValue()) {
+            "..$end"
+        } else if (end == ind.getMaxValue()) {
+            "$start.."
         } else {
             "$start..$end"
         }

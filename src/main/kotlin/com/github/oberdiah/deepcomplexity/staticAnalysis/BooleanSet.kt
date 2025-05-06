@@ -68,10 +68,6 @@ enum class BooleanSet : Bundle<Boolean> {
         return this == NEITHER
     }
 
-    override fun toDebugString(): String {
-        return toString()
-    }
-
     override fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
         throw IllegalArgumentException("Cannot cast boolean to $indicator")
     }

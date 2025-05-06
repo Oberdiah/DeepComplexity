@@ -43,7 +43,7 @@ class Constraints private constructor(
         if (unreachable) return "unreachable"
         if (constraints.isEmpty()) return "unconstrained"
         return constraints.entries.joinToString("\n") { (key, bundle) ->
-            "($key: $bundle)"
+            "$key: $bundle"
         }
     }
 

@@ -10,5 +10,4 @@ interface Bundle<T : Any> {
     fun isEmpty(): Boolean
     fun intersect(other: Bundle<T>): Bundle<T>
     fun union(other: Bundle<T>): Bundle<T>
-    fun toDebugString(): String
 }
