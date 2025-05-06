@@ -66,7 +66,7 @@ object ExprToString {
     }
 
     fun <T : Any> toDebugString(expr: IExpr<T>): String {
-        val myResult = "| ${expr.evaluate(ConstantExpression.TRUE).toDebugString()} |"
+        val myResult = "<| ${expr.evaluate(ConstantExpression.TRUE).toDebugString()} |>"
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs.dStr()} ${expr.op} ${expr.rhs.dStr()}) = $myResult"
             is ComparisonExpression<*> -> "(${expr.lhs.dStr()} ${expr.comp} ${expr.rhs.dStr()}) = $myResult"

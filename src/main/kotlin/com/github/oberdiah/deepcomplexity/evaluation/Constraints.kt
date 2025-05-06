@@ -21,8 +21,8 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
 class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
     private val constraints: Map<Context.Key, Bundle<*>>,
-    // If this is true these constraints have been proven to be unsatisfiable.
-    // Currently, this is the constraint you get when you do something like `if (false) { ... }`
+    // If this is true, these constraints have been proven to be unsatisfiable.
+    // This is the constraint you get when you do something like `if (false) { ... }`
     private val unreachable: Boolean
 ) {
     companion object {
@@ -82,9 +82,6 @@ class Constraints private constructor(
         if (unreachable) return this
         if (other.unreachable) return other
 
-        // todo: Actually check here and make sure the resulting constraints are still doable
-        //  (i.e. none are the empty set)
-
         val newConstraints = Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
             fun <T : Any> ugly(l: Bundle<T>): Bundle<T> =
                 // Safety: We've asserted that the types are the same.
@@ -94,8 +91,10 @@ class Constraints private constructor(
             assert(lhs.getIndicator() == rhs.getIndicator())
 
             ugly(lhs)
-        }.filter { !it.value.isEmpty() }
+        }
 
-        return Constraints(newConstraints, false)
+        // The entire constraint is unreachable if any of its components are.
+        val unreachable = newConstraints.any { it.value.isEmpty() }
+        return Constraints(newConstraints, unreachable)
     }
 }
