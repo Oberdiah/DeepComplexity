@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.utilities.Functional
@@ -21,21 +22,25 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
 class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
     private val constraints: Map<Context.Key, Bundle<*>>,
-    // If this is true, these constraints have been proven to be unsatisfiable.
-    // This is the constraint you get when you do something like `if (false) { ... }`
-    private val unreachable: Boolean
 ) {
+    /**
+     * The constraints as a whole are unsatisfiable if any individual
+     * constraint is unsatisfiable as the map of constraints acts as an AND.
+     */
+    val unreachable
+        get() = constraints.any { it.value.isEmpty() }
+
     companion object {
         fun constrainedBy(constraints: Map<Context.Key, Bundle<*>>): Constraints {
-            return Constraints(constraints, false)
+            return Constraints(constraints)
         }
 
         fun completelyUnconstrained(): Constraints {
-            return Constraints(emptyMap(), false)
+            return Constraints(emptyMap())
         }
 
         fun unreachable(): Constraints {
-            return Constraints(emptyMap(), true)
+            return Constraints(mapOf(Context.Key.EphemeralKey.new() to BooleanSet.NEITHER))
         }
     }
 
@@ -45,10 +50,6 @@ class Constraints private constructor(
         return constraints.entries.joinToString("\n") { (key, bundle) ->
             "$key: $bundle"
         }
-    }
-
-    fun isUnreachable(): Boolean {
-        return unreachable
     }
 
     fun isUnconstrained(): Boolean {
@@ -68,11 +69,9 @@ class Constraints private constructor(
     }
 
     fun invert(): Constraints {
-        if (unreachable) return completelyUnconstrained()
-
         // You may be wondering why you aren't dealing with the non-map values?
         // I don't believe that's necessary, e.g., if (!(x > 5)) still doesn't constrain y.
-        return Constraints(constraints.mapValues { (_, v) -> v.invert() }, false)
+        return Constraints(constraints.mapValues { (_, v) -> v.invert() })
     }
 
     /**
@@ -93,8 +92,6 @@ class Constraints private constructor(
             ugly(lhs)
         }
 
-        // The entire constraint is unreachable if any of its components are.
-        val unreachable = newConstraints.any { it.value.isEmpty() }
-        return Constraints(newConstraints, unreachable)
+        return constrainedBy(newConstraints)
     }
 }

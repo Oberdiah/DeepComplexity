@@ -103,7 +103,7 @@ class BundleSet<T : Any> private constructor(
             op(bundle.bundle).bundles.mapNotNull { newBundle ->
                 val newConstraints = bundle.constraints.and(newBundle.constraints)
 
-                if (newConstraints.isUnreachable()) {
+                if (newConstraints.unreachable) {
                     null
                 } else {
                     ConstrainedBundle(newBundle.bundle, newConstraints)
@@ -136,7 +136,7 @@ class BundleSet<T : Any> private constructor(
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
                 val newBundle = op(myBundle.bundle, otherBundle.bundle)
 
-                if (newConstraints.isUnreachable()) continue
+                if (newConstraints.unreachable) continue
 
                 newBundles.add(ConstrainedBundle(newBundle, newConstraints))
             }
