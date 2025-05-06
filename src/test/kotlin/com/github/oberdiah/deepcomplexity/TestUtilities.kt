@@ -1,12 +1,13 @@
 package com.github.oberdiah.deepcomplexity
 
+import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
 import com.intellij.psi.PsiMethod
 import testdata.MyTestData
 import java.lang.reflect.Method
-import kotlin.jvm.java
 
 object TestUtilities {
     private val predictedArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
@@ -21,7 +22,7 @@ object TestUtilities {
         val reflectMethod = clazz.declaredMethods.find { it.name == methodName }
             ?: throw NoSuchMethodException("Method $methodName not found in class ${clazz.name}")
 
-        var range: IMoldableSet<*>? = null
+        var range: BundleSet<Short>? = null
         try {
             val returnKey = Context.Key.ReturnKey(method)
 
@@ -31,7 +32,7 @@ object TestUtilities {
 
             errorMessage = "Failed to evaluate return value range"
 
-            range = context.evaluateKey(returnKey)
+            range = context.evaluateKey(returnKey).cast(ShortSetIndicator)
             println("\tRange of return value: $range")
             errorMessage = "Failed to verify method"
         } catch (e: Throwable) {
@@ -42,7 +43,7 @@ object TestUtilities {
         }
 
         try {
-            range?.let { methodScore = getMethodScore(reflectMethod, range) }
+            range?.let { methodScore = getMethodScore(reflectMethod, range.collapse()) }
         } catch (e: Throwable) {
             println("\tAww no! :( ($errorMessage)\n")
             e.printStackTrace()
@@ -70,7 +71,7 @@ object TestUtilities {
 
     }
 
-    fun getMethodScore(method: Method, range: IMoldableSet<*>): Double {
+    fun getMethodScore(method: Method, range: Bundle<Short>): Double {
         // For now, int-only. Short is the goal though.
         if (method.parameterCount != 1 ||
             method.parameterTypes[0] != Short::class.java ||

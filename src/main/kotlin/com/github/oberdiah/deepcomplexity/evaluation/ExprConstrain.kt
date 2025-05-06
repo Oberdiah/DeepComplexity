@@ -4,14 +4,15 @@ import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.into
 
 object ExprConstrain {
     /**
      * Returns a list of constraints.
-     * Typically, returns a single constraint, but if an OR is involved, may return multiple
+     * Typically, it returns a single constraint, but if an OR is involved, it may return multiple
      * as each side of the OR is a separate constraint.
      */
-    fun getConstraints(condition: IExpr<BooleanSet>): List<Constraints> {
+    fun getConstraints(condition: IExpr<Boolean>): List<Constraints> {
         return when (condition) {
             is BooleanExpression -> {
                 val lhsConstrained = condition.lhs.getConstraints()
@@ -41,9 +42,12 @@ object ExprConstrain {
             )
 
             is ConstExpr -> {
-                return when (condition.singleElementSet) {
-                    BooleanSet.TRUE, BooleanSet.BOTH -> listOf(Constraints.completelyUnconstrained())
-                    BooleanSet.FALSE, BooleanSet.NEITHER -> listOf(Constraints.unreachable())
+                return condition.constSet.bundles.map {
+                    when (it.bundle.into()) {
+                        // Unsure if this is correct
+                        BooleanSet.TRUE, BooleanSet.BOTH -> Constraints.completelyUnconstrained()
+                        BooleanSet.FALSE, BooleanSet.NEITHER -> Constraints.unreachable()
+                    }
                 }
             }
 

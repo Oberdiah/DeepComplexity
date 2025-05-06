@@ -21,18 +21,17 @@ public class MyTestData {
 		}
 	}
 	
-	@RequiredScore(1.0)
-	public static short zeroTest(short incoming) {
-		return (short) (incoming - incoming);
-	}
-	
-	@RequiredScore(0.5) // We've not implemented even/odd/modulo detection yet.
-	public static short simpleAdd(short incoming1) {
-		return (short) (incoming1 + incoming1);
+	public static short test3(short incoming) {
+		// Not implemented && yet
+		if (incoming < 5 && incoming < 3) {
+			return incoming;
+		} else {
+			return 0;
+		}
 	}
 	
 	@RequiredScore(0.75) // We've not implemented even/odd/modulo detection yet.
-	public static short test3(short incoming1) {
+	public static short test4(short incoming1) {
 		int foo = 0;
 		int bar = incoming1;
 		int incoming2 = incoming1 * 2;
@@ -45,6 +44,29 @@ public class MyTestData {
 		}
 		
 		return (short) (incoming1 + bar);
+	}
+	
+	@RequiredScore(1.0)
+	public static short test5(short incoming) {
+		if (incoming < 5) {
+			if (incoming < 3) {
+				return incoming;
+			} else {
+				return 0;
+			}
+		} else {
+			return 0;
+		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short zeroTest(short incoming) {
+		return (short) (incoming - incoming);
+	}
+	
+	@RequiredScore(0.5) // We've not implemented even/odd/modulo detection yet.
+	public static short simpleAdd(short incoming1) {
+		return (short) (incoming1 + incoming1);
 	}
 	
 	@RequiredScore(1.0)

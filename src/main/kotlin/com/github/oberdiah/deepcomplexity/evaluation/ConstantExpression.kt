@@ -1,40 +1,40 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 
 object ConstantExpression {
-    val TRUE = ConstExpr(BooleanSet.TRUE)
-    val FALSE = ConstExpr(BooleanSet.FALSE)
+    val TRUE = ConstExpr.new(BooleanSet.TRUE)
+    val FALSE = ConstExpr.new(BooleanSet.FALSE)
 
-    fun <T : TypedNumberSet<*, T>> zero(setIndicator: NumberSetIndicator<*, T>): ConstExpr<T> =
-        ConstExpr(NumberSet.zero(setIndicator))
+    fun <T : Number> zero(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
+        ConstExpr.new(NumberSet.zero(setIndicator))
 
-    fun <T : NumberSet<T>> zero(expr: IExpr<T>): ConstExpr<T> =
-        ConstExpr(NumberSet.zero(expr.getSetIndicator()))
+    fun <T : Number> zero(expr: IExpr<T>): ConstExpr<T> =
+        zero(expr.getNumberSetIndicator())
 
-    fun <T : IMoldableSet<T>> fullSetFromExprAndKey(expr: IExpr<T>, key: Context.Key): T =
-        expr.getSetIndicator().newFullSet(key)
+    fun <T : Number> one(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
+        ConstExpr.new(NumberSet.one(setIndicator))
 
-    fun <T : IMoldableSet<T>> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
-        ConstExpr(fullSetFromExprAndKey(expr, key))
+    fun <T : Number> one(expr: IExpr<T>): ConstExpr<T> =
+        zero(expr.getNumberSetIndicator())
 
-    fun <T : IMoldableSet<T>> emptySetFromExpr(expr: IExpr<T>): T =
-        expr.getSetIndicator().newEmptySet()
+    fun <T : Any> fullSetFromExprAndKey(expr: IExpr<T>, key: Context.Key): Bundle<T> =
+        expr.getSetIndicator().newVarianceDefinedBundle(key)
 
-    fun <T : IMoldableSet<T>> emptyExprFromExpr(expr: IExpr<T>): IExpr<T> =
-        ConstExpr(emptySetFromExpr(expr))
+    fun <T : Any> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
+        ConstExpr.new((fullSetFromExprAndKey(expr, key)))
 
     fun fromAny(value: Any): IExpr<*> {
-        return when (value) {
-            is Boolean -> ConstExpr(BooleanSet.fromBoolean(value))
-            is Number -> ConstExpr(NumberSet.singleValue(value))
-            is String -> ConstExpr(GenericSet.singleValue(value))
-            else -> ConstExpr(GenericSet.singleValue(value))
-        }
+        return ConstExpr.new(
+            when (value) {
+                is Boolean -> BooleanSet.fromBoolean(value)
+                is Number -> NumberSet.newFromConstant(value)
+                is String -> TODO()
+                else -> TODO()
+            }
+        )
     }
 }

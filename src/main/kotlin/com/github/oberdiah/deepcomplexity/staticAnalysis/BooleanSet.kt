@@ -3,9 +3,8 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import kotlin.reflect.KClass
 
-enum class BooleanSet : IMoldableSet<BooleanSet> {
+enum class BooleanSet : Bundle<Boolean> {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
@@ -65,15 +64,15 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
         }
     }
 
-    override fun toDebugString(): String {
-        return toString()
+    override fun isEmpty(): Boolean {
+        return this == NEITHER
     }
 
-    override fun <Q : IMoldableSet<Q>> cast(indicator: SetIndicator<Q>): Q {
+    override fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
         throw IllegalArgumentException("Cannot cast boolean to $indicator")
     }
 
-    override fun getSetIndicator(): SetIndicator<BooleanSet> {
+    override fun getIndicator(): SetIndicator<Boolean> {
         return BooleanSetIndicator
     }
 
@@ -87,32 +86,23 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
         }
     }
 
-    override fun intersect(other: BooleanSet): BooleanSet {
+    override fun intersect(other: Bundle<Boolean>): Bundle<Boolean> {
         // Set intersection
-        return when (other) {
+        return when (other.into()) {
             TRUE -> this.removeFromSet(false)
             FALSE -> this.removeFromSet(true)
             BOTH -> this
             NEITHER -> NEITHER
-            else -> throw IllegalArgumentException("Cannot intersect with $other")
         }
     }
 
-    override fun union(other: BooleanSet): BooleanSet {
+    override fun union(other: Bundle<Boolean>): Bundle<Boolean> {
         // Set union
-        return when (other) {
+        return when (other.into()) {
             TRUE -> this.addToSet(true)
             FALSE -> this.addToSet(false)
             BOTH -> BOTH
             NEITHER -> this
-            else -> throw IllegalArgumentException("Cannot union with $other")
-        }
-    }
-
-    override fun contains(element: Any): Boolean {
-        return when (element) {
-            is Boolean -> contains(element)
-            else -> false
         }
     }
 
@@ -140,5 +130,4 @@ enum class BooleanSet : IMoldableSet<BooleanSet> {
 
     abstract fun addToSet(other: Boolean): BooleanSet
     abstract fun removeFromSet(other: Boolean): BooleanSet
-    abstract fun contains(other: Boolean): Boolean
 }

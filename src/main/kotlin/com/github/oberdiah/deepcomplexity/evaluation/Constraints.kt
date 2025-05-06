@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**
@@ -19,14 +19,14 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  * burdened with that information.
  */
 class Constraints private constructor(
-    // A key that isn't in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    private val constraints: Map<Context.Key, IMoldableSet<*>>,
-    // If this is true these constraints have been proven to be unsatisfiable.
-    // Currently, this is the constraint you get when you do something like `if (false) { ... }`
+    // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
+    private val constraints: Map<Context.Key, Bundle<*>>,
+    // If this is true, these constraints have been proven to be unsatisfiable.
+    // This is the constraint you get when you do something like `if (false) { ... }`
     private val unreachable: Boolean
 ) {
     companion object {
-        fun constrainedBy(constraints: Map<Context.Key, IMoldableSet<*>>): Constraints {
+        fun constrainedBy(constraints: Map<Context.Key, Bundle<*>>): Constraints {
             return Constraints(constraints, false)
         }
 
@@ -39,42 +39,62 @@ class Constraints private constructor(
         }
     }
 
-    fun <T : IMoldableSet<T>> getConstraint(variable: VariableExpression<T>): T? {
+    override fun toString(): String {
+        if (unreachable) return "unreachable"
+        if (constraints.isEmpty()) return "unconstrained"
+        return constraints.entries.joinToString("\n") { (key, bundle) ->
+            "$key: $bundle"
+        }
+    }
+
+    fun isUnreachable(): Boolean {
+        return unreachable
+    }
+
+    fun isUnconstrained(): Boolean {
+        return constraints.isEmpty()
+    }
+
+    fun <T : Any> getConstraint(variable: VariableExpression<T>): Bundle<T>? {
         return constraints[variable.getKey().key]?.cast(variable.getSetIndicator())
     }
 
-    fun <T : IMoldableSet<T>> getConstraint(ind: SetIndicator<T>, key: Context.Key): T? {
+    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Context.Key): Bundle<T>? {
         return constraints[key]?.cast(ind)
     }
 
-    fun addConstraint(key: Context.Key, expr: IMoldableSet<*>): Constraints {
+    fun addConstraint(key: Context.Key, expr: Bundle<*>): Constraints {
         return and(constrainedBy(mapOf(key to expr)))
     }
 
     fun invert(): Constraints {
         if (unreachable) return completelyUnconstrained()
 
-        // You may be wondering why aren't you dealing with the non-map values?
-        // I don't believe that's necessary, e.g. if (!(x > 5)) still doesn't constrain y.
+        // You may be wondering why you aren't dealing with the non-map values?
+        // I don't believe that's necessary, e.g., if (!(x > 5)) still doesn't constrain y.
         return Constraints(constraints.mapValues { (_, v) -> v.invert() }, false)
     }
 
     /**
-     * Merge two constraints together — both sets of constraints must now be met.
+     * Merge two constraints — both sets of constraints must now be met.
      */
     fun and(other: Constraints): Constraints {
         if (unreachable) return this
         if (other.unreachable) return other
 
-        return Constraints(Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
-            fun <T : IMoldableSet<T>> ugly(l: IMoldableSet<T>): IMoldableSet<T> =
+        val newConstraints = Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
+            fun <T : Any> ugly(l: Bundle<T>): Bundle<T> =
                 // Safety: We've asserted that the types are the same.
                 @Suppress("UNCHECKED_CAST")
-                l.intersect(rhs as T)
+                l.intersect(rhs as Bundle<T>)
 
-            assert(lhs.getSetIndicator() == rhs.getSetIndicator())
+            assert(lhs.getIndicator() == rhs.getIndicator())
 
             ugly(lhs)
-        }, false)
+        }
+
+        // The entire constraint is unreachable if any of its components are.
+        val unreachable = newConstraints.any { it.value.isEmpty() }
+        return Constraints(newConstraints, unreachable)
     }
 }

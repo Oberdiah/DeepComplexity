@@ -1,26 +1,22 @@
 package com.github.oberdiah.deepcomplexity.solver
 
-import ai.grazie.text.TextTemplate.variable
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.TypedNumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
 
 object ConstraintSolver {
-    data class EvaluatedCollectedTerms<T : NumberSet<T>>(
-        val terms: Map<Int, T>,
+    data class EvaluatedCollectedTerms<T : Number>(
+        val terms: Map<Int, BundleSet<T>>,
     )
 
-    data class CollectedTerms<T : NumberSet<T>>(
+    data class CollectedTerms<T : Number>(
         val setIndicator: SetIndicator<T>,
         /**
          * Map from exponent to coefficient. 0th is constant, 1st is linear, 2nd is quadratic, etc.
          */
         val terms: MutableMap<Int, IExpr<T>> = mutableMapOf(),
     ) {
-        fun evaluate(condition: IExpr<BooleanSet>): EvaluatedCollectedTerms<T> {
+        fun evaluate(condition: IExpr<Boolean>): EvaluatedCollectedTerms<T> {
             return EvaluatedCollectedTerms(
                 terms.mapValues { (_, term) -> term.evaluate(condition) }
             )
@@ -40,7 +36,7 @@ object ConstraintSolver {
             }
         }
 
-        fun <Q : NumberSet<Q>> castTo(setIndicator: SetIndicator<Q>): CollectedTerms<Q> =
+        fun <Q : Number> castTo(setIndicator: SetIndicator<Q>): CollectedTerms<Q> =
             CollectedTerms(
                 setIndicator,
                 // I'm suspicious of this. It feels like the most obvious thing to do
@@ -104,7 +100,7 @@ object ConstraintSolver {
         }
     }
 
-    private fun <T : NumberSet<T>> merge(lhs: IExpr<T>?, rhs: IExpr<T>, op: BinaryNumberOp): IExpr<T> {
+    private fun <T : Number> merge(lhs: IExpr<T>?, rhs: IExpr<T>, op: BinaryNumberOp): IExpr<T> {
         return if (lhs == null) {
             ArithmeticExpression(ConstantExpression.zero(rhs), rhs, op)
         } else {
@@ -125,18 +121,21 @@ object ConstraintSolver {
 
         val variables = expr.getVariables(false)
         for (variable in variables) {
-            assert(variable.getSetIndicator() is NumberSetIndicator<*, *>) {
+            assert(variable.getSetIndicator() is NumberSetIndicator<*>) {
                 "All variables must be number sets. This requires more thought if we've hit this."
             }
 
             // Safety: We know the variable is a number set.
             @Suppress("UNCHECKED_CAST")
-            val castVariable = variable as VariableExpression<out TypedNumberSet<*, *>>
+            val castVariable = variable as VariableExpression<out Number>
 
             val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
             constraints = constraints.addConstraint(
                 variable.getKey().key,
-                variableConstraints.evaluate(expr)
+                // We can't pass `expr` in here, if we did, we'd be evaluating constraints
+                // forever.
+                // todo worth only collapsing to states possible to reach
+                variableConstraints.evaluate(ConstantExpression.TRUE).collapse()
             )
         }
 
@@ -146,7 +145,7 @@ object ConstraintSolver {
     /**
      * Does not return a given constraint if it could not be ascertained accurately.
      */
-    private fun <T : TypedNumberSet<*, T>> getVariableConstraints(
+    private fun <T : Number> getVariableConstraints(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
     ): IExpr<T>? {
@@ -175,7 +174,7 @@ object ConstraintSolver {
             val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
 
             return if (exponent == 1) {
-                NumberLimitsExpression(rhs, coeffLZ, expr.comp)
+                NumberLimitsExpression(rhs, coeffLZ, expr.comp, variable.myKey.key)
             } else {
                 println("Cannot constraint solve yet: $lhs (exponent $exponent)")
                 null
@@ -192,7 +191,7 @@ object ConstraintSolver {
      * Normalizes the comparison expression to a form where the left hand side is a linear equation and the right hand
      * side is a constant.
      */
-    private fun <T : NumberSet<T>> normalizeComparisonExpression(
+    private fun <T : Number> normalizeComparisonExpression(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
     ): Pair<CollectedTerms<T>, IExpr<T>>? {
@@ -207,14 +206,14 @@ object ConstraintSolver {
         // Subtract right from left
         val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
 
-        val indicator = variable.getSetIndicator()
-        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstExpr(NumberSet.zero(indicator)))
+        val indicator = variable.getNumberSetIndicator()
+        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstantExpression.zero(indicator))
 
         return lhs to constant
     }
 
-    fun <T : NumberSet<T>> expandTerms(expr: IExpr<*>, variable: VariableExpression<T>): CollectedTerms<T>? {
-        val setIndicator = variable.getSetIndicator() as NumberSetIndicator<*, T>
+    fun <T : Number> expandTerms(expr: IExpr<*>, variable: VariableExpression<T>): CollectedTerms<T>? {
+        val setIndicator = variable.getSetIndicator() as NumberSetIndicator<T>
         val castExpr = TypeCastExpression(expr, setIndicator, true)
         return when (expr) {
             is ArithmeticExpression -> {
@@ -235,7 +234,7 @@ object ConstraintSolver {
                 }
 
                 if (expr.getKey() == variable.getKey()) {
-                    CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstExpr(NumberSet.one(setIndicator))))
+                    CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstantExpression.one(setIndicator)))
                 } else {
                     CollectedTerms(setIndicator, terms = mutableMapOf(0 to castExpr))
                 }
@@ -245,7 +244,7 @@ object ConstraintSolver {
             is NumberLimitsExpression -> throw IllegalStateException("Uuh ... this can maybe happen?")
             is NumIterationTimesExpression -> TODO("Maybe one day? Unsure if this is possible")
             is TypeCastExpression<*, *> -> {
-                fun <Q : NumberSet<Q>> extra(expr: IExpr<Q>): CollectedTerms<T>? =
+                fun <Q : Number> extra(expr: IExpr<Q>): CollectedTerms<T>? =
                     expandTerms(expr, variable)?.castTo(setIndicator)
 
                 extra(expr.expr.tryCastToNumbers()!!)

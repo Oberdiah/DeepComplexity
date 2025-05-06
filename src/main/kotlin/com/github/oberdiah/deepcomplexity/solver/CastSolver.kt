@@ -1,14 +1,17 @@
 package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.IMoldableSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
 
 object CastSolver {
-    fun <T : IMoldableSet<T>> castFrom(from: IMoldableSet<*>, targetType: SetIndicator<T>, implicit: Boolean): T {
-        val currentType = from.getSetIndicator()
-        if (currentType == targetType) {
+    fun <T : Any> castFrom(
+        from: BundleSet<*>,
+        targetType: SetIndicator<T>,
+        implicit: Boolean
+    ): BundleSet<T> {
+        if (from.ind == targetType) {
             @Suppress("UNCHECKED_CAST")
-            return from as T
+            return from as BundleSet<T>
         }
 
         return from.cast(targetType)!!

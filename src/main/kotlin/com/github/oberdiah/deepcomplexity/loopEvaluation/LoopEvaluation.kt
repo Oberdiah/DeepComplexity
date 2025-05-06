@@ -1,18 +1,17 @@
 package com.github.oberdiah.deepcomplexity.loopEvaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.MULTIPLICATION
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.isOne
 import com.intellij.psi.PsiElement
 
 object LoopEvaluation {
     /**
      * Given the context for the loop body, and the condition, figure out our new context.
      */
-    fun processLoopContext(context: Context, condition: IExpr<BooleanSet>) {
+    fun processLoopContext(context: Context, condition: IExpr<Boolean>) {
         var numLoops: NumIterationTimesExpression<*>? = null
 
         val conditionVariables = condition.getVariables(false)
@@ -20,7 +19,7 @@ object LoopEvaluation {
             val variablesMatchingCondition = expr.getVariables(false)
                 .filter { vari -> conditionVariables.any { vari.getKey() == it.getKey() } }
 
-            fun <T : NumberSet<T>> ugly(numExpr: IExpr<T>) {
+            fun <T : Number> ugly(numExpr: IExpr<T>) {
                 if (variablesMatchingCondition.isEmpty()) return
                 // We now have an expression that is looping stuff.
                 val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: return
@@ -29,8 +28,9 @@ object LoopEvaluation {
                 // Temporary
                 assert(constraints.size == 1)
                 val constraint = constraints[0].getConstraint(variable) ?: return
-
-                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
+                TODO()
+                // Temporary
+//                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
             }
 
             val numExpr = expr.tryCastToNumbers() ?: continue
@@ -54,8 +54,8 @@ object LoopEvaluation {
         }
     }
 
-    private fun <T : NumberSet<T>> repeatExpression(
-        numLoops: NumIterationTimesExpression<out NumberSet<*>>?,
+    private fun <T : Number> repeatExpression(
+        numLoops: NumIterationTimesExpression<out Number>?,
         expr: IExpr<T>,
         psiElement: PsiElement,
         allUnresolved: List<VariableExpression<*>>
@@ -89,7 +89,7 @@ object LoopEvaluation {
         return ArithmeticExpression(constantTerm, numLoops as IExpr<T>, MULTIPLICATION)
     }
 
-    private fun <T : NumberSet<T>> collectTerms(
+    private fun <T : Number> collectTerms(
         expr: IExpr<T>,
         psiElement: PsiElement,
         variables: List<VariableExpression<*>>
