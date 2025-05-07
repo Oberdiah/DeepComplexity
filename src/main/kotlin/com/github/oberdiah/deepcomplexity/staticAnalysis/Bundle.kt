@@ -15,7 +15,7 @@ interface Bundle<T : Any> {
      * Not a straightforward concept to grok.
      *
      * Converts this bundle from representing a specific constraint into representing a concrete set of values
-     * that a variable may take. Essentially assigned this meaningless blob of values to a specific context key.
+     * that a variable may take. Essentially assign a meaningless blob of values to a specific context key.
      *
      * For example, the bundle (5..15) alone represents that range of integers, but when we convert it
      * (on, say, key `x`) that would still be (5..15) but under the hood the bundle knows that variation came

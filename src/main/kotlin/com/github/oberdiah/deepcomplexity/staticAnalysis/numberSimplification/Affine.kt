@@ -10,13 +10,40 @@ import java.math.BigInteger.valueOf
 
 @ConsistentCopyVisibility
 data class Affine<T : Number> private constructor(
-    private val setIndicator: NumberSetIndicator<T>,
+    private val ind: NumberSetIndicator<T>,
     // At one point we'll want to support floating point too.
     private val affine: IntegerAffine
 ) {
-    val clazz = setIndicator.clazz
+    val clazz = ind.clazz
+    val indMax = valueOf(ind.getMaxValue().toLong())
+    val indMin = valueOf(ind.getMinValue().toLong())
 
-    fun stringOverview() = affine.stringOverview()
+    fun stringOverview(): String {
+        val (min, max) = affine.toRange()
+
+        val firstHalf = if (min == max) {
+            min.toString()
+        } else if (min == indMin && max == indMax) {
+            "*"
+        } else if (min == indMin) {
+            "..$max"
+        } else if (max == indMax) {
+            "$min.."
+        } else {
+            "$min..$max"
+        }
+
+        val keys = affine.getKeys()
+
+        val secondHalf = if (keys.all { it is Context.Key.EphemeralKey }) {
+            ""
+        } else {
+            " (${keys.joinToString { it.toString() }})"
+        }
+
+        return "$firstHalf$secondHalf"
+    }
+
     override fun toString(): String = affine.toString()
 
     fun <NewT : Number> castTo(newInd: NumberSetIndicator<NewT>): Affine<NewT> = Affine(newInd, affine)
@@ -25,49 +52,47 @@ data class Affine<T : Number> private constructor(
 
     fun isExactly(i: Int): Boolean = affine.isExactly(i)
     fun toRanges(): List<Pair<T, T>> {
-        assert(setIndicator.isWholeNum()) // We can't handle/haven't thought about floating point yet.
+        assert(ind.isWholeNum()) // We can't handle/haven't thought about floating point yet.
 
-        val max = valueOf(setIndicator.getMaxValue().toLong())
-        val min = valueOf(setIndicator.getMinValue().toLong())
-        val setSize = valueOf(setIndicator.clazz.getSetSize().toLong())
+        val setSize = valueOf(ind.clazz.getSetSize().toLong())
 
         val (initialLower, initialUpper) = affine.toRange()
-        val distanceToShunt = setSize * if (initialLower < min) {
-            (min - initialLower - BigInteger.ONE) / setSize + BigInteger.ONE
+        val distanceToShunt = setSize * if (initialLower < indMin) {
+            (indMin - initialLower - BigInteger.ONE) / setSize + BigInteger.ONE
         } else {
-            (min - initialLower) / setSize
+            (indMin - initialLower) / setSize
         }
 
         // The first step is to shift the affine so that the lower value is definitely between min and max.
         // Makes things a lot easier to reason about.
         val (lower, upper) = initialLower + distanceToShunt to initialUpper + distanceToShunt
 
-        assert(lower >= min) {
-            "Lower bound $lower is below minimum value $min"
+        assert(lower >= indMin) {
+            "Lower bound $lower is below minimum value $indMin"
         }
-        assert(lower <= max) {
-            "Lower bound $lower is above maximum value $max"
+        assert(lower <= indMax) {
+            "Lower bound $lower is above maximum value $indMax"
         }
 
         if (upper - lower >= setSize) {
             // In this case we're covering the whole range no matter what.
-            return listOf(min.castInto<T>(clazz) to max.castInto<T>(clazz))
+            return listOf(indMin.castInto<T>(clazz) to indMax.castInto(clazz))
         }
 
-        if (upper <= max) {
+        if (upper <= indMax) {
             // Easy-peasy, we fit, all is good.
-            return listOf(lower.castInto<T>(clazz) to upper.castInto<T>(clazz))
+            return listOf(lower.castInto<T>(clazz) to upper.castInto(clazz))
         }
 
         return listOf(
-            upper.castInto<T>(clazz) to max.castInto<T>(clazz),
-            min.castInto<T>(clazz) to lower.castInto<T>(clazz)
+            upper.castInto<T>(clazz) to indMax.castInto(clazz),
+            indMin.castInto<T>(clazz) to lower.castInto(clazz)
         )
     }
 
-    fun add(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.add(other.affine))
-    fun subtract(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.subtract(other.affine))
-    fun multiply(other: Affine<T>): Affine<T> = Affine(setIndicator, affine.multiply(other.affine))
+    fun add(other: Affine<T>): Affine<T> = Affine(ind, affine.add(other.affine))
+    fun subtract(other: Affine<T>): Affine<T> = Affine(ind, affine.subtract(other.affine))
+    fun multiply(other: Affine<T>): Affine<T> = Affine(ind, affine.multiply(other.affine))
     fun divide(other: Affine<T>): Affine<T> {
         if (other.isExactly(1)) {
             return this

@@ -148,16 +148,6 @@ data class IntegerAffine private constructor(
 
     fun getKeys(): List<Context.Key> = noiseTerms.keys.toList()
 
-    fun stringOverview(): String {
-        val (min, max) = toRange()
-
-        if (min == max) {
-            return "$min"
-        }
-
-        return "$min..$max (${noiseTerms.keys})"
-    }
-
     override fun toString(): String {
         val (min, max) = toRange()
         return "$min..$max ($center + ${

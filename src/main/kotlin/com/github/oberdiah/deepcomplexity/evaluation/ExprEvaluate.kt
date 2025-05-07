@@ -15,12 +15,12 @@ object ExprEvaluate {
     }
 
     private fun <T : Number> evaluateNums(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
-        return when (expr) {
+        val toReturn = when (expr) {
             is ArithmeticExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
 
-                return lhs.arithmeticOperation(rhs, expr.op)
+                lhs.arithmeticOperation(rhs, expr.op)
             }
 
             is NegateExpression -> evaluate(expr.expr, condition).negate()
@@ -55,15 +55,16 @@ object ExprEvaluate {
 
             else -> evaluateAnythings(expr, condition)
         }
+        return toReturn
     }
 
     private fun evaluateBools(expr: IExpr<Boolean>, condition: IExpr<Boolean>): BundleSet<Boolean> {
-        return when (expr) {
+        val toReturn = when (expr) {
             is BooleanExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
 
-                return lhs.booleanOperation(rhs, expr.op)
+                lhs.booleanOperation(rhs, expr.op)
             }
 
             is ComparisonExpression<*> -> {
@@ -79,6 +80,7 @@ object ExprEvaluate {
             is BooleanInvertExpression -> evaluate(expr, condition).invert()
             else -> evaluateAnythings(expr, condition)
         }
+        return toReturn
     }
 
     private fun <T : Any> evaluateGenerics(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
@@ -86,7 +88,7 @@ object ExprEvaluate {
     }
 
     private fun <T : Any> evaluateAnythings(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
-        return when (expr) {
+        val toReturn: BundleSet<T> = when (expr) {
             is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
             is InvertExpression -> evaluate(expr.expr, condition).invert()
@@ -146,5 +148,6 @@ object ExprEvaluate {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
         }
+        return toReturn
     }
 }

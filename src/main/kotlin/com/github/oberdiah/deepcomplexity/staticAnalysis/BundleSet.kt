@@ -48,7 +48,7 @@ class BundleSet<T : Any> private constructor(
             return BundleSet(
                 bundle.getIndicator(),
                 listOf(
-                    ConstrainedBundle(bundle, Constraints.completelyUnconstrained())
+                    ConstrainedBundle.new(bundle, Constraints.completelyUnconstrained())
                 )
             )
         }
@@ -57,18 +57,26 @@ class BundleSet<T : Any> private constructor(
             return BundleSet(
                 bundle.getIndicator(),
                 listOf(
-                    ConstrainedBundle(bundle, constraints)
+                    ConstrainedBundle.new(bundle, constraints)
                 )
             )
         }
 
         fun <T : Any> constrained(bundle: Bundle<T>, constraints: List<Constraints>): BundleSet<T> = BundleSet(
             bundle.getIndicator(),
-            constraints.map { ConstrainedBundle(bundle, it) }
+            constraints.map { ConstrainedBundle.new(bundle, it) }
         )
     }
 
-    data class ConstrainedBundle<T : Any>(val bundle: Bundle<T>, val constraints: Constraints) {
+    @ConsistentCopyVisibility
+    data class ConstrainedBundle<T : Any> private constructor(val bundle: Bundle<T>, val constraints: Constraints) {
+        companion object {
+            fun <T : Any> new(bundle: Bundle<T>, constraints: Constraints): ConstrainedBundle<T> {
+                // todo: Could add withUpdatedConstraints(constraints) here in future, perhaps?
+                return ConstrainedBundle(bundle, constraints)
+            }
+        }
+
         fun toDebugString(): String {
             if (constraints.isUnconstrained()) {
                 return "$bundle"
@@ -106,7 +114,7 @@ class BundleSet<T : Any> private constructor(
                 if (newConstraints.unreachable) {
                     null
                 } else {
-                    ConstrainedBundle(newBundle.bundle, newConstraints)
+                    ConstrainedBundle.new(newBundle.bundle, newConstraints)
                 }
             }
         })
@@ -116,7 +124,7 @@ class BundleSet<T : Any> private constructor(
 
     fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Bundle<T>) -> Bundle<Q>): BundleSet<Q> {
         return BundleSet(newInd, bundles.map {
-            ConstrainedBundle(op(it.bundle), it.constraints)
+            ConstrainedBundle.new(op(it.bundle), it.constraints)
         })
     }
 
@@ -138,7 +146,7 @@ class BundleSet<T : Any> private constructor(
 
                 if (newConstraints.unreachable) continue
 
-                newBundles.add(ConstrainedBundle(newBundle, newConstraints))
+                newBundles.add(ConstrainedBundle.new(newBundle, newConstraints))
             }
         }
 
@@ -147,7 +155,7 @@ class BundleSet<T : Any> private constructor(
 
     fun constrainWith(constraints: Constraints): BundleSet<T> {
         return BundleSet(ind, bundles.map {
-            ConstrainedBundle(it.bundle, it.constraints.and(constraints))
+            ConstrainedBundle.new(it.bundle, it.constraints.and(constraints))
         })
     }
 
@@ -159,7 +167,7 @@ class BundleSet<T : Any> private constructor(
         val constraints = ExprConstrain.getConstraints(constraintExpr)
         return BundleSet(ind, bundles.flatMap { bundle ->
             constraints.map { constraint ->
-                ConstrainedBundle(bundle.bundle, bundle.constraints.and(constraint))
+                ConstrainedBundle.new(bundle.bundle, bundle.constraints.and(constraint))
             }
         })
     }
@@ -195,7 +203,7 @@ class BundleSet<T : Any> private constructor(
     fun <Q : Any> cast(indicator: SetIndicator<Q>): BundleSet<Q>? {
         return BundleSet(
             indicator, bundles.map {
-                ConstrainedBundle(it.bundle.cast(indicator) ?: return null, it.constraints)
+                ConstrainedBundle.new(it.bundle.cast(indicator) ?: return null, it.constraints)
             }
         )
     }
