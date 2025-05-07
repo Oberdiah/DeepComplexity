@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
@@ -134,6 +135,18 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
     abstract fun getInt(int: Int): T
 
     /**
+     * Returns a string representation of the number, or the empty string
+     * if the number is the minimum or maximum value. Useful for printing ranges.
+     */
+    fun stringify(i: T): String {
+        return if (i == getMaxValue() || i == getMinValue()) {
+            ""
+        } else {
+            i.toString()
+        }
+    }
+
+    /**
      * Returns max(abs(minValue), abs(maxValue))
      */
     fun getRadius(): BigInteger {
@@ -157,6 +170,8 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
     fun getOne(): T {
         return getInt(1)
     }
+
+    fun castToMe(v: Number): T = v.castInto(clazz)
 }
 
 data object DoubleSetIndicator : NumberSetIndicator<Double>(Double::class) {

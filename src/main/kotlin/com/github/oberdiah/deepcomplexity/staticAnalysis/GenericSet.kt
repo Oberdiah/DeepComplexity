@@ -19,7 +19,7 @@ class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
         TODO("Not yet implemented")
     }
 
-    override fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>? {
         TODO("Not yet implemented")
     }
 

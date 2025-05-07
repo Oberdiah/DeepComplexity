@@ -277,6 +277,7 @@ public class MyTestData {
 		return v;
 	}
 	
+	@RequiredScore(0.0382) // This should be a lot higher (8%?); with the right affine implementation we should manage.
 	public static short constraintTest1(short incoming) {
 		int a = 0;
 		int b = 0;
@@ -311,6 +312,7 @@ public class MyTestData {
 		return (short) b;
 	}
 	
+	@RequiredScore(1.0)
 	public static short constraintTest3(short incoming) {
 		int a = 0;
 		if (incoming > 10) {

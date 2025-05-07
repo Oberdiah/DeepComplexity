@@ -1,24 +1,25 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberRange
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 
 object NumberUtilities {
-    fun <T : Number> mergeAndDeduplicate(ranges: List<Pair<T, T>>): List<Pair<T, T>> {
+    fun <T : Number> mergeAndDeduplicate(ranges: List<NumberRange<T>>): List<NumberRange<T>> {
         if (ranges.size <= 1) {
             return ranges
         }
 
-        val sortedRange: List<Pair<T, T>> = ranges.sortedWith { a, b -> a.first.compareTo(b.first) }
+        val sortedRange: List<NumberRange<T>> = ranges.sortedWith { a, b -> a.start.compareTo(b.start) }
 
-        val newRanges = mutableListOf<Pair<T, T>>()
+        val newRanges = mutableListOf<NumberRange<T>>()
         var currentRange = sortedRange[0]
         for (i in 1 until sortedRange.size) {
             val nextRange = sortedRange[i]
-            if (currentRange.second >= nextRange.first) {
-                currentRange = Pair(
-                    currentRange.first,
-                    nextRange.second.max(currentRange.second)
+            if (currentRange.end >= nextRange.start) {
+                currentRange = NumberRange.new(
+                    currentRange.start,
+                    nextRange.end.max(currentRange.end),
                 )
             } else {
                 newRanges.add(currentRange)
