@@ -4,7 +4,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -128,7 +127,8 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     override fun newFullBundle(): Bundle<T> = NumberSet.newFull(this)
     override fun newConstantBundle(constant: T): Bundle<T> = NumberSet.newFromConstant(constant)
-
+    override fun newEmptyBundle(): Bundle<T> = NumberSet(this, emptyList())
+    
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
 
@@ -175,42 +175,36 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
 }
 
 data object DoubleSetIndicator : NumberSetIndicator<Double>(Double::class) {
-    override fun newEmptyBundle(): DoubleSet = DoubleSet()
     override fun getMaxValue(): Double = Double.MAX_VALUE
     override fun getMinValue(): Double = Double.MIN_VALUE
     override fun getInt(int: Int): Double = int.toDouble()
 }
 
 data object FloatSetIndicator : NumberSetIndicator<Float>(Float::class) {
-    override fun newEmptyBundle(): FloatSet = FloatSet()
     override fun getMaxValue(): Float = Float.MAX_VALUE
     override fun getMinValue(): Float = Float.MIN_VALUE
     override fun getInt(int: Int): Float = int.toFloat()
 }
 
 data object IntSetIndicator : NumberSetIndicator<Int>(Int::class) {
-    override fun newEmptyBundle(): IntSet = IntSet()
     override fun getMaxValue(): Int = Int.MAX_VALUE
     override fun getMinValue(): Int = Int.MIN_VALUE
     override fun getInt(int: Int): Int = int
 }
 
 object LongSetIndicator : NumberSetIndicator<Long>(Long::class) {
-    override fun newEmptyBundle(): LongSet = LongSet()
     override fun getMaxValue(): Long = Long.MAX_VALUE
     override fun getMinValue(): Long = Long.MIN_VALUE
     override fun getInt(int: Int): Long = int.toLong()
 }
 
 data object ShortSetIndicator : NumberSetIndicator<Short>(Short::class) {
-    override fun newEmptyBundle(): ShortSet = ShortSet()
     override fun getMaxValue(): Short = Short.MAX_VALUE
     override fun getMinValue(): Short = Short.MIN_VALUE
     override fun getInt(int: Int): Short = int.toShort()
 }
 
 data object ByteSetIndicator : NumberSetIndicator<Byte>(Byte::class) {
-    override fun newEmptyBundle(): ByteSet = ByteSet()
     override fun getMaxValue(): Byte = Byte.MAX_VALUE
     override fun getMinValue(): Byte = Byte.MIN_VALUE
     override fun getInt(int: Int): Byte = int.toByte()

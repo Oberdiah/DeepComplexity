@@ -1,8 +1,11 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
@@ -16,31 +19,13 @@ import kotlin.reflect.KClass
 
 typealias Ranges<T> = List<NumberRange<T>>
 
-sealed class NumberSet<T : Number>(
+class NumberSet<T : Number>(
     val ind: NumberSetIndicator<T>,
     // In order, and non-overlapping
     val ranges: Ranges<T>
 ) : Bundle<T> {
     override fun getIndicator(): SetIndicator<T> = ind
     val clazz: KClass<T> = ind.clazz
-
-    class DoubleSet(ranges: Ranges<Double> = emptyList()) :
-        NumberSet<Double>(DoubleSetIndicator, ranges)
-
-    class FloatSet(ranges: Ranges<Float> = emptyList()) :
-        NumberSet<Float>(FloatSetIndicator, ranges)
-
-    class IntSet(ranges: Ranges<Int> = emptyList()) :
-        NumberSet<Int>(IntSetIndicator, ranges)
-
-    class LongSet(ranges: Ranges<Long> = emptyList()) :
-        NumberSet<Long>(LongSetIndicator, ranges)
-
-    class ShortSet(ranges: Ranges<Short> = emptyList()) :
-        NumberSet<Short>(ShortSetIndicator, ranges)
-
-    class ByteSet(ranges: Ranges<Byte> = emptyList()) :
-        NumberSet<Byte>(ByteSetIndicator, ranges)
 
     override fun toString(): String = ranges.joinToString {
         it.toString()
@@ -293,14 +278,7 @@ sealed class NumberSet<T : Number>(
             ind: NumberSetIndicator<T>,
             ranges: Ranges<T>,
         ): NumberSet<T> {
-            return when (ind) {
-                is ByteSetIndicator -> ByteSet(ranges as Ranges<Byte>)
-                is ShortSetIndicator -> ShortSet(ranges as Ranges<Short>)
-                is IntSetIndicator -> IntSet(ranges as Ranges<Int>)
-                is LongSetIndicator -> LongSet(ranges as Ranges<Long>)
-                is FloatSetIndicator -> FloatSet(ranges as Ranges<Float>)
-                is DoubleSetIndicator -> DoubleSet(ranges as Ranges<Double>)
-            } as NumberSet<T>
+            return NumberSet(ind, ranges)
         }
     }
 }
