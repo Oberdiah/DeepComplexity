@@ -5,16 +5,25 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiMethod
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase5
-import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.TestFactory
+import org.junit.jupiter.api.*
 import java.net.URI
 
-
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
     override fun getTestDataPath() = "src/test/java/testdata/"
 
+    companion object {
+        val summaryDescription = mutableListOf<String>()
+    }
+
+    @Test
+    @Order(1)
+    fun setup() {
+    }
+
     @TestFactory
-    fun dynamicTestsWithCollection(): Collection<DynamicTest> {
+    @Order(2)
+    fun runTests(): Collection<DynamicTest> {
         val outputFile: PsiFile = fixture.configureByFile("MyTestData.java")
         val app = ApplicationManager.getApplication()
 
@@ -45,11 +54,27 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
             tests.add(DynamicTest.dynamicTest(method.second, testSourceUri) {
                 app.runReadAction {
-                    TestUtilities.testMethod(method.first, method.second)
+                    val (msg, passed) = TestUtilities.testMethod(method.first, method.second)
+                    summaryDescription.add("${method.second.padEnd(25)}: $msg")
+                    if (!passed) {
+                        throw AssertionError("Test ${method.second} failed.")
+                    }
                 }
             })
         }
 
         return tests
+    }
+
+    @Test
+    @Order(3)
+    fun summary() {
+        println("###############################")
+        println("##   Simple Must Pass Test   ##")
+        println("###############################")
+        println()
+        println("Number of tests run: ${summaryDescription.size}")
+        println()
+        summaryDescription.forEach { println(it) }
     }
 }
