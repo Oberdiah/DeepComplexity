@@ -1,8 +1,6 @@
 package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
 import com.intellij.psi.PsiMethod
@@ -13,72 +11,84 @@ object TestUtilities {
     private val predictedArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
     private val actualArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
 
-    fun testMethod(method: PsiMethod, methodName: String) {
+    /**
+     * Returns a string summary of the test results, to be printed in the summary test,
+     * and if the test passed.
+     */
+    fun testMethod(method: PsiMethod, methodName: String): Pair<String, Boolean> {
         println("Processing method ${method.name}:")
-        var errorMessage = ""
-        var methodScore = 0.0
 
         val clazz = MyTestData::class.java
         val reflectMethod = clazz.declaredMethods.find { it.name == methodName }
             ?: throw NoSuchMethodException("Method $methodName not found in class ${clazz.name}")
 
-        var range: BundleSet<Short>? = null
-        try {
-            val returnKey = Context.Key.ReturnKey(method)
-
-            errorMessage = "Failed to get method context"
-            val context = MethodProcessing.getMethodContext(method)
-            println(context.debugKey(returnKey).prependIndent())
-
-            errorMessage = "Failed to evaluate return value range"
-
-            range = context.evaluateKey(returnKey).cast(ShortSetIndicator)
-            println("\tRange of return value: ${range?.collapse()}")
-            errorMessage = "Failed to verify method"
-        } catch (e: Throwable) {
-            println("\tAww no :( ($errorMessage)\n")
-            e.printStackTrace()
-
-            methodScore = 0.0
-        }
-
-        try {
-            range?.let { methodScore = getMethodScore(reflectMethod, range.collapse()) }
-        } catch (e: Throwable) {
-            println("\tAww no! :( ($errorMessage)\n")
-            e.printStackTrace()
-            methodScore = 0.0
-        }
+        val (msg, methodScore) = getMethodScore(reflectMethod, method)
 
         val annotation = reflectMethod.getAnnotation(RequiredScore::class.java)
-        if (annotation != null) {
-            val requiredScore = annotation.value
 
-            val methodScoreStr = String.format("%.2f", methodScore * 100)
-            val requiredScoreStr = String.format("%.2f", requiredScore * 100)
+        val (columns, passed) = getSummaryTable(msg, methodScore, annotation)
+        val columnSpacing = listOf(20, 25, 8, 10)
 
-            if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {
-                throw AssertionError(
-                    "Method ${reflectMethod.name} failed with a score of $methodScore, " +
-                            "which is less than the required score of $requiredScore"
-                )
-            } else {
-                println(" which was sufficient (>=$requiredScoreStr%)")
-            }
-        } else {
-            println("\n\tThis method was not required to reach a score threshold and as such it passed by default.")
-        }
-
+        val summary = columns.mapIndexed { i, s -> s.padEnd(columnSpacing[i]) }.joinToString(" | ")
+        return summary to passed
     }
 
-    fun getMethodScore(method: Method, range: Bundle<Short>): Double {
+    private fun getSummaryTable(
+        msg: String,
+        methodScore: Double,
+        annotation: RequiredScore?
+    ): Pair<List<String>, Boolean> {
+        val scoreReceivedColumn = if (methodScore == 0.0) "N/A" else msg
+        val extraInfoColumn = if (methodScore == 0.0) msg else ""
+
+        if (annotation != null) {
+            val requiredScore = annotation.value
+            val requiredScoreStr = String.format("%.2f", requiredScore * 100)
+            val methodScoreStr = String.format("%.2f", methodScore * 100)
+
+            if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {
+                println("\tReceived a score of $msg which was not sufficient (<$requiredScoreStr%)")
+                if (methodScore == 0.0) println("\t$msg")
+                return listOf("### Failed ###", scoreReceivedColumn, "$requiredScoreStr%", extraInfoColumn) to false
+            } else {
+                println("\tReceived a score of $msg which was sufficient (>=$requiredScoreStr%)")
+                val notes = if (methodScoreStr.toDouble() > requiredScoreStr.toDouble())
+                    "Exceeded expectations" else ""
+                return listOf("Passed", msg, "$requiredScoreStr%", "") to true
+            }
+        } else {
+            println("\tThis method was not required to reach a score threshold and as such it passed by default.")
+            return listOf("Passed by default", scoreReceivedColumn, "N/A", extraInfoColumn) to true
+        }
+    }
+
+    private fun getMethodScore(method: Method, psiMethod: PsiMethod): Pair<String, Double> {
+        val returnKey = Context.Key.ReturnKey(psiMethod)
+
+        val context = try {
+            MethodProcessing.getMethodContext(psiMethod)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            return "Failed to parse PSI" to 0.0
+        }
+
+        println(context.debugKey(returnKey).prependIndent())
+
+        val range = try {
+            context.evaluateKey(returnKey).cast(ShortSetIndicator)!!.collapse()
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            return "Failed to evaluate value range" to 0.0
+        }
+
+        println("\tRange of return value: $range")
+
         // For now, int-only. Short is the goal though.
         if (method.parameterCount != 1 ||
             method.parameterTypes[0] != Short::class.java ||
             method.returnType != Short::class.java
         ) {
-            print("\tSkipped method ${method.name} as it's not valid for testing.")
-            return 0.0
+            return "Skipped method ${method.name} as it's not valid for testing." to 0.0
         }
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
             predictedArray[s - Short.MIN_VALUE] = range.contains(s.toShort())
@@ -89,16 +99,12 @@ object TestUtilities {
             val result = method.invoke(null, s.toShort()) as Short
 
             if (!range.contains(result)) {
-                throw AssertionError(
-                    "Method ${method.name} failed for input $s," +
-                            " returned a value of $result which is not in range ${range}"
-                )
+                return "Method ${method.name} failed for input $s," +
+                        " returned a value of $result which is not in range $range" to 0.0
             } else {
                 if (result !in Short.MIN_VALUE..Short.MAX_VALUE) {
-                    throw AssertionError(
-                        "Method ${method.name} failed for input $s," +
-                                " returned a value of $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}"
-                    )
+                    return "Method ${method.name} failed for input $s," +
+                            " returned a value of $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}" to 0.0
                 }
                 actualArray[result - Short.MIN_VALUE] = true
             }
@@ -135,7 +141,7 @@ object TestUtilities {
         println()
 
         if (numEntriesPredicted == 0) {
-            return 0.0
+            return "Didn't predict any valid values at all" to 0.0
         }
 
         var numEntriesCorrect = 0
@@ -159,15 +165,13 @@ object TestUtilities {
             }
         }
 
-        print(
-            "\tReceived a score of $numEntriesCorrect/$numEntriesPredicted (${
-                String.format(
-                    "%.2f",
-                    scoreFraction * 100
-                )
-            }%)"
-        )
+        val score = "$numEntriesCorrect/$numEntriesPredicted (${
+            String.format(
+                "%.2f",
+                scoreFraction * 100
+            )
+        }%)"
 
-        return scoreFraction
+        return score to scoreFraction
     }
 }
