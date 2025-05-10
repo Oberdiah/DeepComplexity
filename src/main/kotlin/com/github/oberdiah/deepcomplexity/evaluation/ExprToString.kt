@@ -17,7 +17,6 @@ object ExprToString {
                 }\n}"
             }
 
-            is IntersectExpression -> "(${expr.lhs} ∩ ${expr.rhs})"
             is BooleanInvertExpression -> "!${expr.expr}"
             is InvertExpression -> "!${expr.expr}"
             is NegateExpression -> "-${expr.expr}"
@@ -79,7 +78,6 @@ object ExprToString {
                 }\n}) = $myResult"
             }
 
-            is IntersectExpression -> "(${expr.lhs.dStr()} ∩ ${expr.rhs.dStr()}) = $myResult"
             is BooleanInvertExpression -> "!${expr.expr.dStr()} = $myResult"
             is InvertExpression -> "!${expr.expr.dStr()} = $myResult"
             is NegateExpression -> "-${expr.expr.dStr()} = $myResult"

@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.VarianceBundle
 
 sealed interface IExpr<T : Any> {
     /**
@@ -119,14 +119,6 @@ class IfExpression<T : Any>(
     }
 }
 
-class IntersectExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
-    init {
-        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
-            "Intersecting expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
-        }
-    }
-}
-
 class UnionExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
     init {
         assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
@@ -146,7 +138,7 @@ class BooleanExpression(val lhs: IExpr<Boolean>, val rhs: IExpr<Boolean>, val op
 
 class ConstExpr<T : Any>(val constSet: BundleSet<T>) : Expr<T>() {
     companion object {
-        fun <T : Any> new(bundle: Bundle<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
+        fun <T : Any> new(bundle: VarianceBundle<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
     }
 }
 

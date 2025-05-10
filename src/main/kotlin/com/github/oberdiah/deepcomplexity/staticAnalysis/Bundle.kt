@@ -22,5 +22,6 @@ interface Bundle<T : Any> {
      * from the variable `x`. Down the line, arithmetic etc. performed on the bundle will know these values
      * are associated with key `x`, such that `x - x` will be 0.
      */
-    fun associateVariance(key: Context.Key): Bundle<T>
+    fun withVariance(key: Context.Key): VarianceBundle<T>
+    fun withEphemeralVariance(): VarianceBundle<T> = withVariance(Context.Key.EphemeralKey.new())
 }

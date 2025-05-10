@@ -66,7 +66,6 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
                 is IfExpression -> expr.trueExpr.getSetIndicator()
-                is IntersectExpression -> expr.lhs.getSetIndicator()
                 is UnionExpression -> expr.lhs.getSetIndicator()
                 is InvertExpression -> expr.expr.getSetIndicator()
 
@@ -128,7 +127,7 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
     override fun newFullBundle(): Bundle<T> = NumberSet.newFull(this)
     override fun newConstantBundle(constant: T): Bundle<T> = NumberSet.newFromConstant(constant)
     override fun newEmptyBundle(): Bundle<T> = NumberSet(this, emptyList())
-    
+
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
 

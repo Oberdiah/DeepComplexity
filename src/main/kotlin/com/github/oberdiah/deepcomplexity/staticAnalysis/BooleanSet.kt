@@ -58,13 +58,31 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     };
 
+    class BooleanVariance(private val value: BooleanSet) : VarianceBundle<Boolean> {
+        override fun getIndicator(): SetIndicator<Boolean> = value.getIndicator()
+        override fun invert(): VarianceBundle<Boolean> = BooleanVariance(value.invert())
+        override fun union(other: VarianceBundle<Boolean>): VarianceBundle<Boolean> = when (other) {
+            is BooleanVariance -> BooleanVariance(value.union(other.value).into())
+            else -> throw IllegalArgumentException("Cannot union $other to BooleanVariance")
+        }
+
+        override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? =
+            throw IllegalArgumentException("Cannot cast boolean to $newInd")
+
+        override fun collapse(): Bundle<Boolean> = value
+
+        fun booleanOperation(other: BooleanVariance, operation: BooleanOp): BooleanVariance {
+            return BooleanVariance(value.booleanOperation(other.value, operation))
+        }
+    }
+
     companion object {
         fun fromBoolean(value: Boolean): BooleanSet {
             return if (value) TRUE else FALSE
         }
     }
 
-    override fun associateVariance(key: Context.Key): Bundle<Boolean> = this
+    override fun withVariance(key: Context.Key): VarianceBundle<Boolean> = BooleanVariance(this)
 
     override fun isEmpty(): Boolean {
         return this == NEITHER

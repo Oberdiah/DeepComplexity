@@ -43,7 +43,7 @@ object ExprConstrain {
 
             is ConstExpr -> {
                 return condition.constSet.bundles.map {
-                    when (it.bundle.into()) {
+                    when (it.bundle.collapse().into()) {
                         // Unsure if this is correct
                         BooleanSet.TRUE, BooleanSet.BOTH -> Constraints.completelyUnconstrained()
                         BooleanSet.FALSE, BooleanSet.NEITHER -> Constraints.unreachable()

@@ -27,6 +27,47 @@ class NumberSet<T : Number>(
     override fun getIndicator(): SetIndicator<T> = ind
     val clazz: KClass<T> = ind.clazz
 
+    class NumberVariance<T : Number>(private val set: NumberSet<T>) : VarianceBundle<T> {
+        override fun getIndicator(): SetIndicator<T> = set.getIndicator()
+        override fun invert(): VarianceBundle<T> = NumberVariance(set.invert())
+        override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
+            if (newInd !is NumberSetIndicator<*>) {
+                return null
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            return set.cast(newInd)?.let { NumberVariance(it.into()) } as NumberVariance<Q>?
+        }
+
+        override fun union(other: VarianceBundle<T>): VarianceBundle<T> =
+            NumberVariance(set.union(other.into().set) as NumberSet<T>)
+
+        override fun collapse(): Bundle<T> = set
+
+        fun isOne(): Boolean = set.isOne()
+        fun arithmeticOperation(
+            other: NumberVariance<T>,
+            operation: BinaryNumberOp
+        ): NumberVariance<T> = set.arithmeticOperation(other.set.into(), operation).withEphemeralVariance().into()
+
+        fun comparisonOperation(
+            other: NumberVariance<T>,
+            operation: ComparisonOp
+        ): BooleanSet.BooleanVariance = set.comparisonOperation(other.set, operation).withEphemeralVariance().into()
+
+        fun evaluateLoopingRange(
+            changeTerms: ConstraintSolver.EvaluatedCollectedTerms<T>,
+            valid: NumberSet<T>
+        ): NumberVariance<T> = set.evaluateLoopingRange(changeTerms, valid).withEphemeralVariance().into()
+
+        // Hopefully this and some others won't need to be implemented in NumberVariance in the end at all.
+        // Hopefully they can be constraint-only.
+        fun getSetSatisfying(comp: ComparisonOp): NumberVariance<T> =
+            set.getSetSatisfying(comp).withEphemeralVariance().into()
+
+        fun negate(): NumberVariance<T> = set.negate().withEphemeralVariance().into()
+    }
+
     override fun toString(): String = ranges.joinToString {
         it.toString()
     }
@@ -142,7 +183,7 @@ class NumberSet<T : Number>(
         TODO("Not yet implemented")
     }
 
-    override fun associateVariance(key: Context.Key): Bundle<T> = this // TODO this obviously needs to change.
+    override fun withVariance(key: Context.Key): VarianceBundle<T> = NumberVariance(this)
 
     /**
      * Returns a new set that satisfies the comparison operation.

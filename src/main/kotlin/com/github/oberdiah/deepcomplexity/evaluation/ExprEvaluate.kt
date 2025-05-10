@@ -29,7 +29,7 @@ object ExprEvaluate {
                 val bundleSet = expr.shouldFlipCmp.evaluate(condition)
 
                 bundleSet.unaryMapAndUnion(rhs.ind) { bundle ->
-                    when (bundle.into()) {
+                    when (bundle.collapse().into()) {
                         TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
                         FALSE -> rhs.getSetSatisfying(expr.cmp)
                         BOTH -> rhs.getSetSatisfying(expr.cmp)
@@ -89,7 +89,6 @@ object ExprEvaluate {
 
     private fun <T : Any> evaluateAnythings(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         val toReturn: BundleSet<T> = when (expr) {
-            is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
             is InvertExpression -> evaluate(expr.expr, condition).invert()
             is IfExpression -> {
@@ -100,7 +99,7 @@ object ExprEvaluate {
                     BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
 
                 evaluatedCond.unaryMapAndUnion(expr.trueExpr.getSetIndicator()) { bundle ->
-                    when (bundle.into()) {
+                    when (bundle.collapse().into()) {
                         TRUE -> evaluate(expr.trueExpr, trueCondition)
                         FALSE -> evaluate(expr.falseExpr, falseCondition)
                         BOTH -> {
@@ -136,7 +135,7 @@ object ExprEvaluate {
                     val constraint = constraints.getConstraint(expr)
                         ?: expr.getSetIndicator().newFullBundle()
 
-                    val newBundle = constraint.associateVariance(expr.myKey.key)
+                    val newBundle = constraint.withVariance(expr.myKey.key)
                     // Constrain with the entire set of constraints.
                     bundleSet = bundleSet.union(BundleSet.constrained(newBundle, constraints))
                 }

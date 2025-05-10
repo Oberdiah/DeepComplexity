@@ -135,6 +135,11 @@ object ConstraintSolver {
                 // We can't pass `expr` in here, if we did, we'd be evaluating constraints
                 // forever.
                 // todo worth only collapsing to states possible to reach
+
+
+                // todo I think we don't want this to be an evaluate anymore. I think we want to turn
+                // getvariableconstraints back into a function that just returns a bundle (it's a constraint after all)
+                // That would allow us to get rid of the NumberLimitsExpression.
                 variableConstraints.evaluate(ConstantExpression.TRUE).collapse()
             )
         }
