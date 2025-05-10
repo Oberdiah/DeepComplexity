@@ -59,8 +59,8 @@ enum class BooleanSet : Bundle<Boolean> {
     };
 
     class BooleanVariance(private val value: BooleanSet) : VarianceBundle<Boolean> {
+        fun invert(): VarianceBundle<Boolean> = BooleanVariance(value.invert())
         override fun getIndicator(): SetIndicator<Boolean> = value.getIndicator()
-        override fun invert(): VarianceBundle<Boolean> = BooleanVariance(value.invert())
         override fun union(other: VarianceBundle<Boolean>): VarianceBundle<Boolean> = when (other) {
             is BooleanVariance -> BooleanVariance(value.union(other.value).into())
             else -> throw IllegalArgumentException("Cannot union $other to BooleanVariance")

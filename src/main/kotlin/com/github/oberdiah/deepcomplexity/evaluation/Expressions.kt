@@ -143,7 +143,6 @@ class ConstExpr<T : Any>(val constSet: BundleSet<T>) : Expr<T>() {
 }
 
 class BooleanInvertExpression(val expr: IExpr<Boolean>) : Expr<Boolean>()
-class InvertExpression<T : Any>(val expr: IExpr<T>) : Expr<T>()
 class NegateExpression<T : Number>(val expr: IExpr<T>) : Expr<T>()
 
 class NumIterationTimesExpression<T : Number>(

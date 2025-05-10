@@ -10,10 +10,6 @@ class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
             TODO("Not yet implemented")
         }
 
-        override fun invert(): VarianceBundle<T> {
-            TODO("Not yet implemented")
-        }
-
         override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
             TODO("Not yet implemented")
         }

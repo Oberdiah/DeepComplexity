@@ -163,13 +163,6 @@ class BundleSet<T : Any> private constructor(
     }
 
     /**
-     * Inverts all the contained bundles.
-     */
-    fun invert(): BundleSet<T> {
-        return performUnaryOperation { it.invert() }
-    }
-
-    /**
      * Collapses the full set of bundles into a single bundle, treating the constraints as an OR.
      *
      * @return A single bundle representing the collapsed state of the current bundle set.

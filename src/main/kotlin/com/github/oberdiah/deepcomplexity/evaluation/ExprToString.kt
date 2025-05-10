@@ -18,7 +18,6 @@ object ExprToString {
             }
 
             is BooleanInvertExpression -> "!${expr.expr}"
-            is InvertExpression -> "!${expr.expr}"
             is NegateExpression -> "-${expr.expr}"
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
@@ -78,7 +77,6 @@ object ExprToString {
             }
 
             is BooleanInvertExpression -> "!${expr.expr.dStr()} = $myResult"
-            is InvertExpression -> "!${expr.expr.dStr()} = $myResult"
             is NegateExpression -> "-${expr.expr.dStr()} = $myResult"
             is UnionExpression -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
             is BooleanExpression -> booleanExprToString(expr)

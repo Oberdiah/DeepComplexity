@@ -29,7 +29,6 @@ class NumberSet<T : Number>(
 
     class NumberVariance<T : Number>(private val set: NumberSet<T>) : VarianceBundle<T> {
         override fun getIndicator(): SetIndicator<T> = set.getIndicator()
-        override fun invert(): VarianceBundle<T> = NumberVariance(set.invert())
         override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
             if (newInd !is NumberSetIndicator<*>) {
                 return null
@@ -38,6 +37,8 @@ class NumberSet<T : Number>(
             @Suppress("UNCHECKED_CAST")
             return set.cast(newInd)?.let { NumberVariance(it.into()) } as NumberVariance<Q>?
         }
+
+        fun negate(): NumberVariance<T> = set.negate().withEphemeralVariance().into()
 
         override fun union(other: VarianceBundle<T>): VarianceBundle<T> =
             NumberVariance(set.union(other.into().set) as NumberSet<T>)
@@ -60,12 +61,6 @@ class NumberSet<T : Number>(
             valid: NumberSet<T>
         ): NumberVariance<T> = set.evaluateLoopingRange(changeTerms, valid).withEphemeralVariance().into()
 
-        // Hopefully this and some others won't need to be implemented in NumberVariance in the end at all.
-        // Hopefully they can be constraint-only.
-        fun getSetSatisfying(comp: ComparisonOp): NumberVariance<T> =
-            set.getSetSatisfying(comp).withEphemeralVariance().into()
-
-        fun negate(): NumberVariance<T> = set.negate().withEphemeralVariance().into()
     }
 
     override fun toString(): String = ranges.joinToString {

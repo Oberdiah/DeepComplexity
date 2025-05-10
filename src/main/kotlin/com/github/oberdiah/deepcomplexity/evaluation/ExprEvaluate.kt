@@ -74,7 +74,6 @@ object ExprEvaluate {
     private fun <T : Any> evaluateAnythings(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         val toReturn: BundleSet<T> = when (expr) {
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
-            is InvertExpression -> evaluate(expr.expr, condition).invert()
             is IfExpression -> {
                 val ifCondition = expr.thisCondition
                 val evaluatedCond = evaluate(ifCondition, condition)

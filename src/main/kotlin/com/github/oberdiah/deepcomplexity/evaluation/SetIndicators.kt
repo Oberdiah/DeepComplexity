@@ -67,7 +67,6 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
             return when (expr) {
                 is IfExpression -> expr.trueExpr.getSetIndicator()
                 is UnionExpression -> expr.lhs.getSetIndicator()
-                is InvertExpression -> expr.expr.getSetIndicator()
 
                 is ArithmeticExpression -> expr.lhs.getSetIndicator()
                 is NegateExpression -> expr.expr.getSetIndicator()
