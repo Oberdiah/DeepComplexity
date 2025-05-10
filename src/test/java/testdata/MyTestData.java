@@ -84,6 +84,7 @@ public class MyTestData {
 		return (short) (incoming + 1);
 	}
 	
+	@RequiredScore(1.0)
 	public static short multiplyTest1(short incoming) {
 		int a = 0;
 		int b = 0;

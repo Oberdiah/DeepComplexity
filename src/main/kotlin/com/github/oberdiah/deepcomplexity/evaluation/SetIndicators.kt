@@ -159,9 +159,10 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
                 || this is ByteSetIndicator
     }
 
-    fun zeroNumberSet(): NumberSet<T> = newConstantBundle(getZero())
-    fun allPositiveNumbers(): NumberSet<T> = zeroNumberSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
-    fun allNegativeNumbers(): NumberSet<T> = zeroNumberSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
+    fun onlyZeroSet(): NumberSet<T> = newConstantBundle(getZero())
+    fun onlyOneSet(): NumberSet<T> = newConstantBundle(getOne())
+    fun allPositiveNumbers(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
+    fun allNegativeNumbers(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
     fun getZero(): T = getInt(0)
     fun getOne(): T = getInt(1)
 

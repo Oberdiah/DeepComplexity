@@ -6,24 +6,17 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.utilities.BigFraction
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**
  * The way this works is as follows:
- * The full set of possible values of this class is equal to the constant added to all the variances when multiplied
- * by the multiplier and divided by the divider.
+ * The full set of values of this class is a sum of the variances.
  *
- * Is it sufficient to treat each of the sets independently?
- * Say we wrap at 10, and we have {8..10, 2*(5..6)x, 3*(7..8)y}.
- * What happens when you add {3*(-2..0)x} to it?
- * The answer is you do the algebra, so you only care about the x values.
+ * The variances have at most one ephemeral key (the variance we've given up on)
+ * and then a bunch of known variance we're tracking.
  *
- * And I guess the result is 5*(-2..0, 5..6)x?
- * Nope! The answer is that it can't/shouldn't happen.
- * If they do overlap, however, the answer would be the intersection.
- * I think.
- * I'm not confident in that, but we'll just have to find out.
+ * The 'constraint' part of the variance is the possible set of values the underlying variable could be,
+ * and the multiplier gets applied on top of that.
  */
 class NumberVariance<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
@@ -36,30 +29,27 @@ class NumberVariance<T : Number> private constructor(
     }
 
     private data class Variance<T : Number>(
-        val multiplier: BigFraction,
-        val set: NumberSet<T>
+        /**
+         *  Usually a constant — and will be when adding or subtracting, however, when multiplying
+         *  it can become a range, think of the case of {0..5} * {2..3x} — to preserve the variance,
+         *  which we'd like to do if we can, we need the multiplier to be a set.
+         */
+        val multiplier: NumberSet<T>,
+        val constraint: NumberSet<T>
     ) {
-        fun collapse(): NumberSet<T> {
-            return set
-                .arithmeticOperation(
-                    NumberSet.newFromConstant(set.ind.castToMe(multiplier.numeratorAsLong)),
-                    MULTIPLICATION
-                )
-                .arithmeticOperation(
-                    NumberSet.newFromConstant(set.ind.castToMe(multiplier.denominatorAsLong)),
-                    DIVISION
-                )
-        }
+        fun collapse(): NumberSet<T> = constraint.multiply(multiplier)
     }
 
     companion object {
-        fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariance<T> {
-            return newFromVariance(constant, Context.Key.EphemeralKey.new())
-        }
+        fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariance<T> =
+            newFromVariance(constant, Context.Key.EphemeralKey.new())
 
         fun <T : Number> newFromVariance(constant: NumberSet<T>, key: Context.Key): NumberVariance<T> {
             assert(constant.ind.isWholeNum()) { "Indicator must be whole number for now" }
-            return NumberVariance(constant.ind, mapOf(key to Variance(BigFraction.ONE, constant)))
+            return NumberVariance(
+                constant.ind,
+                mapOf(key to Variance(constant.ind.onlyOneSet(), constant))
+            )
         }
 
         private fun <T : Number> newFromVarianceMap(
@@ -68,15 +58,14 @@ class NumberVariance<T : Number> private constructor(
         ): NumberVariance<T> {
             // Ensure only one ephemeral key is present.
             // If more than one is present, we need to merge them through addition.
-
             val ephemeralEntries = variances.filterKeys { it is Context.Key.EphemeralKey }
 
-            // I think division with this is going to be really hard.
+            // I think division with this might be really hard.
             val mergedVariances =
                 Variance(
-                    BigFraction.ONE,
-                    ephemeralEntries.values.map { it.collapse() }.fold(ind.zeroNumberSet()) { acc, variance ->
-                        acc.arithmeticOperation(variance, ADDITION)
+                    ind.onlyOneSet(),
+                    ephemeralEntries.values.map { it.collapse() }.fold(ind.onlyZeroSet()) { acc, variance ->
+                        acc.add(variance)
                     })
 
             val nonEphemeralEntries = variances.filterKeys { it !is Context.Key.EphemeralKey }
@@ -88,8 +77,8 @@ class NumberVariance<T : Number> private constructor(
 
     override fun toString(): String = collapse().toString()
 
-    override fun collapse(): NumberSet<T> = variances.values.fold(ind.zeroNumberSet()) { acc, variance ->
-        acc.arithmeticOperation(variance.collapse(), ADDITION)
+    override fun collapse(): NumberSet<T> = variances.values.fold(ind.onlyZeroSet()) { acc, variance ->
+        acc.add(variance.collapse())
     }
 
     override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
@@ -99,7 +88,12 @@ class NumberVariance<T : Number> private constructor(
 
         fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberVariance<OutT>? {
             return newFromVarianceMap(newInd, variances.mapValues { (_, variance) ->
-                Variance(variance.multiplier, variance.set.cast(newInd)?.into() ?: return null)
+                Variance(
+                    // I have no idea if doing it like this actually works with wrapping. Probably doesn't.
+                    // Worth writing a test for it at some point.
+                    variance.multiplier.cast(newInd)?.into() ?: return null,
+                    variance.constraint.cast(newInd)?.into() ?: return null
+                )
             })
         }
 
@@ -111,7 +105,7 @@ class NumberVariance<T : Number> private constructor(
 
     fun negate(): NumberVariance<T> {
         return newFromVarianceMap(ind, variances.mapValues { (_, variance) ->
-            Variance(variance.multiplier.negate(), variance.set)
+            Variance(variance.multiplier.negate(), variance.constraint)
         })
     }
 
@@ -125,9 +119,9 @@ class NumberVariance<T : Number> private constructor(
                     ind, Functional.mergeMapsWithBlank(
                         variances,
                         other.variances,
-                        Variance(BigFraction.ZERO, ind.newFullBundle())
+                        Variance(ind.onlyZeroSet(), ind.newFullBundle())
                     ) { me, other ->
-                        val newSet = me.set.intersect(other.set)
+                        val newSet = me.constraint.intersect(other.constraint)
                         val newMultiplier =
                             if (operation == ADDITION) {
                                 me.multiplier.add(other.multiplier)
@@ -141,19 +135,49 @@ class NumberVariance<T : Number> private constructor(
             MULTIPLICATION -> {
                 val newVariances = mutableMapOf<Context.Key, Variance<T>>()
 
-                for ((key, variance) in variances) {
+                for ((key, meVariance) in variances) {
                     for ((otherKey, otherVariance) in other.variances) {
-                        val newKey = Context.Key.EphemeralKey.new()
-                        var newSet = variance.collapse()
-                            .arithmeticOperation(otherVariance.collapse(), MULTIPLICATION)
+                        // If both are ephemeral, we can just collapse & multiply, no problem.
+                        // If one is ephemeral, it should get multiplied into the multiplier of the other.
+                        // If neither are ephemeral, we should pick one to become the ephemeral 'mergee'
+                        val meIsEphemeral = key is Context.Key.EphemeralKey
+                        val otherIsEphemeral = otherKey is Context.Key.EphemeralKey
 
-                        if (key == otherKey) {
-                            // If the keys are the same, we're squaring, so we can only have a positive output.
-                            newSet = newSet.intersect(ind.allPositiveNumbers())
+                        val meCollapsed = meVariance.collapse()
+                        val otherCollapsed = otherVariance.collapse()
+
+                        val newKey = Context.Key.EphemeralKey.new()
+
+                        if (meIsEphemeral && otherIsEphemeral) {
+                            newVariances[newKey] = Variance(ind.onlyOneSet(), meCollapsed.multiply(otherCollapsed))
+                        } else if (otherIsEphemeral) {
+                            // Other is ephemeral, so we stay relatively untouched and multiply it into our multiplier.
+                            newVariances[key] = Variance(
+                                meVariance.multiplier.multiply(otherCollapsed),
+                                meVariance.constraint
+                            )
+                        } else if (meIsEphemeral) {
+                            // We are ephemeral, so other stays relatively untouched and multiplies us into its multiplier.
+                            newVariances[otherKey] = Variance(
+                                otherVariance.multiplier.multiply(meCollapsed),
+                                otherVariance.constraint
+                            )
+                        } else {
+                            // Neither are ephemeral, so we need to pick one to stick around.
+                            // This would definitely help performance in some cases, worth tweaking at some point.
+
+                            // At the moment we're picking neither, and letting them both die. :)
+                            var newSet = meCollapsed.multiply(otherCollapsed)
+
+                            if (key == otherKey) {
+                                // If the keys are the same, we're squaring, so we can only have a positive output.
+                                newSet = newSet.intersect(ind.allPositiveNumbers())
+                            }
+
+                            // No new multiplier is needed since we've collapsed the variances.
+                            newVariances[newKey] = Variance(ind.onlyOneSet(), newSet)
                         }
 
-                        // No new multiplier is needed since we've collapsed the variances.
-                        newVariances[newKey] = Variance(BigFraction.ONE, newSet)
                     }
                 }
 

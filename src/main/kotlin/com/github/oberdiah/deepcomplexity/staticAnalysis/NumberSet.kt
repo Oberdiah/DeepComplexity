@@ -65,6 +65,11 @@ class NumberSet<T : Number>(
         return extra(newInd) as Bundle<Q>
     }
 
+    fun add(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, ADDITION)
+    fun subtract(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, SUBTRACTION)
+    fun multiply(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, MULTIPLICATION)
+    fun divide(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, DIVISION)
+
     fun arithmeticOperation(
         other: NumberSet<T>,
         operation: BinaryNumberOp
