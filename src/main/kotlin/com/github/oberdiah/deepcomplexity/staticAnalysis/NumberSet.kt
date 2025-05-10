@@ -20,11 +20,10 @@ import kotlin.reflect.KClass
 typealias Ranges<T> = List<NumberRange<T>>
 
 class NumberSet<T : Number>(
-    val ind: NumberSetIndicator<T>,
+    override val ind: NumberSetIndicator<T>,
     // In order, and non-overlapping
     val ranges: Ranges<T>
 ) : Bundle<T> {
-    override fun getIndicator(): SetIndicator<T> = ind
     val clazz: KClass<T> = ind.clazz
 
     override fun toString(): String = ranges.joinToString {
@@ -142,7 +141,7 @@ class NumberSet<T : Number>(
         TODO("Not yet implemented")
     }
 
-    override fun withVariance(key: Context.Key): VarianceBundle<T> = NumberVariance(this)
+    override fun withVariance(key: Context.Key): NumberVariance<T> = NumberVariance.newFromVariance(this, key)
 
     /**
      * Returns a new set that satisfies the comparison operation.
@@ -188,21 +187,19 @@ class NumberSet<T : Number>(
         return false
     }
 
-    override fun union(otherB: Bundle<T>): Bundle<T> {
-        val other = otherB.into()
+    override fun union(other: Bundle<T>): NumberSet<T> {
         assert(ind == other.ind)
 
-        return makeNew(ranges + other.ranges)
+        return makeNew(ranges + other.into().ranges)
     }
 
-    override fun intersect(otherB: Bundle<T>): Bundle<T> {
-        val other = otherB.into()
+    override fun intersect(other: Bundle<T>): NumberSet<T> {
         assert(ind == other.ind)
 
         val newList: MutableList<NumberRange<T>> = mutableListOf()
         // For each range in this set, find overlapping ranges in other set
         for (range in ranges) {
-            for (otherRange in other.ranges) {
+            for (otherRange in other.into().ranges) {
                 // Find overlap
                 val start = range.start.max(otherRange.start)
                 val end = range.end.min(otherRange.end)

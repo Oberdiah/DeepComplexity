@@ -3,7 +3,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
 interface Bundle<T : Any> {
-    fun getIndicator(): SetIndicator<T>
+    val ind: SetIndicator<T>
     fun invert(): Bundle<T>
     fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>?
     fun contains(element: T): Boolean

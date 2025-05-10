@@ -84,6 +84,19 @@ public class MyTestData {
 		return (short) (incoming + 1);
 	}
 	
+	public static short multiplyTest1(short incoming) {
+		int a = 0;
+		int b = 0;
+		if (incoming > 0) {
+			if (incoming < 10) {
+				a = incoming;
+				b = incoming;
+			}
+		}
+		
+		return (short) (a * 2 - b * 2);
+	}
+	
 	@RequiredScore(1.0)
 	public static short barTest1(short incoming1) {
 		int bar = 0;

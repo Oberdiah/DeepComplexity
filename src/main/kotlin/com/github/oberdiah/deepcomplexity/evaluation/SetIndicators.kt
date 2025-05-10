@@ -121,9 +121,9 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 }
 
 sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
-    override fun newFullBundle(): Bundle<T> = NumberSet.newFull(this)
-    override fun newConstantBundle(constant: T): Bundle<T> = NumberSet.newFromConstant(constant)
-    override fun newEmptyBundle(): Bundle<T> = NumberSet(this, emptyList())
+    override fun newFullBundle(): NumberSet<T> = NumberSet.newFull(this)
+    override fun newConstantBundle(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
+    override fun newEmptyBundle(): NumberSet<T> = NumberSet(this, emptyList())
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
@@ -159,13 +159,11 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
                 || this is ByteSetIndicator
     }
 
-    fun getZero(): T {
-        return getInt(0)
-    }
-
-    fun getOne(): T {
-        return getInt(1)
-    }
+    fun zeroNumberSet(): NumberSet<T> = newConstantBundle(getZero())
+    fun allPositiveNumbers(): NumberSet<T> = zeroNumberSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
+    fun allNegativeNumbers(): NumberSet<T> = zeroNumberSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
+    fun getZero(): T = getInt(0)
+    fun getOne(): T = getInt(1)
 
     fun castToMe(v: Number): T = v.castInto(clazz)
 }

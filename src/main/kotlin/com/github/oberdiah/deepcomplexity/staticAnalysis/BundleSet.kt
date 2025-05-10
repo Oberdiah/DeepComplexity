@@ -41,7 +41,7 @@ class BundleSet<T : Any> private constructor(
 
         fun <T : Any> unconstrainedBundle(bundle: VarianceBundle<T>): BundleSet<T> {
             return BundleSet(
-                bundle.getIndicator(),
+                bundle.ind,
                 listOf(
                     ConstrainedBundle.new(bundle, Constraints.completelyUnconstrained())
                 )
@@ -50,7 +50,7 @@ class BundleSet<T : Any> private constructor(
 
         fun <T : Any> constrained(bundle: VarianceBundle<T>, constraints: Constraints): BundleSet<T> {
             return BundleSet(
-                bundle.getIndicator(),
+                bundle.ind,
                 listOf(
                     ConstrainedBundle.new(bundle, constraints)
                 )
@@ -172,9 +172,9 @@ class BundleSet<T : Any> private constructor(
             return ind.newEmptyBundle()
         }
 
-        return bundles.map { it.bundle }.reduce { acc, bundle ->
-            acc.union(bundle)
-        }.collapse()
+        return bundles.map { it.bundle }.fold(ind.newEmptyBundle()) { acc, bundle ->
+            acc.union(bundle.collapse())
+        }
     }
 
     fun <Q : Any> cast(indicator: SetIndicator<Q>): BundleSet<Q>? {

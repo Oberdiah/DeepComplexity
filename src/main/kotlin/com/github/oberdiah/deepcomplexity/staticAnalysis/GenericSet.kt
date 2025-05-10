@@ -4,17 +4,12 @@ import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
 class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
     class GenericVariance<T : Any>(private val value: GenericSet<T>) : VarianceBundle<T> {
+        override val ind: SetIndicator<T>
+            get() = TODO("Not yet implemented")
+
         override fun collapse(): Bundle<T> = value
 
-        override fun getIndicator(): SetIndicator<T> {
-            TODO("Not yet implemented")
-        }
-
         override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
-            TODO("Not yet implemented")
-        }
-
-        override fun union(other: VarianceBundle<T>): VarianceBundle<T> {
             TODO("Not yet implemented")
         }
     }
@@ -27,9 +22,8 @@ class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
         TODO("Not yet implemented")
     }
 
-    override fun getIndicator(): SetIndicator<T> {
-        TODO("Not yet implemented")
-    }
+    override val ind: SetIndicator<T>
+        get() = TODO("Not yet implemented")
 
     override fun invert(): Bundle<T> {
         TODO("Not yet implemented")

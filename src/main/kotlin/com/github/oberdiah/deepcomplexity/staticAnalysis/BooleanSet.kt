@@ -59,12 +59,8 @@ enum class BooleanSet : Bundle<Boolean> {
     };
 
     class BooleanVariance(private val value: BooleanSet) : VarianceBundle<Boolean> {
-        fun invert(): VarianceBundle<Boolean> = BooleanVariance(value.invert())
-        override fun getIndicator(): SetIndicator<Boolean> = value.getIndicator()
-        override fun union(other: VarianceBundle<Boolean>): VarianceBundle<Boolean> = when (other) {
-            is BooleanVariance -> BooleanVariance(value.union(other.value).into())
-            else -> throw IllegalArgumentException("Cannot union $other to BooleanVariance")
-        }
+        fun invert(): BooleanVariance = BooleanVariance(value.invert())
+        override val ind: SetIndicator<Boolean> = BooleanSetIndicator
 
         override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? =
             throw IllegalArgumentException("Cannot cast boolean to $newInd")
@@ -82,7 +78,7 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     }
 
-    override fun withVariance(key: Context.Key): VarianceBundle<Boolean> = BooleanVariance(this)
+    override fun withVariance(key: Context.Key): BooleanVariance = BooleanVariance(this)
 
     override fun isEmpty(): Boolean {
         return this == NEITHER
@@ -92,9 +88,7 @@ enum class BooleanSet : Bundle<Boolean> {
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
     }
 
-    override fun getIndicator(): SetIndicator<Boolean> {
-        return BooleanSetIndicator
-    }
+    override val ind = BooleanSetIndicator
 
     override fun invert(): BooleanSet {
         // This is a set invert, not a boolean invert

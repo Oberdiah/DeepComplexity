@@ -87,7 +87,7 @@ class Constraints private constructor(
                 @Suppress("UNCHECKED_CAST")
                 l.intersect(rhs as Bundle<T>)
 
-            assert(lhs.getIndicator() == rhs.getIndicator())
+            assert(lhs.ind == rhs.ind)
 
             ugly(lhs)
         }
