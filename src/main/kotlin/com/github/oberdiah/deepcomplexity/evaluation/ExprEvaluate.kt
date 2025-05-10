@@ -24,22 +24,6 @@ object ExprEvaluate {
             }
 
             is NegateExpression -> evaluate(expr.expr, condition).negate()
-            is NumberLimitsExpression -> {
-                val rhs = expr.limit.evaluate(condition)
-                val bundleSet = expr.shouldFlipCmp.evaluate(condition)
-
-                bundleSet.unaryMapAndUnion(rhs.ind) { bundle ->
-                    when (bundle.collapse().into()) {
-                        TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
-                        FALSE -> rhs.getSetSatisfying(expr.cmp)
-                        BOTH -> rhs.getSetSatisfying(expr.cmp)
-                            .union(rhs.getSetSatisfying(expr.cmp.flip()))
-
-                        NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
-                    }
-                }
-            }
-
             is NumIterationTimesExpression -> {
                 val terms = expr.terms
                 // The plan here is to figure out, based on the set of numbers we are allowed to have,

@@ -146,18 +146,6 @@ class BooleanInvertExpression(val expr: IExpr<Boolean>) : Expr<Boolean>()
 class InvertExpression<T : Any>(val expr: IExpr<T>) : Expr<T>()
 class NegateExpression<T : Number>(val expr: IExpr<T>) : Expr<T>()
 
-/**
- * Returns the range of numbers above or below a given limit, depending on cmp.
- */
-class NumberLimitsExpression<T : Number>(
-    // The value we're either going to be above or below.
-    val limit: IExpr<T>,
-    // Whether we should flip the comparison operator or not.
-    val shouldFlipCmp: IExpr<Boolean>,
-    // The comparison operator to use.
-    val cmp: ComparisonOp,
-) : Expr<T>()
-
 class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.

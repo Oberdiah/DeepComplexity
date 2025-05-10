@@ -72,8 +72,6 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
                 is ArithmeticExpression -> expr.lhs.getSetIndicator()
                 is NegateExpression -> expr.expr.getSetIndicator()
                 is NumIterationTimesExpression -> expr.getSetIndicator()
-                is NumberLimitsExpression -> expr.limit.getSetIndicator()
-
                 is BooleanExpression -> BooleanSetIndicator
                 is BooleanInvertExpression -> BooleanSetIndicator
                 is ComparisonExpression<*> -> BooleanSetIndicator

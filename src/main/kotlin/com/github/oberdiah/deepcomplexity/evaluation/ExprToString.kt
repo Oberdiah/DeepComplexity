@@ -26,7 +26,6 @@ object ExprToString {
                 return if (expr.isResolved()) expr.resolvedInto.toString() else expr.myKey.key.toString()
             }
 
-            is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {
@@ -87,7 +86,6 @@ object ExprToString {
                 return if (expr.isResolved()) expr.resolvedInto?.dStr() ?: "null" else expr.myKey.key.toString()
             }
 
-            is NumberLimitsExpression -> "(${expr.cmp}${expr.limit.dStr()}) = $myResult"
             is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {
