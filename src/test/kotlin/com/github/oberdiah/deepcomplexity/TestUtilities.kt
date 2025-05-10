@@ -72,9 +72,8 @@ object TestUtilities {
             return "Failed to parse PSI" to 0.0
         }
 
-        println(context.debugKey(returnKey).prependIndent())
-
         val range = try {
+            println(context.debugKey(returnKey).prependIndent())
             context.evaluateKey(returnKey).cast(ShortSetIndicator)!!.collapse()
         } catch (e: Throwable) {
             e.printStackTrace()
