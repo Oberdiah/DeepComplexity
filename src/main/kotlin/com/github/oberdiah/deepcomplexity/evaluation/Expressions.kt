@@ -29,12 +29,12 @@ sealed class Expr<T : Any> : IExpr<T> {
 
 fun <T : Number> IExpr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
 
-fun IExpr<*>.tryCastToNumbers(): IExpr<out Number>? {
+fun IExpr<*>.castToNumbers(): IExpr<out Number> {
     if (this.ind is NumberSetIndicator<*>) {
         @Suppress("UNCHECKED_CAST")
         return this as IExpr<out Number>
     } else {
-        return null
+        throw IllegalStateException("Failed to cast to a number: $this ($ind)")
     }
 }
 

@@ -7,7 +7,7 @@ enum class UnaryNumberOp {
     INCREMENT,
     DECREMENT,
     NEGATE,
-    PLUS; // I don't think this ever does anything other than cast.
+    PLUS; // I don't think this ever does anything other than potentially an implicit cast.
 
     override fun toString(): String {
         return when (this) {
@@ -15,6 +15,20 @@ enum class UnaryNumberOp {
             DECREMENT -> "--"
             NEGATE -> "-"
             PLUS -> "+"
+        }
+    }
+
+    fun <T : Number> applyToExpr(expr: IExpr<T>): IExpr<T> {
+        return when (this) {
+            PLUS -> expr
+            NEGATE -> NegateExpression(expr)
+            INCREMENT, DECREMENT -> {
+                ArithmeticExpression(
+                    expr,
+                    ConstantExpression.one(expr.getNumberSetIndicator()),
+                    if (this == INCREMENT) BinaryNumberOp.ADDITION else BinaryNumberOp.SUBTRACTION
+                )
+            }
         }
     }
 

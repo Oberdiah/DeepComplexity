@@ -254,7 +254,7 @@ object ConstraintSolver {
                 fun <Q : Number> extra(expr: IExpr<Q>): CollectedTerms<T>? =
                     expandTerms(expr, variable)?.castTo(setIndicator)
 
-                extra(expr.expr.tryCastToNumbers()!!)
+                extra(expr.expr.castToNumbers()!!)
             }
             // This is quite solidly beyond our abilities.
             is IfExpression<*> -> null

@@ -89,10 +89,8 @@ object MethodProcessing {
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
-                            val lhs = context.getVar(resolvedLhs).tryCastToNumbers()
-                                ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${psi.lExpression.text}")
-                            val rhs = buildExpressionFromPsi(rExpression, context).tryCastToNumbers()
-                                ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${rExpression.text}")
+                            val lhs = context.getVar(resolvedLhs).castToNumbers()
+                            val rhs = buildExpressionFromPsi(rExpression, context).castToNumbers()
 
                             ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
                                 context.assignVar(
@@ -208,33 +206,19 @@ object MethodProcessing {
 
                 return when (unaryOp) {
                     UnaryNumberOp.NEGATE, UnaryNumberOp.PLUS -> {
-                        val operandPrecast = buildExpressionFromPsi(operand, context).tryCastToNumbers()
-                            ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
+                        val operandPrecast = buildExpressionFromPsi(operand, context).castToNumbers()
                         val promoted = ConversionsAndPromotion.unaryNumericPromotion(operandPrecast)
 
-                        if (unaryOp == UnaryNumberOp.NEGATE) NegateExpression(promoted) else promoted
+                        unaryOp.applyToExpr(promoted)
                     }
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
                         val resolvedOperand = operand.resolveIfNeeded()
-                        val operandExpr = context.getVar(resolvedOperand).tryCastToNumbers()
-                            ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
-
-                        fun <T : Number> extra(opExpr: IExpr<T>) {
-                            context.assignVar(
-                                resolvedOperand,
-                                ArithmeticExpression(
-                                    opExpr,
-                                    ConstantExpression.one(opExpr.getNumberSetIndicator()),
-                                    if (unaryOp == UnaryNumberOp.INCREMENT) BinaryNumberOp.ADDITION else BinaryNumberOp.SUBTRACTION
-                                )
-                            )
-                        }
-                        extra(operandExpr)
+                        val operandExpr = context.getVar(resolvedOperand).castToNumbers()
+                        context.assignVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
 
                         // Build the expression after the assignment for a prefix increment/decrement
-                        buildExpressionFromPsi(operand, context).tryCastToNumbers()
-                            ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
+                        buildExpressionFromPsi(operand, context).castToNumbers()
                     }
                 }
             }
@@ -243,28 +227,17 @@ object MethodProcessing {
                 val tokenType = psi.operationSign.tokenType
                 val unaryOp = UnaryNumberOp.fromJavaTokenType(tokenType)
                     ?: throw IllegalArgumentException("As-yet unsupported unary operation: ${psi.operationSign}")
-                val resolvedOperand = psi.operand.resolveIfNeeded()
+
 
                 // Build the expression before the assignment for a postfix increment/decrement
-                val operand = buildExpressionFromPsi(psi.operand, context).tryCastToNumbers()
-                    ?: throw IllegalArgumentException("Failed to cast to Number: ${psi.operand.text}")
+                val builtExpr = buildExpressionFromPsi(psi.operand, context).castToNumbers()
+                
+                // Assign the value to the variable
+                val resolvedOperand = psi.operand.resolveIfNeeded()
+                val operandExpr = context.getVar(resolvedOperand).castToNumbers()
+                context.assignVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
 
-                val operandExpr = context.getVar(resolvedOperand).tryCastToNumbers()
-                    ?: throw IllegalArgumentException("Failed to cast to Number: ${psi.operand.text}")
-
-                fun <T : Number> extra(opExpr: IExpr<T>) {
-                    context.assignVar(
-                        resolvedOperand,
-                        ArithmeticExpression(
-                            opExpr,
-                            ConstantExpression.one(opExpr.getNumberSetIndicator()),
-                            if (unaryOp == UnaryNumberOp.INCREMENT) BinaryNumberOp.ADDITION else BinaryNumberOp.SUBTRACTION
-                        )
-                    )
-                }
-                extra(operandExpr)
-
-                return operand
+                return builtExpr
             }
 
             is PsiBinaryExpression -> {
@@ -285,10 +258,8 @@ object MethodProcessing {
 
                     return BooleanExpression(lhs, rhs, booleanOp)
                 } else {
-                    val lhsPrecast = buildExpressionFromPsi(lhsOperand, context).tryCastToNumbers()
-                        ?: throw IllegalArgumentException("Failed to cast to Number: ${lhsOperand.text}")
-                    val rhsPrecast = buildExpressionFromPsi(rhsOperand, context).tryCastToNumbers()
-                        ?: throw IllegalArgumentException("Failed to cast to Number: ${rhsOperand.text}")
+                    val lhsPrecast = buildExpressionFromPsi(lhsOperand, context).castToNumbers()
+                    val rhsPrecast = buildExpressionFromPsi(rhsOperand, context).castToNumbers()
 
                     return ConversionsAndPromotion.binaryNumericPromotion(lhsPrecast, rhsPrecast)
                         .map { lhs, rhs ->
