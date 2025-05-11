@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
 enum class BooleanSet : Bundle<Boolean> {
@@ -65,7 +66,9 @@ enum class BooleanSet : Bundle<Boolean> {
         override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? =
             throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
-        override fun collapse(): Bundle<Boolean> = value
+        override fun collapse(constraints: Constraints): Bundle<Boolean> = value
+
+        override fun toDebugString(constraints: Constraints): String = value.toString()
 
         fun booleanOperation(other: BooleanVariance, operation: BooleanOp): BooleanVariance {
             return BooleanVariance(value.booleanOperation(other.value, operation))
@@ -79,6 +82,9 @@ enum class BooleanSet : Bundle<Boolean> {
     }
 
     override fun withVariance(key: Context.Key): BooleanVariance = BooleanVariance(this)
+    override fun toConstVariance(): VarianceBundle<Boolean> {
+        return BooleanVariance(this)
+    }
 
     override fun isEmpty(): Boolean {
         return this == NEITHER

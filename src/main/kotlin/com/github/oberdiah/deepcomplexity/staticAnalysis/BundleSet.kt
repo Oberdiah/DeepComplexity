@@ -65,16 +65,15 @@ class BundleSet<T : Any> private constructor(
     ) {
         companion object {
             fun <T : Any> new(bundle: VarianceBundle<T>, constraints: Constraints): ConstrainedBundle<T> {
-                // todo: Could add withUpdatedConstraints(constraints) here in future, perhaps?
                 return ConstrainedBundle(bundle, constraints)
             }
         }
 
         fun toDebugString(): String {
             if (constraints.isUnconstrained()) {
-                return "$bundle"
+                return bundle.toDebugString(constraints)
             }
-            return "($bundle | $constraints)"
+            return "(${bundle.toDebugString(constraints)} | $constraints)"
         }
     }
 
@@ -99,9 +98,12 @@ class BundleSet<T : Any> private constructor(
         return BundleSet(ind, bundles.union(other.bundles).toList())
     }
 
-    fun <Q : Any> unaryMapAndUnion(newInd: SetIndicator<Q>, op: (VarianceBundle<T>) -> BundleSet<Q>): BundleSet<Q> =
+    fun <Q : Any> unaryMapAndUnion(
+        newInd: SetIndicator<Q>,
+        op: (VarianceBundle<T>, Constraints) -> BundleSet<Q>
+    ): BundleSet<Q> =
         BundleSet(newInd, bundles.flatMap { bundle ->
-            op(bundle.bundle).bundles.mapNotNull { newBundle ->
+            op(bundle.bundle, bundle.constraints).bundles.mapNotNull { newBundle ->
                 val newConstraints = bundle.constraints.and(newBundle.constraints)
 
                 if (newConstraints.unreachable) {
@@ -123,14 +125,14 @@ class BundleSet<T : Any> private constructor(
 
     fun performBinaryOperation(
         other: BundleSet<T>,
-        op: (VarianceBundle<T>, VarianceBundle<T>) -> VarianceBundle<T>
+        op: (VarianceBundle<T>, VarianceBundle<T>, Constraints) -> VarianceBundle<T>
     ): BundleSet<T> =
         binaryMap(ind, other, op)
 
     fun <Q : Any> binaryMap(
         newInd: SetIndicator<Q>,
         other: BundleSet<T>,
-        op: (VarianceBundle<T>, VarianceBundle<T>) -> VarianceBundle<Q>
+        op: (VarianceBundle<T>, VarianceBundle<T>, Constraints) -> VarianceBundle<Q>
     ): BundleSet<Q> {
         assert(ind == other.ind)
 
@@ -138,7 +140,7 @@ class BundleSet<T : Any> private constructor(
         for (myBundle in bundles) {
             for (otherBundle in other.bundles) {
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
-                val newBundle = op(myBundle.bundle, otherBundle.bundle)
+                val newBundle = op(myBundle.bundle, otherBundle.bundle, newConstraints)
 
                 if (newConstraints.unreachable) continue
 
@@ -172,8 +174,8 @@ class BundleSet<T : Any> private constructor(
             return ind.newEmptyBundle()
         }
 
-        return bundles.map { it.bundle }.fold(ind.newEmptyBundle()) { acc, bundle ->
-            acc.union(bundle.collapse())
+        return bundles.fold(ind.newEmptyBundle()) { acc, bundle ->
+            acc.union(bundle.bundle.collapse(bundle.constraints))
         }
     }
 

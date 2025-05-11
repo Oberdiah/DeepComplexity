@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
 class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
@@ -7,11 +8,19 @@ class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
         override val ind: SetIndicator<T>
             get() = TODO("Not yet implemented")
 
-        override fun collapse(): Bundle<T> = value
+        override fun toDebugString(constraints: Constraints): String {
+            TODO("Not yet implemented")
+        }
+
+        override fun collapse(constraints: Constraints): Bundle<T> = value
 
         override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
             TODO("Not yet implemented")
         }
+    }
+
+    override fun toConstVariance(): VarianceBundle<T> {
+        TODO("Not yet implemented")
     }
 
     override fun withVariance(key: Context.Key): VarianceBundle<T> {

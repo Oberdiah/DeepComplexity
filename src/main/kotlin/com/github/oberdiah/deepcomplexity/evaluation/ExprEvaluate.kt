@@ -81,8 +81,8 @@ object ExprEvaluate {
                 val falseCondition =
                     BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
 
-                evaluatedCond.unaryMapAndUnion(expr.trueExpr.getSetIndicator()) { bundle ->
-                    when (bundle.collapse().into()) {
+                evaluatedCond.unaryMapAndUnion(expr.trueExpr.getSetIndicator()) { bundle, constraints ->
+                    when (bundle.collapse(constraints).into()) {
                         TRUE -> evaluate(expr.trueExpr, trueCondition)
                         FALSE -> evaluate(expr.falseExpr, falseCondition)
                         BOTH -> {

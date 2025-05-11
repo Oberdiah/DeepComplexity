@@ -7,24 +7,24 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 
 fun <T : Number> BundleSet<T>.arithmeticOperation(other: BundleSet<T>, operation: BinaryNumberOp): BundleSet<T> =
-    this.performBinaryOperation(other) { a, b ->
-        a.into().arithmeticOperation(b.into(), operation)
+    this.performBinaryOperation(other) { a, b, constraints ->
+        a.into().arithmeticOperation(b.into(), operation, constraints)
     }
 
 fun BundleSet<Boolean>.booleanOperation(other: BundleSet<Boolean>, operation: BooleanOp): BundleSet<Boolean> =
-    this.performBinaryOperation(other) { a, b ->
+    this.performBinaryOperation(other) { a, b, constraints ->
         a.into().booleanOperation(b.into(), operation)
     }
 
 fun BundleSet<Boolean>.invert() = performUnaryOperation { it.into().invert() }
 
 fun <T : Number> BundleSet<T>.isOne(): Boolean = this.bundles.all {
-    it.bundle.into().isOne()
+    it.bundle.into().isOne(it.constraints)
 }
 
 fun <T : Number> BundleSet<T>.comparisonOperation(other: BundleSet<T>, comparisonOp: ComparisonOp): BundleSet<Boolean> =
-    this.binaryMap(BooleanSetIndicator, other) { a, b ->
-        a.into().comparisonOperation(b.into(), comparisonOp)
+    this.binaryMap(BooleanSetIndicator, other) { a, b, constraints ->
+        a.into().comparisonOperation(b.into(), comparisonOp, constraints)
     }
 
 fun <T : Number> BundleSet<T>.negate(): BundleSet<T> =

@@ -146,7 +146,8 @@ class NumberSet<T : Number>(
         TODO("Not yet implemented")
     }
 
-    override fun withVariance(key: Context.Key): NumberVariance<T> = NumberVariance.newFromVariance(this, key)
+    override fun withVariance(key: Context.Key): NumberVariance<T> = NumberVariance.newFromVariance(ind, key)
+    override fun toConstVariance(): VarianceBundle<T> = NumberVariance.newFromConstant(this)
 
     /**
      * Returns a new set that satisfies the comparison operation.
