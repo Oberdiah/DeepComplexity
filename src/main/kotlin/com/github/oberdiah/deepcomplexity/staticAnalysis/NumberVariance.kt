@@ -22,7 +22,7 @@ class NumberVariance<T : Number> private constructor(
     private val multipliers: Map<Context.Key, NumberSet<T>> = mapOf()
 ) : VarianceBundle<T> {
     init {
-        assert(multipliers.keys.count { it is Context.Key.EphemeralKey } <= 1) {
+        assert(multipliers.keys.count { it.isEphemeral() } <= 1) {
             "Only one ephemeral key is allowed in the variances map"
         }
     }
@@ -39,20 +39,21 @@ class NumberVariance<T : Number> private constructor(
             ind: NumberSetIndicator<T>,
             multipliers: Map<Context.Key, NumberSet<T>>
         ): NumberVariance<T> {
+            val ephemeralMap = multipliers.filterKeys { it.isEphemeral() }
+            val notEphemeralMap = multipliers.filterKeys { !it.isEphemeral() }
+
             // Ensure only one ephemeral key is present.
             // If more than one is present, we need to merge them through addition.
-            val ephemeralEntries = multipliers.filterKeys { it is Context.Key.EphemeralKey }
-
             // I think proving division with this might be really hard.
-            val mergedVariances =
-                ephemeralEntries.values.fold(ind.onlyZeroSet()) { acc, multiplier ->
+            val ephemeralMultiplier =
+                ephemeralMap.values.fold(ind.onlyZeroSet()) { acc, multiplier ->
                     acc.add(multiplier)
                 }
 
-            val nonEphemeralEntries = multipliers.filterKeys { it !is Context.Key.EphemeralKey }
-            val mergedVariancesMap = nonEphemeralEntries + (Context.Key.EphemeralKey.new() to mergedVariances)
-
-            return NumberVariance(ind, mergedVariancesMap)
+            return NumberVariance(
+                ind,
+                notEphemeralMap + (Context.Key.EphemeralKey.new() to ephemeralMultiplier)
+            )
         }
     }
 
@@ -62,7 +63,9 @@ class NumberVariance<T : Number> private constructor(
         val constraint = constraints.getConstraint(ind, key)
 
         return if (key is Context.Key.EphemeralKey) {
-            constraint?.into() ?: ind.onlyOneSet()
+            // Constants/ephemeral keys don't have any variance or constraints,
+            // so the 'variable', if you can call it that, is always constrained to exactly 1.
+            ind.onlyOneSet()
         } else {
             constraint?.into() ?: ind.newFullBundle()
         }
@@ -132,8 +135,8 @@ class NumberVariance<T : Number> private constructor(
                         // If both are ephemeral, we can just collapse & multiply, no problem.
                         // If one is ephemeral, it should get multiplied into the multiplier of the other.
                         // If neither are ephemeral, we should pick one to become the ephemeral 'mergee'
-                        val meIsEphemeral = key is Context.Key.EphemeralKey
-                        val otherIsEphemeral = otherKey is Context.Key.EphemeralKey
+                        val meIsEphemeral = key.isEphemeral()
+                        val otherIsEphemeral = otherKey.isEphemeral()
 
                         val meCollapsed = meMultiplier.multiply(grabConstraint(constraints, key))
                         val otherCollapsed = otherMultiplier.multiply(grabConstraint(constraints, otherKey))
@@ -152,7 +155,7 @@ class NumberVariance<T : Number> private constructor(
                             // Neither are ephemeral, so we need to pick one to stick around.
                             // This would definitely help performance in some cases, worth tweaking at some point.
 
-                            // At the moment we're picking neither, and letting them both die. :)
+                            // At the moment we're picking neither and letting them both die. :)
                             var newMultiplier = meCollapsed.multiply(otherCollapsed)
 
                             if (key == otherKey) {

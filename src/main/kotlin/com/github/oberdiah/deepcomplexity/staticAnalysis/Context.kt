@@ -53,6 +53,8 @@ class Context {
             }
         }
 
+        fun isEphemeral(): Boolean = this is EphemeralKey
+
         fun getType(): PsiType {
             return when (this) {
                 is VariableKey -> variable.type

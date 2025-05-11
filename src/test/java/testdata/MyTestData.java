@@ -64,6 +64,23 @@ public class MyTestData {
 		return (short) (incoming - incoming);
 	}
 	
+	@RequiredScore(1.0)
+	public static short zeroTest2(short incoming) {
+		return (short) (incoming * 2 - incoming * 2);
+	}
+	
+	@RequiredScore(1.0)
+	public static short zeroTest3(short incoming) {
+		return (short) ((incoming + 1) * 2 - (incoming + 1) * 2);
+	}
+	
+	@RequiredScore(1.0)
+	public static short zeroTest4(short incoming) {
+		int a = ((incoming * 2) - 1) * 2;
+		int b = ((incoming * 2) - 1) * 2;
+		return (short) (a - b);
+	}
+	
 	@RequiredScore(0.5) // We've not implemented even/odd/modulo detection yet.
 	public static short simpleAdd(short incoming1) {
 		return (short) (incoming1 + incoming1);
