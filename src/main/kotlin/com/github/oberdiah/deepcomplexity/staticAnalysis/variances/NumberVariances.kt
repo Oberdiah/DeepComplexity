@@ -7,7 +7,6 @@ import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
@@ -184,7 +183,7 @@ class NumberVariances<T : Number> private constructor(
         other: NumberVariances<T>,
         operation: ComparisonOp,
         constraints: Constraints
-    ): BooleanBundle.BooleanVariances =
+    ): BooleanVariances =
         // We could maybe do something smarter here long-term, but this'll do for now.
         collapse(constraints).comparisonOperation(other.collapse(constraints), operation).toConstVariance().into()
 

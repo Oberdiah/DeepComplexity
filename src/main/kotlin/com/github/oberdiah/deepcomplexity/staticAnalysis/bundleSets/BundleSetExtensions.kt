@@ -18,7 +18,9 @@ fun BundleSet<Boolean>.booleanOperation(other: BundleSet<Boolean>, operation: Bo
         a.into().booleanOperation(b.into(), operation)
     }
 
-fun BundleSet<Boolean>.invert() = performUnaryOperation { it.into().invert() }
+fun BundleSet<Boolean>.invert() = performUnaryOperation {
+    it.into().invert()
+}
 
 fun <T : Number> BundleSet<T>.isOne(): Boolean = this.bundles.all {
     it.bundle.into().isOne(it.constraints)

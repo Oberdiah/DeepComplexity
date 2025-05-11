@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
@@ -12,5 +13,5 @@ fun Bundle<Boolean>.into(): BooleanBundle =
 fun <T : Number> Variances<T>.into(): NumberVariances<T> =
     this as NumberVariances<T>
 
-fun Variances<Boolean>.into(): BooleanBundle.BooleanVariances =
-    this as BooleanBundle.BooleanVariances
+fun Variances<Boolean>.into(): BooleanVariances =
+    this as BooleanVariances
