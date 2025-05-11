@@ -27,7 +27,7 @@ object LoopEvaluation {
                 val constraints = ExprConstrain.getConstraints(condition)
                 // Temporary
                 assert(constraints.size == 1)
-                val constraint = constraints[0].getConstraint(variable) ?: return
+                val constraint = constraints[0].getConstraint(variable)
                 TODO()
                 // Temporary
 //                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)

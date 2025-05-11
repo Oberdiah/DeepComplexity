@@ -6,16 +6,7 @@ import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**
- * The way this works is as follows:
- * The full set of values of this class is a sum of the multipliers, when applied to the known constraints.
  *
- * The multipliers have at most one ephemeral key (any variance we've given up on)
- * and then a bunch of non-ephemeral keys we're also tracking.
- *
- * The NumberSets are the multipliers that get applied to whatever constraints
- * the key is already under.
- *
- * This is a really beautiful solution, but it's a little bit unintuitive.
  */
 class NumberVariance<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
@@ -60,14 +51,12 @@ class NumberVariance<T : Number> private constructor(
     override fun toDebugString(constraints: Constraints): String = collapse(constraints).toString()
 
     fun grabConstraint(constraints: Constraints, key: Context.Key): NumberSet<T> {
-        val constraint = constraints.getConstraint(ind, key)
-
         return if (key is Context.Key.EphemeralKey) {
             // Constants/ephemeral keys don't have any variance or constraints,
             // so the 'variable', if you can call it that, is always constrained to exactly 1.
             ind.onlyOneSet()
         } else {
-            constraint?.into() ?: ind.newFullBundle()
+            constraints.getConstraint(ind, key).into()
         }
     }
 
