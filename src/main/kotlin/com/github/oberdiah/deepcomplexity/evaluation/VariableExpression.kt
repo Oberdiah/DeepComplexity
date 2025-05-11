@@ -1,8 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.intellij.psi.PsiType
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
@@ -48,11 +46,7 @@ class VariableExpression<T : Any>(
 
             val key = VariableKey(contextKey, context)
 
-            val type: PsiType = contextKey.getType()
-            val clazz = Utilities.psiTypeToKClass(type)
-                ?: throw IllegalArgumentException("Unsupported type for variable expression")
-
-            return VariableExpression(key, VARIABLE_ID, SetIndicator.fromClass(clazz))
+            return VariableExpression(key, VARIABLE_ID, contextKey.ind)
         }
     }
 }

@@ -129,11 +129,11 @@ object MethodProcessing {
                 processPsiElement(trueBranch, trueBranchContext)
                 psi.elseBranch?.let { processPsiElement(it, falseBranchContext) }
 
-                context.stack(
-                    Context.combine(trueBranchContext, falseBranchContext) { a, b ->
-                        IfExpression.new(a, b, condition)
-                    }
-                )
+                val ifContext = Context.combine(trueBranchContext, falseBranchContext) { a, b ->
+                    IfExpression.new(a, b, condition)
+                }
+
+                context.stack(ifContext)
             }
 
             is PsiForStatement -> {
@@ -167,7 +167,12 @@ object MethodProcessing {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
                     val returnExpr = buildExpressionFromPsi(returnExpression, context)
-                    context.assignVar(psi, returnExpr)
+
+                    if (!context.isReturning()) {
+                        context.assignVar(psi, returnExpr)
+                    } else {
+                        context.resolveVar(psi, returnExpr)
+                    }
                 }
             }
 
@@ -231,7 +236,7 @@ object MethodProcessing {
 
                 // Build the expression before the assignment for a postfix increment/decrement
                 val builtExpr = buildExpressionFromPsi(psi.operand, context).castToNumbers()
-                
+
                 // Assign the value to the variable
                 val resolvedOperand = psi.operand.resolveIfNeeded()
                 val operandExpr = context.getVar(resolvedOperand).castToNumbers()

@@ -1,9 +1,7 @@
 package com.github.oberdiah.deepcomplexity.utilities
 
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiReferenceExpression
-import com.intellij.psi.PsiType
-import com.intellij.psi.PsiTypes
+import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.intellij.psi.*
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -66,6 +64,32 @@ object Utilities {
             PsiTypes.charType() -> return Char::class
         }
         return null
+    }
+
+    fun PsiElement.toKey(): Context.Key {
+        return when (this) {
+            is PsiVariable -> Context.Key.VariableKey(this)
+            is PsiReturnStatement -> {
+                val returnMethod = findContainingMethodOrLambda(this)
+                    ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
+
+                Context.Key.ReturnKey(returnMethod)
+            }
+
+            else -> throw IllegalArgumentException("Unsupported PsiElement type: ${this::class} (${this.text})")
+        }
+    }
+
+    fun findContainingMethodOrLambda(returnStatement: PsiReturnStatement): PsiElement? {
+        var parent = returnStatement.parent
+        while (parent != null) {
+            when (parent) {
+                is PsiMethod -> return parent // Found the containing method
+                is PsiLambdaExpression -> return parent // Found the containing lambda
+            }
+            parent = parent.parent
+        }
+        return null // Not inside a method or lambda
     }
 
     fun PsiElement.resolveIfNeeded(): PsiElement {

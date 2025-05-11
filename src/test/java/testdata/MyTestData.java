@@ -406,4 +406,74 @@ public class MyTestData {
 		}
 		return (short) b;
 	}
+	
+	@RequiredScore(1.0)
+	public static short returnTest1(short incoming) {
+		if (incoming > 0) {
+			return incoming;
+		}
+		
+		if (incoming > -10) {
+			return -5;
+		}
+		
+		if (incoming > -20) {
+			return -10;
+		}
+		
+		return -150;
+	}
+	
+	@RequiredScore(1.0)
+	public static short returnTest2(short i) {
+		int a = -5;
+		
+		if (i > 0) {
+			if (i < 20) {
+				a = -10;
+				return i;
+			}
+			a += -15;
+		}
+		
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
+	public static short returnTest3(short incoming) {
+		if (incoming > 0) {
+			if (incoming < 20) {
+				return 5;
+			}
+		}
+		
+		int a = 0;
+		if (incoming > 10) {
+			a = 1;
+		}
+		
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
+	public static short returnTest4(short incoming) {
+		if (incoming > 0) {
+			if (incoming < 10) {
+				return 5;
+			}
+		} else {
+			if (incoming > -10) {
+				return 10;
+			} else {
+				return 20;
+			}
+		}
+		
+		int a = 0;
+		if (incoming > 15) {
+			a = 1;
+		}
+		
+		return (short) a;
+	}
 }

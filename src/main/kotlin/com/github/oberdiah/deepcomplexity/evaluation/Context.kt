@@ -3,7 +3,11 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.intellij.psi.*
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiMethod
+import com.intellij.psi.PsiType
+import com.intellij.psi.PsiVariable
 import kotlinx.collections.immutable.toImmutableMap
 
 class Context {
@@ -25,7 +29,7 @@ class Context {
         // ReturnMethod is the method that the return statement will return to
         data class ReturnKey(val returnMethod: PsiElement) : Key() {
             override fun toString(): String {
-                return "Return from $returnMethod"
+                return "Rest of method"
             }
         }
 
@@ -55,7 +59,16 @@ class Context {
             }
         }
 
+        val ind: SetIndicator<*>
+            get() {
+                val type: PsiType = getType()
+                val clazz = Utilities.psiTypeToKClass(type)
+                    ?: throw IllegalArgumentException("Unsupported type for variable expression")
+                return SetIndicator.fromClass(clazz)
+            }
+
         fun isEphemeral(): Boolean = this is EphemeralKey
+        fun isReturn(): Boolean = this is ReturnKey
 
         fun getType(): PsiType {
             return when (this) {
@@ -94,7 +107,6 @@ class Context {
      */
     private var alive = true
 
-
     private val variables = mutableMapOf<Key, IExpr<*>>()
 
     companion object {
@@ -104,7 +116,6 @@ class Context {
          * are independent of each other.
          *
          * You must define how to resolve conflicts.
-         * It cannot be the case that both a and b are null in the callback.
          *
          * a and b must not be used again after this operation.
          */
@@ -130,6 +141,8 @@ class Context {
             return resultingContext
         }
     }
+
+    fun isReturning(): Boolean = variables.any { it.key is Key.ReturnKey }
 
     override fun toString(): String {
         val variablesString =
@@ -171,12 +184,15 @@ class Context {
     fun stack(later: Context) {
         assert(alive && later.alive)
 
-        // First, resolve what we can.
+        // To make matters even more confusing, return keys need to be resolved back-to-front
+        // that is, for return statements we should be iterating over ourselves and resolving with `later`'s variables.
+
+        // First, resolve what we can (with all the normal keys).
         for (value in later.variables.values) {
             val allUnresolved = value.getVariables(false)
             for (unresolved in allUnresolved) {
                 val resolvedKey = unresolved.getKey()
-                if (resolvedKey.context == later) {
+                if (resolvedKey.context == later && !resolvedKey.key.isReturn()) {
                     val resolved = variables[resolvedKey.key]
                     if (resolved != null) {
                         unresolved.setResolvedExpr(resolved)
@@ -185,15 +201,36 @@ class Context {
             }
         }
 
+        // Now, we need to resolve the return keys backward.
+        for (value in variables.values) {
+            val allUnresolved = value.getVariables(false)
+            for (unresolved in allUnresolved) {
+                val resolvedKey = unresolved.getKey()
+                if (resolvedKey.context == this && resolvedKey.key.isReturn()) {
+                    val resolved = later.variables[resolvedKey.key]
+                    if (resolved != null) {
+                        unresolved.setResolvedExpr(resolved)
+                    }
+                }
+            }
+        }
+
         // Later's variables overwrite ours if they exist as they're more recent.
-        variables.putAll(later.variables)
+        // Filter out return keys
+        variables.putAll(later.variables.filter { !it.key.isReturn() })
+
+        // Now put all return keys in, but only if they don't exist in this context.
+        variables.putAll(
+            later.variables.filter { it.key.isReturn() && !variables.containsKey(it.key) }
+        )
+
         // Any variables that are still unresolved need to be migrated.
         migrateUnresolvedFrom(later)
     }
 
     fun getVar(element: PsiElement): IExpr<*> {
         assert(alive)
-        return getVar(keyFromElement(element))
+        return getVar(element.toKey())
     }
 
     fun getVar(element: Key): IExpr<*> {
@@ -206,12 +243,9 @@ class Context {
      */
     fun assignVar(key: Key, expr: IExpr<*>) {
         assert(alive)
-
-        val clazz = Utilities.psiTypeToKClass(key.getType())
-            ?: throw IllegalArgumentException("Unsupported type for variable expression")
         // We're just going to always perform this cast for now.
-        // If the code compiles it's reasonable to do so.
-        variables[key] = expr.performACastTo(SetIndicator.Companion.fromClass(clazz), false)
+        // If the code compiles, it's reasonable to do so.
+        variables[key] = expr.performACastTo(key.ind, false)
     }
 
     /**
@@ -219,35 +253,30 @@ class Context {
      */
     fun assignVar(element: PsiElement, expr: IExpr<*>) {
         assert(alive)
-        assignVar(keyFromElement(element), expr)
+        assignVar(element.toKey(), expr)
     }
 
-    private fun keyFromElement(element: PsiElement): Key {
+    /**
+     * Performs a cast if necessary.
+     */
+    fun resolveVar(element: PsiElement, expr: IExpr<*>) {
         assert(alive)
-
-        return when (element) {
-            is PsiVariable -> Key.VariableKey(element)
-            is PsiReturnStatement -> {
-                val returnMethod = findContainingMethodOrLambda(element)
-                    ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
-
-                Key.ReturnKey(returnMethod)
-            }
-
-            else -> throw IllegalArgumentException("Unsupported PsiElement type: ${element::class} (${element.text})")
-        }
+        resolveVar(element.toKey(), expr)
     }
 
-    private fun findContainingMethodOrLambda(returnStatement: PsiReturnStatement): PsiElement? {
-        var parent = returnStatement.parent
-        while (parent != null) {
-            when (parent) {
-                is PsiMethod -> return parent // Found the containing method
-                is PsiLambdaExpression -> return parent // Found the containing lambda
+    /**
+     * Performs a cast if necessary.
+     */
+    fun resolveVar(key: Key, expr: IExpr<*>) {
+        assert(alive)
+        val castExpr = expr.performACastTo(key.ind, false)
+        for (variable in variables.values) {
+            variable.getVariables(false).forEach {
+                if (it.getKey().key == key && it.getKey().context == this) {
+                    it.setResolvedExpr(castExpr)
+                }
             }
-            parent = parent.parent
         }
-        return null // Not inside a method or lambda
     }
 
     /**
