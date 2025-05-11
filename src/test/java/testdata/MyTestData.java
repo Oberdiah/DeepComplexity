@@ -161,7 +161,7 @@ public class MyTestData {
 		int bar = 0;
 		
 		if (incoming1 > 2) {
-			incoming1 = (short) (0 - incoming1);
+			incoming1 = (short) (-incoming1);
 			bar += incoming1;
 		} else {
 			bar += 5;
@@ -175,7 +175,7 @@ public class MyTestData {
 		int bar = 0;
 		
 		if (incoming1 > 2) {
-			incoming1 = (short) (0 - incoming1);
+			incoming1 = (short) (-incoming1);
 			bar += incoming1;
 		} else {
 			bar += 5;
@@ -188,7 +188,7 @@ public class MyTestData {
 		int bar = 0;
 		
 		if (incoming1 > 2) {
-			incoming1 = (short) (0 - incoming1);
+			incoming1 = (short) (-incoming1);
 			bar += incoming1;
 		} else {
 			bar += 5;
@@ -202,7 +202,7 @@ public class MyTestData {
 		int foo = 0;
 		int bar = 0;
 		int incoming2 = incoming1;
-		if (incoming1 < 0 - 10) {
+		if (incoming1 < -10) {
 			incoming2 = 0;
 		}
 		
@@ -210,7 +210,7 @@ public class MyTestData {
 		
 		if (incoming1 > 2) {
 			incoming2 = (short) (incoming1 * incoming2);
-			incoming1 = (short) (0 - incoming1);
+			incoming1 = (short) (-incoming1);
 			bar += incoming1;
 			foo += 3;
 		} else if (incoming2 < 3) {
