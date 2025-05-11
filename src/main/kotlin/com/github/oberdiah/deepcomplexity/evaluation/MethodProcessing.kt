@@ -203,24 +203,34 @@ object MethodProcessing {
                 val lhsOperand = psi.lOperand
                 val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()
 
-                val lhsPrecast = buildExpressionFromPsi(lhsOperand, context).tryCastToNumbers()
-                    ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${lhsOperand.text}")
-                val rhsPrecast = buildExpressionFromPsi(rhsOperand, context).tryCastToNumbers()
-                    ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${rhsOperand.text}")
-
                 val tokenType = psi.operationSign.tokenType
 
                 val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
                 val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
+                val booleanOp = BooleanOp.fromJavaTokenType(tokenType)
 
-                return ConversionsAndPromotion.binaryNumericPromotion(lhsPrecast, rhsPrecast)
-                    .map { lhs, rhs ->
-                        return@map when {
-                            comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
-                            binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
-                            else -> TODO("Unsupported binary operation: ${psi.operationSign} (${psi.text})")
+                if (booleanOp != null) {
+                    val lhs = buildExpressionFromPsi(lhsOperand, context).tryCastTo(BooleanSetIndicator)
+                        ?: throw IllegalArgumentException("Failed to cast to Boolean: ${lhsOperand.text}")
+                    val rhs = buildExpressionFromPsi(rhsOperand, context).tryCastTo(BooleanSetIndicator)
+                        ?: throw IllegalArgumentException("Failed to cast to Boolean: ${rhsOperand.text}")
+
+                    return BooleanExpression(lhs, rhs, booleanOp)
+                } else {
+                    val lhsPrecast = buildExpressionFromPsi(lhsOperand, context).tryCastToNumbers()
+                        ?: throw IllegalArgumentException("Failed to cast to Number: ${lhsOperand.text}")
+                    val rhsPrecast = buildExpressionFromPsi(rhsOperand, context).tryCastToNumbers()
+                        ?: throw IllegalArgumentException("Failed to cast to Number: ${rhsOperand.text}")
+
+                    return ConversionsAndPromotion.binaryNumericPromotion(lhsPrecast, rhsPrecast)
+                        .map { lhs, rhs ->
+                            return@map when {
+                                comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
+                                binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
+                                else -> TODO("Unsupported binary operation: ${psi.operationSign} (${psi.text})")
+                            }
                         }
-                    }
+                }
             }
 
             is PsiTypeCastExpression -> {

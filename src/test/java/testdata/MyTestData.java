@@ -21,8 +21,8 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short test3(short incoming) {
-		// Not implemented && yet
 		if (incoming < 5 && incoming < 3) {
 			return incoming;
 		} else {
@@ -105,11 +105,9 @@ public class MyTestData {
 	public static short multiplyTest1(short incoming) {
 		int a = 0;
 		int b = 0;
-		if (incoming > 0) {
-			if (incoming < 10) {
-				a = incoming;
-				b = incoming;
-			}
+		if (incoming > 0 && incoming < 10) {
+			a = incoming;
+			b = incoming;
 		}
 		
 		return (short) (a * 2 - b * 2);
@@ -279,10 +277,8 @@ public class MyTestData {
 		int x = 0;
 		int y = incoming * 5;
 		
-		if (incoming > y) {
-			if (y > 5) {
-				x = incoming;
-			}
+		if (incoming > y && y > 5) {
+			x = incoming;
 		}
 		
 		return (short) (x);
@@ -299,10 +295,8 @@ public class MyTestData {
 		}
 		
 		short v = 0;
-		if (a + b > 1) {
-			if (incoming < 0) {
-				v = 1;
-			}
+		if (a + b > 1 && incoming < 0) {
+			v = 1;
 		}
 		
 		return v;
@@ -312,15 +306,11 @@ public class MyTestData {
 	public static short constraintTest1(short incoming) {
 		int a = 0;
 		int b = 0;
-		if (incoming > 0) {
-			if (incoming < 10) {
-				a = incoming;
-			}
+		if (incoming > 0 && incoming < 10) {
+			a = incoming;
 		}
-		if (incoming > 0) {
-			if (incoming < 30) {
-				b = incoming;
-			}
+		if (incoming > 0 && incoming < 30) {
+			b = incoming;
 		}
 		
 		return (short) (a * b);
@@ -351,6 +341,20 @@ public class MyTestData {
 		}
 		if (incoming < 20) {
 			a = incoming + 5;
+		}
+		
+		int b = 0;
+		if (incoming < 10) {
+			b = a;
+		}
+		return (short) b;
+	}
+	
+	@RequiredScore(1.0)
+	public static short constraintTest4(short incoming) {
+		int a = 0;
+		if (incoming > 7 || incoming < 2) {
+			a = incoming;
 		}
 		
 		int b = 0;
