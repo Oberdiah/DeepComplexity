@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.VarianceBundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 sealed interface IExpr<T : Any> {
     /**
@@ -138,7 +138,7 @@ class BooleanExpression(val lhs: IExpr<Boolean>, val rhs: IExpr<Boolean>, val op
 
 class ConstExpr<T : Any>(val constSet: BundleSet<T>) : Expr<T>() {
     companion object {
-        fun <T : Any> new(bundle: VarianceBundle<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
+        fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
     }
 }
 

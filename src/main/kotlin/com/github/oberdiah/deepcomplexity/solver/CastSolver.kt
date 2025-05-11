@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
 
 object CastSolver {
     fun <T : Any> castFrom(

@@ -1,9 +1,11 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.ExprConstrain
 import com.github.oberdiah.deepcomplexity.evaluation.IExpr
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 /**
  * This is the set of possible values an expression can take, with their constraints.
@@ -39,7 +41,7 @@ class BundleSet<T : Any> private constructor(
             return BundleSet(ind, listOf())
         }
 
-        fun <T : Any> unconstrainedBundle(bundle: VarianceBundle<T>): BundleSet<T> {
+        fun <T : Any> unconstrainedBundle(bundle: Variances<T>): BundleSet<T> {
             return BundleSet(
                 bundle.ind,
                 listOf(
@@ -48,7 +50,7 @@ class BundleSet<T : Any> private constructor(
             )
         }
 
-        fun <T : Any> constrained(bundle: VarianceBundle<T>, constraints: Constraints): BundleSet<T> {
+        fun <T : Any> constrained(bundle: Variances<T>, constraints: Constraints): BundleSet<T> {
             return BundleSet(
                 bundle.ind,
                 listOf(
@@ -60,11 +62,11 @@ class BundleSet<T : Any> private constructor(
 
     @ConsistentCopyVisibility
     data class ConstrainedBundle<T : Any> private constructor(
-        val bundle: VarianceBundle<T>,
+        val bundle: Variances<T>,
         val constraints: Constraints
     ) {
         companion object {
-            fun <T : Any> new(bundle: VarianceBundle<T>, constraints: Constraints): ConstrainedBundle<T> {
+            fun <T : Any> new(bundle: Variances<T>, constraints: Constraints): ConstrainedBundle<T> {
                 return ConstrainedBundle(bundle, constraints)
             }
         }
@@ -100,7 +102,7 @@ class BundleSet<T : Any> private constructor(
 
     fun <Q : Any> unaryMapAndUnion(
         newInd: SetIndicator<Q>,
-        op: (VarianceBundle<T>, Constraints) -> BundleSet<Q>
+        op: (Variances<T>, Constraints) -> BundleSet<Q>
     ): BundleSet<Q> =
         BundleSet(newInd, bundles.flatMap { bundle ->
             op(bundle.bundle, bundle.constraints).bundles.mapNotNull { newBundle ->
@@ -115,9 +117,9 @@ class BundleSet<T : Any> private constructor(
         })
 
 
-    fun performUnaryOperation(op: (VarianceBundle<T>) -> VarianceBundle<T>): BundleSet<T> = unaryMap(ind, op)
+    fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): BundleSet<T> = unaryMap(ind, op)
 
-    fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (VarianceBundle<T>) -> VarianceBundle<Q>): BundleSet<Q> {
+    fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): BundleSet<Q> {
         return BundleSet(newInd, bundles.map {
             ConstrainedBundle.new(op(it.bundle), it.constraints)
         })
@@ -125,14 +127,14 @@ class BundleSet<T : Any> private constructor(
 
     fun performBinaryOperation(
         other: BundleSet<T>,
-        op: (VarianceBundle<T>, VarianceBundle<T>, Constraints) -> VarianceBundle<T>
+        op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>
     ): BundleSet<T> =
         binaryMap(ind, other, op)
 
     fun <Q : Any> binaryMap(
         newInd: SetIndicator<Q>,
         other: BundleSet<T>,
-        op: (VarianceBundle<T>, VarianceBundle<T>, Constraints) -> VarianceBundle<Q>
+        op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
     ): BundleSet<Q> {
         assert(ind == other.ind)
 

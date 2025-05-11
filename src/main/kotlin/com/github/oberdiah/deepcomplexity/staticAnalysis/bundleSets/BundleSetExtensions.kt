@@ -1,10 +1,12 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 fun <T : Number> BundleSet<T>.arithmeticOperation(other: BundleSet<T>, operation: BinaryNumberOp): BundleSet<T> =
     this.performBinaryOperation(other) { a, b, constraints ->

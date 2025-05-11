@@ -1,10 +1,10 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.GenericSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import java.math.BigInteger
 import kotlin.reflect.KClass
 

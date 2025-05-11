@@ -1,8 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.CastSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ExprEvaluate {
     fun <T : Any> evaluate(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {

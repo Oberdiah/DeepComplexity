@@ -1,6 +1,5 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.utilities
 
-import com.github.oberdiah.deepcomplexity.utilities.BigFraction
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceExpression
 import com.intellij.psi.PsiType
@@ -8,7 +7,6 @@ import com.intellij.psi.PsiTypes
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.math.BigInteger.valueOf
 import kotlin.math.nextDown
 import kotlin.math.nextUp
 import kotlin.reflect.KClass
@@ -84,10 +82,10 @@ object Utilities {
      */
     fun KClass<*>.getSetSize(): BigInteger {
         when (this) {
-            Byte::class -> return valueOf(Byte.MAX_VALUE.toLong() - Byte.MIN_VALUE.toLong() + 1)
-            Short::class -> return valueOf(Short.MAX_VALUE.toLong() - Short.MIN_VALUE.toLong() + 1)
-            Int::class -> return valueOf(Int.MAX_VALUE.toLong() - Int.MIN_VALUE.toLong() + 1)
-            Long::class -> return (valueOf(Long.MAX_VALUE) - valueOf(Long.MIN_VALUE)) + BigInteger.ONE
+            Byte::class -> return BigInteger.valueOf(Byte.MAX_VALUE.toLong() - Byte.MIN_VALUE.toLong() + 1)
+            Short::class -> return BigInteger.valueOf(Short.MAX_VALUE.toLong() - Short.MIN_VALUE.toLong() + 1)
+            Int::class -> return BigInteger.valueOf(Int.MAX_VALUE.toLong() - Int.MIN_VALUE.toLong() + 1)
+            Long::class -> return (BigInteger.valueOf(Long.MAX_VALUE) - BigInteger.valueOf(Long.MIN_VALUE)) + BigInteger.ONE
         }
         throw IllegalArgumentException("Unsupported type for set size $this")
     }

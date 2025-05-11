@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**

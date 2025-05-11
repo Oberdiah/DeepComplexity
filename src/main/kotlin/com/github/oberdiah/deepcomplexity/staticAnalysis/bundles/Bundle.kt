@@ -1,6 +1,8 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 interface Bundle<T : Any> {
     val ind: SetIndicator<T>
@@ -23,6 +25,6 @@ interface Bundle<T : Any> {
      * are associated with key `x`, such that `x - x` will be 0.
      */
     // todo probably needs reworked/removed
-    fun withVariance(key: Context.Key): VarianceBundle<T>
-    fun toConstVariance(): VarianceBundle<T>
+    fun withVariance(key: Context.Key): Variances<T>
+    fun toConstVariance(): Variances<T>
 }

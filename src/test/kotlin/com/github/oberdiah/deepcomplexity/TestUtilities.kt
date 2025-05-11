@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity
 import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
 import com.intellij.psi.PsiMethod
 import testdata.MyTestData
 import java.lang.reflect.Method
@@ -77,7 +78,8 @@ object TestUtilities {
 
         val range = try {
             println(context.debugKey(returnKey).prependIndent())
-            context.evaluateKey(returnKey).cast(ShortSetIndicator)!!.collapse()
+            val bundleSet: BundleSet<*> = context.evaluateKey(returnKey)
+            bundleSet.cast(ShortSetIndicator)!!.collapse()
         } catch (e: Throwable) {
             e.printStackTrace()
             return "Failed to evaluate value range" to 0.0

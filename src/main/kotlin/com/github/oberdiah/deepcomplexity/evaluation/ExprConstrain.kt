@@ -3,8 +3,8 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.into
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ExprConstrain {
     /**

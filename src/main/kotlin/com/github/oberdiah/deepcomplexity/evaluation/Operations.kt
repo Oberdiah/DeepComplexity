@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 

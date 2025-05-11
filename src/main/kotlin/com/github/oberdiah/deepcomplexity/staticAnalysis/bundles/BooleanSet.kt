@@ -1,9 +1,11 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 enum class BooleanSet : Bundle<Boolean> {
     TRUE {
@@ -59,19 +61,19 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     };
 
-    class BooleanVariance(private val value: BooleanSet) : VarianceBundle<Boolean> {
-        fun invert(): BooleanVariance = BooleanVariance(value.invert())
+    class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> {
+        fun invert(): BooleanVariances = BooleanVariances(value.invert())
         override val ind: SetIndicator<Boolean> = BooleanSetIndicator
 
-        override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? =
+        override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? =
             throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
         override fun collapse(constraints: Constraints): Bundle<Boolean> = value
 
         override fun toDebugString(constraints: Constraints): String = value.toString()
 
-        fun booleanOperation(other: BooleanVariance, operation: BooleanOp): BooleanVariance {
-            return BooleanVariance(value.booleanOperation(other.value, operation))
+        fun booleanOperation(other: BooleanVariances, operation: BooleanOp): BooleanVariances {
+            return BooleanVariances(value.booleanOperation(other.value, operation))
         }
     }
 
@@ -81,9 +83,9 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     }
 
-    override fun withVariance(key: Context.Key): BooleanVariance = BooleanVariance(this)
-    override fun toConstVariance(): VarianceBundle<Boolean> {
-        return BooleanVariance(this)
+    override fun withVariance(key: Context.Key): BooleanVariances = BooleanVariances(this)
+    override fun toConstVariance(): Variances<Boolean> {
+        return BooleanVariances(this)
     }
 
     override fun isEmpty(): Boolean {

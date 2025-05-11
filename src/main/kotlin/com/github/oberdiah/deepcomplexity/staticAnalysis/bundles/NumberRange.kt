@@ -1,17 +1,17 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.div
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.getSetSize
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isFloatingPoint
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.minus
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.plus
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.times
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.div
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.getSetSize
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.isFloatingPoint
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.min
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.minus
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.plus
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.times
 import java.math.BigInteger
 import kotlin.reflect.KClass
 

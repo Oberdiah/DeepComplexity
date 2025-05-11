@@ -1,10 +1,12 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
 import com.github.oberdiah.deepcomplexity.evaluation.Constraints
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
-    class GenericVariance<T : Any>(private val value: GenericSet<T>) : VarianceBundle<T> {
+    class GenericVariances<T : Any>(private val value: GenericSet<T>) : Variances<T> {
         override val ind: SetIndicator<T>
             get() = TODO("Not yet implemented")
 
@@ -14,16 +16,16 @@ class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
 
         override fun collapse(constraints: Constraints): Bundle<T> = value
 
-        override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
+        override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? {
             TODO("Not yet implemented")
         }
     }
 
-    override fun toConstVariance(): VarianceBundle<T> {
+    override fun toConstVariance(): Variances<T> {
         TODO("Not yet implemented")
     }
 
-    override fun withVariance(key: Context.Key): VarianceBundle<T> {
+    override fun withVariance(key: Context.Key): Variances<T> {
         TODO("Not yet implemented")
     }
 

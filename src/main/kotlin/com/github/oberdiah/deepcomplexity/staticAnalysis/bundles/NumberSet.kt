@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
@@ -7,14 +7,17 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.isOne
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.min
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
 typealias Ranges<T> = List<NumberRange<T>>
@@ -146,8 +149,10 @@ class NumberSet<T : Number>(
         TODO("Not yet implemented")
     }
 
-    override fun withVariance(key: Context.Key): NumberVariance<T> = NumberVariance.newFromVariance(ind, key)
-    override fun toConstVariance(): VarianceBundle<T> = NumberVariance.newFromConstant(this)
+    override fun withVariance(key: Context.Key): NumberVariances<T> =
+        NumberVariances.Companion.newFromVariance(ind, key)
+
+    override fun toConstVariance(): Variances<T> = NumberVariances.Companion.newFromConstant(this)
 
     /**
      * Returns a new set that satisfies the comparison operation.

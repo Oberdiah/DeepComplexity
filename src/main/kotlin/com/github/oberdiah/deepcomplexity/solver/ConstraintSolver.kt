@@ -2,10 +2,10 @@ package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.into
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ConstraintSolver {
     data class EvaluatedCollectedTerms<T : Number>(

@@ -1,17 +1,20 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**
  *
  */
-class NumberVariance<T : Number> private constructor(
+class NumberVariances<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
     private val multipliers: Map<Context.Key, NumberSet<T>> = mapOf()
-) : VarianceBundle<T> {
+) : Variances<T> {
     init {
         assert(multipliers.keys.count { it.isEphemeral() } <= 1) {
             "Only one ephemeral key is allowed in the variances map"
@@ -19,17 +22,17 @@ class NumberVariance<T : Number> private constructor(
     }
 
     companion object {
-        fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariance<T> =
-            NumberVariance(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))
+        fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
+            NumberVariances(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))
 
-        fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Context.Key): NumberVariance<T> {
-            return NumberVariance(ind, mapOf(key to ind.onlyOneSet()))
+        fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Context.Key): NumberVariances<T> {
+            return NumberVariances(ind, mapOf(key to ind.onlyOneSet()))
         }
 
         private fun <T : Number> newFromMultiplierMap(
             ind: NumberSetIndicator<T>,
             multipliers: Map<Context.Key, NumberSet<T>>
-        ): NumberVariance<T> {
+        ): NumberVariances<T> {
             val ephemeralMap = multipliers.filterKeys { it.isEphemeral() }
             val notEphemeralMap = multipliers.filterKeys { !it.isEphemeral() }
 
@@ -41,7 +44,7 @@ class NumberVariance<T : Number> private constructor(
                     acc.add(multiplier)
                 }
 
-            return NumberVariance(
+            return NumberVariances(
                 ind,
                 notEphemeralMap + (Context.Key.EphemeralKey.new() to ephemeralMultiplier)
             )
@@ -70,12 +73,12 @@ class NumberVariance<T : Number> private constructor(
             acc.add(multiplier.multiply(grabConstraint(constraints, key)))
         }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): VarianceBundle<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? {
         if (newInd !is NumberSetIndicator<*>) {
             return null
         }
 
-        fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberVariance<OutT>? {
+        fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberVariances<OutT>? {
             return newFromMultiplierMap(newInd, multipliers.mapValues { (_, multiplier) ->
                 // I have no idea if doing this actually works with wrapping. Probably doesn't.
                 // Worth writing a test for it at some point.
@@ -84,31 +87,31 @@ class NumberVariance<T : Number> private constructor(
         }
 
         @Suppress("UNCHECKED_CAST") // Safety: Trivially true by checking the signature of extra().
-        return extra(newInd) as VarianceBundle<Q>?
+        return extra(newInd) as Variances<Q>?
     }
 
     fun isOne(constraints: Constraints): Boolean = collapse(constraints).isOne()
 
-    fun negate(): NumberVariance<T> {
+    fun negate(): NumberVariances<T> {
         return newFromMultiplierMap(ind, multipliers.mapValues { (_, multiplier) ->
             multiplier.negate()
         })
     }
 
     fun arithmeticOperation(
-        other: NumberVariance<T>,
+        other: NumberVariances<T>,
         operation: BinaryNumberOp,
         constraints: Constraints
-    ): NumberVariance<T> {
+    ): NumberVariances<T> {
         when (operation) {
-            ADDITION, SUBTRACTION -> {
+            BinaryNumberOp.ADDITION, BinaryNumberOp.SUBTRACTION -> {
                 return newFromMultiplierMap(
                     ind, Functional.mergeMapsWithBlank(
                         multipliers,
                         other.multipliers,
                         ind.onlyZeroSet()
                     ) { me, other ->
-                        if (operation == ADDITION) {
+                        if (operation == BinaryNumberOp.ADDITION) {
                             me.add(other)
                         } else {
                             me.subtract(other)
@@ -116,7 +119,7 @@ class NumberVariance<T : Number> private constructor(
                     })
             }
 
-            MULTIPLICATION -> {
+            BinaryNumberOp.MULTIPLICATION -> {
                 val newMultipliers = mutableMapOf<Context.Key, NumberSet<T>>()
 
                 for ((key, meMultiplier) in multipliers) {
@@ -162,7 +165,7 @@ class NumberVariance<T : Number> private constructor(
                 return newFromMultiplierMap(ind, newMultipliers)
             }
 
-            DIVISION -> {
+            BinaryNumberOp.DIVISION -> {
                 if (other.isOne(constraints)) {
                     return this
                 }
@@ -174,15 +177,15 @@ class NumberVariance<T : Number> private constructor(
     }
 
     fun comparisonOperation(
-        other: NumberVariance<T>,
+        other: NumberVariances<T>,
         operation: ComparisonOp,
         constraints: Constraints
-    ): BooleanSet.BooleanVariance =
+    ): BooleanSet.BooleanVariances =
         // We could maybe do something smarter here long-term, but this'll do for now.
         collapse(constraints).comparisonOperation(other.collapse(constraints), operation).toConstVariance().into()
 
     fun evaluateLoopingRange(
         changeTerms: ConstraintSolver.EvaluatedCollectedTerms<T>,
         valid: NumberSet<T>
-    ): NumberVariance<T> = TODO("Not yet implemented")
+    ): NumberVariances<T> = TODO("Not yet implemented")
 }

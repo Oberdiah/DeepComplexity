@@ -1,13 +1,12 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.orElse
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.resolveIfNeeded
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
+import com.github.oberdiah.deepcomplexity.utilities.Utilities
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.intellij.psi.*
 
 object MethodProcessing {

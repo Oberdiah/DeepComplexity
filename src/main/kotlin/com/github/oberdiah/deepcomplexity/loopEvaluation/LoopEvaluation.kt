@@ -4,7 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.MULTIPLICATION
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.isOne
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.isOne
 import com.intellij.psi.PsiElement
 
 object LoopEvaluation {

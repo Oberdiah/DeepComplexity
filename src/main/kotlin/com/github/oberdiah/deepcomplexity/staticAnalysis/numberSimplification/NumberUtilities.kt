@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberRange
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberRange
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
 
 object NumberUtilities {
     fun <T : Number> mergeAndDeduplicate(ranges: List<NumberRange<T>>): List<NumberRange<T>> {
