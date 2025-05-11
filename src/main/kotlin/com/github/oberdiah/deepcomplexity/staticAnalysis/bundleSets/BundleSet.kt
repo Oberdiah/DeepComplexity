@@ -32,7 +32,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
  */
 class BundleSet<T : Any> private constructor(
     val ind: SetIndicator<T>,
-    val bundles: List<ConstrainedBundle<T>>
+    val bundles: List<ConstrainedVariances<T>>
 ) {
     companion object {
         fun <T : Any> empty(ind: SetIndicator<T>): BundleSet<T> {
@@ -43,7 +43,7 @@ class BundleSet<T : Any> private constructor(
             return BundleSet(
                 bundle.ind,
                 listOf(
-                    ConstrainedBundle.new(bundle, Constraints.completelyUnconstrained())
+                    ConstrainedVariances.new(bundle, Constraints.completelyUnconstrained())
                 )
             )
         }
@@ -52,20 +52,20 @@ class BundleSet<T : Any> private constructor(
             return BundleSet(
                 variances.ind,
                 listOf(
-                    ConstrainedBundle.new(variances, constraints)
+                    ConstrainedVariances.new(variances, constraints)
                 )
             )
         }
     }
 
     @ConsistentCopyVisibility
-    data class ConstrainedBundle<T : Any> private constructor(
+    data class ConstrainedVariances<T : Any> private constructor(
         val variances: Variances<T>,
         val constraints: Constraints
     ) {
         companion object {
-            fun <T : Any> new(variances: Variances<T>, constraints: Constraints): ConstrainedBundle<T> {
-                return ConstrainedBundle(variances, constraints)
+            fun <T : Any> new(variances: Variances<T>, constraints: Constraints): ConstrainedVariances<T> {
+                return ConstrainedVariances(variances, constraints)
             }
         }
 
@@ -109,7 +109,7 @@ class BundleSet<T : Any> private constructor(
                 if (newConstraints.unreachable) {
                     null
                 } else {
-                    ConstrainedBundle.new(newBundle.variances, newConstraints)
+                    ConstrainedVariances.new(newBundle.variances, newConstraints)
                 }
             }
         })
@@ -119,7 +119,7 @@ class BundleSet<T : Any> private constructor(
 
     fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): BundleSet<Q> {
         return BundleSet(newInd, bundles.map {
-            ConstrainedBundle.new(op(it.variances), it.constraints)
+            ConstrainedVariances.new(op(it.variances), it.constraints)
         })
     }
 
@@ -136,7 +136,7 @@ class BundleSet<T : Any> private constructor(
     ): BundleSet<Q> {
         assert(ind == other.ind)
 
-        val newBundles = mutableListOf<ConstrainedBundle<Q>>()
+        val newBundles = mutableListOf<ConstrainedVariances<Q>>()
         for (myBundle in bundles) {
             for (otherBundle in other.bundles) {
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
@@ -144,7 +144,7 @@ class BundleSet<T : Any> private constructor(
 
                 if (newConstraints.unreachable) continue
 
-                newBundles.add(ConstrainedBundle.new(newBundle, newConstraints))
+                newBundles.add(ConstrainedVariances.new(newBundle, newConstraints))
             }
         }
 
@@ -159,7 +159,7 @@ class BundleSet<T : Any> private constructor(
         val constraints = ExprConstrain.getConstraints(constraintExpr)
         return BundleSet(ind, bundles.flatMap { bundle ->
             constraints.map { constraint ->
-                ConstrainedBundle.new(bundle.variances, bundle.constraints.and(constraint))
+                ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))
             }
         })
     }
@@ -182,7 +182,7 @@ class BundleSet<T : Any> private constructor(
     fun <Q : Any> cast(indicator: SetIndicator<Q>): BundleSet<Q>? {
         return BundleSet(
             indicator, bundles.map {
-                ConstrainedBundle.new(it.variances.cast(indicator) ?: return null, it.constraints)
+                ConstrainedVariances.new(it.variances.cast(indicator) ?: return null, it.constraints)
             }
         )
     }
