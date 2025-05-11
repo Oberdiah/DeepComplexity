@@ -65,6 +65,12 @@ public class MyTestData {
 		return (short) (-incoming + incoming);
 	}
 	
+	@RequiredScore(1.0)
+	public static short plusTest(short incoming) {
+		return (short) (+incoming);
+	}
+	
+	@RequiredScore(1.0)
 	public static short incrementTest(short incoming) {
 		int a = incoming;
 		int b = a++;
@@ -72,6 +78,7 @@ public class MyTestData {
 		return (short) (b - c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short incrementTest2(short incoming) {
 		int a = incoming;
 		int b = ++a;
@@ -79,6 +86,7 @@ public class MyTestData {
 		return (short) (b - c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short decrementTest(short incoming) {
 		int a = incoming;
 		int b = a--;
@@ -86,6 +94,7 @@ public class MyTestData {
 		return (short) (b - c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short decrementTest2(short incoming) {
 		int a = incoming;
 		int b = --a;

@@ -6,13 +6,15 @@ import com.intellij.psi.tree.IElementType
 enum class UnaryNumberOp {
     INCREMENT,
     DECREMENT,
-    NEGATE;
+    NEGATE,
+    PLUS; // I don't think this ever does anything other than cast.
 
     override fun toString(): String {
         return when (this) {
             INCREMENT -> "++"
             DECREMENT -> "--"
             NEGATE -> "-"
+            PLUS -> "+"
         }
     }
 
@@ -22,6 +24,7 @@ enum class UnaryNumberOp {
                 JavaTokenType.PLUSPLUS -> INCREMENT
                 JavaTokenType.MINUSMINUS -> DECREMENT
                 JavaTokenType.MINUS -> NEGATE
+                JavaTokenType.PLUS -> PLUS
                 else -> null
             }
         }

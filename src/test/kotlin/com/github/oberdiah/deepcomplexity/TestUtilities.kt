@@ -61,6 +61,7 @@ object TestUtilities {
                 return listOf("Passed", msg, "$requiredScoreStr%", notes) to true
             }
         } else {
+            println("\t$extraInfoColumn")
             println("\tThis method was not required to reach a score threshold and as such it passed by default.")
             return listOf("Passed by default", scoreReceivedColumn, "N/A", extraInfoColumn) to true
         }
@@ -103,12 +104,10 @@ object TestUtilities {
             val result = method.invoke(null, s.toShort()) as Short
 
             if (!range.contains(result)) {
-                return "Method ${method.name} failed for input $s," +
-                        " returned a value of $result which is not in range $range" to 0.0
+                return "Failed for input $s, returned $result which is not in range $range" to 0.0
             } else {
                 if (result !in Short.MIN_VALUE..Short.MAX_VALUE) {
-                    return "Method ${method.name} failed for input $s," +
-                            " returned a value of $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}" to 0.0
+                    return "Failed for input $s, returned $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}" to 0.0
                 }
                 actualArray[result - Short.MIN_VALUE] = true
             }

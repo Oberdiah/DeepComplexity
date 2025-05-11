@@ -200,22 +200,71 @@ object MethodProcessing {
             }
 
             is PsiPrefixExpression -> {
-                val operand = psi.operand ?: throw ExpressionIncompleteException()
                 val tokenType = psi.operationSign.tokenType
-
                 val unaryOp = UnaryNumberOp.fromJavaTokenType(tokenType)
                     ?: throw IllegalArgumentException("As-yet unsupported unary operation: ${psi.operationSign}")
 
-                val operandPrecast = buildExpressionFromPsi(operand, context).tryCastToNumbers()
-                    ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
-
-                val promoted = ConversionsAndPromotion.unaryNumericPromotion(operandPrecast)
+                val operand = psi.operand ?: throw ExpressionIncompleteException()
 
                 return when (unaryOp) {
-                    UnaryNumberOp.INCREMENT -> TODO()
-                    UnaryNumberOp.DECREMENT -> TODO()
-                    UnaryNumberOp.NEGATE -> NegateExpression(promoted)
+                    UnaryNumberOp.NEGATE, UnaryNumberOp.PLUS -> {
+                        val operandPrecast = buildExpressionFromPsi(operand, context).tryCastToNumbers()
+                            ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
+                        val promoted = ConversionsAndPromotion.unaryNumericPromotion(operandPrecast)
+
+                        if (unaryOp == UnaryNumberOp.NEGATE) NegateExpression(promoted) else promoted
+                    }
+
+                    UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
+                        val resolvedOperand = operand.resolveIfNeeded()
+                        val operandExpr = context.getVar(resolvedOperand).tryCastToNumbers()
+                            ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
+
+                        fun <T : Number> extra(opExpr: IExpr<T>) {
+                            context.assignVar(
+                                resolvedOperand,
+                                ArithmeticExpression(
+                                    opExpr,
+                                    ConstantExpression.one(opExpr.getNumberSetIndicator()),
+                                    if (unaryOp == UnaryNumberOp.INCREMENT) BinaryNumberOp.ADDITION else BinaryNumberOp.SUBTRACTION
+                                )
+                            )
+                        }
+                        extra(operandExpr)
+
+                        // Build the expression after the assignment for a prefix increment/decrement
+                        buildExpressionFromPsi(operand, context).tryCastToNumbers()
+                            ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
+                    }
                 }
+            }
+
+            is PsiPostfixExpression -> {
+                val tokenType = psi.operationSign.tokenType
+                val unaryOp = UnaryNumberOp.fromJavaTokenType(tokenType)
+                    ?: throw IllegalArgumentException("As-yet unsupported unary operation: ${psi.operationSign}")
+                val resolvedOperand = psi.operand.resolveIfNeeded()
+
+                // Build the expression before the assignment for a postfix increment/decrement
+                val operand = buildExpressionFromPsi(psi.operand, context).tryCastToNumbers()
+                    ?: throw IllegalArgumentException("Failed to cast to Number: ${psi.operand.text}")
+
+                val operandExpr = context.getVar(resolvedOperand).tryCastToNumbers()
+                    ?: throw IllegalArgumentException("Failed to cast to Number: ${psi.operand.text}")
+
+                fun <T : Number> extra(opExpr: IExpr<T>) {
+                    context.assignVar(
+                        resolvedOperand,
+                        ArithmeticExpression(
+                            opExpr,
+                            ConstantExpression.one(opExpr.getNumberSetIndicator()),
+                            if (unaryOp == UnaryNumberOp.INCREMENT) BinaryNumberOp.ADDITION else BinaryNumberOp.SUBTRACTION
+                        )
+                    )
+                }
+                extra(operandExpr)
+
+                return operand
             }
 
             is PsiBinaryExpression -> {
