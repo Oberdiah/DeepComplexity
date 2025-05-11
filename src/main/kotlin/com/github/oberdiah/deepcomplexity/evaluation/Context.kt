@@ -26,8 +26,34 @@ class Context {
             }
         }
 
-        // ReturnMethod is the method that the return statement will return to
-        data class ReturnKey(val returnMethod: PsiElement) : Key() {
+        /**
+         * Method is the key representing the method itself, or the remaining bits of it still to be processed.
+         * It behaves differently to other keys in that it applies backward when stacking.
+         *
+         * Normally, if you had two contexts in this order:
+         *
+         * ```
+         * { a = if (x > 5) { 0 } else { a } }
+         * { a = a + 5 }
+         * ```
+         *
+         * The latter one would inherit the former's variables, and you'd end up with:
+         *
+         * ```
+         * { a = (if (x > 5) { 0 } else { a }) + 5 }
+         * ```
+         *
+         * However, if `a` was instead a `Method`, you'd end up with:
+         *
+         * ```
+         * { if (x > 5) { 0 } else { a + 5 } }
+         * ```
+         * e.g. the rest of the method would get inserted into the context.
+         *
+         * As far as I can tell, this is only really going to ever be useful for return statements.
+         * Well that, and grabbing the value returned from a method, which is the same thing really.
+         */
+        data class Method(val method: PsiElement) : Key() {
             override fun toString(): String {
                 return "Rest of method"
             }
@@ -68,13 +94,13 @@ class Context {
             }
 
         fun isEphemeral(): Boolean = this is EphemeralKey
-        fun isReturn(): Boolean = this is ReturnKey
+        fun isMethod(): Boolean = this is Method
 
         fun getType(): PsiType {
             return when (this) {
                 is VariableKey -> variable.type
-                is ReturnKey -> {
-                    val returnType = (returnMethod as? PsiMethod)?.returnType
+                is Method -> {
+                    val returnType = (method as? PsiMethod)?.returnType
                     // One day this will have to deal with lambdas too.
                     returnType ?: throw IllegalArgumentException("Return statement is not inside a method")
                 }
@@ -91,7 +117,7 @@ class Context {
         fun getElement(): PsiElement {
             return when (this) {
                 is VariableKey -> variable
-                is ReturnKey -> returnMethod
+                is Method -> method
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
                 is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")
             }
@@ -142,8 +168,6 @@ class Context {
         }
     }
 
-    fun isReturning(): Boolean = variables.any { it.key is Key.ReturnKey }
-
     override fun toString(): String {
         val variablesString =
             variables.entries.joinToString("\n") { entry ->
@@ -192,7 +216,7 @@ class Context {
             val allUnresolved = value.getVariables(false)
             for (unresolved in allUnresolved) {
                 val resolvedKey = unresolved.getKey()
-                if (resolvedKey.context == later && !resolvedKey.key.isReturn()) {
+                if (resolvedKey.context == later && !resolvedKey.key.isMethod()) {
                     val resolved = variables[resolvedKey.key]
                     if (resolved != null) {
                         unresolved.setResolvedExpr(resolved)
@@ -206,7 +230,7 @@ class Context {
             val allUnresolved = value.getVariables(false)
             for (unresolved in allUnresolved) {
                 val resolvedKey = unresolved.getKey()
-                if (resolvedKey.context == this && resolvedKey.key.isReturn()) {
+                if (resolvedKey.context == this && resolvedKey.key.isMethod()) {
                     val resolved = later.variables[resolvedKey.key]
                     if (resolved != null) {
                         unresolved.setResolvedExpr(resolved)
@@ -217,11 +241,11 @@ class Context {
 
         // Later's variables overwrite ours if they exist as they're more recent.
         // Filter out return keys
-        variables.putAll(later.variables.filter { !it.key.isReturn() })
+        variables.putAll(later.variables.filter { !it.key.isMethod() })
 
         // Now put all return keys in, but only if they don't exist in this context.
         variables.putAll(
-            later.variables.filter { it.key.isReturn() && !variables.containsKey(it.key) }
+            later.variables.filter { it.key.isMethod() && !variables.containsKey(it.key) }
         )
 
         // Any variables that are still unresolved need to be migrated.

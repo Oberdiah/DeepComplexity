@@ -168,9 +168,11 @@ object MethodProcessing {
                 if (returnExpression != null) {
                     val returnExpr = buildExpressionFromPsi(returnExpression, context)
 
-                    if (!context.isReturning()) {
+                    if (context.getVariables().keys.none { it.isMethod() }) {
+                        // If there's no 'method' key yet, create one.
                         context.assignVar(psi, returnExpr)
                     } else {
+                        // If there is, resolve the existing one with the new value.
                         context.resolveVar(psi, returnExpr)
                     }
                 }

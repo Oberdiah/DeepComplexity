@@ -68,7 +68,7 @@ object TestUtilities {
     }
 
     private fun getMethodScore(method: Method, psiMethod: PsiMethod): Pair<String, Double> {
-        val returnKey = Context.Key.ReturnKey(psiMethod)
+        val methodKey = Context.Key.Method(psiMethod)
 
         val context = try {
             MethodProcessing.getMethodContext(psiMethod)
@@ -78,8 +78,8 @@ object TestUtilities {
         }
 
         val range = try {
-            println(context.debugKey(returnKey).prependIndent())
-            val bundleSet: BundleSet<*> = context.evaluateKey(returnKey)
+            println(context.debugKey(methodKey).prependIndent())
+            val bundleSet: BundleSet<*> = context.evaluateKey(methodKey)
             bundleSet.cast(ShortSetIndicator)!!.collapse()
         } catch (e: Throwable) {
             e.printStackTrace()
