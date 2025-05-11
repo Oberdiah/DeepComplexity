@@ -23,7 +23,7 @@ fun BundleSet<Boolean>.invert() = performUnaryOperation {
 }
 
 fun <T : Number> BundleSet<T>.isOne(): Boolean = this.bundles.all {
-    it.bundle.into().isOne(it.constraints)
+    it.variances.into().isOne(it.constraints)
 }
 
 fun <T : Number> BundleSet<T>.comparisonOperation(other: BundleSet<T>, comparisonOp: ComparisonOp): BundleSet<Boolean> =

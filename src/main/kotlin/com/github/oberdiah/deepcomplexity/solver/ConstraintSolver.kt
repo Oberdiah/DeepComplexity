@@ -127,7 +127,7 @@ object ConstraintSolver {
 
         val variables = expr.getVariables(false)
         for (variable in variables) {
-            assert(variable.getSetIndicator() is NumberSetIndicator<*>) {
+            assert(variable.ind is NumberSetIndicator<*>) {
                 "All variables must be number sets. This requires more thought if we've hit this."
             }
 
@@ -221,7 +221,7 @@ object ConstraintSolver {
     }
 
     fun <T : Number> expandTerms(expr: IExpr<*>, variable: VariableExpression<T>): CollectedTerms<T>? {
-        val setIndicator = variable.getSetIndicator() as NumberSetIndicator<T>
+        val setIndicator = variable.ind as NumberSetIndicator<T>
         val castExpr = TypeCastExpression(expr, setIndicator, true)
         return when (expr) {
             is ArithmeticExpression -> {

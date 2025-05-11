@@ -11,7 +11,7 @@ object ConversionsAndPromotion {
 
     fun castAToB(exprA: IExpr<*>, exprB: IExpr<*>, explicit: Boolean): TypedPair<*> {
         fun <T : Any> castTo(exprB: IExpr<T>): TypedPair<*> {
-            val castExprA: IExpr<T> = exprA.performACastTo(exprB.getSetIndicator(), explicit)
+            val castExprA: IExpr<T> = exprA.performACastTo(exprB.ind, explicit)
             return TypedPair(exprB, castExprA)
         }
         return castTo(exprB)
@@ -23,7 +23,7 @@ object ConversionsAndPromotion {
         explicit: Boolean
     ): TypedPair<out Number> {
         fun <T : Number> castTo(exprB: IExpr<T>): TypedPair<out Number> {
-            val castExprA: IExpr<T> = exprA.performACastTo(exprB.getSetIndicator(), explicit)
+            val castExprA: IExpr<T> = exprA.performACastTo(exprB.ind, explicit)
             return TypedPair(exprB, castExprA)
         }
         return castTo(exprB)
@@ -49,9 +49,7 @@ object ConversionsAndPromotion {
     fun unaryNumericPromotion(expr: IExpr<out Number>): IExpr<out Number> {
         // Java Spec 5.6.1:
         // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
-        val indicator = expr.getSetIndicator()
-
-        return when (indicator) {
+        return when (expr.ind) {
             DoubleSetIndicator, FloatSetIndicator, LongSetIndicator, IntSetIndicator -> expr
             else -> expr.performACastTo(IntSetIndicator, false)
         }
@@ -66,13 +64,10 @@ object ConversionsAndPromotion {
         // Otherwise, if either operand is of type float, the other is converted to float.
         // Otherwise, if either operand is of type long, the other is converted to long.
         // Otherwise, both operands are converted to type int.
-        val indicatorA = exprA.getSetIndicator()
-        val indicatorB = exprB.getSetIndicator()
-
         val targetIndicator = when {
-            indicatorA == DoubleSetIndicator || indicatorB == DoubleSetIndicator -> DoubleSetIndicator
-            indicatorA == FloatSetIndicator || indicatorB == FloatSetIndicator -> FloatSetIndicator
-            indicatorA == LongSetIndicator || indicatorB == LongSetIndicator -> LongSetIndicator
+            exprA.ind == DoubleSetIndicator || exprB.ind == DoubleSetIndicator -> DoubleSetIndicator
+            exprA.ind == FloatSetIndicator || exprB.ind == FloatSetIndicator -> FloatSetIndicator
+            exprA.ind == LongSetIndicator || exprB.ind == LongSetIndicator -> LongSetIndicator
             else -> IntSetIndicator
         }
 

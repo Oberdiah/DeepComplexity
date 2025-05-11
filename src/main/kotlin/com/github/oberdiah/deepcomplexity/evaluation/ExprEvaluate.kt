@@ -11,7 +11,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 object ExprEvaluate {
     fun <T : Any> evaluate(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         @Suppress("UNCHECKED_CAST")
-        return when (expr.getSetIndicator()) {
+        return when (expr.ind) {
             is NumberSetIndicator<*> -> evaluateNums(expr.tryCastToNumbers()!!, condition) as BundleSet<T>
             is GenericSetIndicator -> evaluateGenerics(expr as IExpr<*>, condition) as BundleSet<T>
             BooleanSetIndicator -> evaluateBools(expr as IExpr<Boolean>, condition) as BundleSet<T>
@@ -85,7 +85,7 @@ object ExprEvaluate {
                 val falseCondition =
                     BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
 
-                evaluatedCond.unaryMapAndUnion(expr.trueExpr.getSetIndicator()) { bundle, constraints ->
+                evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
                     when (bundle.collapse(constraints).into()) {
                         TRUE -> evaluate(expr.trueExpr, trueCondition)
                         FALSE -> evaluate(expr.falseExpr, falseCondition)
@@ -102,7 +102,7 @@ object ExprEvaluate {
 
             is TypeCastExpression<*, *> -> CastSolver.castFrom(
                 evaluate(expr.expr, condition),
-                expr.getSetIndicator(),
+                expr.ind,
                 expr.explicit
             )
 
@@ -114,11 +114,11 @@ object ExprEvaluate {
 
                 val constraintsList = ExprConstrain.getConstraints(condition)
 
-                var bundleSet = BundleSet.empty(expr.getSetIndicator())
+                var bundleSet = BundleSet.empty(expr.ind)
                 for (constraints in constraintsList) {
-                    val newBundle = expr.getSetIndicator().newVariance(expr.myKey.key)
+                    val newVariance = expr.ind.newVariance(expr.myKey.key)
                     // Constrain with the entire set of constraints.
-                    bundleSet = bundleSet.union(BundleSet.constrained(newBundle, constraints))
+                    bundleSet = bundleSet.union(BundleSet.constrained(newVariance, constraints))
                 }
 
                 bundleSet

@@ -34,16 +34,14 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
         fun <T : Any> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
-                is IfExpression -> expr.trueExpr.getSetIndicator()
-                is UnionExpression -> expr.lhs.getSetIndicator()
-
-                is ArithmeticExpression -> expr.lhs.getSetIndicator()
-                is NegateExpression -> expr.expr.getSetIndicator()
-                is NumIterationTimesExpression -> expr.getSetIndicator()
+                is IfExpression -> expr.trueExpr.ind
+                is UnionExpression -> expr.lhs.ind
+                is ArithmeticExpression -> expr.lhs.ind
+                is NegateExpression -> expr.expr.ind
+                is NumIterationTimesExpression -> expr.ind
                 is BooleanExpression -> BooleanSetIndicator
                 is BooleanInvertExpression -> BooleanSetIndicator
                 is ComparisonExpression<*> -> BooleanSetIndicator
-
                 is ConstExpr -> expr.constSet.ind
                 is VariableExpression -> expr.setInd
                 is TypeCastExpression<*, *> -> expr.setInd

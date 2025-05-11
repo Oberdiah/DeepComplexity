@@ -30,10 +30,10 @@ class VariableExpression<T : Any>(
     }
 
     fun setResolvedExpr(expr: IExpr<*>) {
-        if (expr.getSetIndicator() != setInd)
+        if (expr.ind != setInd)
             throw IllegalArgumentException(
                 "Resolved expression is not of the correct type " +
-                        "(expected ${setInd.clazz}, got ${expr.getSetIndicator().clazz})"
+                        "(expected ${setInd.clazz}, got ${expr.ind.clazz})"
             )
 
         @Suppress("UNCHECKED_CAST")

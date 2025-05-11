@@ -48,11 +48,11 @@ class BundleSet<T : Any> private constructor(
             )
         }
 
-        fun <T : Any> constrained(bundle: Variances<T>, constraints: Constraints): BundleSet<T> {
+        fun <T : Any> constrained(variances: Variances<T>, constraints: Constraints): BundleSet<T> {
             return BundleSet(
-                bundle.ind,
+                variances.ind,
                 listOf(
-                    ConstrainedBundle.new(bundle, constraints)
+                    ConstrainedBundle.new(variances, constraints)
                 )
             )
         }
@@ -60,20 +60,20 @@ class BundleSet<T : Any> private constructor(
 
     @ConsistentCopyVisibility
     data class ConstrainedBundle<T : Any> private constructor(
-        val bundle: Variances<T>,
+        val variances: Variances<T>,
         val constraints: Constraints
     ) {
         companion object {
-            fun <T : Any> new(bundle: Variances<T>, constraints: Constraints): ConstrainedBundle<T> {
-                return ConstrainedBundle(bundle, constraints)
+            fun <T : Any> new(variances: Variances<T>, constraints: Constraints): ConstrainedBundle<T> {
+                return ConstrainedBundle(variances, constraints)
             }
         }
 
         fun toDebugString(): String {
             if (constraints.isUnconstrained()) {
-                return bundle.toDebugString(constraints)
+                return variances.toDebugString(constraints)
             }
-            return "(${bundle.toDebugString(constraints)} | $constraints)"
+            return "(${variances.toDebugString(constraints)} | $constraints)"
         }
     }
 
@@ -103,13 +103,13 @@ class BundleSet<T : Any> private constructor(
         op: (Variances<T>, Constraints) -> BundleSet<Q>
     ): BundleSet<Q> =
         BundleSet(newInd, bundles.flatMap { bundle ->
-            op(bundle.bundle, bundle.constraints).bundles.mapNotNull { newBundle ->
+            op(bundle.variances, bundle.constraints).bundles.mapNotNull { newBundle ->
                 val newConstraints = bundle.constraints.and(newBundle.constraints)
 
                 if (newConstraints.unreachable) {
                     null
                 } else {
-                    ConstrainedBundle.new(newBundle.bundle, newConstraints)
+                    ConstrainedBundle.new(newBundle.variances, newConstraints)
                 }
             }
         })
@@ -119,7 +119,7 @@ class BundleSet<T : Any> private constructor(
 
     fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): BundleSet<Q> {
         return BundleSet(newInd, bundles.map {
-            ConstrainedBundle.new(op(it.bundle), it.constraints)
+            ConstrainedBundle.new(op(it.variances), it.constraints)
         })
     }
 
@@ -140,7 +140,7 @@ class BundleSet<T : Any> private constructor(
         for (myBundle in bundles) {
             for (otherBundle in other.bundles) {
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
-                val newBundle = op(myBundle.bundle, otherBundle.bundle, newConstraints)
+                val newBundle = op(myBundle.variances, otherBundle.variances, newConstraints)
 
                 if (newConstraints.unreachable) continue
 
@@ -159,7 +159,7 @@ class BundleSet<T : Any> private constructor(
         val constraints = ExprConstrain.getConstraints(constraintExpr)
         return BundleSet(ind, bundles.flatMap { bundle ->
             constraints.map { constraint ->
-                ConstrainedBundle.new(bundle.bundle, bundle.constraints.and(constraint))
+                ConstrainedBundle.new(bundle.variances, bundle.constraints.and(constraint))
             }
         })
     }
@@ -175,14 +175,14 @@ class BundleSet<T : Any> private constructor(
         }
 
         return bundles.fold(ind.newEmptyBundle()) { acc, bundle ->
-            acc.union(bundle.bundle.collapse(bundle.constraints))
+            acc.union(bundle.variances.collapse(bundle.constraints))
         }
     }
 
     fun <Q : Any> cast(indicator: SetIndicator<Q>): BundleSet<Q>? {
         return BundleSet(
             indicator, bundles.map {
-                ConstrainedBundle.new(it.bundle.cast(indicator) ?: return null, it.constraints)
+                ConstrainedBundle.new(it.variances.cast(indicator) ?: return null, it.constraints)
             }
         )
     }

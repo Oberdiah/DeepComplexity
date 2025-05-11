@@ -21,7 +21,7 @@ object ConstantExpression {
         zero(expr.getNumberSetIndicator())
 
     fun <T : Any> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
-        ConstExpr.new(expr.getSetIndicator().newVariance(key))
+        ConstExpr.new(expr.ind.newVariance(key))
 
     fun fromAny(value: Any): IExpr<*> {
         return ConstExpr.new(

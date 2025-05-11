@@ -78,9 +78,9 @@ object LoopSolver {
             return gaveUp
         }
 
-        if (numLoops.getSetIndicator() != constantTerm.getSetIndicator()) {
+        if (numLoops.ind != constantTerm.ind) {
             throw IllegalStateException(
-                "Mismatched set indicators: ${numLoops.getSetIndicator()} != ${constantTerm.getSetIndicator()}"
+                "Mismatched set indicators: ${numLoops.ind} != ${constantTerm.ind}"
             )
         }
         @Suppress("UNCHECKED_CAST")
@@ -97,7 +97,7 @@ object LoopSolver {
         // Some edge cases might be doable in certain situations, for now I'm not going to bother.
         if (variables.size != 1) return null
 
-        val unresolved = variables.first().tryCastExact<T, VariableExpression<T>>(expr.getSetIndicator()) ?: return null
+        val unresolved = variables.first().tryCastExact<T, VariableExpression<T>>(expr.ind) ?: return null
 
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but

@@ -13,7 +13,9 @@ sealed interface IExpr<T : Any> {
     /**
      * The indicator represents what the expression will be once evaluated.
      */
-    fun getSetIndicator(): SetIndicator<T> = SetIndicator.getSetIndicator(this)
+    val ind: SetIndicator<T>
+        get() = SetIndicator.getSetIndicator(this)
+
     fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
     fun evaluate(condition: IExpr<Boolean>): BundleSet<T> = ExprEvaluate.evaluate(this, condition)
     fun dStr(): String = ExprToString.toDebugString(this)
@@ -25,10 +27,10 @@ sealed class Expr<T : Any> : IExpr<T> {
     }
 }
 
-fun <T : Number> IExpr<T>.getNumberSetIndicator() = getSetIndicator() as NumberSetIndicator<T>
+fun <T : Number> IExpr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
 
 fun IExpr<*>.tryCastToNumbers(): IExpr<out Number>? {
-    if (this.getSetIndicator() is NumberSetIndicator<*>) {
+    if (this.ind is NumberSetIndicator<*>) {
         @Suppress("UNCHECKED_CAST")
         return this as IExpr<out Number>
     } else {
@@ -37,7 +39,7 @@ fun IExpr<*>.tryCastToNumbers(): IExpr<out Number>? {
 }
 
 inline fun <Set : Any, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
-    return if (this::class == T::class && indicator == this.getSetIndicator()) {
+    return if (this::class == T::class && indicator == this.ind) {
         @Suppress("UNCHECKED_CAST")
         this as T
     } else {
@@ -46,7 +48,7 @@ inline fun <Set : Any, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: 
 }
 
 fun <T : Any> IExpr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): IExpr<T> {
-    return if (this.getSetIndicator() == indicator) {
+    return if (this.ind == indicator) {
         @Suppress("UNCHECKED_CAST")
         this as IExpr<T>
     } else {
@@ -55,7 +57,7 @@ fun <T : Any> IExpr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Bool
 }
 
 fun <T : Any> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<T>? {
-    return if (this.getSetIndicator() == indicator) {
+    return if (this.ind == indicator) {
         @Suppress("UNCHECKED_CAST")
         this as IExpr<T>
     } else {
@@ -68,8 +70,8 @@ fun IExpr<Boolean>.getConstraints(): List<Constraints> =
 
 class ArithmeticExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>() {
     init {
-        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
-            "Adding expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        assert(lhs.ind == rhs.ind) {
+            "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 }
@@ -77,8 +79,8 @@ class ArithmeticExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val
 class ComparisonExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val comp: ComparisonOp) :
     Expr<Boolean>() {
     init {
-        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
-            "Comparing expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        assert(lhs.ind == rhs.ind) {
+            "Comparing expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 }
@@ -102,8 +104,8 @@ class IfExpression<T : Any>(
     val thisCondition: IExpr<Boolean>
 ) : Expr<T>() {
     init {
-        assert(trueExpr.getSetIndicator() == falseExpr.getSetIndicator()) {
-            "Incompatible types in if statement: ${trueExpr.getSetIndicator()} and ${falseExpr.getSetIndicator()}"
+        assert(trueExpr.ind == falseExpr.ind) {
+            "Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}"
         }
     }
 
@@ -113,11 +115,11 @@ class IfExpression<T : Any>(
             b: IExpr<B>,
             condition: IExpr<Boolean>
         ): IExpr<A> {
-            return if (a.getSetIndicator() == b.getSetIndicator()) {
+            return if (a.ind == b.ind) {
                 @Suppress("UNCHECKED_CAST")
                 IfExpression(a, b as IExpr<A>, condition)
             } else {
-                throw IllegalStateException("Incompatible types in if statement: ${a.getSetIndicator()} and ${b.getSetIndicator()}")
+                throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
             }
         }
     }
@@ -125,8 +127,8 @@ class IfExpression<T : Any>(
 
 class UnionExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
     init {
-        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
-            "Unioning expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        assert(lhs.ind == rhs.ind) {
+            "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 }
@@ -134,8 +136,8 @@ class UnionExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
 class BooleanExpression(val lhs: IExpr<Boolean>, val rhs: IExpr<Boolean>, val op: BooleanOp) :
     Expr<Boolean>() {
     init {
-        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
-            "Boolean expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
+        assert(lhs.ind == rhs.ind) {
+            "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 }
@@ -165,11 +167,11 @@ class NumIterationTimesExpression<T : Number>(
             terms: ConstraintSolver.CollectedTerms<out Number>
         ): NumIterationTimesExpression<T> {
             val setIndicator = SetIndicator.fromValue(constraint)
-            assert(setIndicator == variable.getSetIndicator()) {
-                "Variable and constraint have different set indicators: ${variable.getSetIndicator()} and $setIndicator"
+            assert(setIndicator == variable.ind) {
+                "Variable and constraint have different set indicators: ${variable.ind} and $setIndicator"
             }
             assert(setIndicator == terms.setIndicator) {
-                "Variable and terms have different set indicators: ${variable.getSetIndicator()} and ${terms.setIndicator}"
+                "Variable and terms have different set indicators: ${variable.ind} and ${terms.setIndicator}"
             }
 
             @Suppress("UNCHECKED_CAST")
