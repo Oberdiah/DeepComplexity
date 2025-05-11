@@ -94,7 +94,7 @@ object MethodProcessing {
                             val rhs = buildExpressionFromPsi(rExpression, context).tryCastToNumbers()
                                 ?: throw IllegalArgumentException("Failed to cast to NumberSet: ${rExpression.text}")
 
-                            ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { lhs, rhs ->
+                            ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
                                 context.assignVar(
                                     resolvedLhs,
                                     ArithmeticExpression(

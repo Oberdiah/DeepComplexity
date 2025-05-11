@@ -12,7 +12,7 @@ object ConversionsAndPromotion {
     fun castAToB(exprA: IExpr<*>, exprB: IExpr<*>, explicit: Boolean): TypedPair<*> {
         fun <T : Any> castTo(exprB: IExpr<T>): TypedPair<*> {
             val castExprA: IExpr<T> = exprA.performACastTo(exprB.ind, explicit)
-            return TypedPair(exprB, castExprA)
+            return TypedPair(castExprA, exprB)
         }
         return castTo(exprB)
     }
@@ -24,7 +24,7 @@ object ConversionsAndPromotion {
     ): TypedPair<out Number> {
         fun <T : Number> castTo(exprB: IExpr<T>): TypedPair<out Number> {
             val castExprA: IExpr<T> = exprA.performACastTo(exprB.ind, explicit)
-            return TypedPair(exprB, castExprA)
+            return TypedPair(castExprA, exprB)
         }
         return castTo(exprB)
     }
