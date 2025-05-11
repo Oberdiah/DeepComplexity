@@ -17,9 +17,7 @@ object ExprToString {
                 }\n}"
             }
 
-            is IntersectExpression -> "(${expr.lhs} ∩ ${expr.rhs})"
             is BooleanInvertExpression -> "!${expr.expr}"
-            is InvertExpression -> "!${expr.expr}"
             is NegateExpression -> "-${expr.expr}"
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
@@ -27,7 +25,6 @@ object ExprToString {
                 return if (expr.isResolved()) expr.resolvedInto.toString() else expr.myKey.key.toString()
             }
 
-            is NumberLimitsExpression -> "(${expr.cmp}${expr.limit})"
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {
@@ -79,9 +76,7 @@ object ExprToString {
                 }\n}) = $myResult"
             }
 
-            is IntersectExpression -> "(${expr.lhs.dStr()} ∩ ${expr.rhs.dStr()}) = $myResult"
             is BooleanInvertExpression -> "!${expr.expr.dStr()} = $myResult"
-            is InvertExpression -> "!${expr.expr.dStr()} = $myResult"
             is NegateExpression -> "-${expr.expr.dStr()} = $myResult"
             is UnionExpression -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
             is BooleanExpression -> booleanExprToString(expr)
@@ -89,7 +84,6 @@ object ExprToString {
                 return if (expr.isResolved()) expr.resolvedInto?.dStr() ?: "null" else expr.myKey.key.toString()
             }
 
-            is NumberLimitsExpression -> "(${expr.cmp}${expr.limit.dStr()}) = $myResult"
             is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {

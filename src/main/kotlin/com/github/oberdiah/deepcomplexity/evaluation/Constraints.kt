@@ -65,6 +65,9 @@ class Constraints private constructor(
     }
 
     fun addConstraint(key: Context.Key, expr: Bundle<*>): Constraints {
+        assert(key !is Context.Key.EphemeralKey) {
+            "Ephemeral keys shouldn't really be allowed to be added to constraints."
+        }
         return and(constrainedBy(mapOf(key to expr)))
     }
 
@@ -87,7 +90,7 @@ class Constraints private constructor(
                 @Suppress("UNCHECKED_CAST")
                 l.intersect(rhs as Bundle<T>)
 
-            assert(lhs.getIndicator() == rhs.getIndicator())
+            assert(lhs.ind == rhs.ind)
 
             ugly(lhs)
         }

@@ -2,7 +2,10 @@ package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.into
 
 object ConstraintSolver {
     data class EvaluatedCollectedTerms<T : Number>(
@@ -130,13 +133,7 @@ object ConstraintSolver {
             val castVariable = variable as VariableExpression<out Number>
 
             val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
-            constraints = constraints.addConstraint(
-                variable.getKey().key,
-                // We can't pass `expr` in here, if we did, we'd be evaluating constraints
-                // forever.
-                // todo worth only collapsing to states possible to reach
-                variableConstraints.evaluate(ConstantExpression.TRUE).collapse()
-            )
+            constraints = constraints.addConstraint(variable.getKey().key, variableConstraints)
         }
 
         return constraints
@@ -148,7 +145,7 @@ object ConstraintSolver {
     private fun <T : Number> getVariableConstraints(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
-    ): IExpr<T>? {
+    ): Bundle<T>? {
         if (expr.getVariables(false).none { it.getKey() == variable.getKey() }) {
             // The variable wasn't found in the expression.
             return null
@@ -172,9 +169,18 @@ object ConstraintSolver {
             )
 
             val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
-
             return if (exponent == 1) {
-                NumberLimitsExpression(rhs, coeffLZ, expr.comp)
+                val rhsBundle = rhs.evaluate(ConstantExpression.TRUE).collapse().into()
+                val shouldFlip = coeffLZ.evaluate(ConstantExpression.TRUE).collapse().into()
+
+                when (shouldFlip) {
+                    BooleanSet.TRUE -> rhsBundle.getSetSatisfying(expr.comp.flip())
+                    BooleanSet.FALSE -> rhsBundle.getSetSatisfying(expr.comp)
+                    BooleanSet.BOTH -> rhsBundle.getSetSatisfying(expr.comp)
+                        .union(rhsBundle.getSetSatisfying(expr.comp.flip()))
+
+                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                }
             } else {
                 println("Cannot constraint solve yet: $lhs (exponent $exponent)")
                 null
@@ -184,7 +190,6 @@ object ConstraintSolver {
             println("Cannot constraint solve yet as it has zero terms: $lhs")
             null
         }
-        TODO()
     }
 
     /**
@@ -241,7 +246,6 @@ object ConstraintSolver {
             }
             // I think this is correct?
             is NegateExpression -> expandTerms(expr.expr, variable)?.negate()
-            is NumberLimitsExpression -> throw IllegalStateException("Uuh ... this can maybe happen?")
             is NumIterationTimesExpression -> TODO("Maybe one day? Unsure if this is possible")
             is TypeCastExpression<*, *> -> {
                 fun <Q : Number> extra(expr: IExpr<Q>): CollectedTerms<T>? =

@@ -85,6 +85,20 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	public static short multiplyTest1(short incoming) {
+		int a = 0;
+		int b = 0;
+		if (incoming > 0) {
+			if (incoming < 10) {
+				a = incoming;
+				b = incoming;
+			}
+		}
+		
+		return (short) (a * 2 - b * 2);
+	}
+	
+	@RequiredScore(1.0)
 	public static short barTest1(short incoming1) {
 		int bar = 0;
 		
@@ -155,7 +169,7 @@ public class MyTestData {
 		return (short) (incoming1 * (incoming1 + 1));
 	}
 	
-	@RequiredScore(0.67)
+	@RequiredScore(1.0)
 	public static short combinedIfs1(short incoming1) {
 		int a = incoming1;
 		if (incoming1 < 0) {
@@ -212,7 +226,7 @@ public class MyTestData {
 		return (short) (a * b);
 	}
 	
-	@RequiredScore(0.0597)
+	@RequiredScore(0.129)
 	public static short combinedIfs4(short x) {
 		int a = x;
 		if (x < 0) {
@@ -277,6 +291,7 @@ public class MyTestData {
 		return v;
 	}
 	
+	@RequiredScore(0.122)
 	public static short constraintTest1(short incoming) {
 		int a = 0;
 		int b = 0;
@@ -311,6 +326,7 @@ public class MyTestData {
 		return (short) b;
 	}
 	
+	@RequiredScore(1.0)
 	public static short constraintTest3(short incoming) {
 		int a = 0;
 		if (incoming > 10) {

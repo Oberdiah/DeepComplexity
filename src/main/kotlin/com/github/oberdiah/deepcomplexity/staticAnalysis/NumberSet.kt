@@ -1,124 +1,74 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.downOneEpsilon
+import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.isOne
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.max
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.min
 import com.github.oberdiah.deepcomplexity.staticAnalysis.Utilities.upOneEpsilon
-import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Affine
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
-import java.util.stream.Stream
 import kotlin.reflect.KClass
 
-typealias Affines<T> = List<Affine<T>>
+typealias Ranges<T> = List<NumberRange<T>>
 
-sealed class NumberSet<T : Number>(
-    val ind: NumberSetIndicator<T>,
-    val affines: List<Affine<T>>
+class NumberSet<T : Number>(
+    override val ind: NumberSetIndicator<T>,
+    // In order, and non-overlapping
+    val ranges: Ranges<T>
 ) : Bundle<T> {
-    override fun getIndicator(): SetIndicator<T> = ind
     val clazz: KClass<T> = ind.clazz
 
-    class DoubleSet(affines: Affines<Double> = emptyList()) :
-        NumberSet<Double>(DoubleSetIndicator, affines)
-
-    class FloatSet(affines: Affines<Float> = emptyList()) :
-        NumberSet<Float>(FloatSetIndicator, affines)
-
-    class IntSet(affines: Affines<Int> = emptyList()) :
-        NumberSet<Int>(IntSetIndicator, affines)
-
-    class LongSet(affines: Affines<Long> = emptyList()) :
-        NumberSet<Long>(LongSetIndicator, affines)
-
-    class ShortSet(affines: Affines<Short> = emptyList()) :
-        NumberSet<Short>(ShortSetIndicator, affines)
-
-    class ByteSet(affines: Affines<Byte> = emptyList()) :
-        NumberSet<Byte>(ByteSetIndicator, affines)
-
-    override fun toString(): String = affines.joinToString {
-        it.stringOverview()
+    override fun toString(): String = ranges.joinToString {
+        it.toString()
     }
 
-    override fun isEmpty(): Boolean = affines.isEmpty()
+    override fun isEmpty(): Boolean = ranges.isEmpty()
 
-    fun getRange(): Pair<Number, Number> = getRangeTyped()
-    fun getAsRanges(): List<Pair<Number, Number>> = lazyRanges
-
-    fun getAsRangesTyped(): List<Pair<T, T>> = lazyRanges
-    fun getRangeTyped(): Pair<T, T> {
-        val ranges = getAsRangesTyped()
-        return Pair(ranges.first().first, ranges.last().second)
+    private fun makeNew(ranges: Ranges<T>): NumberSet<T> {
+        return newFromDataAndInd(ind, NumberUtilities.mergeAndDeduplicate(ranges))
     }
 
-    val lazyRanges: List<Pair<T, T>> by lazy {
-        toRangePairs()
-    }
-
-    fun toRangePairs(): List<Pair<T, T>> = NumberUtilities.mergeAndDeduplicate(pairsStream().toList())
-    private fun pairsStream(): Stream<Pair<T, T>> =
-        affines.stream().flatMap { it.toRanges().stream() }
-
-    private fun makeNew(affines: Affines<T>): NumberSet<T> {
-        return newFromDataAndInd(ind, affines)
+    /**
+     * Returns the full range of this number set (Smallest possible value to largest)
+     */
+    fun getRange(): Pair<T, T> {
+        val smallest = ranges.first().start
+        val largest = ranges.last().end
+        return Pair(smallest, largest)
     }
 
     fun negate(): NumberSet<T> {
-        val zero = Affine.fromConstant(ind, ind.getZero())
-        return makeNew(affines.map { elem -> zero.subtract(elem) })
+        val zero = NumberRange.fromConstant(ind.getZero())
+        return makeNew(ranges.flatMap { elem -> zero.subtract(elem) })
     }
 
-    override fun <Q : Any> cast(outsideInd: SetIndicator<Q>): Bundle<Q>? {
-        if (outsideInd !is NumberSetIndicator<*>) {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>? {
+        if (newInd !is NumberSetIndicator<*>) {
             return null
         }
 
-        fun <OutT : Number> extra(outsideInd: NumberSetIndicator<OutT>): NumberSet<OutT> {
-            assert(outsideInd.isWholeNum()) // We can't handle/haven't thought about floating point yet.
-
-            if (outsideInd.getMaxValue() > ind.getMaxValue()) {
-                // We're enlarging the possibility space. This means our optimization of keeping unlimited-sized affines
-                // around until the final range-pairs step is no longer valid.
-                // For example, (short) ((byte) x) + 5 has a range of [-123, 132]
-                val newAffines: MutableList<Affine<OutT>> = mutableListOf()
-                for (element in affines) {
-                    val newAffine = element.castTo(outsideInd)
-                    val affineRanges = newAffine.toRanges()
-
-                    if (affineRanges.size == 1) {
-                        // We don't wrap under the new casting, we can keep the affine alive :)
-                        newAffines.add(newAffine)
-                    } else {
-                        // We need to split the affine into multiple affines.
-                        for (range in affineRanges) {
-                            newAffines.add(
-                                Affine.fromRange(outsideInd, range.first, range.second)
-                            )
-                        }
-                    }
-                }
-
-                return newFromDataAndInd(outsideInd, newAffines)
-            } else {
-                // When we're shrinking things, I think (?) we're fine to stay as-is and just label with the new indicator.
-                // I could be wrong here, but this feels intuitively correct to me.
-                return newFromDataAndInd(
-                    outsideInd,
-                    affines.map { it.castTo(outsideInd) },
-                )
-            }
+        fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberSet<OutT> {
+            assert(newInd.isWholeNum() && ind.isWholeNum()) // We can't handle/haven't thought about floating point casting yet.
+            return newFromDataAndInd(newInd, ranges.flatMap { it.castTo(newInd) })
         }
 
         @Suppress("UNCHECKED_CAST")
         // Safety: Trivially true by checking the signature of extra().
-        return extra(outsideInd) as Bundle<Q>
+        return extra(newInd) as Bundle<Q>
     }
+
+    fun add(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, ADDITION)
+    fun subtract(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, SUBTRACTION)
+    fun multiply(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, MULTIPLICATION)
+    fun divide(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, DIVISION)
 
     fun arithmeticOperation(
         other: NumberSet<T>,
@@ -126,17 +76,17 @@ sealed class NumberSet<T : Number>(
     ): NumberSet<T> {
         assert(ind == other.ind)
 
-        val affineOp = when (operation) {
-            ADDITION -> Affine<T>::add
-            SUBTRACTION -> Affine<T>::subtract
-            MULTIPLICATION -> Affine<T>::multiply
-            DIVISION -> Affine<T>::divide
+        val rangeOp = when (operation) {
+            ADDITION -> NumberRange<T>::add
+            SUBTRACTION -> NumberRange<T>::subtract
+            MULTIPLICATION -> NumberRange<T>::multiply
+            DIVISION -> NumberRange<T>::divide
         }
 
-        val newList: MutableList<Affine<T>> = mutableListOf()
-        for (range in affines) {
-            for (otherRange in other.affines) {
-                newList.add(affineOp(range, otherRange))
+        val newList: MutableList<NumberRange<T>> = mutableListOf()
+        for (range in ranges) {
+            for (otherRange in other.ranges) {
+                newList.addAll(rangeOp(range, otherRange))
             }
         }
 
@@ -196,13 +146,8 @@ sealed class NumberSet<T : Number>(
         TODO("Not yet implemented")
     }
 
-    override fun associateVariance(key: Context.Key): Bundle<T> = makeNew(
-        affines.flatMap { affine ->
-            affine.toRanges().map { range ->
-                Affine.fromRange(ind, key, range.first, range.second)
-            }
-        }
-    )
+    override fun withVariance(key: Context.Key): NumberVariance<T> = NumberVariance.newFromVariance(ind, key)
+    override fun toConstVariance(): VarianceBundle<T> = NumberVariance.newFromConstant(this)
 
     /**
      * Returns a new set that satisfies the comparison operation.
@@ -213,30 +158,26 @@ sealed class NumberSet<T : Number>(
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
 
-        var newData: List<Affine<T>> = when (comp) {
-            LESS_THAN, LESS_THAN_OR_EQUAL ->
-                listOf(
-                    Affine.fromRange(
-                        ind,
+        var newData: List<NumberRange<T>> = listOf(
+            when (comp) {
+                LESS_THAN, LESS_THAN_OR_EQUAL ->
+                    NumberRange.new(
                         ind.getMinValue(),
                         smallestValue.downOneEpsilon()
                     )
-                )
 
-            GREATER_THAN, GREATER_THAN_OR_EQUAL ->
-                listOf(
-                    Affine.fromRange(
-                        ind,
+                GREATER_THAN, GREATER_THAN_OR_EQUAL ->
+                    NumberRange.new(
                         biggestValue.upOneEpsilon(),
                         ind.getMaxValue()
                     )
-                )
-        }
+            }
+        )
 
         if (comp == LESS_THAN_OR_EQUAL) {
-            newData = newData + affines
+            newData = newData + ranges
         } else if (comp == GREATER_THAN_OR_EQUAL) {
-            newData = affines + newData
+            newData = ranges + newData
         }
 
         return makeNew(newData)
@@ -244,60 +185,34 @@ sealed class NumberSet<T : Number>(
 
     override fun contains(element: T): Boolean {
         val value = element
-        for (range in getAsRanges()) {
-            if (value >= range.first && value <= range.second) {
+        for (range in ranges) {
+            if (value >= range.start && value <= range.end) {
                 return true
             }
         }
         return false
     }
 
-    override fun union(other: Bundle<T>): Bundle<T> {
-        assert(other is NumberSet<T>)
-        other as NumberSet<T>
+    override fun union(other: Bundle<T>): NumberSet<T> {
         assert(ind == other.ind)
 
-        // No affine killing here :)
-        return makeNew(affines + other.affines)
+        return makeNew(ranges + other.into().ranges)
     }
 
-    override fun intersect(other: Bundle<T>): Bundle<T> {
-        assert(other is NumberSet<T>)
-        other as NumberSet<T>
+    override fun intersect(other: Bundle<T>): NumberSet<T> {
         assert(ind == other.ind)
 
-        val newList: MutableList<Affine<T>> = mutableListOf()
-
+        val newList: MutableList<NumberRange<T>> = mutableListOf()
         // For each range in this set, find overlapping ranges in other set
-        // This could be made much more efficient.
-        for (affine in affines) {
-            for (otherAffine in other.affines) {
-                val otherRanges = otherAffine.toRanges()
-                val ranges = affine.toRanges()
-                for (range in ranges) {
-                    for (otherRange in otherRanges) {
-                        // Find overlap
-                        val start = range.first.max(otherRange.first)
-                        val end = range.second.min(otherRange.second)
+        for (range in ranges) {
+            for (otherRange in other.into().ranges) {
+                // Find overlap
+                val start = range.start.max(otherRange.start)
+                val end = range.end.min(otherRange.end)
 
-                        // If there is an overlap, add it
-                        if (start <= end) {
-                            val avoidedWrapping = ranges.size == 1 && otherRanges.size == 1
-                            val firstRangeEntirelyEnclosed = range.first == start && range.second == end
-                            val secondRangeEntirelyEnclosed = otherRange.first == start && otherRange.second == end
-
-                            // This prioritizes affine 1 over affine 2. We may want to change this.
-                            newList.add(
-                                if (avoidedWrapping && firstRangeEntirelyEnclosed) {
-                                    affine
-                                } else if (avoidedWrapping && secondRangeEntirelyEnclosed) {
-                                    otherAffine
-                                } else {
-                                    Affine.fromRange(ind, start, end)
-                                }
-                            )
-                        }
-                    }
+                // If there is an overlap, add it
+                if (start <= end) {
+                    newList.add(NumberRange.new(start, end))
                 }
             }
         }
@@ -306,55 +221,46 @@ sealed class NumberSet<T : Number>(
     }
 
     override fun invert(): NumberSet<T> {
-        val newList: MutableList<Affine<T>> = mutableListOf()
+        val newList: MutableList<NumberRange<T>> = mutableListOf()
 
         // Affine death is inevitable here.
         val minValue = ind.getMinValue()
         val maxValue = ind.getMaxValue()
 
-        if (affines.isEmpty()) {
-            return makeNew(
-                listOf(
-                    Affine.fromRange(ind, minValue, maxValue)
-                )
-            )
+        if (ranges.isEmpty()) {
+            return makeNew(listOf(NumberRange.new(minValue, maxValue)))
         }
 
         var currentMin = minValue
 
-        val orderedPairs = toRangePairs().sortedWith { a, b -> a.first.compareTo(b.first) }
-        for (range in orderedPairs) {
-            if (currentMin < range.first) {
-                newList.add(
-                    Affine.fromRange(ind, currentMin, range.first.downOneEpsilon())
-                )
+        for (range in ranges) {
+            if (currentMin < range.start) {
+                newList.add(NumberRange.new(currentMin, range.start.downOneEpsilon()))
             }
-            currentMin = range.second.upOneEpsilon()
+            currentMin = range.end.upOneEpsilon()
         }
 
         // Add final range if necessary
         if (currentMin < maxValue) {
-            newList.add(
-                Affine.fromRange(ind, currentMin, maxValue)
-            )
+            newList.add(NumberRange.new(currentMin, maxValue))
         }
 
         return makeNew(newList)
     }
 
     fun isOne(): Boolean {
-        return affines.all { it.isExactly(1) }
+        return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isOne()
     }
 
     companion object {
         fun <T : Number> zero(ind: NumberSetIndicator<T>): NumberSet<T> = newFromDataAndInd(
             ind,
-            listOf(Affine.fromConstant(ind, ind.getZero())),
+            listOf(NumberRange.fromConstant(ind.getZero())),
         )
 
         fun <T : Number> one(ind: NumberSetIndicator<T>): NumberSet<T> = newFromDataAndInd(
             ind,
-            listOf(Affine.fromConstant(ind, ind.getOne())),
+            listOf(NumberRange.fromConstant(ind.getOne())),
         )
 
         fun <T : Number> newFromConstant(
@@ -363,26 +269,19 @@ sealed class NumberSet<T : Number>(
             val ind = SetIndicator.fromValue(constant)
             return newFromDataAndInd(
                 ind,
-                listOf(Affine.fromConstant(ind, constant)),
+                listOf(NumberRange.fromConstant(constant)),
             )
         }
 
         fun <T : Number> newFull(ind: NumberSetIndicator<T>): NumberSet<T> =
-            newFromDataAndInd(ind, listOf(Affine.full(ind)))
+            newFromDataAndInd(ind, listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue())))
 
         @Suppress("UNCHECKED_CAST")
         private fun <T : Number> newFromDataAndInd(
             ind: NumberSetIndicator<T>,
-            affines: Affines<T>,
+            ranges: Ranges<T>,
         ): NumberSet<T> {
-            return when (ind) {
-                is ByteSetIndicator -> ByteSet(affines as Affines<Byte>)
-                is ShortSetIndicator -> ShortSet(affines as Affines<Short>)
-                is IntSetIndicator -> IntSet(affines as Affines<Int>)
-                is LongSetIndicator -> LongSet(affines as Affines<Long>)
-                is FloatSetIndicator -> FloatSet(affines as Affines<Float>)
-                is DoubleSetIndicator -> DoubleSet(affines as Affines<Double>)
-            } as NumberSet<T>
+            return NumberSet(ind, ranges)
         }
     }
 }

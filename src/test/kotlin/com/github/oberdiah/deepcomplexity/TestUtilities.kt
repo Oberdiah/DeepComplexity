@@ -47,14 +47,17 @@ object TestUtilities {
             val methodScoreStr = String.format("%.2f", methodScore * 100)
 
             if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {
-                println("\tReceived a score of $msg which was not sufficient (<$requiredScoreStr%)")
-                if (methodScore == 0.0) println("\t$msg")
+                if (methodScore == 0.0) {
+                    println("\t$msg")
+                } else {
+                    println("\tReceived a score of $msg which was not sufficient (<$requiredScoreStr%)")
+                }
                 return listOf("### Failed ###", scoreReceivedColumn, "$requiredScoreStr%", extraInfoColumn) to false
             } else {
                 println("\tReceived a score of $msg which was sufficient (>=$requiredScoreStr%)")
                 val notes = if (methodScoreStr.toDouble() > requiredScoreStr.toDouble())
                     "Exceeded expectations" else ""
-                return listOf("Passed", msg, "$requiredScoreStr%", "") to true
+                return listOf("Passed", msg, "$requiredScoreStr%", notes) to true
             }
         } else {
             println("\tThis method was not required to reach a score threshold and as such it passed by default.")
@@ -72,9 +75,8 @@ object TestUtilities {
             return "Failed to parse PSI" to 0.0
         }
 
-        println(context.debugKey(returnKey).prependIndent())
-
         val range = try {
+            println(context.debugKey(returnKey).prependIndent())
             context.evaluateKey(returnKey).cast(ShortSetIndicator)!!.collapse()
         } catch (e: Throwable) {
             e.printStackTrace()

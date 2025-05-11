@@ -1,9 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BundleSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.VarianceBundle
 
 sealed interface IExpr<T : Any> {
     /**
@@ -119,14 +119,6 @@ class IfExpression<T : Any>(
     }
 }
 
-class IntersectExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
-    init {
-        assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
-            "Intersecting expressions with different set indicators: ${lhs.getSetIndicator()} and ${rhs.getSetIndicator()}"
-        }
-    }
-}
-
 class UnionExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
     init {
         assert(lhs.getSetIndicator() == rhs.getSetIndicator()) {
@@ -146,25 +138,12 @@ class BooleanExpression(val lhs: IExpr<Boolean>, val rhs: IExpr<Boolean>, val op
 
 class ConstExpr<T : Any>(val constSet: BundleSet<T>) : Expr<T>() {
     companion object {
-        fun <T : Any> new(bundle: Bundle<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
+        fun <T : Any> new(bundle: VarianceBundle<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
     }
 }
 
 class BooleanInvertExpression(val expr: IExpr<Boolean>) : Expr<Boolean>()
-class InvertExpression<T : Any>(val expr: IExpr<T>) : Expr<T>()
 class NegateExpression<T : Number>(val expr: IExpr<T>) : Expr<T>()
-
-/**
- * Returns the range of numbers above or below a given limit, depending on cmp.
- */
-class NumberLimitsExpression<T : Number>(
-    // The value we're either going to be above or below.
-    val limit: IExpr<T>,
-    // Whether we should flip the comparison operator or not.
-    val shouldFlipCmp: IExpr<Boolean>,
-    // The comparison operator to use.
-    val cmp: ComparisonOp,
-) : Expr<T>()
 
 class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,

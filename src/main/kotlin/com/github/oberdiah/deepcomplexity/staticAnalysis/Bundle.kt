@@ -3,9 +3,9 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
 
 interface Bundle<T : Any> {
-    fun getIndicator(): SetIndicator<T>
+    val ind: SetIndicator<T>
     fun invert(): Bundle<T>
-    fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>?
+    fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>?
     fun contains(element: T): Boolean
     fun isEmpty(): Boolean
     fun intersect(other: Bundle<T>): Bundle<T>
@@ -22,5 +22,7 @@ interface Bundle<T : Any> {
      * from the variable `x`. Down the line, arithmetic etc. performed on the bundle will know these values
      * are associated with key `x`, such that `x - x` will be 0.
      */
-    fun associateVariance(key: Context.Key): Bundle<T>
+    // todo probably needs reworked/removed
+    fun withVariance(key: Context.Key): VarianceBundle<T>
+    fun toConstVariance(): VarianceBundle<T>
 }

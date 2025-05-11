@@ -24,22 +24,6 @@ object ExprEvaluate {
             }
 
             is NegateExpression -> evaluate(expr.expr, condition).negate()
-            is NumberLimitsExpression -> {
-                val rhs = expr.limit.evaluate(condition)
-                val bundleSet = expr.shouldFlipCmp.evaluate(condition)
-
-                bundleSet.unaryMapAndUnion(rhs.ind) { bundle ->
-                    when (bundle.into()) {
-                        TRUE -> rhs.getSetSatisfying(expr.cmp.flip())
-                        FALSE -> rhs.getSetSatisfying(expr.cmp)
-                        BOTH -> rhs.getSetSatisfying(expr.cmp)
-                            .union(rhs.getSetSatisfying(expr.cmp.flip()))
-
-                        NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
-                    }
-                }
-            }
-
             is NumIterationTimesExpression -> {
                 val terms = expr.terms
                 // The plan here is to figure out, based on the set of numbers we are allowed to have,
@@ -89,9 +73,7 @@ object ExprEvaluate {
 
     private fun <T : Any> evaluateAnythings(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         val toReturn: BundleSet<T> = when (expr) {
-            is IntersectExpression -> evaluate(expr.lhs, condition).intersect(evaluate(expr.rhs, condition))
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
-            is InvertExpression -> evaluate(expr.expr, condition).invert()
             is IfExpression -> {
                 val ifCondition = expr.thisCondition
                 val evaluatedCond = evaluate(ifCondition, condition)
@@ -99,8 +81,8 @@ object ExprEvaluate {
                 val falseCondition =
                     BooleanExpression(BooleanInvertExpression(ifCondition), condition, BooleanOp.AND)
 
-                evaluatedCond.unaryMapAndUnion(expr.trueExpr.getSetIndicator()) { bundle ->
-                    when (bundle.into()) {
+                evaluatedCond.unaryMapAndUnion(expr.trueExpr.getSetIndicator()) { bundle, constraints ->
+                    when (bundle.collapse(constraints).into()) {
                         TRUE -> evaluate(expr.trueExpr, trueCondition)
                         FALSE -> evaluate(expr.falseExpr, falseCondition)
                         BOTH -> {
@@ -136,7 +118,7 @@ object ExprEvaluate {
                     val constraint = constraints.getConstraint(expr)
                         ?: expr.getSetIndicator().newFullBundle()
 
-                    val newBundle = constraint.associateVariance(expr.myKey.key)
+                    val newBundle = constraint.withVariance(expr.myKey.key)
                     // Constrain with the entire set of constraints.
                     bundleSet = bundleSet.union(BundleSet.constrained(newBundle, constraints))
                 }
