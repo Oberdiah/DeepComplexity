@@ -199,6 +199,25 @@ object MethodProcessing {
                 return context.getVar(psi.resolveIfNeeded())
             }
 
+            is PsiPrefixExpression -> {
+                val operand = psi.operand ?: throw ExpressionIncompleteException()
+                val tokenType = psi.operationSign.tokenType
+
+                val unaryOp = UnaryNumberOp.fromJavaTokenType(tokenType)
+                    ?: throw IllegalArgumentException("As-yet unsupported unary operation: ${psi.operationSign}")
+
+                val operandPrecast = buildExpressionFromPsi(operand, context).tryCastToNumbers()
+                    ?: throw IllegalArgumentException("Failed to cast to Number: ${operand.text}")
+
+                val promoted = ConversionsAndPromotion.unaryNumericPromotion(operandPrecast)
+
+                return when (unaryOp) {
+                    UnaryNumberOp.INCREMENT -> TODO()
+                    UnaryNumberOp.DECREMENT -> TODO()
+                    UnaryNumberOp.NEGATE -> NegateExpression(promoted)
+                }
+            }
+
             is PsiBinaryExpression -> {
                 val lhsOperand = psi.lOperand
                 val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()

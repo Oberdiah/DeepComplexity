@@ -32,15 +32,11 @@ public class MyTestData {
 	
 	@RequiredScore(0.75) // We've not implemented even/odd/modulo detection yet.
 	public static short test4(short incoming1) {
-		int foo = 0;
 		int bar = incoming1;
-		int incoming2 = incoming1 * 2;
 		
 		if (incoming1 > 2) {
-			incoming2 = incoming1 * incoming2;
-			incoming1 = (short) (0 - incoming1);
+			incoming1 = (short) (-incoming1);
 			bar += incoming1;
-			foo += 3;
 		}
 		
 		return (short) (incoming1 + bar);
@@ -57,6 +53,44 @@ public class MyTestData {
 		} else {
 			return 0;
 		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short negateTest(short incoming) {
+		return (short) (-incoming);
+	}
+	
+	@RequiredScore(1.0)
+	public static short negateTest2(short incoming) {
+		return (short) (-incoming + incoming);
+	}
+	
+	public static short incrementTest(short incoming) {
+		int a = incoming;
+		int b = a++;
+		int c = a;
+		return (short) (b - c);
+	}
+	
+	public static short incrementTest2(short incoming) {
+		int a = incoming;
+		int b = ++a;
+		int c = a;
+		return (short) (b - c);
+	}
+	
+	public static short decrementTest(short incoming) {
+		int a = incoming;
+		int b = a--;
+		int c = a;
+		return (short) (b - c);
+	}
+	
+	public static short decrementTest2(short incoming) {
+		int a = incoming;
+		int b = --a;
+		int c = a;
+		return (short) (b - c);
 	}
 	
 	@RequiredScore(1.0)

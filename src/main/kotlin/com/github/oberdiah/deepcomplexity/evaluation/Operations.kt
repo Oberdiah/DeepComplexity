@@ -3,6 +3,31 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType
 
+enum class UnaryNumberOp {
+    INCREMENT,
+    DECREMENT,
+    NEGATE;
+
+    override fun toString(): String {
+        return when (this) {
+            INCREMENT -> "++"
+            DECREMENT -> "--"
+            NEGATE -> "-"
+        }
+    }
+
+    companion object {
+        fun fromJavaTokenType(tokenType: IElementType): UnaryNumberOp? {
+            return when (tokenType) {
+                JavaTokenType.PLUSPLUS -> INCREMENT
+                JavaTokenType.MINUSMINUS -> DECREMENT
+                JavaTokenType.MINUS -> NEGATE
+                else -> null
+            }
+        }
+    }
+}
+
 enum class BinaryNumberOp {
     ADDITION,
     SUBTRACTION,
