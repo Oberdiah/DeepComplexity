@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 object ConstantExpression {
     val TRUE = ConstExpr.new(BooleanBundle.TRUE.toConstVariance())
@@ -21,11 +20,8 @@ object ConstantExpression {
     fun <T : Number> one(expr: IExpr<T>): ConstExpr<T> =
         zero(expr.getNumberSetIndicator())
 
-    fun <T : Any> fullSetFromExprAndKey(expr: IExpr<T>, key: Context.Key): Variances<T> =
-        expr.getSetIndicator().newFullBundle().withVariance(key)
-
     fun <T : Any> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
-        ConstExpr.new(fullSetFromExprAndKey(expr, key))
+        ConstExpr.new(expr.getSetIndicator().newVariance(key))
 
     fun fromAny(value: Any): IExpr<*> {
         return ConstExpr.new(

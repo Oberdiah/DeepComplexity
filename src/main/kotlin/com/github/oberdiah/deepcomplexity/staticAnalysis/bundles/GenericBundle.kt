@@ -1,15 +1,10 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
-import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 class GenericBundle<T : Any>(val values: Set<T>) : Bundle<T> {
     override fun toConstVariance(): Variances<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun withVariance(key: Context.Key): Variances<T> {
         TODO("Not yet implemented")
     }
 

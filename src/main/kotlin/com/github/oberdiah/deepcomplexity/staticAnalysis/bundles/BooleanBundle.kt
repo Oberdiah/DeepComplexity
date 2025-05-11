@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
-import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
@@ -67,7 +66,6 @@ enum class BooleanBundle : Bundle<Boolean> {
         }
     }
 
-    override fun withVariance(key: Context.Key): BooleanVariances = BooleanVariances(this)
     override fun toConstVariance(): Variances<Boolean> {
         return BooleanVariances(this)
     }

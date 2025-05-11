@@ -5,6 +5,9 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.GenericBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -24,6 +27,8 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
      * Instantiate a bundle representing a full set of values.
      */
     abstract fun newFullBundle(): Bundle<T>
+
+    abstract fun newVariance(key: Context.Key): Variances<T>
 
     companion object {
         fun <T : Any> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
@@ -88,6 +93,7 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
     override fun newFullBundle(): NumberBundle<T> = NumberBundle.newFull(this)
     override fun newConstantBundle(constant: T): NumberBundle<T> = NumberBundle.newFromConstant(constant)
     override fun newEmptyBundle(): NumberBundle<T> = NumberBundle(this, emptyList())
+    override fun newVariance(key: Context.Key): Variances<T> = NumberVariances.newFromVariance(this, key)
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
@@ -170,6 +176,7 @@ data object ByteSetIndicator : NumberSetIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
+    override fun newVariance(key: Context.Key): Variances<Boolean> = BooleanVariances(BooleanBundle.BOTH)
     override fun newFullBundle(): Bundle<Boolean> = BooleanBundle.BOTH
     override fun newEmptyBundle(): BooleanBundle = BooleanBundle.NEITHER
     override fun newConstantBundle(constant: Boolean): Bundle<Boolean> =
@@ -177,6 +184,7 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
 }
 
 class GenericSetIndicator<T : Any>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
+    override fun newVariance(key: Context.Key): Variances<T> = TODO()
     override fun newConstantBundle(constant: T): Bundle<T> = GenericBundle(setOf(constant))
     override fun newEmptyBundle(): Bundle<T> = GenericBundle(emptySet())
     override fun newFullBundle(): Bundle<T> = TODO()

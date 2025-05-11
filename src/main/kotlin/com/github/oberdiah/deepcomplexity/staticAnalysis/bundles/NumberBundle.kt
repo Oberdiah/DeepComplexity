@@ -4,7 +4,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
-import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
@@ -148,9 +147,6 @@ class NumberBundle<T : Number>(
         // This was half-implemented in the old version.
         TODO("Not yet implemented")
     }
-
-    override fun withVariance(key: Context.Key): NumberVariances<T> =
-        NumberVariances.Companion.newFromVariance(ind, key)
 
     override fun toConstVariance(): Variances<T> = NumberVariances.Companion.newFromConstant(this)
 
