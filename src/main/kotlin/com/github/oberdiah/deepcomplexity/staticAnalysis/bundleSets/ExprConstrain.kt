@@ -1,9 +1,8 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
+import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ExprConstrain {
@@ -23,11 +22,11 @@ object ExprConstrain {
                 for (lhs in lhsConstrained) {
                     for (rhs in rhsConstrained) {
                         when (condition.op) {
-                            AND -> {
+                            BooleanOp.AND -> {
                                 outputConstraints.add(lhs.and(rhs))
                             }
 
-                            OR -> {
+                            BooleanOp.OR -> {
                                 outputConstraints.add(lhs)
                                 outputConstraints.add(rhs)
                             }
@@ -45,8 +44,8 @@ object ExprConstrain {
                 return condition.constSet.bundles.map {
                     when (it.bundle.collapse(it.constraints).into()) {
                         // Unsure if this is correct
-                        BooleanSet.TRUE, BooleanSet.BOTH -> Constraints.completelyUnconstrained()
-                        BooleanSet.FALSE, BooleanSet.NEITHER -> Constraints.unreachable()
+                        BooleanBundle.TRUE, BooleanBundle.BOTH -> Constraints.completelyUnconstrained()
+                        BooleanBundle.FALSE, BooleanBundle.NEITHER -> Constraints.unreachable()
                     }
                 }
             }

@@ -1,8 +1,9 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
-import com.github.oberdiah.deepcomplexity.loopEvaluation.LoopEvaluation
+import com.github.oberdiah.deepcomplexity.solver.LoopSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
@@ -155,7 +156,7 @@ object MethodProcessing {
                     ConstantExpression.TRUE
                 }
 
-                LoopEvaluation.processLoopContext(bodyContext, conditionExpr)
+                LoopSolver.processLoopContext(bodyContext, conditionExpr)
 
                 context.stack(bodyContext)
             }
@@ -230,7 +231,7 @@ object MethodProcessing {
                     "Failed to convert PsiType to KClass: ${psiType.text}"
                 )
 
-                val setInd = SetIndicator.fromClass(type)
+                val setInd = SetIndicator.Companion.fromClass(type)
 
                 return TypeCastExpression(expr, setInd, false)
             }

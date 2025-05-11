@@ -1,22 +1,22 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 object ConstantExpression {
-    val TRUE = ConstExpr.new(BooleanSet.TRUE.toConstVariance())
-    val FALSE = ConstExpr.new(BooleanSet.FALSE.toConstVariance())
+    val TRUE = ConstExpr.new(BooleanBundle.TRUE.toConstVariance())
+    val FALSE = ConstExpr.new(BooleanBundle.FALSE.toConstVariance())
 
     fun <T : Number> zero(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
-        ConstExpr.new(NumberSet.zero(setIndicator).toConstVariance())
+        ConstExpr.new(NumberBundle.zero(setIndicator).toConstVariance())
 
     fun <T : Number> zero(expr: IExpr<T>): ConstExpr<T> =
         zero(expr.getNumberSetIndicator())
 
     fun <T : Number> one(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
-        ConstExpr.new(NumberSet.one(setIndicator).toConstVariance())
+        ConstExpr.new(NumberBundle.one(setIndicator).toConstVariance())
 
     fun <T : Number> one(expr: IExpr<T>): ConstExpr<T> =
         zero(expr.getNumberSetIndicator())
@@ -30,8 +30,8 @@ object ConstantExpression {
     fun fromAny(value: Any): IExpr<*> {
         return ConstExpr.new(
             when (value) {
-                is Boolean -> BooleanSet.fromBoolean(value)
-                is Number -> NumberSet.newFromConstant(value)
+                is Boolean -> BooleanBundle.fromBoolean(value)
+                is Number -> NumberBundle.newFromConstant(value)
                 is String -> TODO()
                 else -> TODO()
             }.toConstVariance()

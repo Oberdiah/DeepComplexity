@@ -1,8 +1,11 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.CastSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ExprEvaluate {

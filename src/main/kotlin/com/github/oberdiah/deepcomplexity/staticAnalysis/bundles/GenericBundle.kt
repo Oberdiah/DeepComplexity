@@ -1,12 +1,12 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
-import com.github.oberdiah.deepcomplexity.evaluation.Constraints
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
-class GenericSet<T : Any>(val values: Set<T>) : Bundle<T> {
-    class GenericVariances<T : Any>(private val value: GenericSet<T>) : Variances<T> {
+class GenericBundle<T : Any>(val values: Set<T>) : Bundle<T> {
+    class GenericVariances<T : Any>(private val value: GenericBundle<T>) : Variances<T> {
         override val ind: SetIndicator<T>
             get() = TODO("Not yet implemented")
 

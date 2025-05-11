@@ -1,8 +1,12 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.ExprConstrain
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 sealed interface IExpr<T : Any> {
@@ -148,7 +152,7 @@ class NegateExpression<T : Number>(val expr: IExpr<T>) : Expr<T>()
 class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.
-    val constraint: NumberSet<T>,
+    val constraint: NumberBundle<T>,
     // The variable that's being modified as it changes inside the loop.
     val variable: VariableExpression<T>,
     // How the variable is changing each iteration.
@@ -156,7 +160,7 @@ class NumIterationTimesExpression<T : Number>(
 ) : Expr<T>() {
     companion object {
         fun <T : Number> new(
-            constraint: NumberSet<T>,
+            constraint: NumberBundle<T>,
             variable: VariableExpression<out Number>,
             terms: ConstraintSolver.CollectedTerms<out Number>
         ): NumIterationTimesExpression<T> {

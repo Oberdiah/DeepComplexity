@@ -1,7 +1,9 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
@@ -40,7 +42,7 @@ class Constraints private constructor(
         }
 
         fun unreachable(): Constraints {
-            return Constraints(mapOf(Context.Key.EphemeralKey.new() to BooleanSet.NEITHER))
+            return Constraints(mapOf(Context.Key.EphemeralKey.new() to BooleanBundle.NEITHER))
         }
     }
 

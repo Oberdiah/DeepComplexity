@@ -1,13 +1,11 @@
-package com.github.oberdiah.deepcomplexity.loopEvaluation
+package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.MULTIPLICATION
-import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.ExprConstrain
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.isOne
 import com.intellij.psi.PsiElement
 
-object LoopEvaluation {
+object LoopSolver {
     /**
      * Given the context for the loop body, and the condition, figure out our new context.
      */
@@ -86,7 +84,7 @@ object LoopEvaluation {
             )
         }
         @Suppress("UNCHECKED_CAST")
-        return ArithmeticExpression(constantTerm, numLoops as IExpr<T>, MULTIPLICATION)
+        return ArithmeticExpression(constantTerm, numLoops as IExpr<T>, BinaryNumberOp.MULTIPLICATION)
     }
 
     private fun <T : Number> collectTerms(

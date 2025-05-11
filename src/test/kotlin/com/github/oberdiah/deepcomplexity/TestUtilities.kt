@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity
 
-import com.github.oberdiah.deepcomplexity.evaluation.ShortSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.MethodProcessing
+import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
 import com.intellij.psi.PsiMethod
 import testdata.MyTestData

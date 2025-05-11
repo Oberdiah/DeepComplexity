@@ -2,10 +2,10 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 fun <T : Number> BundleSet<T>.arithmeticOperation(other: BundleSet<T>, operation: BinaryNumberOp): BundleSet<T> =
@@ -36,7 +36,7 @@ fun <T : Number> BundleSet<T>.negate(): BundleSet<T> =
 
 fun <T : Number> BundleSet<T>.evaluateLoopingRange(
     evaluate: ConstraintSolver.EvaluatedCollectedTerms<T>,
-    constraint: NumberSet<T>
+    constraint: NumberBundle<T>
 ): BundleSet<T> =
     this.performUnaryOperation { a ->
         a.into().evaluateLoopingRange(evaluate, constraint)

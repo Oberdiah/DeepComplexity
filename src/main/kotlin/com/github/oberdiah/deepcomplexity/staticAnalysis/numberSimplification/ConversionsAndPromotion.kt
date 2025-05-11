@@ -1,6 +1,8 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.IExpr
+import com.github.oberdiah.deepcomplexity.evaluation.performACastTo
+import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 
 object ConversionsAndPromotion {
     class TypedPair<T : Any>(val first: IExpr<T>, val second: IExpr<T>) {

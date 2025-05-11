@@ -1,23 +1,23 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.evaluation.Constraints
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
-enum class BooleanSet : Bundle<Boolean> {
+enum class BooleanBundle : Bundle<Boolean> {
     TRUE {
         override fun contains(other: Boolean): Boolean {
             return other
         }
 
-        override fun addToSet(other: Boolean): BooleanSet {
+        override fun addToSet(other: Boolean): BooleanBundle {
             return if (!other) BOTH else this
         }
 
-        override fun removeFromSet(other: Boolean): BooleanSet {
+        override fun removeFromSet(other: Boolean): BooleanBundle {
             return if (other) NEITHER else this
         }
     },
@@ -26,11 +26,11 @@ enum class BooleanSet : Bundle<Boolean> {
             return !other
         }
 
-        override fun addToSet(other: Boolean): BooleanSet {
+        override fun addToSet(other: Boolean): BooleanBundle {
             return if (other) BOTH else this
         }
 
-        override fun removeFromSet(other: Boolean): BooleanSet {
+        override fun removeFromSet(other: Boolean): BooleanBundle {
             return if (!other) NEITHER else this
         }
     },
@@ -39,11 +39,11 @@ enum class BooleanSet : Bundle<Boolean> {
             return true
         }
 
-        override fun addToSet(other: Boolean): BooleanSet {
+        override fun addToSet(other: Boolean): BooleanBundle {
             return BOTH
         }
 
-        override fun removeFromSet(other: Boolean): BooleanSet {
+        override fun removeFromSet(other: Boolean): BooleanBundle {
             return if (other) FALSE else TRUE
         }
     },
@@ -52,16 +52,16 @@ enum class BooleanSet : Bundle<Boolean> {
             return false
         }
 
-        override fun addToSet(other: Boolean): BooleanSet {
+        override fun addToSet(other: Boolean): BooleanBundle {
             return if (other) TRUE else FALSE
         }
 
-        override fun removeFromSet(other: Boolean): BooleanSet {
+        override fun removeFromSet(other: Boolean): BooleanBundle {
             return NEITHER
         }
     };
 
-    class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> {
+    class BooleanVariances(private val value: BooleanBundle) : Variances<Boolean> {
         fun invert(): BooleanVariances = BooleanVariances(value.invert())
         override val ind: SetIndicator<Boolean> = BooleanSetIndicator
 
@@ -78,7 +78,7 @@ enum class BooleanSet : Bundle<Boolean> {
     }
 
     companion object {
-        fun fromBoolean(value: Boolean): BooleanSet {
+        fun fromBoolean(value: Boolean): BooleanBundle {
             return if (value) TRUE else FALSE
         }
     }
@@ -98,7 +98,7 @@ enum class BooleanSet : Bundle<Boolean> {
 
     override val ind = BooleanSetIndicator
 
-    override fun invert(): BooleanSet {
+    override fun invert(): BooleanBundle {
         // This is a set invert, not a boolean invert
         return when (this) {
             TRUE -> FALSE
@@ -128,7 +128,7 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     }
 
-    fun booleanOperation(other: BooleanSet, operation: BooleanOp): BooleanSet {
+    fun booleanOperation(other: BooleanBundle, operation: BooleanOp): BooleanBundle {
         return when (operation) {
             BooleanOp.AND -> {
                 when (this) {
@@ -150,6 +150,6 @@ enum class BooleanSet : Bundle<Boolean> {
         }
     }
 
-    abstract fun addToSet(other: Boolean): BooleanSet
-    abstract fun removeFromSet(other: Boolean): BooleanSet
+    abstract fun addToSet(other: Boolean): BooleanBundle
+    abstract fun removeFromSet(other: Boolean): BooleanBundle
 }

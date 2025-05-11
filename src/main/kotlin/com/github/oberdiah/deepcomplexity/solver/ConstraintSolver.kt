@@ -2,8 +2,11 @@ package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
@@ -174,12 +177,12 @@ object ConstraintSolver {
                 val shouldFlip = coeffLZ.evaluate(ConstantExpression.TRUE).collapse().into()
 
                 when (shouldFlip) {
-                    BooleanSet.TRUE -> rhsBundle.getSetSatisfying(expr.comp.flip())
-                    BooleanSet.FALSE -> rhsBundle.getSetSatisfying(expr.comp)
-                    BooleanSet.BOTH -> rhsBundle.getSetSatisfying(expr.comp)
+                    BooleanBundle.TRUE -> rhsBundle.getSetSatisfying(expr.comp.flip())
+                    BooleanBundle.FALSE -> rhsBundle.getSetSatisfying(expr.comp)
+                    BooleanBundle.BOTH -> rhsBundle.getSetSatisfying(expr.comp)
                         .union(rhsBundle.getSetSatisfying(expr.comp.flip()))
 
-                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                    BooleanBundle.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
             } else {
                 println("Cannot constraint solve yet: $lhs (exponent $exponent)")

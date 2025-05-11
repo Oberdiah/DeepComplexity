@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.Context
+import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 interface Bundle<T : Any> {

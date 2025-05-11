@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
 
-import com.github.oberdiah.deepcomplexity.evaluation.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.div

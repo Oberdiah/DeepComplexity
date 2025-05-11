@@ -1,9 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
-import com.github.oberdiah.deepcomplexity.evaluation.Constraints
-import com.github.oberdiah.deepcomplexity.evaluation.ExprConstrain
 import com.github.oberdiah.deepcomplexity.evaluation.IExpr
-import com.github.oberdiah.deepcomplexity.evaluation.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 

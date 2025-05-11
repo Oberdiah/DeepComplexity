@@ -1,51 +1,15 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanSet
+import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.GenericSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.GenericBundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
 sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
-    /*
-     To get things straight in my head, here's the situation:
-     We have two different concepts here that are easy to get confused.
-     1.  Constraints.
-         These are used to combine variables and ensure we can correctly
-         track variables that come from if statements.
-
-         For example,
-         ```
-         if (a > 5) {
-             x = 0
-         } else {
-             x = a
-         }
-         ```
-         After this, we know that x = [a: {6..} -> {0}, a: {..5} -> {a}]
-         Note that the constraints must be mutually exclusive from one another. We don't really
-         verify this anywhere, but it should intuitively be true.
-
-     2.  Variance origins.
-         These are used to ensure that `x - y = 0` if `x = a` and `y = a`.
-
-         There are no constraints here, only the ones implied by the bundle set.
-         Numbers store this information in Affines, other types could do it some other way.
-
-         It's tracking where our variance came from. This is optional for a bundle type implementation to do
-         but can improve resolution.
-
-     You can create new empty bundles (this can be no values), constant bundles, and full bundles.
-     All complicated constraints stuff comes from within.
-
-     That should be all. So we've really just got three options:
-      - Create an empty bundle
-      - Create a constant bundle
-      - Create a full bundle
-    */
-
     /**
      * Instantiate a bundle with no valid values.
      */
@@ -121,9 +85,9 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 }
 
 sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
-    override fun newFullBundle(): NumberSet<T> = NumberSet.newFull(this)
-    override fun newConstantBundle(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
-    override fun newEmptyBundle(): NumberSet<T> = NumberSet(this, emptyList())
+    override fun newFullBundle(): NumberBundle<T> = NumberBundle.newFull(this)
+    override fun newConstantBundle(constant: T): NumberBundle<T> = NumberBundle.newFromConstant(constant)
+    override fun newEmptyBundle(): NumberBundle<T> = NumberBundle(this, emptyList())
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
@@ -159,10 +123,10 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
                 || this is ByteSetIndicator
     }
 
-    fun onlyZeroSet(): NumberSet<T> = newConstantBundle(getZero())
-    fun onlyOneSet(): NumberSet<T> = newConstantBundle(getOne())
-    fun allPositiveNumbers(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
-    fun allNegativeNumbers(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
+    fun onlyZeroSet(): NumberBundle<T> = newConstantBundle(getZero())
+    fun onlyOneSet(): NumberBundle<T> = newConstantBundle(getOne())
+    fun allPositiveNumbers(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
+    fun allNegativeNumbers(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
     fun getZero(): T = getInt(0)
     fun getOne(): T = getInt(1)
 
@@ -206,14 +170,14 @@ data object ByteSetIndicator : NumberSetIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
-    override fun newFullBundle(): Bundle<Boolean> = BooleanSet.BOTH
-    override fun newEmptyBundle(): BooleanSet = BooleanSet.NEITHER
+    override fun newFullBundle(): Bundle<Boolean> = BooleanBundle.BOTH
+    override fun newEmptyBundle(): BooleanBundle = BooleanBundle.NEITHER
     override fun newConstantBundle(constant: Boolean): Bundle<Boolean> =
-        BooleanSet.fromBoolean(constant)
+        BooleanBundle.fromBoolean(constant)
 }
 
 class GenericSetIndicator<T : Any>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
-    override fun newConstantBundle(constant: T): Bundle<T> = GenericSet(setOf(constant))
-    override fun newEmptyBundle(): Bundle<T> = GenericSet(emptySet())
+    override fun newConstantBundle(constant: T): Bundle<T> = GenericBundle(setOf(constant))
+    override fun newEmptyBundle(): Bundle<T> = GenericBundle(emptySet())
     override fun newFullBundle(): Bundle<T> = TODO()
 }

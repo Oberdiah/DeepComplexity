@@ -1,6 +1,6 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis
+package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.intellij.psi.*
@@ -211,7 +211,7 @@ class Context {
             ?: throw IllegalArgumentException("Unsupported type for variable expression")
         // We're just going to always perform this cast for now.
         // If the code compiles it's reasonable to do so.
-        variables[key] = expr.performACastTo(SetIndicator.fromClass(clazz), false)
+        variables[key] = expr.performACastTo(SetIndicator.Companion.fromClass(clazz), false)
     }
 
     /**
