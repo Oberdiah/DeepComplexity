@@ -143,7 +143,7 @@ class Context {
          *
          * You must define how to resolve conflicts.
          *
-         * a and b must not be used again after this operation.
+         * `a` and `b` (The two contexts) must not be used again after this operation.
          */
         fun combine(a: Context, b: Context, how: (a: IExpr<*>, b: IExpr<*>) -> IExpr<*>): Context {
             assert(a.alive && b.alive)
