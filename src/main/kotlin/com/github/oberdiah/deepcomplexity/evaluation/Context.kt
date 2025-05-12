@@ -128,11 +128,6 @@ class Context {
         }
     }
 
-    /**
-     * Set to false when a destructive operation is called on this context.
-     */
-    private var alive = true
-
     private val variables = mutableMapOf<Key, IExpr<*>>()
 
     companion object {
@@ -146,8 +141,6 @@ class Context {
          * `a` and `b` (The two contexts) must not be used again after this operation.
          */
         fun combine(a: Context, b: Context, how: (a: IExpr<*>, b: IExpr<*>) -> IExpr<*>): Context {
-            assert(a.alive && b.alive)
-
             val resultingContext = Context()
 
             val allKeys = a.variables.keys + b.variables.keys
@@ -157,12 +150,6 @@ class Context {
                 val bVal = b.variables[key] ?: b.getVar(key)
                 resultingContext.variables[key] = how(aVal, bVal)
             }
-
-            resultingContext.migrateUnresolvedFrom(a)
-            resultingContext.migrateUnresolvedFrom(b)
-
-            a.alive = false
-            b.alive = false
 
             return resultingContext
         }
@@ -184,18 +171,15 @@ class Context {
     }
 
     fun canResolve(variable: VariableExpression<*>): Boolean {
-        assert(alive)
-        return variables.containsKey(variable.getKey().key) && variable.getKey().context == this
+        return variables.containsKey(variable.key)
     }
 
     fun evaluateKey(key: Key): BundleSet<*> {
-        assert(alive)
         val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
         return expr.evaluate(ConstantExpression.TRUE)
     }
 
     fun getVariables(): Map<Key, IExpr<*>> {
-        assert(alive)
         return variables.toImmutableMap()
     }
 
@@ -206,8 +190,6 @@ class Context {
      * when possible.
      */
     fun stack(later: Context) {
-        assert(alive && later.alive)
-
         // To make matters even more confusing, return keys need to be resolved back-to-front
         // that is, for return statements we should be iterating over ourselves and resolving with `later`'s variables.
 
@@ -215,9 +197,8 @@ class Context {
         for (value in later.variables.values) {
             val allUnresolved = value.getVariables(false)
             for (unresolved in allUnresolved) {
-                val resolvedKey = unresolved.getKey()
-                if (resolvedKey.context == later && !resolvedKey.key.isMethod()) {
-                    val resolved = variables[resolvedKey.key]
+                if (!unresolved.key.isMethod()) {
+                    val resolved = variables[unresolved.key]
                     if (resolved != null) {
                         unresolved.setResolvedExpr(resolved)
                     }
@@ -229,9 +210,8 @@ class Context {
         for (value in variables.values) {
             val allUnresolved = value.getVariables(false)
             for (unresolved in allUnresolved) {
-                val resolvedKey = unresolved.getKey()
-                if (resolvedKey.context == this && resolvedKey.key.isMethod()) {
-                    val resolved = later.variables[resolvedKey.key]
+                if (unresolved.key.isMethod()) {
+                    val resolved = later.variables[unresolved.key]
                     if (resolved != null) {
                         unresolved.setResolvedExpr(resolved)
                     }
@@ -247,18 +227,13 @@ class Context {
         variables.putAll(
             later.variables.filter { it.key.isMethod() && !variables.containsKey(it.key) }
         )
-
-        // Any variables that are still unresolved need to be migrated.
-        migrateUnresolvedFrom(later)
     }
 
     fun getVar(element: PsiElement): IExpr<*> {
-        assert(alive)
         return getVar(element.toKey())
     }
 
     fun getVar(element: Key): IExpr<*> {
-        assert(alive)
         return variables[element] ?: VariableExpression.fromKey(element, this)
     }
 
@@ -266,7 +241,6 @@ class Context {
      * Performs a cast if necessary.
      */
     fun assignVar(key: Key, expr: IExpr<*>) {
-        assert(alive)
         // We're just going to always perform this cast for now.
         // If the code compiles, it's reasonable to do so.
         variables[key] = expr.performACastTo(key.ind, false)
@@ -276,7 +250,6 @@ class Context {
      * Performs a cast if necessary.
      */
     fun assignVar(element: PsiElement, expr: IExpr<*>) {
-        assert(alive)
         assignVar(element.toKey(), expr)
     }
 
@@ -284,7 +257,6 @@ class Context {
      * Performs a cast if necessary.
      */
     fun resolveVar(element: PsiElement, expr: IExpr<*>) {
-        assert(alive)
         resolveVar(element.toKey(), expr)
     }
 
@@ -292,29 +264,11 @@ class Context {
      * Performs a cast if necessary.
      */
     fun resolveVar(key: Key, expr: IExpr<*>) {
-        assert(alive)
         val castExpr = expr.performACastTo(key.ind, false)
         for (variable in variables.values) {
             variable.getVariables(false).forEach {
-                if (it.getKey().key == key && it.getKey().context == this) {
+                if (it.key == key) {
                     it.setResolvedExpr(castExpr)
-                }
-            }
-        }
-    }
-
-    /**
-     * Migrates all unresolved referencing the other context to this one.
-     * We need to take other as an argument as migrating over all unresolved vars would
-     * likely break stuff.
-     *
-     * This is needed if you find yourself wanting to move variables from one context to another
-     */
-    private fun migrateUnresolvedFrom(other: Context) {
-        for (value in variables.values) {
-            value.getVariables(false).forEach {
-                if (it.getKey().context == other) {
-                    it.getKey().context = this
                 }
             }
         }

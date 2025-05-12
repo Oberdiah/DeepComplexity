@@ -59,7 +59,7 @@ class Constraints private constructor(
     }
 
     fun <T : Any> getConstraint(variable: VariableExpression<T>): Bundle<T> {
-        return constraints[variable.getKey().key]?.cast(variable.ind)
+        return constraints[variable.key]?.cast(variable.ind)
             ?: variable.ind.newFullBundle()
     }
 

@@ -136,7 +136,7 @@ object ConstraintSolver {
             val castVariable = variable as VariableExpression<out Number>
 
             val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
-            constraints = constraints.addConstraint(variable.getKey().key, variableConstraints)
+            constraints = constraints.addConstraint(variable.key, variableConstraints)
         }
 
         return constraints
@@ -149,7 +149,7 @@ object ConstraintSolver {
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
     ): Bundle<T>? {
-        if (expr.getVariables(false).none { it.getKey() == variable.getKey() }) {
+        if (expr.getVariables(false).none { it.key == variable.key }) {
             // The variable wasn't found in the expression.
             return null
         }
@@ -241,7 +241,7 @@ object ConstraintSolver {
                     return expandTerms(expr.resolvedInto!!, variable)
                 }
 
-                if (expr.getKey() == variable.getKey()) {
+                if (expr.key == variable.key) {
                     CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstantExpression.one(setIndicator)))
                 } else {
                     CollectedTerms(setIndicator, terms = mutableMapOf(0 to castExpr))

@@ -15,7 +15,7 @@ object LoopSolver {
         val conditionVariables = condition.getVariables(false)
         for ((key, expr) in context.getVariables()) {
             val variablesMatchingCondition = expr.getVariables(false)
-                .filter { vari -> conditionVariables.any { vari.getKey() == it.getKey() } }
+                .filter { vari -> conditionVariables.any { vari.key == it.key } }
 
             fun <T : Number> ugly(numExpr: IExpr<T>) {
                 if (variablesMatchingCondition.isEmpty()) return
@@ -102,7 +102,7 @@ object LoopSolver {
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but
         // I'm not going to bother for now.
-        if (!unresolved.getKey().key.matchesElement(psiElement)) return null
+        if (!unresolved.key.matchesElement(psiElement)) return null
 
         val terms = ConstraintSolver.expandTerms(expr, unresolved)
         if (terms == null) return null

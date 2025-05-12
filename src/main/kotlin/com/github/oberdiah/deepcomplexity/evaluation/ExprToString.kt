@@ -22,7 +22,7 @@ object ExprToString {
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
             is VariableExpression -> {
-                return if (expr.isResolved()) expr.resolvedInto.toString() else expr.myKey.key.toString()
+                return if (expr.isResolved()) expr.resolvedInto.toString() else expr.key.toString()
             }
 
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
@@ -81,7 +81,7 @@ object ExprToString {
             is UnionExpression -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
             is BooleanExpression -> booleanExprToString(expr)
             is VariableExpression -> {
-                return if (expr.isResolved()) expr.resolvedInto?.dStr() ?: "null" else expr.myKey.key.toString()
+                return if (expr.isResolved()) expr.resolvedInto?.dStr() ?: "null" else expr.key.toString()
             }
 
             is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"

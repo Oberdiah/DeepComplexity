@@ -5,15 +5,10 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we may or may not know the value of.
 class VariableExpression<T : Any>(
-    val myKey: VariableKey,
+    val key: Context.Key,
     val id: Int,
     val setInd: SetIndicator<T>
 ) : Expr<T>() {
-    /**
-     * An unresolved expression needs both its context and the element to correctly resolve it.
-     */
-    data class VariableKey(val key: Context.Key, var context: Context)
-
     /**
      * A variable is a moldable as *at a specific point in time*. Usually at the start of a block.
      */
@@ -21,10 +16,6 @@ class VariableExpression<T : Any>(
 
     fun isResolved(): Boolean {
         return resolvedInto != null
-    }
-
-    fun getKey(): VariableKey {
-        return myKey
     }
 
     fun setResolvedExpr(expr: IExpr<*>) {
@@ -43,10 +34,7 @@ class VariableExpression<T : Any>(
 
         fun fromKey(contextKey: Context.Key, context: Context): VariableExpression<*> {
             VARIABLE_ID++
-
-            val key = VariableKey(contextKey, context)
-
-            return VariableExpression(key, VARIABLE_ID, contextKey.ind)
+            return VariableExpression(contextKey, VARIABLE_ID, contextKey.ind)
         }
     }
 }

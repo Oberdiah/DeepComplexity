@@ -116,7 +116,7 @@ object ExprEvaluate {
 
                 var bundleSet = BundleSet.empty(expr.ind)
                 for (constraints in constraintsList) {
-                    val newVariance = expr.ind.newVariance(expr.myKey.key)
+                    val newVariance = expr.ind.newVariance(expr.key)
                     // Constrain with the entire set of constraints.
                     bundleSet = bundleSet.union(BundleSet.constrained(newVariance, constraints))
                 }
