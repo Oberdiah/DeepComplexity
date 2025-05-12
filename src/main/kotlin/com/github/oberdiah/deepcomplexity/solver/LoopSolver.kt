@@ -31,7 +31,7 @@ object LoopSolver {
 //                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
             }
 
-            val numExpr = expr.castToNumbers() ?: continue
+            val numExpr = expr.castToNumbers()
             ugly(numExpr)
         }
 
@@ -42,11 +42,6 @@ object LoopSolver {
             if (allUnresolved.isEmpty()) continue
 
             val numExpr = expr.castToNumbers()
-            if (numExpr == null) {
-                context.assignVar(key, ConstantExpression.fullExprFromExprAndKey(expr, key))
-                continue
-            }
-
             val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
             context.assignVar(key, newExpr)
         }

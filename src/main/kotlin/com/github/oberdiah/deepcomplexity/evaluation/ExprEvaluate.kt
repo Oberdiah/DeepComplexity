@@ -12,7 +12,7 @@ object ExprEvaluate {
     fun <T : Any> evaluate(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
         @Suppress("UNCHECKED_CAST")
         return when (expr.ind) {
-            is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers()!!, condition) as BundleSet<T>
+            is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), condition) as BundleSet<T>
             is GenericSetIndicator -> evaluateGenerics(expr as IExpr<*>, condition) as BundleSet<T>
             BooleanSetIndicator -> evaluateBools(expr as IExpr<Boolean>, condition) as BundleSet<T>
         }
