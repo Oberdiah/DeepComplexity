@@ -25,6 +25,12 @@ class VariableExpression<T : Any>(
                         "(expected ${setInd.clazz}, got ${expr.ind.clazz})"
             )
 
+        if (expr == this) {
+            throw IllegalArgumentException(
+                "Resolved expression is the same as the variable expression itself: $this"
+            )
+        }
+
         @Suppress("UNCHECKED_CAST")
         resolvedInto = expr as IExpr<T>
     }

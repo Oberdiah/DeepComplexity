@@ -195,7 +195,7 @@ class Context {
 
         // First, resolve what we can (with all the normal keys).
         for (value in later.variables.values) {
-            val allUnresolved = value.getVariables(false)
+            val allUnresolved = value.getVariables()
             for (unresolved in allUnresolved) {
                 if (!unresolved.key.isMethod()) {
                     val resolved = variables[unresolved.key]
@@ -208,7 +208,7 @@ class Context {
 
         // Now, we need to resolve the return keys backward.
         for (value in variables.values) {
-            val allUnresolved = value.getVariables(false)
+            val allUnresolved = value.getVariables()
             for (unresolved in allUnresolved) {
                 if (unresolved.key.isMethod()) {
                     val resolved = later.variables[unresolved.key]
@@ -266,7 +266,7 @@ class Context {
     fun resolveVar(key: Key, expr: IExpr<*>) {
         val castExpr = expr.performACastTo(key.ind, false)
         for (variable in variables.values) {
-            variable.getVariables(false).forEach {
+            variable.getVariables().forEach {
                 if (it.key == key) {
                     it.setResolvedExpr(castExpr)
                 }

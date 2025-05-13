@@ -16,11 +16,21 @@ sealed interface IExpr<T : Any> {
     val ind: SetIndicator<T>
         get() = SetIndicator.getSetIndicator(this)
 
-    fun getVariables(resolved: Boolean): Set<VariableExpression<*>> = ExprGetVariables.getVariables(this, resolved)
+    /**
+     * Rebuilds every expression in the tree.
+     */
+    fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
+    fun iterateTree(): Sequence<IExpr<*>> = ExprTreeVisitor.iterateTree(this)
+    fun getVariables(): Set<VariableExpression<*>> = iterateTree()
+        .filterIsInstance<VariableExpression<*>>()
+        .filter { !it.isResolved() }
+        .toSet()
+
     fun evaluate(condition: IExpr<Boolean>): BundleSet<T> = ExprEvaluate.evaluate(this, condition)
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
+// todo remove IExpr?
 sealed class Expr<T : Any> : IExpr<T> {
     override fun toString(): String {
         return ExprToString.toString(this)

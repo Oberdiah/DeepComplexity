@@ -12,9 +12,9 @@ object LoopSolver {
     fun processLoopContext(context: Context, condition: IExpr<Boolean>) {
         var numLoops: NumIterationTimesExpression<*>? = null
 
-        val conditionVariables = condition.getVariables(false)
+        val conditionVariables = condition.getVariables()
         for ((key, expr) in context.getVariables()) {
-            val variablesMatchingCondition = expr.getVariables(false)
+            val variablesMatchingCondition = expr.getVariables()
                 .filter { vari -> conditionVariables.any { vari.key == it.key } }
 
             fun <T : Number> ugly(numExpr: IExpr<T>) {
@@ -38,7 +38,7 @@ object LoopSolver {
         for ((key, expr) in context.getVariables()) {
             // Unresolved expressions not able to be resolved by this context are of no interest to
             // us as they can't affect this loop.
-            val allUnresolved = expr.getVariables(false).filter { context.canResolve(it) }
+            val allUnresolved = expr.getVariables().filter { context.canResolve(it) }
             if (allUnresolved.isEmpty()) continue
 
             val numExpr = expr.castToNumbers()

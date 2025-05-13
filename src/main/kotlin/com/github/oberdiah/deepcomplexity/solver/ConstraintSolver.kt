@@ -125,7 +125,7 @@ object ConstraintSolver {
     ): Constraints {
         var constraints = Constraints.completelyUnconstrained()
 
-        val variables = expr.getVariables(false)
+        val variables = expr.getVariables()
         for (variable in variables) {
             assert(variable.ind is NumberSetIndicator<*>) {
                 "All variables must be number sets. This requires more thought if we've hit this."
@@ -149,7 +149,7 @@ object ConstraintSolver {
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
     ): Bundle<T>? {
-        if (expr.getVariables(false).none { it.key == variable.key }) {
+        if (expr.getVariables().none { it.key == variable.key }) {
             // The variable wasn't found in the expression.
             return null
         }
