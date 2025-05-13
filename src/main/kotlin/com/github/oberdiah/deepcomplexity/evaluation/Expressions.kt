@@ -18,6 +18,8 @@ sealed interface IExpr<T : Any> {
 
     /**
      * Rebuilds every expression in the tree.
+     * As it's doing that, it calls the replacer on every expression so you can make any modifications
+     * you want.
      */
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
     fun iterateTree(): Sequence<IExpr<*>> = ExprTreeVisitor.iterateTree(this)
