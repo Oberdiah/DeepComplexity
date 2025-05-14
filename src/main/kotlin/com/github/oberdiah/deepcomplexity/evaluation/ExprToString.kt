@@ -21,10 +21,7 @@ object ExprToString {
             is NegateExpression -> "-${expr.expr}"
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
-            is VariableExpression -> {
-                return if (expr.isResolved()) expr.resolvedInto.toString() else expr.key.toString()
-            }
-
+            is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {
@@ -80,10 +77,7 @@ object ExprToString {
             is NegateExpression -> "-${expr.expr.dStr()} = $myResult"
             is UnionExpression -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
             is BooleanExpression -> booleanExprToString(expr)
-            is VariableExpression -> {
-                return if (expr.isResolved()) expr.resolvedInto?.dStr() ?: "null" else expr.key.toString()
-            }
-
+            is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {

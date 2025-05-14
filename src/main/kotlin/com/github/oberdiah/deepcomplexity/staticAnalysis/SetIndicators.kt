@@ -43,7 +43,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
                 is BooleanInvertExpression -> BooleanSetIndicator
                 is ComparisonExpression<*> -> BooleanSetIndicator
                 is ConstExpr -> expr.constSet.ind
-                is VariableExpression -> expr.setInd
+                is VariableExpression -> expr.key.ind
                 is TypeCastExpression<*, *> -> expr.setInd
             } as SetIndicator<T>
         }

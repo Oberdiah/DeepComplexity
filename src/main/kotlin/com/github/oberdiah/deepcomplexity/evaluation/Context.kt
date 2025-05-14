@@ -183,58 +183,12 @@ class Context {
         return variables.toImmutableMap()
     }
 
-    /**
-     * Stacks the later context on top of this one.
-     *
-     * That is, any undefined variables in the later context will be taken from this
-     * when possible.
-     */
-    fun stack(later: Context) {
-        // To make matters even more confusing, return keys need to be resolved back-to-front
-        // that is, for return statements we should be iterating over ourselves and resolving with `later`'s variables.
-
-        // First, resolve what we can (with all the normal keys).
-        for (value in later.variables.values) {
-            val allUnresolved = value.getVariables()
-            for (unresolved in allUnresolved) {
-                if (!unresolved.key.isMethod()) {
-                    val resolved = variables[unresolved.key]
-                    if (resolved != null) {
-                        unresolved.setResolvedExpr(resolved)
-                    }
-                }
-            }
-        }
-
-        // Now, we need to resolve the return keys backward.
-        for (value in variables.values) {
-            val allUnresolved = value.getVariables()
-            for (unresolved in allUnresolved) {
-                if (unresolved.key.isMethod()) {
-                    val resolved = later.variables[unresolved.key]
-                    if (resolved != null) {
-                        unresolved.setResolvedExpr(resolved)
-                    }
-                }
-            }
-        }
-
-        // Later's variables overwrite ours if they exist as they're more recent.
-        // Filter out return keys
-        variables.putAll(later.variables.filter { !it.key.isMethod() })
-
-        // Now put all return keys in, but only if they don't exist in this context.
-        variables.putAll(
-            later.variables.filter { it.key.isMethod() && !variables.containsKey(it.key) }
-        )
-    }
-
     fun getVar(element: PsiElement): IExpr<*> {
         return getVar(element.toKey())
     }
 
     fun getVar(element: Key): IExpr<*> {
-        return variables[element] ?: VariableExpression.fromKey(element, this)
+        return variables[element] ?: VariableExpression<Any>(element)
     }
 
     /**
@@ -265,11 +219,71 @@ class Context {
      */
     fun resolveVar(key: Key, expr: IExpr<*>) {
         val castExpr = expr.performACastTo(key.ind, false)
-        for (variable in variables.values) {
-            variable.getVariables().forEach {
+        variables.replaceAll { key, expr ->
+            expr.rebuildTree(variableExpressionReplacer {
                 if (it.key == key) {
-                    it.setResolvedExpr(castExpr)
+                    castExpr
+                } else {
+                    null
                 }
+            })
+        }
+    }
+
+    /**
+     * Stacks the later context on top of this one.
+     *
+     * That is, any undefined variables in the later context will be taken from this
+     * when possible.
+     */
+    fun stack(later: Context) {
+        // To make matters even more confusing, return keys need to be resolved back-to-front
+        // that is, for return statements we should be iterating over ourselves and resolving with `later`'s variables.
+
+        // First, resolve what we can (with all the normal keys).
+        later.variables.replaceAll { key, expr ->
+            expr.rebuildTree(variableExpressionReplacer {
+                if (it.key.isMethod()) return@variableExpressionReplacer null
+                variables[it.key]
+            })
+        }
+
+        // Now, we need to resolve the method keys backward.
+        variables.replaceAll { key, expr ->
+            expr.rebuildTree(variableExpressionReplacer {
+                if (!it.key.isMethod()) return@variableExpressionReplacer null
+                later.variables[it.key]
+            })
+        }
+
+        // Later's variables overwrite ours if they exist as they're more recent.
+        // Filter out return keys
+        variables.putAll(later.variables.filter { !it.key.isMethod() })
+
+        // Now put all return keys in, but only if they don't exist in this context.
+        variables.putAll(
+            later.variables.filter { it.key.isMethod() && !variables.containsKey(it.key) }
+        )
+    }
+
+    private fun variableExpressionReplacer(
+        replacement: (VariableExpression<*>) -> IExpr<*>?
+    ): ExprTreeRebuilder.Replacer {
+        return object : ExprTreeRebuilder.Replacer {
+            override fun <T : Any> replace(expr: IExpr<T>): IExpr<T> {
+                if (expr is VariableExpression) {
+                    val resolved = replacement(expr)
+                    if (resolved != null) {
+                        assert(resolved.ind == expr.ind) {
+                            "Resolved expression ${resolved.dStr()} does not match ${expr.dStr()}"
+                        }
+
+                        @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
+                        return resolved as IExpr<T>
+                    }
+                }
+
+                return expr
             }
         }
     }

@@ -6,19 +6,19 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 
 object ExprTreeRebuilder {
     interface Replacer {
-        fun <T : IExpr<*>> replace(expr: T): T
+        fun <T : Any> replace(expr: IExpr<T>): IExpr<T>
     }
 
-    fun <T : IExpr<*>> rebuildTree(
-        expr: T,
+    fun <T : Any> rebuildTree(
+        expr: IExpr<T>,
         replacer: Replacer
-    ): T {
+    ): IExpr<T> {
         return replacer.replace(
             @Suppress("UNCHECKED_CAST")
             when (expr.ind) {
-                is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as T
-                is GenericSetIndicator -> rebuildTreeGenerics(expr as IExpr<*>, replacer) as T
-                BooleanSetIndicator -> rebuildTreeBooleans(expr as IExpr<Boolean>, replacer) as T
+                is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as IExpr<T>
+                is GenericSetIndicator -> rebuildTreeGenerics(expr as IExpr<*>, replacer) as IExpr<T>
+                BooleanSetIndicator -> rebuildTreeBooleans(expr as IExpr<Boolean>, replacer) as IExpr<T>
             }
         )
     }
@@ -40,7 +40,7 @@ object ExprTreeRebuilder {
 
             is NumIterationTimesExpression -> NumIterationTimesExpression(
                 expr.constraint,
-                rebuildTree(expr.variable, replacer),
+                rebuildTree(expr.variable, replacer) as VariableExpression<T>,
                 expr.terms
             )
 

@@ -237,10 +237,6 @@ object ConstraintSolver {
             )
 
             is VariableExpression -> {
-                if (expr.isResolved()) {
-                    return expandTerms(expr.resolvedInto!!, variable)
-                }
-
                 if (expr.key == variable.key) {
                     CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstantExpression.one(setIndicator)))
                 } else {

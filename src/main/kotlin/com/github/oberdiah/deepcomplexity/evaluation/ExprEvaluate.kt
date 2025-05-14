@@ -108,10 +108,6 @@ object ExprEvaluate {
 
             is ConstExpr -> expr.constSet.constrainWith(condition)
             is VariableExpression -> {
-                expr.resolvedInto?.let {
-                    return evaluate(it, condition)
-                }
-
                 val constraintsList = ExprConstrain.getConstraints(condition)
 
                 var bundleSet = BundleSet.empty(expr.ind)

@@ -25,7 +25,6 @@ sealed interface IExpr<T : Any> {
     fun iterateTree(): Sequence<IExpr<*>> = ExprTreeVisitor.iterateTree(this)
     fun getVariables(): Set<VariableExpression<*>> = iterateTree()
         .filterIsInstance<VariableExpression<*>>()
-        .filter { !it.isResolved() }
         .toSet()
 
     fun evaluate(condition: IExpr<Boolean>): BundleSet<T> = ExprEvaluate.evaluate(this, condition)
@@ -96,6 +95,10 @@ class ComparisonExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val
         }
     }
 }
+
+// Element is either PsiLocalVariable, PsiParameter, or PsiField
+// This represents a variable which we do not know the value of yet.
+class VariableExpression<T : Any>(val key: Context.Key) : Expr<T>()
 
 /**
  * Tries to cast the expression to the given set indicator.
