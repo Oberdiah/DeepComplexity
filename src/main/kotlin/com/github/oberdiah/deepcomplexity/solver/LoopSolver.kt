@@ -13,7 +13,7 @@ object LoopSolver {
         var numLoops: NumIterationTimesExpression<*>? = null
 
         val conditionVariables = condition.getVariables()
-        for ((key, expr) in context.getVariables()) {
+        for ((key, expr) in context.variables) {
             val variablesMatchingCondition = expr.getVariables()
                 .filter { vari -> conditionVariables.any { vari.key == it.key } }
 
@@ -35,7 +35,7 @@ object LoopSolver {
             ugly(numExpr)
         }
 
-        for ((key, expr) in context.getVariables()) {
+        for ((key, expr) in context.variables) {
             // Unresolved expressions not able to be resolved by this context are of no interest to
             // us as they can't affect this loop.
             val allUnresolved = expr.getVariables().filter { context.canResolve(it) }
@@ -43,7 +43,7 @@ object LoopSolver {
 
             val numExpr = expr.castToNumbers()
             val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
-            context.assignVar(key, newExpr)
+            context.withVar(key, newExpr)
         }
     }
 

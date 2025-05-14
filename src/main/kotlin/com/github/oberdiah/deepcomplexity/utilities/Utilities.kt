@@ -354,5 +354,11 @@ object Utilities {
         return if (start <= end) Pair(start, end) else null
     }
 
+    fun <LOld : Any, LNew : Any, R : Any> Pair<LOld, R>.mapLeft(transform: (LOld) -> LNew): Pair<LNew, R> =
+        Pair(transform(this.first), this.second)
+
+    fun <L : Any, ROld : Any, RNew : Any> Pair<L, ROld>.mapRight(transform: (ROld) -> RNew): Pair<L, RNew> =
+        Pair(this.first, transform(this.second))
+
     fun BigFraction.half(): BigFraction = this.divide(2)
 }

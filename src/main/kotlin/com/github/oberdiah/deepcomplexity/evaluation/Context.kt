@@ -8,9 +8,8 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiVariable
-import kotlinx.collections.immutable.toImmutableMap
 
-class Context {
+class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
     sealed class Key {
         // Variable is where the variable is defined —
         // either PsiLocalVariable, PsiParameter, or PsiField
@@ -128,9 +127,9 @@ class Context {
         }
     }
 
-    private val variables = mutableMapOf<Key, IExpr<*>>()
-
     companion object {
+        fun new(): Context = Context()
+
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
          * This does not and can not resolve any unresolved expressions as these two statements
@@ -141,17 +140,17 @@ class Context {
          * `a` and `b` (The two contexts) must not be used again after this operation.
          */
         fun combine(a: Context, b: Context, how: (a: IExpr<*>, b: IExpr<*>) -> IExpr<*>): Context {
-            val resultingContext = Context()
+            val newMap = mutableMapOf<Key, IExpr<*>>()
 
             val allKeys = a.variables.keys + b.variables.keys
 
             for (key in allKeys) {
                 val aVal = a.variables[key] ?: a.getVar(key)
                 val bVal = b.variables[key] ?: b.getVar(key)
-                resultingContext.variables[key] = how(aVal, bVal)
+                newMap[key] = how(aVal, bVal)
             }
 
-            return resultingContext
+            return Context(newMap)
         }
     }
 
@@ -179,10 +178,6 @@ class Context {
         return expr.evaluate(ConstantExpression.TRUE)
     }
 
-    fun getVariables(): Map<Key, IExpr<*>> {
-        return variables.toImmutableMap()
-    }
-
     fun getVar(element: PsiElement): IExpr<*> {
         return getVar(element.toKey())
     }
@@ -194,32 +189,35 @@ class Context {
     /**
      * Performs a cast if necessary.
      */
-    fun assignVar(key: Key, expr: IExpr<*>) {
+    fun withVar(key: Key, expr: IExpr<*>): Context {
+        val newMap = variables.toMutableMap()
         // We're just going to always perform this cast for now.
         // If the code compiles, it's reasonable to do so.
-        variables[key] = expr.performACastTo(key.ind, false)
+        newMap[key] = expr.performACastTo(key.ind, false)
+
+        return Context(newMap)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun assignVar(element: PsiElement, expr: IExpr<*>) {
-        assignVar(element.toKey(), expr)
+    fun withVar(element: PsiElement, expr: IExpr<*>): Context {
+        return withVar(element.toKey(), expr)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun resolveVar(element: PsiElement, expr: IExpr<*>) {
-        resolveVar(element.toKey(), expr)
+    fun resolveVar(element: PsiElement, expr: IExpr<*>): Context {
+        return resolveVar(element.toKey(), expr)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun resolveVar(key: Key, expr: IExpr<*>) {
+    fun resolveVar(key: Key, expr: IExpr<*>): Context {
         val castExpr = expr.performACastTo(key.ind, false)
-        variables.replaceAll { key, expr ->
+        return Context(variables.mapValues { (key, expr) ->
             expr.rebuildTree(variableExpressionReplacer {
                 if (it.key == key) {
                     castExpr
@@ -227,7 +225,7 @@ class Context {
                     null
                 }
             })
-        }
+        })
     }
 
     /**
@@ -236,34 +234,38 @@ class Context {
      * That is, any undefined variables in the later context will be taken from this
      * when possible.
      */
-    fun stack(later: Context) {
+    fun stack(later: Context): Context {
         // To make matters even more confusing, return keys need to be resolved back-to-front
         // that is, for return statements we should be iterating over ourselves and resolving with `later`'s variables.
 
         // First, resolve what we can (with all the normal keys).
-        later.variables.replaceAll { key, expr ->
+        val newLater = Context(later.variables.mapValues { (key, expr) ->
             expr.rebuildTree(variableExpressionReplacer {
                 if (it.key.isMethod()) return@variableExpressionReplacer null
                 variables[it.key]
             })
-        }
+        })
 
         // Now, we need to resolve the method keys backward.
-        variables.replaceAll { key, expr ->
+        val newMe = Context(variables.mapValues { (key, expr) ->
             expr.rebuildTree(variableExpressionReplacer {
                 if (!it.key.isMethod()) return@variableExpressionReplacer null
                 later.variables[it.key]
             })
-        }
+        })
+
+        val newMap = newMe.variables.toMutableMap()
 
         // Later's variables overwrite ours if they exist as they're more recent.
         // Filter out return keys
-        variables.putAll(later.variables.filter { !it.key.isMethod() })
+        newMap.putAll(newLater.variables.filter { !it.key.isMethod() })
 
         // Now put all return keys in, but only if they don't exist in this context.
-        variables.putAll(
-            later.variables.filter { it.key.isMethod() && !variables.containsKey(it.key) }
+        newMap.putAll(
+            newLater.variables.filter { it.key.isMethod() && !newMe.variables.containsKey(it.key) }
         )
+
+        return Context(newMap)
     }
 
     private fun variableExpressionReplacer(
