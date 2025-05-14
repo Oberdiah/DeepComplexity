@@ -231,39 +231,28 @@ class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
     /**
      * Stacks the later context on top of this one.
      *
-     * That is, any undefined variables in the later context will be taken from this
-     * when possible.
+     * That is, prioritise the later context and fall back to this one if the key doesn't exist.
+     *
+     * Conversely, for `Method` keys, this context is prioritised over the later context.
      */
     fun stack(later: Context): Context {
-        // To make matters even more confusing, return keys need to be resolved back-to-front
-        // that is, for return statements we should be iterating over ourselves and resolving with `later`'s variables.
+        val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
+            expr.rebuildTree(variableExpressionReplacer { variables[it.key] })
+        }
 
-        // First, resolve what we can (with all the normal keys).
-        val newLater = Context(later.variables.mapValues { (key, expr) ->
-            expr.rebuildTree(variableExpressionReplacer {
-                if (it.key.isMethod()) return@variableExpressionReplacer null
-                variables[it.key]
-            })
-        })
+        val meResolvedWithLater = variables.mapValues { (_, expr) ->
+            expr.rebuildTree(variableExpressionReplacer { later.variables[it.key] })
+        }
 
-        // Now, we need to resolve the method keys backward.
-        val newMe = Context(variables.mapValues { (key, expr) ->
-            expr.rebuildTree(variableExpressionReplacer {
-                if (!it.key.isMethod()) return@variableExpressionReplacer null
-                later.variables[it.key]
-            })
-        })
+        val newMap = mutableMapOf<Key, IExpr<*>>()
 
-        val newMap = newMe.variables.toMutableMap()
+        // For normal keys, later takes priority and gets to override.
+        newMap.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
+        newMap.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
 
-        // Later's variables overwrite ours if they exist as they're more recent.
-        // Filter out return keys
-        newMap.putAll(newLater.variables.filter { !it.key.isMethod() })
-
-        // Now put all return keys in, but only if they don't exist in this context.
-        newMap.putAll(
-            newLater.variables.filter { it.key.isMethod() && !newMe.variables.containsKey(it.key) }
-        )
+        // For method keys, this context takes priority.
+        newMap.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
+        newMap.putAll(meResolvedWithLater.filter { it.key.isMethod() })
 
         return Context(newMap)
     }
