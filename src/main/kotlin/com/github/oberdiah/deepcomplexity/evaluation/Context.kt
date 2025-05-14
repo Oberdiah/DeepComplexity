@@ -190,12 +190,9 @@ class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
      * Performs a cast if necessary.
      */
     fun withVar(key: Key, expr: IExpr<*>): Context {
-        val newMap = variables.toMutableMap()
         // We're just going to always perform this cast for now.
         // If the code compiles, it's reasonable to do so.
-        newMap[key] = expr.performACastTo(key.ind, false)
-
-        return Context(newMap)
+        return Context(variables + mapOf(key to expr.performACastTo(key.ind, false)))
     }
 
     /**
@@ -219,11 +216,7 @@ class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
         val castExpr = expr.performACastTo(key.ind, false)
         return Context(variables.mapValues { (key, expr) ->
             expr.rebuildTree(variableExpressionReplacer {
-                if (it.key == key) {
-                    castExpr
-                } else {
-                    null
-                }
+                if (it.key == key) castExpr else null
             })
         })
     }
