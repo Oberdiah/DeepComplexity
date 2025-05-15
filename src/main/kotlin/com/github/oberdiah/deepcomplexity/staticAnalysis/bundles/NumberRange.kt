@@ -152,6 +152,12 @@ class NumberRange<T : Number> private constructor(
     }
 
     private fun bigIntToT(v: BigInteger): T {
+        assert(v >= BigInteger.valueOf(ind.getMinValue().toLong())) {
+            "Value $v is below minimum value ${ind.getMinValue()}"
+        }
+        assert(v <= BigInteger.valueOf(ind.getMaxValue().toLong())) {
+            "Value $v is above maximum value ${ind.getMaxValue()}"
+        }
         return v.longValueExact().castInto(clazz)
     }
 
@@ -169,7 +175,7 @@ class NumberRange<T : Number> private constructor(
             (indMin - initialLower) / setSize
         }
 
-        // The first step is to shift the affine so that the lower value is definitely between min and max.
+        // The first step is to shift the range so that the lower value is definitely between min and max.
         // Makes things a lot easier to reason about.
         val (lower, upper) = initialLower + distanceToShunt to initialUpper + distanceToShunt
 
@@ -191,8 +197,8 @@ class NumberRange<T : Number> private constructor(
         }
 
         return listOf(
-            newRange(bigIntToT(upper), bigIntToT(indMax)),
-            newRange(bigIntToT(indMin), bigIntToT(lower))
+            newRange(bigIntToT(lower), bigIntToT(indMax)),
+            newRange(bigIntToT(indMin), bigIntToT(upper - setSize))
         )
     }
 }

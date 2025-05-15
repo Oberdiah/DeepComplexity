@@ -123,7 +123,6 @@ object ExprEvaluate {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
         }
-        val foo = toReturn.toDebugString()
         return toReturn
     }
 }
