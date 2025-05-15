@@ -195,6 +195,11 @@ object MethodProcessing {
                 return context
             }
 
+            is PsiExpression -> {
+                // It's not assigned to anything, so we ignore the result.
+                return buildExpressionFromPsi(psi, context).second
+            }
+
             else -> {
                 println("WARN: Unsupported PsiElement type: ${psi::class} (${psi.text})")
                 return context

@@ -135,6 +135,32 @@ class NumberBundle<T : Number>(
                     return BooleanBundle.FALSE
                 }
             }
+
+            EQUAL -> {
+                if (mySmallestPossibleValue == myLargestPossibleValue &&
+                    otherSmallestPossibleValue == otherLargestPossibleValue &&
+                    mySmallestPossibleValue == otherSmallestPossibleValue
+                ) { // We can only sure we are equal if we're both literally a single value, otherwise there's uncertainty there.
+                    return BooleanBundle.TRUE
+                } else if (myLargestPossibleValue < otherSmallestPossibleValue ||
+                    mySmallestPossibleValue > otherLargestPossibleValue
+                ) {
+                    return BooleanBundle.FALSE
+                }
+            }
+
+            NOT_EQUAL -> {
+                if (myLargestPossibleValue < otherSmallestPossibleValue ||
+                    mySmallestPossibleValue > otherLargestPossibleValue
+                ) {
+                    return BooleanBundle.TRUE
+                } else if (mySmallestPossibleValue == myLargestPossibleValue &&
+                    otherSmallestPossibleValue == otherLargestPossibleValue &&
+                    mySmallestPossibleValue == otherSmallestPossibleValue
+                ) {
+                    return BooleanBundle.FALSE
+                }
+            }
         }
 
         return BooleanBundle.BOTH
@@ -159,21 +185,41 @@ class NumberBundle<T : Number>(
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
 
-        var newData: List<NumberRange<T>> = listOf(
+        var newData: List<NumberRange<T>> =
             when (comp) {
                 LESS_THAN, LESS_THAN_OR_EQUAL ->
-                    NumberRange.new(
-                        ind.getMinValue(),
-                        smallestValue.downOneEpsilon()
+                    listOf(
+                        NumberRange.new(
+                            ind.getMinValue(),
+                            smallestValue.downOneEpsilon()
+                        )
                     )
 
                 GREATER_THAN, GREATER_THAN_OR_EQUAL ->
-                    NumberRange.new(
-                        biggestValue.upOneEpsilon(),
-                        ind.getMaxValue()
+                    listOf(
+                        NumberRange.new(
+                            biggestValue.upOneEpsilon(),
+                            ind.getMaxValue()
+                        )
                     )
+
+                EQUAL -> {
+                    listOf(NumberRange.new(smallestValue, biggestValue))
+                }
+
+                NOT_EQUAL -> {
+                    listOf(
+                        NumberRange.new(
+                            ind.getMinValue(),
+                            smallestValue.downOneEpsilon()
+                        ), NumberRange.new(
+                            biggestValue.upOneEpsilon(),
+                            ind.getMaxValue()
+                        )
+                    )
+                }
             }
-        )
+
 
         if (comp == LESS_THAN_OR_EQUAL) {
             newData = newData + ranges

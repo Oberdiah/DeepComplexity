@@ -60,7 +60,7 @@ object TestUtilities {
                 return listOf("Passed", msg, "$requiredScoreStr%", notes) to true
             }
         } else {
-            println("\t$extraInfoColumn")
+            println(if (methodScore == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg")
             println("\tThis method was not required to reach a score threshold and as such it passed by default.")
             return listOf("Passed by default", scoreReceivedColumn, "N/A", extraInfoColumn) to true
         }

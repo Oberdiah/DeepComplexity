@@ -103,7 +103,9 @@ enum class ComparisonOp {
     LESS_THAN,
     LESS_THAN_OR_EQUAL,
     GREATER_THAN,
-    GREATER_THAN_OR_EQUAL;
+    GREATER_THAN_OR_EQUAL,
+    EQUAL,
+    NOT_EQUAL;
 
     override fun toString(): String {
         return when (this) {
@@ -111,6 +113,8 @@ enum class ComparisonOp {
             LESS_THAN_OR_EQUAL -> "<="
             GREATER_THAN -> ">"
             GREATER_THAN_OR_EQUAL -> ">="
+            EQUAL -> "=="
+            NOT_EQUAL -> "!="
         }
     }
 
@@ -120,6 +124,8 @@ enum class ComparisonOp {
             LESS_THAN_OR_EQUAL -> GREATER_THAN_OR_EQUAL
             GREATER_THAN -> LESS_THAN
             GREATER_THAN_OR_EQUAL -> LESS_THAN_OR_EQUAL
+            EQUAL -> EQUAL
+            NOT_EQUAL -> NOT_EQUAL
         }
     }
 
@@ -130,6 +136,8 @@ enum class ComparisonOp {
                 JavaTokenType.LE -> LESS_THAN_OR_EQUAL
                 JavaTokenType.GT -> GREATER_THAN
                 JavaTokenType.GE -> GREATER_THAN_OR_EQUAL
+                JavaTokenType.EQEQ -> EQUAL
+                JavaTokenType.NE -> NOT_EQUAL
                 else -> null
             }
         }

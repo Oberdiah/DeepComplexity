@@ -476,4 +476,37 @@ public class MyTestData {
 		
 		return (short) a;
 	}
+	
+	public static short performanceTest1(short x) {
+		if (x < 0) {
+			return -10;
+		} else if (x < 5) {
+			return 42;
+		} else if (x < 10) {
+			return 100;
+		} else {
+			return (short) (x + 1);
+		}
+	}
+	
+	public static short equalityTest1(short x) {
+		if (x == x) {
+			return 1;
+		}
+		return 0;
+	}
+	
+	public static short equalityTest2(short x) {
+		if (x == x + 1) {
+			return 1;
+		}
+		return 0;
+	}
+	
+	public static short equalityTest3(short x) {
+		if (x == 5) {
+			return x;
+		}
+		return 0;
+	}
 }
