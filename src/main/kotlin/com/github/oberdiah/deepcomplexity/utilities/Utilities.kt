@@ -94,9 +94,15 @@ object Utilities {
 
     fun PsiElement.resolveIfNeeded(): PsiElement {
         if (this is PsiReferenceExpression) {
-            return this.resolve() ?: TODO(
+            val startTime = System.currentTimeMillis()
+            val resolved = this.resolve() ?: TODO(
                 "Variable couldn't be resolved (${element.text})"
             )
+            val duration = System.currentTimeMillis() - startTime
+            if (duration > 10) {
+                println("Slow resolution warning! ${this.element.text} took ${duration}ms")
+            }
+            return resolved
         }
         return this
     }

@@ -3,10 +3,13 @@ package testdata;
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
 public class AITestData {
+	static final int MAX_SHORT = 32767;
+	static final int MIN_SHORT = -32768;
+	
 	// 1. Short overflow, but int is fine — subtle wrap
 	@RequiredScore(1.0)
 	public static short tricky1(short x) {
-		if (x == 30000) return (short) (x + 10000);  // Wraps past Short.MAX_VALUE
+		if (x == 30000) return (short) (x + 10000);  // Wraps past MAX_SHORT
 		return 0;
 	}
 	
@@ -95,11 +98,11 @@ public class AITestData {
 	
 	// Test 3: Boundary value testing with cascading conditions
 	public static short boundaryValueCascade(short x) {
-		if (x == Short.MAX_VALUE) {
+		if (x == MAX_SHORT) {
 			return -10;
-		} else if (x == Short.MAX_VALUE - 1) {
+		} else if (x == MAX_SHORT - 1) {
 			return 42;
-		} else if (x > Short.MAX_VALUE - 10) {
+		} else if (x > MAX_SHORT - 10) {
 			return 100;
 		} else {
 			return (short) (x + 1);
@@ -165,9 +168,9 @@ public class AITestData {
 	public static short multiplyAndCompare(short x) {
 		int doubled = x * 2;
 		
-		if (doubled > Short.MAX_VALUE || doubled < Short.MIN_VALUE) {
+		if (doubled > MAX_SHORT || doubled < MIN_SHORT) {
 			return -1;
-		} else if (doubled == Short.MAX_VALUE) {
+		} else if (doubled == MAX_SHORT) {
 			return 1;
 		} else {
 			return (short) doubled;
@@ -181,7 +184,7 @@ public class AITestData {
 		
 		if (x < 0 && y > 0) {
 			// Underflow occurred
-			return Short.MIN_VALUE;
+			return MIN_SHORT;
 		} else {
 			return (short) (y * 2);
 		}
@@ -196,8 +199,8 @@ public class AITestData {
 			
 			if (temp < 0) {
 				// Integer overflow occurred
-				return Short.MAX_VALUE;
-			} else if (temp > Short.MAX_VALUE) {
+				return MAX_SHORT;
+			} else if (temp > MAX_SHORT) {
 				return (short) (temp % 10000);
 			}
 		} else {

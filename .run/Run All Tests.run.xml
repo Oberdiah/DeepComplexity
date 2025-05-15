@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="SimpleMustPassTest" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
+  <configuration default="false" name="Run All Tests" type="JUnit" factoryName="JUnit">
     <module name="DeepComplexity.test" />
-    <extension name="coverage" runner="jacoco">
+    <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.github.oberdiah.deepcomplexity.*" />
         <option name="ENABLED" value="true" />
