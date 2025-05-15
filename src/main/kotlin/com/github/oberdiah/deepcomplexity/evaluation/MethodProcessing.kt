@@ -64,10 +64,7 @@ object MethodProcessing {
                             val (rhs, newContext) = buildExpressionFromPsi(rExpression, context)
                             context = newContext.withVar(element, rhs)
                         } else {
-                            TODO(
-                                "Eventually we'll replace this with either null or 0, " +
-                                        "for now it'll remain blank."
-                            )
+                            TODO("Eventually we'll replace this with either null or 0")
                         }
                     } else {
                         throw IllegalArgumentException(

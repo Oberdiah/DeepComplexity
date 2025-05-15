@@ -63,21 +63,15 @@ public class AITestData {
 		return 0;
 	}
 	
-	// 9. Overflow only on some paths
-	public static short tricky9(short x) {
-		int res = 1;
-		if (x > 30000) res = x * x;  // Squaring overflows
-		return (short) res;
-	}
-	
 	// 10. Opposite sign wrapping check
 	@RequiredScore(1.0)
-	public static short trickyA(short x) {
+	public static short tricky9(short x) {
 		if (x == 16384) return (short) (x * 2);  // Exactly 32768 → wraps to -32768
 		return 0;
 	}
 	
 	// Test 1: Overflow at short boundary with conditional logic
+	@RequiredScore(1.0)
 	public static short overflowWithCondition(short x) {
 		short result = 0;
 		
@@ -154,7 +148,7 @@ public class AITestData {
 	}
 	
 	// Test 7: Short value wrapping during incremental operations
-	public static short incrementalWrapping(short x) {
+	public static short forLoopWrapping(short x) {
 		short count = 0;
 		
 		// For values near MAX_VALUE, this loop behaves unexpectedly
@@ -181,6 +175,7 @@ public class AITestData {
 	}
 	
 	// Test 9: Compound operation with underflow potential
+	@RequiredScore(0.5)
 	public static short compoundUnderflow(short x) {
 		short y = (short) (x - 1);
 		

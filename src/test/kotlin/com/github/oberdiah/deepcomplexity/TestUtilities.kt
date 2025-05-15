@@ -26,43 +26,48 @@ object TestUtilities {
 
         val annotation = reflectMethod.getAnnotation(RequiredScore::class.java)
 
-        val (columns, passed) = getSummaryTable(msg, methodScore, annotation)
-        val columnSpacing = listOf(20, 25, 8, 10)
+        val (columns, passed) = getSummaryTableRow(msg, methodScore, annotation, reflectMethod)
+        val columnSpacing = listOf(17, 11, 7, 1, 1)
 
         val summary = columns.mapIndexed { i, s -> s.padEnd(columnSpacing[i]) }.joinToString(" | ")
         return summary to passed
     }
 
-    private fun getSummaryTable(
+    private fun getSummaryTableRow(
         msg: String,
         methodScore: Double,
-        annotation: RequiredScore?
+        annotation: RequiredScore?,
+        method: Method
     ): Pair<List<String>, Boolean> {
         val scoreReceivedColumn = if (methodScore == 0.0) "N/A" else msg
         val extraInfoColumn = if (methodScore == 0.0) msg else ""
+        val methodScoreStr = String.format("%.2f", methodScore * 100)
 
         if (annotation != null) {
             val requiredScore = annotation.value
             val requiredScoreStr = String.format("%.2f", requiredScore * 100)
-            val methodScoreStr = String.format("%.2f", methodScore * 100)
 
             if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {
                 if (methodScore == 0.0) {
                     println("\t$msg")
                 } else {
-                    println("\tReceived a score of $msg which was not sufficient (<$requiredScoreStr%)")
+                    println("\tReceived a score of $msg ($methodScoreStr%) which was not sufficient (<$requiredScoreStr%)")
                 }
-                return listOf("### Failed ###", scoreReceivedColumn, "$requiredScoreStr%", extraInfoColumn) to false
+                return listOf("### Failed ###", scoreReceivedColumn, "$requiredScoreStr%", "", extraInfoColumn) to false
             } else {
-                println("\tReceived a score of $msg which was sufficient (>=$requiredScoreStr%)")
+                println("\tReceived a score of $msg ($methodScoreStr%) which was sufficient (>=$requiredScoreStr%)")
                 val notes = if (methodScoreStr.toDouble() > requiredScoreStr.toDouble())
                     "Exceeded expectations" else ""
-                return listOf("Passed", msg, "$requiredScoreStr%", notes) to true
+
+                val goldStar =
+                    if (method.getAnnotation(GoodEnough::class.java) != null || methodScoreStr == "100.00") "✓" else ""
+
+                return listOf("Passed", msg, "$methodScoreStr%", goldStar, notes) to true
             }
         } else {
             println(if (methodScore == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg")
             println("\tThis method was not required to reach a score threshold and as such it passed by default.")
-            return listOf("Passed by default", scoreReceivedColumn, "N/A", extraInfoColumn) to true
+            return listOf("Passed by default", scoreReceivedColumn, methodScoreStr, "", extraInfoColumn) to true
         }
     }
 
@@ -73,7 +78,8 @@ object TestUtilities {
             MethodProcessing.getMethodContext(psiMethod)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return "Failed to parse PSI" to 0.0
+            return (e.message ?: "Failed to parse PSI")
+                .replace("An operation is not implemented: ", "") to 0.0
         }
 
         val range = try {
@@ -82,7 +88,8 @@ object TestUtilities {
             bundleSet.cast(ShortSetIndicator)!!.collapse()
         } catch (e: Throwable) {
             e.printStackTrace()
-            return "Failed to evaluate value range" to 0.0
+            return (e.message ?: "Failed to parse PSI")
+                .replace("An operation is not implemented: ", "") to 0.0
         }
 
         println("\tRange of return value: $range")
@@ -167,13 +174,6 @@ object TestUtilities {
             }
         }
 
-        val score = "$numEntriesCorrect/$numEntriesPredicted (${
-            String.format(
-                "%.2f",
-                scoreFraction * 100
-            )
-        }%)"
-
-        return score to scoreFraction
+        return "$numEntriesCorrect/$numEntriesPredicted" to scoreFraction
     }
 }

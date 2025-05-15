@@ -1,6 +1,10 @@
 package testdata;
 
+import com.github.oberdiah.deepcomplexity.GoodEnough;
 import com.github.oberdiah.deepcomplexity.RequiredScore;
+
+import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
+import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
 
 public class MyTestData {
 	@RequiredScore(1.0)
@@ -30,7 +34,8 @@ public class MyTestData {
 		}
 	}
 	
-	@RequiredScore(0.75) // We've not implemented even/odd/modulo detection yet.
+	@RequiredScore(0.75)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short test4(short x) {
 		int bar = x;
 		
@@ -124,7 +129,14 @@ public class MyTestData {
 		return (short) (a - b);
 	}
 	
-	@RequiredScore(0.5) // We've not implemented even/odd/modulo detection yet.
+	@RequiredScore(0.0)
+	@GoodEnough(GAPS_FROM_POWERS)
+	public static short zeroTest5(short x) {
+		return (short) (x * x - x * x);
+	}
+	
+	@RequiredScore(0.5)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short simpleAdd(short x) {
 		return (short) (x + x);
 	}
@@ -171,6 +183,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(0.5)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short barTest2(short x) {
 		int bar = 0;
 		
@@ -198,6 +211,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(0.3334)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short largeTest1(short x) {
 		int foo = 0;
 		int bar = 0;
@@ -223,6 +237,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(0.5)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short multiplicationTest1(short x) {
 		return (short) (x * (x + 1));
 	}
@@ -247,6 +262,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(0.129)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short combinedIfs2(short x) {
 		int a = x;
 		if (x < 0) {
@@ -285,6 +301,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(0.129)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short combinedIfs4(short x) {
 		int a = x;
 		if (x < 0) {
@@ -346,6 +363,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(0.122)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short constraintTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -477,6 +495,7 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@RequiredScore(1.0)
 	public static short performanceTest1(short x) {
 		if (x < 0) {
 			return -10;
