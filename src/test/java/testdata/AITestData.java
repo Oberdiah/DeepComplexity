@@ -4,12 +4,14 @@ import com.github.oberdiah.deepcomplexity.RequiredScore;
 
 public class AITestData {
 	// 1. Short overflow, but int is fine — subtle wrap
+	@RequiredScore(1.0)
 	public static short tricky1(short x) {
 		if (x == 30000) return (short) (x + 10000);  // Wraps past Short.MAX_VALUE
 		return 0;
 	}
 	
 	// 2. Flip sign bit
+	@RequiredScore(1.0)
 	public static short tricky2(short x) {
 		if (x == -32768) return (short) (-x);  // Still -32768 due to two's complement
 		return 0;
@@ -25,6 +27,7 @@ public class AITestData {
 	}
 	
 	// 4. Multiplication causes wrap only in short
+	@RequiredScore(1.0)
 	public static short tricky4(short x) {
 		if (x == 256) return (short) (x * 256);  // 256 * 256 = 65536 → 0 in short
 		return 0;
@@ -39,6 +42,7 @@ public class AITestData {
 	}
 	
 	// 6. Wrap during subtraction
+	@RequiredScore(1.0)
 	public static short tricky6(short x) {
 		if (x == -30000) return (short) (x - 10000);  // Wraps
 		return 0;
@@ -52,6 +56,7 @@ public class AITestData {
 	}
 	
 	// 8. Double cast wrap
+	@RequiredScore(1.0)
 	public static short tricky8(short x) {
 		int y = 70000;
 		if (x == 123) return (short) ((short) y + x);  // Outer cast wraps
@@ -66,7 +71,8 @@ public class AITestData {
 	}
 	
 	// 10. Opposite sign wrapping check
-	public static short tricky10(short x) {
+	@RequiredScore(1.0)
+	public static short trickyA(short x) {
 		if (x == 16384) return (short) (x * 2);  // Exactly 32768 → wraps to -32768
 		return 0;
 	}

@@ -177,7 +177,9 @@ class NumberBundle<T : Number>(
     override fun toConstVariance(): Variances<T> = NumberVariances.Companion.newFromConstant(this)
 
     /**
-     * Returns a new set that satisfies the comparison operation.
+     * Returns a new set containing everything that could satisfy the comparison operation.
+     * I.e. for equality, the entire range is returned as the entire range may return true.
+     * For inequality, all values are returned, unless we are a single value.
      * We're the right-hand side of the equation.
      */
     fun getSetSatisfying(comp: ComparisonOp): NumberBundle<T> {
@@ -203,20 +205,23 @@ class NumberBundle<T : Number>(
                         )
                     )
 
-                EQUAL -> {
-                    listOf(NumberRange.new(smallestValue, biggestValue))
-                }
-
+                EQUAL -> ranges
                 NOT_EQUAL -> {
-                    listOf(
-                        NumberRange.new(
-                            ind.getMinValue(),
-                            smallestValue.downOneEpsilon()
-                        ), NumberRange.new(
-                            biggestValue.upOneEpsilon(),
-                            ind.getMaxValue()
+                    if (smallestValue == biggestValue) {
+                        listOf(
+                            NumberRange.new(
+                                ind.getMinValue(),
+                                smallestValue.downOneEpsilon()
+                            ),
+                            NumberRange.new(
+                                biggestValue.upOneEpsilon(),
+                                ind.getMaxValue()
+                            )
                         )
-                    )
+                    } else {
+                        // In this case we can't say anything at all, we have to return the entire range :(
+                        listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue()))
+                    }
                 }
             }
 

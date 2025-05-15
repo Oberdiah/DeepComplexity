@@ -8,6 +8,8 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 
 class BooleanVariances(private val value: BooleanBundle) : Variances<Boolean> {
+    override fun toString(): String = value.toString()
+
     fun invert(): BooleanVariances = BooleanVariances(value.invert())
     override val ind: SetIndicator<Boolean> = BooleanSetIndicator
 

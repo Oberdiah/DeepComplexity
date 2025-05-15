@@ -503,6 +503,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short equalityTest3(short x) {
 		if (x == 5) {
 			return x;

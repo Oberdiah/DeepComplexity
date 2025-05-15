@@ -69,6 +69,10 @@ class BundleSet<T : Any> private constructor(
             }
         }
 
+        override fun toString(): String {
+            return toDebugString()
+        }
+
         fun toDebugString(): String {
             if (constraints.isUnconstrained()) {
                 return variances.toDebugString(constraints)
@@ -180,10 +184,11 @@ class BundleSet<T : Any> private constructor(
     }
 
     fun <Q : Any> cast(indicator: SetIndicator<Q>): BundleSet<Q>? {
-        return BundleSet(
+        val cast = BundleSet(
             indicator, bundles.map {
                 ConstrainedVariances.new(it.variances.cast(indicator) ?: return null, it.constraints)
             }
         )
+        return cast
     }
 }

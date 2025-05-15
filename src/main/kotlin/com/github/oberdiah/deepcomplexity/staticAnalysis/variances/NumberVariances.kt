@@ -24,6 +24,12 @@ class NumberVariances<T : Number> private constructor(
         }
     }
 
+    override fun toString(): String {
+        return multipliers.entries.joinToString(", ") { (key, multiplier) ->
+            "$key: ($multiplier)"
+        }
+    }
+
     companion object {
         fun <T : Number> newFromConstant(constant: NumberBundle<T>): NumberVariances<T> =
             NumberVariances(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))

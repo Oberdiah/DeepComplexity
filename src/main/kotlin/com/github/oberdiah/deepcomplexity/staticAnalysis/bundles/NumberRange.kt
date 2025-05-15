@@ -156,40 +156,43 @@ class NumberRange<T : Number> private constructor(
     }
 
     private fun resolvePotentialOverflow(
-        min: BigInteger,
-        max: BigInteger
+        initialLower: BigInteger,
+        initialUpper: BigInteger
     ): Iterable<NumberRange<T>> {
-        val minValue = BigInteger.valueOf(ind.getMinValue().toLong())
-        val maxValue = BigInteger.valueOf(ind.getMaxValue().toLong())
+        val indMin = BigInteger.valueOf(ind.getMinValue().toLong())
+        val indMax = BigInteger.valueOf(ind.getMaxValue().toLong())
+        val setSize = BigInteger.valueOf(ind.clazz.getSetSize().toLong())
 
-        // Check if we're overflowing and if we are, we must split the range.
-        // If we're overflowing in both directions we can just return the full range.
-        if (min < minValue && max > maxValue) {
-            return listOf(newRange(bigIntToT(minValue), bigIntToT(maxValue)))
-        } else if (min < minValue) {
-            val wrappedMin = min.add(clazz.getSetSize())
-            if (wrappedMin < minValue) {
-                // We're overflowing so much in a single direction
-                // that the overflow will cover the full range anyway.
-                return listOf(newRange(bigIntToT(minValue), bigIntToT(maxValue)))
-            }
-            return listOf(
-                newRange(bigIntToT(wrappedMin), bigIntToT(maxValue)),
-                newRange(bigIntToT(minValue), bigIntToT(max))
-            )
-        } else if (max > maxValue) {
-            val wrappedMax = max.subtract(clazz.getSetSize())
-            if (wrappedMax > maxValue) {
-                // We're overflowing so much in a single direction
-                // that the overflow will cover the full range anyway.
-                return listOf(newRange(bigIntToT(minValue), bigIntToT(maxValue)))
-            }
-            return listOf(
-                newRange(bigIntToT(minValue), bigIntToT(wrappedMax)),
-                newRange(bigIntToT(min), bigIntToT(maxValue))
-            )
+        val distanceToShunt = setSize * if (initialLower < indMin) {
+            (indMin - initialLower - BigInteger.ONE) / setSize + BigInteger.ONE
         } else {
-            return listOf(newRange(bigIntToT(min), bigIntToT(max)))
+            (indMin - initialLower) / setSize
         }
+
+        // The first step is to shift the affine so that the lower value is definitely between min and max.
+        // Makes things a lot easier to reason about.
+        val (lower, upper) = initialLower + distanceToShunt to initialUpper + distanceToShunt
+
+        assert(lower >= indMin) {
+            "Lower bound $lower is below minimum value $indMin"
+        }
+        assert(lower <= indMax) {
+            "Lower bound $lower is above maximum value $indMax"
+        }
+
+        if (upper - lower >= setSize) {
+            // In this case we're covering the whole range no matter what.
+            return listOf(newRange(bigIntToT(indMin), bigIntToT(indMax)))
+        }
+
+        if (upper <= indMax) {
+            // Easy-peasy, we fit, all is good.
+            return listOf(newRange(bigIntToT(lower), bigIntToT(upper)))
+        }
+
+        return listOf(
+            newRange(bigIntToT(upper), bigIntToT(indMax)),
+            newRange(bigIntToT(indMin), bigIntToT(lower))
+        )
     }
 }

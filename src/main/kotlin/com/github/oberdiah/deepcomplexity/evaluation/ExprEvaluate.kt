@@ -100,11 +100,10 @@ object ExprEvaluate {
                 }
             }
 
-            is TypeCastExpression<*, *> -> CastSolver.castFrom(
-                evaluate(expr.expr, condition),
-                expr.ind,
-                expr.explicit
-            )
+            is TypeCastExpression<*, *> -> {
+                val toCast = evaluate(expr.expr, condition)
+                CastSolver.castFrom(toCast, expr.ind, expr.explicit)
+            }
 
             is ConstExpr -> expr.constSet.constrainWith(condition)
             is VariableExpression -> {
@@ -124,6 +123,7 @@ object ExprEvaluate {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
         }
+        val foo = toReturn.toDebugString()
         return toReturn
     }
 }

@@ -144,6 +144,8 @@ object ConstraintSolver {
 
     /**
      * Does not return a given constraint if it could not be ascertained accurately.
+     * Constraints are always the set of values that may result in this equation being true.
+     * I.e. they try to be as broad as possible.
      */
     private fun <T : Number> getVariableConstraints(
         expr: ComparisonExpression<*>,
