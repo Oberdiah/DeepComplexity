@@ -59,7 +59,7 @@ class NumberBundle<T : Number>(
 
         fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberBundle<OutT> {
             assert(newInd.isWholeNum() && ind.isWholeNum()) {
-                "Attempted to cast to cast using a floating point number."
+                "Attempted to cast to a floating point number."
             }
             return newFromDataAndInd(newInd, ranges.flatMap { it.castTo(newInd) })
         }
