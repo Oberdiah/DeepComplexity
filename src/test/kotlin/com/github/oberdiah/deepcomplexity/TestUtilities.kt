@@ -5,7 +5,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
 import com.intellij.psi.PsiMethod
-import testdata.MyTestData
 import java.lang.reflect.Method
 
 object TestUtilities {
@@ -16,14 +15,14 @@ object TestUtilities {
      * Returns a string summary of the test results, to be printed in the summary test,
      * and if the test passed.
      */
-    fun testMethod(method: PsiMethod, methodName: String): Pair<String, Boolean> {
+    fun testMethod(method: SimpleMustPassTest.TestInfo): Pair<String, Boolean> {
         println("Processing method ${method.name}:")
 
-        val clazz = MyTestData::class.java
-        val reflectMethod = clazz.declaredMethods.find { it.name == methodName }
-            ?: throw NoSuchMethodException("Method $methodName not found in class ${clazz.name}")
+        val clazz = Class.forName(method.psiMethod.containingClass?.qualifiedName)
+        val reflectMethod = clazz.declaredMethods.find { it.name == method.name }
+            ?: throw NoSuchMethodException("Method ${method.name} not found in class ${clazz.name}")
 
-        val (msg, methodScore) = getMethodScore(reflectMethod, method)
+        val (msg, methodScore) = getMethodScore(reflectMethod, method.psiMethod)
 
         val annotation = reflectMethod.getAnnotation(RequiredScore::class.java)
 

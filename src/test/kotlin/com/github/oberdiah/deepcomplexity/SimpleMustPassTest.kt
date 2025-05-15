@@ -16,6 +16,8 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val summaryDescription = mutableListOf<String>()
     }
 
+    class TestInfo(val psiMethod: PsiMethod, val name: String, val file: String)
+
     @Test
     @Order(1)
     fun setup() {
@@ -24,25 +26,30 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
     @TestFactory
     @Order(2)
     fun runTests(): Collection<DynamicTest> {
-        val outputFile: PsiFile = fixture.configureByFile("MyTestData.java")
+        val outputFiles: Array<out PsiFile?> = fixture.configureByFiles(
+            "MyTestData.java",
+            "AITestData.java",
+        )
         val app = ApplicationManager.getApplication()
 
-        val methods = app.runReadAction<List<Pair<PsiMethod, String>>> {
-            if (outputFile is PsiJavaFile) {
-                outputFile.classes.flatMap { psiClass ->
-                    psiClass.methods.map { psiMethod ->
-                        psiMethod to psiMethod.name
-                    }
+        val methods = app.runReadAction<List<TestInfo>> {
+            val list = mutableListOf<TestInfo>()
+            for (file in outputFiles) {
+                if (file is PsiJavaFile) {
+                    list.addAll(file.classes.flatMap { psiClass ->
+                        psiClass.methods.map { psiMethod ->
+                            TestInfo(psiMethod, psiMethod.name, file.name)
+                        }
+                    })
                 }
-            } else {
-                emptyList()
             }
+            list
         }
 
         val testToRun = System.getenv("TEST_FILTER")
 
         val methodsToRun = if (testToRun != null) {
-            methods.filter { it.second.contains(testToRun) }
+            methods.filter { it.name.contains(testToRun) }
         } else {
             methods
         }
@@ -50,14 +57,15 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val tests = mutableListOf<DynamicTest>()
 
         for (method in methodsToRun) {
-            val testSourceUri = URI.create("method:testdata.MyTestData#" + method.second)
+            val file = method.file.replace(".java", "")
+            val testSourceUri = URI.create("method:testdata.${file}#${method.name}")
 
-            tests.add(DynamicTest.dynamicTest(method.second, testSourceUri) {
+            tests.add(DynamicTest.dynamicTest(method.name, testSourceUri) {
                 app.runReadAction {
-                    val (msg, passed) = TestUtilities.testMethod(method.first, method.second)
-                    summaryDescription.add("${method.second.padEnd(25)}: $msg")
+                    val (msg, passed) = TestUtilities.testMethod(method)
+                    summaryDescription.add("${method.name.padEnd(25)}: $msg")
                     if (!passed) {
-                        throw AssertionError("Test ${method.second} failed.")
+                        throw AssertionError("Test ${method.name} failed.")
                     }
                 }
             })
