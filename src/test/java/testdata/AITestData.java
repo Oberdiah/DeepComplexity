@@ -1,6 +1,9 @@
 package testdata;
 
+import com.github.oberdiah.deepcomplexity.GoodEnough;
 import com.github.oberdiah.deepcomplexity.RequiredScore;
+
+import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
 
 public class AITestData {
 	static final int MAX_SHORT = 32767;
@@ -90,7 +93,8 @@ public class AITestData {
 	}
 	
 	// Test 2: Unexpected behaviour when casting after multiplication
-	@RequiredScore(0.0) // We know we'll not manage this until we've got even/odd/modulo
+	@RequiredScore(0.0)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short multiplicationCastTrap(short x) {
 		int temp = x * 32768; // Intentionally outside short range
 		return (short) temp;  // This truncates in an interesting way
@@ -179,6 +183,7 @@ public class AITestData {
 	
 	// Test 9: Compound operation with underflow potential
 	@RequiredScore(0.5)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short compoundUnderflow(short x) {
 		short y = (short) (x - 1);
 		

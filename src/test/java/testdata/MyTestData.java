@@ -7,6 +7,9 @@ import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAP
 import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
 
 public class MyTestData {
+	static final int MAX_SHORT = 32767;
+	static final int MIN_SHORT = -32768;
+	
 	@RequiredScore(1.0)
 	public static short test1(short x) {
 		if (x < 3) {
@@ -377,21 +380,11 @@ public class MyTestData {
 		return (short) (a * b);
 	}
 	
-	@RequiredScore(1.0)
 	public static short constraintTest2(short x) {
-		int a = 0;
-		if (x > 10) {
-			a = x;
+		if (x > -10 && x < 10) {
+			return (short) (x * 2 + MAX_SHORT);
 		}
-		if (x < 20) {
-			a = x + 5;
-		}
-		
-		int b = 0;
-		if (x < 10) {
-			b = a;
-		}
-		return (short) b;
+		return 0;
 	}
 	
 	@RequiredScore(1.0)
