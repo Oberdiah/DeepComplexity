@@ -9,7 +9,7 @@ import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiVariable
 
-class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
+class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mutableMapOf()) {
     sealed class Key {
         // Variable is where the variable is defined —
         // either PsiLocalVariable, PsiParameter, or PsiField
@@ -189,36 +189,37 @@ class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
     /**
      * Performs a cast if necessary.
      */
-    fun withVar(key: Key, expr: IExpr<*>): Context {
+    fun putVar(key: Key, expr: IExpr<*>) {
         // We're just going to always perform this cast for now.
         // If the code compiles, it's reasonable to do so.
-        return Context(variables + mapOf(key to expr.performACastTo(key.ind, false)))
+        variables[key] = expr.performACastTo(key.ind, false)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun withVar(element: PsiElement, expr: IExpr<*>): Context {
-        return withVar(element.toKey(), expr)
+    fun putVar(element: PsiElement, expr: IExpr<*>) {
+        putVar(element.toKey(), expr)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun resolveVar(element: PsiElement, expr: IExpr<*>): Context {
+    fun resolveVar(element: PsiElement, expr: IExpr<*>) {
         return resolveVar(element.toKey(), expr)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun resolveVar(key: Key, expr: IExpr<*>): Context {
+    fun resolveVar(key: Key, expr: IExpr<*>) {
         val castExpr = expr.performACastTo(key.ind, false)
-        return Context(variables.mapValues { (key, expr) ->
-            expr.rebuildTree(variableExpressionReplacer {
+
+        variables.replaceAll { key, oldExpr ->
+            oldExpr.rebuildTree(variableExpressionReplacer {
                 if (it.key == key) castExpr else null
             })
-        })
+        }
     }
 
     /**
@@ -228,7 +229,7 @@ class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
      *
      * Conversely, for `Method` keys, this context is prioritised over the later context.
      */
-    fun stack(later: Context): Context {
+    fun stack(later: Context) {
         val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
             expr.rebuildTree(variableExpressionReplacer { variables[it.key] })
         }
@@ -237,17 +238,15 @@ class Context private constructor(val variables: Map<Key, IExpr<*>> = mapOf()) {
             expr.rebuildTree(variableExpressionReplacer { later.variables[it.key] })
         }
 
-        val newMap = mutableMapOf<Key, IExpr<*>>()
+        variables.clear()
 
         // For normal keys, later takes priority and gets to override.
-        newMap.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
-        newMap.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
+        variables.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
+        variables.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
 
         // For method keys, this context takes priority.
-        newMap.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
-        newMap.putAll(meResolvedWithLater.filter { it.key.isMethod() })
-
-        return Context(newMap)
+        variables.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
+        variables.putAll(meResolvedWithLater.filter { it.key.isMethod() })
     }
 
     private fun variableExpressionReplacer(

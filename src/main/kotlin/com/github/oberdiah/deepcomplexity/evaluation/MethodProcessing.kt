@@ -6,7 +6,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.mapLeft
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.intellij.psi.*
@@ -28,42 +27,40 @@ object MethodProcessing {
     }
 
     fun getMethodContext(method: PsiMethod): Context {
+        val context = Context.new()
         method.body?.let { body ->
-            return processPsiElement(body, Context.new())
+            processPsiElement(body, context)
         }
-        return Context.new()
+        return context
     }
 
     private fun processPsiElement(
         psi: PsiElement,
         context: Context
-    ): Context {
+    ) {
         when (psi) {
             is PsiBlockStatement -> {
-                return processPsiElement(psi.codeBlock, context)
+                processPsiElement(psi.codeBlock, context)
             }
 
             is PsiCodeBlock -> {
-                var context = context
                 for (line in psi.children) {
-                    context = processPsiElement(line, context)
+                    processPsiElement(line, context)
                 }
-                return context
             }
 
             is PsiExpressionStatement -> {
-                return processPsiElement(psi.expression, context)
+                processPsiElement(psi.expression, context)
             }
 
             is PsiDeclarationStatement -> {
-                var context = context
                 // Handled similar to assignment expression
                 psi.declaredElements.forEach { element ->
                     if (element is PsiLocalVariable) {
                         val rExpression = element.initializer
                         if (rExpression != null) {
-                            val (rhs, newContext) = buildExpressionFromPsi(rExpression, context)
-                            context = newContext.withVar(element, rhs)
+                            val rhs = buildExpressionFromPsi(rExpression, context)
+                            context.putVar(element, rhs)
                         } else {
                             TODO("Eventually we'll replace this with either null or 0")
                         }
@@ -73,7 +70,6 @@ object MethodProcessing {
                         )
                     }
                 }
-                return context
             }
 
             is PsiAssignmentExpression -> {
@@ -81,20 +77,20 @@ object MethodProcessing {
                     val opSign = psi.operationSign
                     when (opSign.tokenType) {
                         JavaTokenType.EQ -> {
-                            val (rhs, newContext) = buildExpressionFromPsi(rExpression, context)
-                            return newContext.withVar(psi.lExpression.resolveIfNeeded(), rhs)
+                            val rhs = buildExpressionFromPsi(rExpression, context)
+                            context.putVar(psi.lExpression.resolveIfNeeded(), rhs)
                         }
 
                         JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                             val resolvedLhs = psi.lExpression.resolveIfNeeded()
                             val lhs = context.getVar(resolvedLhs).castToNumbers()
-                            val (rhs, context) = buildExpressionFromPsi(
+                            val rhs = buildExpressionFromPsi(
                                 rExpression,
                                 context
-                            ).mapLeft { it.castToNumbers() }
+                            ).castToNumbers()
 
-                            return ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
-                                context.withVar(
+                            ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
+                                context.putVar(
                                     resolvedLhs,
                                     ArithmeticExpression(
                                         lhs,
@@ -115,27 +111,25 @@ object MethodProcessing {
                         }
                     }
                 }
-                return context
             }
 
             is PsiIfStatement -> {
-                val (condition, newContext) = buildExpressionFromPsi(
+                val condition = buildExpressionFromPsi(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     context
-                ).mapLeft {
-                    it.tryCastTo(BooleanSetIndicator)
-                        ?: TODO("Failed to cast to BooleanSet: ${psi.condition?.text}")
-                }
+                ).castToBoolean()
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                val trueBranchContext = processPsiElement(trueBranch, Context.new())
-                val falseBranchContext = psi.elseBranch?.let { processPsiElement(it, Context.new()) } ?: Context.new()
+                val trueBranchContext = Context.new()
+                processPsiElement(trueBranch, trueBranchContext)
+                val falseBranchContext = Context.new()
+                psi.elseBranch?.let { processPsiElement(it, falseBranchContext) } ?: Context.new()
 
                 val ifContext = Context.combine(trueBranchContext, falseBranchContext) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
 
-                return newContext.stack(ifContext)
+                return context.stack(ifContext)
             }
 
             is PsiForStatement -> {
@@ -144,19 +138,14 @@ object MethodProcessing {
                     processPsiElement(initialization, context)
                 }
 
-                var bodyContext = Context.new()
+                val bodyContext = Context.new()
 
                 psi.body?.let { processPsiElement(it, bodyContext) }
                 psi.update?.let { processPsiElement(it, bodyContext) }
 
                 val conditionExpr = psi.condition?.let { condition ->
-                    // Unsure what to do with the context here — should it affect the body context?
-                    val (boolExpr, context) = buildExpressionFromPsi(condition, bodyContext).mapLeft {
-                        it.tryCastTo(BooleanSetIndicator)
-                            ?: TODO("Failed to cast to BooleanSet: ${condition.text}")
-                    }
-                    bodyContext = context
-                    boolExpr
+                    buildExpressionFromPsi(condition, bodyContext).tryCastTo(BooleanSetIndicator)
+                        ?: TODO("Failed to cast to BooleanSet: ${condition.text}")
                 }.orElse {
                     ConstantExpression.TRUE
                 }
@@ -170,37 +159,33 @@ object MethodProcessing {
             is PsiReturnStatement -> {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
-                    val (returnExpr, newContext) = buildExpressionFromPsi(returnExpression, context)
+                    val returnExpr = buildExpressionFromPsi(returnExpression, context)
 
-                    return if (newContext.variables.keys.none { it.isMethod() }) {
+                    return if (context.variables.keys.none { it.isMethod() }) {
                         // If there's no 'method' key yet, create one.
-                        newContext.withVar(psi, returnExpr)
+                        context.putVar(psi, returnExpr)
                     } else {
                         // If there is, resolve the existing one with the new value.
-                        newContext.resolveVar(psi, returnExpr)
+                        context.resolveVar(psi, returnExpr)
                     }
                 }
-                return context
             }
 
             is PsiMethodCallExpression -> {
                 // We're not thinking about methods yet.
-                return context
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
                 // Ignore whitespace, comments, etc.
-                return context
             }
 
             is PsiExpression -> {
                 // It's not assigned to anything, so we ignore the result.
-                return buildExpressionFromPsi(psi, context).second
+                buildExpressionFromPsi(psi, context)
             }
 
             else -> {
                 println("WARN: Unsupported PsiElement type: ${psi::class} (${psi.text})")
-                return context
             }
         }
     }
@@ -210,15 +195,15 @@ object MethodProcessing {
      *
      * Nothing in here should be declaring variables.
      */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): Pair<IExpr<*>, Context> {
+    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): IExpr<*> {
         when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()
-                return ConstantExpression.fromAny(value) to context
+                return ConstantExpression.fromAny(value)
             }
 
             is PsiReferenceExpression -> {
-                return context.getVar(psi.resolveIfNeeded()) to context
+                return context.getVar(psi.resolveIfNeeded())
             }
 
             is PsiPrefixExpression -> {
@@ -230,22 +215,26 @@ object MethodProcessing {
 
                 return when (unaryOp) {
                     UnaryNumberOp.NEGATE, UnaryNumberOp.PLUS -> {
-                        val (operand, newContext) = buildExpressionFromPsi(operand, context).mapLeft {
-                            ConversionsAndPromotion.unaryNumericPromotion(it.castToNumbers())
-                        }
+                        val operand =
+                            ConversionsAndPromotion.unaryNumericPromotion(
+                                buildExpressionFromPsi(
+                                    operand,
+                                    context
+                                ).castToNumbers()
+                            )
 
-                        unaryOp.applyToExpr(operand) to newContext
+
+                        unaryOp.applyToExpr(operand)
                     }
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
                         val resolvedOperand = operand.resolveIfNeeded()
                         val operandExpr = context.getVar(resolvedOperand).castToNumbers()
 
-                        val contextWithOpApplied = context.withVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
-                        // Build the expression after the assignment for a prefix increment/decrement
-                        val (expr, newContext) = buildExpressionFromPsi(operand, contextWithOpApplied)
+                        context.putVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
 
-                        return expr.castToNumbers() to newContext
+                        // Build the expression after the assignment for a prefix increment/decrement
+                        return buildExpressionFromPsi(operand, context).castToNumbers()
                     }
                 }
             }
@@ -257,14 +246,14 @@ object MethodProcessing {
 
 
                 // Build the expression before the assignment for a postfix increment/decrement
-                val (builtExpr, newContext) = buildExpressionFromPsi(psi.operand, context)
+                val builtExpr = buildExpressionFromPsi(psi.operand, context)
 
                 // Assign the value to the variable
                 val resolvedOperand = psi.operand.resolveIfNeeded()
-                val operandExpr = newContext.getVar(resolvedOperand).castToNumbers()
-                val contextWithOpApplied = newContext.withVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
+                val operandExpr = context.getVar(resolvedOperand).castToNumbers()
+                context.putVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
 
-                return builtExpr.castToNumbers() to contextWithOpApplied
+                return builtExpr.castToNumbers()
             }
 
             is PsiBinaryExpression -> {
@@ -273,14 +262,14 @@ object MethodProcessing {
 
                 val tokenType = psi.operationSign.tokenType
 
-                val (lhs, context2) = buildExpressionFromPsi(lhsOperand, context)
-                val (rhs, context3) = buildExpressionFromPsi(rhsOperand, context2)
+                val lhs = buildExpressionFromPsi(lhsOperand, context)
+                val rhs = buildExpressionFromPsi(rhsOperand, context)
 
-                return processBinaryExpr(context3, lhs, rhs, tokenType)
+                return processBinaryExpr(context, lhs, rhs, tokenType)
             }
 
             is PsiTypeCastExpression -> {
-                val (expr, newContext) = buildExpressionFromPsi(
+                val expr = buildExpressionFromPsi(
                     psi.operand ?: throw ExpressionIncompleteException(),
                     context
                 )
@@ -292,7 +281,7 @@ object MethodProcessing {
 
                 val setInd = SetIndicator.Companion.fromClass(type)
 
-                return TypeCastExpression(expr, setInd, false) to newContext
+                return TypeCastExpression(expr, setInd, false)
             }
 
             is PsiParenthesizedExpression -> {
@@ -306,20 +295,18 @@ object MethodProcessing {
                 } else {
                     // Process it as a bunch of binary expressions in a row, left to right.
                     val tokenType = psi.operationTokenType
-                    val (originalLhs, newContext) = buildExpressionFromPsi(operands[0], context)
-                    val (originalRhs, newContext2) = buildExpressionFromPsi(operands[1], newContext)
+                    val originalLhs = buildExpressionFromPsi(operands[0], context)
+                    val originalRhs = buildExpressionFromPsi(operands[1], context)
 
-                    var (currentExpr, currentContext) =
-                        processBinaryExpr(newContext2, originalLhs, originalRhs, tokenType)
+                    var currentExpr = processBinaryExpr(context, originalLhs, originalRhs, tokenType)
 
                     for (i in 2 until operands.size) {
-                        val (nextRhs, newContext3) = buildExpressionFromPsi(operands[i], currentContext)
-                        val (newExpr, newContext4) = processBinaryExpr(newContext3, currentExpr, nextRhs, tokenType)
+                        val nextRhs = buildExpressionFromPsi(operands[i], context)
+                        val newExpr = processBinaryExpr(context, currentExpr, nextRhs, tokenType)
                         currentExpr = newExpr
-                        currentContext = newContext4
                     }
 
-                    return currentExpr to currentContext
+                    return currentExpr
                 }
             }
         }
@@ -331,7 +318,7 @@ object MethodProcessing {
         lhsPrecast: IExpr<*>,
         rhsPrecast: IExpr<*>,
         tokenType: IElementType
-    ): Pair<IExpr<*>, Context> {
+    ): IExpr<*> {
         val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
         val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
         val booleanOp = BooleanOp.fromJavaTokenType(tokenType)
@@ -339,7 +326,7 @@ object MethodProcessing {
             val lhs = lhsPrecast.castToBoolean()
             val rhs = rhsPrecast.castToBoolean()
 
-            return BooleanExpression(lhs, rhs, booleanOp) to context
+            return BooleanExpression(lhs, rhs, booleanOp)
         } else {
             return ConversionsAndPromotion.binaryNumericPromotion(
                 lhsPrecast.castToNumbers(),
@@ -350,7 +337,7 @@ object MethodProcessing {
                         comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
                         binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
                         else -> TODO("Unsupported binary operation: $tokenType ($lhsPrecast, $rhsPrecast)")
-                    } to context
+                    }
                 }
         }
     }
