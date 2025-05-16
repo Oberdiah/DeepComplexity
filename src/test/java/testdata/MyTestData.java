@@ -520,4 +520,35 @@ public class MyTestData {
 		}
 		return 0;
 	}
+	
+	@RequiredScore(1.0)
+	public static short polyadicTest1(short x) {
+		return 5 - 10 - 15 * 2;
+	}
+	
+	@RequiredScore(1.0)
+	public static short polyadicTest2(short x) {
+		return 5 + 7 + 9 - 2;
+	}
+	
+	@RequiredScore(1.0)
+	public static short polyadicTest3(short x) {
+		if (true && false && true) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short operationEvaluationOrder1(short x) {
+		int j = 1;
+		int i = (j = 2) / (j = 3);
+		return (short) j;
+	}
+	
+	public static short operationEvaluationOrder2(short x) {
+		int j = 1;
+		int i = (j = 2) / (j = 3);
+		return (short) i;
+	}
 }

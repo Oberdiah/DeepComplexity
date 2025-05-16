@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
@@ -47,6 +48,11 @@ fun IExpr<*>.castToNumbers(): IExpr<out Number> {
     } else {
         throw IllegalStateException("Failed to cast to a number: $this ($ind)")
     }
+}
+
+fun IExpr<*>.castToBoolean(): IExpr<Boolean> {
+    return this.tryCastTo(BooleanSetIndicator)
+        ?: throw IllegalStateException("Failed to cast to a boolean: $this ($ind)")
 }
 
 inline fun <Set : Any, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {

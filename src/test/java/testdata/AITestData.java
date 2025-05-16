@@ -214,4 +214,73 @@ public class AITestData {
 		
 		return (short) temp;
 	}
+	
+	
+	// Test 12: Casting with potential overflow in multipliers - This test passed
+	@RequiredScore(1.0)
+	public static short testMultiplierEquivalence(short x) {
+		// This test creates a scenario where individual multipliers might overflow
+		// when cast to short, but the combined result might not (or vice versa)
+		int multiplier1 = 200;
+		int multiplier2 = 300;
+		
+		// Different ways to compute the same result
+		int result1 = (x * multiplier1) + (x * multiplier2);  // Separate multiplications
+		int result2 = x * (multiplier1 + multiplier2);        // Combined multiplier
+		
+		// These should be mathematically equivalent, but might not be
+		// if casting is done on the multipliers rather than the base case
+		return (short) (result1 - result2);
+	}
+	
+	// Test 13: Edge case with maximum short value
+	public static short testMaxShortEquivalence(short x) {
+		if (x == MAX_SHORT) {
+			// This creates a scenario where casting the multiplier vs. the result
+			// might lead to different outcomes due to overflow handling
+			int a = x * 2;    // Overflows in int calculation
+			int b = x + x;    // Different way to calculate same value
+			
+			// If casting is done on the multipliers, a and b might be treated differently
+			return (short) (a - b);
+		}
+		return 0;
+	}
+	
+	// Test 14: Multiple multipliers with wrapping behavior
+	public static short testMultipleWrapping(short x) {
+		if (x > 100 && x < 200) {
+			// Create multiple multipliers that might wrap differently
+			// when cast individually vs. together
+			int m1 = x + 3;
+			int m2 = x + 2;
+			int m3 = x + 1;
+			
+			// Different ways to combine the multipliers
+			int combined1 = m1 + m2 + m3;
+			int combined2 = x * (400 + 500 + 600);
+			
+			// If casting is done on the multipliers rather than the base case,
+			// these might produce different results
+			return (short) (combined1 - combined2);
+		}
+		return 0;
+	}
+	
+	// Test 15: Casting with negative multipliers
+	public static short testNegativeEquivalence(short x) {
+		if (x < 0) {
+			// Negative values might be handled differently when casting
+			int m1 = x * -300;
+			int m2 = x * 500;
+			
+			// Different ways to combine the multipliers
+			int combined1 = m1 + m2;
+			int combined2 = x * (-300 + 500);
+			
+			// If casting is done incorrectly, these might produce different results
+			return (short) (combined1 - combined2);
+		}
+		return 0;
+	}
 }

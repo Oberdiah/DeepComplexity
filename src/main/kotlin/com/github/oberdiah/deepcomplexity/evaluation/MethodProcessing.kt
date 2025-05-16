@@ -10,6 +10,7 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.mapLeft
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.intellij.psi.*
+import com.intellij.psi.tree.IElementType
 
 object MethodProcessing {
     fun printMethod(method: PsiMethod, evaluate: Boolean) {
@@ -272,40 +273,10 @@ object MethodProcessing {
 
                 val tokenType = psi.operationSign.tokenType
 
-                val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
-                val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
-                val booleanOp = BooleanOp.fromJavaTokenType(tokenType)
+                val (lhs, context2) = buildExpressionFromPsi(lhsOperand, context)
+                val (rhs, context3) = buildExpressionFromPsi(rhsOperand, context2)
 
-                if (booleanOp != null) {
-                    val (lhsPrecast, context2) = buildExpressionFromPsi(lhsOperand, context)
-                    val (rhsPrecast, context3) = buildExpressionFromPsi(rhsOperand, context2)
-
-                    val lhs = lhsPrecast.tryCastTo(BooleanSetIndicator)
-                        ?: throw IllegalArgumentException("Failed to cast to Boolean: ${lhsOperand.text}")
-                    val rhs = rhsPrecast.tryCastTo(BooleanSetIndicator)
-                        ?: throw IllegalArgumentException("Failed to cast to Boolean: ${rhsOperand.text}")
-
-                    return BooleanExpression(lhs, rhs, booleanOp) to context3
-                } else {
-                    val (lhsPrecast, context2) = buildExpressionFromPsi(
-                        lhsOperand,
-                        context
-                    ).mapLeft { it.castToNumbers() }
-
-                    val (rhsPrecast, context3) = buildExpressionFromPsi(
-                        rhsOperand,
-                        context2
-                    ).mapLeft { it.castToNumbers() }
-
-                    return ConversionsAndPromotion.binaryNumericPromotion(lhsPrecast, rhsPrecast)
-                        .map { lhs, rhs ->
-                            return@map when {
-                                comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
-                                binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
-                                else -> TODO("Unsupported binary operation: ${psi.operationSign} (${psi.text})")
-                            } to context3
-                        }
-                }
+                return processBinaryExpr(context3, lhs, rhs, tokenType)
             }
 
             is PsiTypeCastExpression -> {
@@ -327,7 +298,60 @@ object MethodProcessing {
             is PsiParenthesizedExpression -> {
                 return buildExpressionFromPsi(psi.expression ?: throw ExpressionIncompleteException(), context)
             }
+
+            is PsiPolyadicExpression -> {
+                val operands = psi.operands
+                if (operands.size < 2) {
+                    throw ExpressionIncompleteException()
+                } else {
+                    // Process it as a bunch of binary expressions in a row, left to right.
+                    val tokenType = psi.operationTokenType
+                    val (originalLhs, newContext) = buildExpressionFromPsi(operands[0], context)
+                    val (originalRhs, newContext2) = buildExpressionFromPsi(operands[1], newContext)
+
+                    var (currentExpr, currentContext) =
+                        processBinaryExpr(newContext2, originalLhs, originalRhs, tokenType)
+
+                    for (i in 2 until operands.size) {
+                        val (nextRhs, newContext3) = buildExpressionFromPsi(operands[i], currentContext)
+                        val (newExpr, newContext4) = processBinaryExpr(newContext3, currentExpr, nextRhs, tokenType)
+                        currentExpr = newExpr
+                        currentContext = newContext4
+                    }
+
+                    return currentExpr to currentContext
+                }
+            }
         }
         TODO("As-yet unsupported PsiExpression type ${psi::class} (${psi.text})")
+    }
+
+    private fun processBinaryExpr(
+        context: Context,
+        lhsPrecast: IExpr<*>,
+        rhsPrecast: IExpr<*>,
+        tokenType: IElementType
+    ): Pair<IExpr<*>, Context> {
+        val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
+        val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
+        val booleanOp = BooleanOp.fromJavaTokenType(tokenType)
+        if (booleanOp != null) {
+            val lhs = lhsPrecast.castToBoolean()
+            val rhs = rhsPrecast.castToBoolean()
+
+            return BooleanExpression(lhs, rhs, booleanOp) to context
+        } else {
+            return ConversionsAndPromotion.binaryNumericPromotion(
+                lhsPrecast.castToNumbers(),
+                rhsPrecast.castToNumbers()
+            )
+                .map { lhs, rhs ->
+                    return@map when {
+                        comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
+                        binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
+                        else -> TODO("Unsupported binary operation: $tokenType ($lhsPrecast, $rhsPrecast)")
+                    } to context
+                }
+        }
     }
 }
