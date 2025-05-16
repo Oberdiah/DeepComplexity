@@ -551,4 +551,14 @@ public class MyTestData {
 		int i = (j = 2) / (j = 3);
 		return (short) i;
 	}
+	
+	@RequiredScore(1.0)
+	public static short returnTypeCasting(short x) {
+		if (x == 0) {
+			int a = x;
+			int b = 0;
+			return (short) (a - b);
+		}
+		return 0;
+	}
 }

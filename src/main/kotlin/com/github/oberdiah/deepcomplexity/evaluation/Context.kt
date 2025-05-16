@@ -215,7 +215,7 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
     fun resolveVar(key: Key, expr: IExpr<*>) {
         val castExpr = expr.performACastTo(key.ind, false)
 
-        variables.replaceAll { key, oldExpr ->
+        variables.replaceAll { _, oldExpr ->
             oldExpr.rebuildTree(variableExpressionReplacer {
                 if (it.key == key) castExpr else null
             })
@@ -258,7 +258,7 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
                     val resolved = replacement(expr)
                     if (resolved != null) {
                         assert(resolved.ind == expr.ind) {
-                            "Resolved expression ${resolved.dStr()} does not match ${expr.dStr()}"
+                            "(${resolved.ind} != ${expr.ind}) ${resolved.dStr()} does not match ${expr.dStr()}"
                         }
 
                         @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.

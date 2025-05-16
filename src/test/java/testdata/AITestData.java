@@ -248,13 +248,14 @@ public class AITestData {
 	}
 	
 	// Test 14: Multiple multipliers with wrapping behavior
+	@RequiredScore(1.0)
 	public static short testMultipleWrapping(short x) {
 		if (x > 100 && x < 200) {
 			// Create multiple multipliers that might wrap differently
 			// when cast individually vs. together
-			int m1 = x + 3;
-			int m2 = x + 2;
-			int m3 = x + 1;
+			int m1 = x * 400;
+			int m2 = x * 500;
+			int m3 = x * 600;
 			
 			// Different ways to combine the multipliers
 			int combined1 = m1 + m2 + m3;
@@ -268,6 +269,7 @@ public class AITestData {
 	}
 	
 	// Test 15: Casting with negative multipliers
+	@RequiredScore(1.0)
 	public static short testNegativeEquivalence(short x) {
 		if (x < 0) {
 			// Negative values might be handled differently when casting
