@@ -74,6 +74,10 @@ enum class BooleanBundle : Bundle<Boolean> {
         return this == NEITHER
     }
 
+    override fun isFull(): Boolean {
+        return this == BOTH
+    }
+
     override fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>? {
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
     }

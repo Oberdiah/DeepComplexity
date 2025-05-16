@@ -60,7 +60,25 @@ class NumberVariances<T : Number> private constructor(
         }
     }
 
-    override fun toDebugString(constraints: Constraints): String = collapse(constraints).toString()
+    override fun toDebugString(constraints: Constraints): String {
+        return if (multipliers.keys.all { it.isEphemeral() }) {
+            collapse(constraints).toString()
+        } else {
+            multipliers.entries.filter { (k, m) -> !(m.isZero() && k.isEphemeral()) }
+                .joinToString(" + ") { (key, multiplier) ->
+                    val multiplierStr = if (multiplier.isOne() && !key.isEphemeral()) "" else "$multiplier"
+                    val keyStr = if (key.isEphemeral()) "" else key.toString()
+                    val constraint = constraints.getConstraint(ind, key)
+                    val constraintStr = if (constraint.isFull()) "" else "[$constraint]"
+
+                    "$multiplierStr$keyStr$constraintStr"
+                }
+        }
+    }
+
+    override fun isTrackingVar(key: Context.Key): Boolean {
+        return multipliers.keys.any { it == key }
+    }
 
     fun grabConstraint(constraints: Constraints, key: Context.Key): NumberBundle<T> {
         return if (key is Context.Key.EphemeralKey) {

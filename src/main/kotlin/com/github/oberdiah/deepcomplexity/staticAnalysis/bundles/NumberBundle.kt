@@ -14,17 +14,16 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.isOne
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.isZero
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.min
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
-typealias Ranges<T> = List<NumberRange<T>>
-
 class NumberBundle<T : Number>(
     override val ind: NumberSetIndicator<T>,
     // In order, and non-overlapping
-    val ranges: Ranges<T>
+    val ranges: List<NumberRange<T>>
 ) : Bundle<T> {
     val clazz: KClass<T> = ind.clazz
 
@@ -34,7 +33,12 @@ class NumberBundle<T : Number>(
 
     override fun isEmpty(): Boolean = ranges.isEmpty()
 
-    private fun makeNew(ranges: Ranges<T>): NumberBundle<T> {
+    override fun isFull(): Boolean {
+        val range = getRange()
+        return range.first == ind.getMinValue() && range.second == ind.getMaxValue()
+    }
+
+    private fun makeNew(ranges: List<NumberRange<T>>): NumberBundle<T> {
         return newFromDataAndInd(ind, NumberUtilities.mergeAndDeduplicate(ranges))
     }
 
@@ -306,6 +310,10 @@ class NumberBundle<T : Number>(
         return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isOne()
     }
 
+    fun isZero(): Boolean {
+        return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isZero()
+    }
+
     companion object {
         fun <T : Number> zero(ind: NumberSetIndicator<T>): NumberBundle<T> = newFromDataAndInd(
             ind,
@@ -333,7 +341,7 @@ class NumberBundle<T : Number>(
         @Suppress("UNCHECKED_CAST")
         private fun <T : Number> newFromDataAndInd(
             ind: NumberSetIndicator<T>,
-            ranges: Ranges<T>,
+            ranges: List<NumberRange<T>>,
         ): NumberBundle<T> {
             return NumberBundle(ind, ranges)
         }

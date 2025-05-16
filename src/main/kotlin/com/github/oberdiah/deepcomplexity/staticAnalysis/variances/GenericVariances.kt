@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 
+import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
@@ -10,6 +11,10 @@ class GenericVariances<T : Any>(private val value: GenericBundle<T>) : Variances
         get() = TODO("Not yet implemented")
 
     override fun toDebugString(constraints: Constraints): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun isTrackingVar(key: Context.Key): Boolean {
         TODO("Not yet implemented")
     }
 

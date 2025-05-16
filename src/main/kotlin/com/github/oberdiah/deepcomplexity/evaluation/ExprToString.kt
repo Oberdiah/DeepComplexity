@@ -62,19 +62,32 @@ object ExprToString {
     fun <T : Any> toDebugString(expr: IExpr<T>): String {
         val myResult = "<| ${expr.evaluate(ConstantExpression.TRUE).toDebugString()} |>"
         return when (expr) {
-            is ArithmeticExpression -> "(${expr.lhs.dStr()} ${expr.op} ${expr.rhs.dStr()}) = $myResult"
+            is ArithmeticExpression -> {
+                val lhsStr = expr.lhs.dStr()
+                val rhsStr = expr.rhs.dStr()
+
+                if (!lhsStr.contains("|>") && !rhsStr.contains("|>")) {
+                    "(${lhsStr} ${expr.op} ${rhsStr}) = $myResult"
+                } else {
+                    "${lhsStr.prependIndent("| ")}\n" +
+                            "|-> ${expr.op}\n" +
+                            "${rhsStr.prependIndent("| ")}\n" +
+                            "| = $myResult"
+                }
+            }
+
             is ComparisonExpression<*> -> "(${expr.lhs.dStr()} ${expr.comp} ${expr.rhs.dStr()}) = $myResult"
             is ConstExpr<*> -> expr.constSet.toString()
             is IfExpression -> {
-                return "(if ${expr.thisCondition} {\n${
+                "if ${expr.thisCondition} {\n${
                     expr.trueExpr.dStr().prependIndent()
                 }\n} else {\n${
                     expr.falseExpr.dStr().prependIndent()
-                }\n}) = $myResult"
+                }\n} = $myResult"
             }
 
             is BooleanInvertExpression -> "!${expr.expr.dStr()} = $myResult"
-            is NegateExpression -> "-${expr.expr.dStr()} = $myResult"
+            is NegateExpression -> "-${expr.expr.dStr()}"
             is UnionExpression -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
             is BooleanExpression -> booleanExprToString(expr)
             is VariableExpression -> expr.key.toString()

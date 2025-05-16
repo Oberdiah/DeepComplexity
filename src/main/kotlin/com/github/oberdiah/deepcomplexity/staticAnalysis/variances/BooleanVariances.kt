@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
+import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
@@ -17,6 +18,8 @@ class BooleanVariances(private val value: BooleanBundle) : Variances<Boolean> {
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
     override fun collapse(constraints: Constraints): Bundle<Boolean> = value
+
+    override fun isTrackingVar(key: Context.Key): Boolean = true
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 

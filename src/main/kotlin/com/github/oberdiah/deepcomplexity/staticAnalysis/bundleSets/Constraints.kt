@@ -23,7 +23,7 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  */
 class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    private val constraints: Map<Context.Key, Bundle<*>>,
+    val constraints: Map<Context.Key, Bundle<*>>,
 ) {
     /**
      * The constraints as a whole are unsatisfiable if any individual
@@ -49,8 +49,8 @@ class Constraints private constructor(
     override fun toString(): String {
         if (unreachable) return "unreachable"
         if (constraints.isEmpty()) return "unconstrained"
-        return constraints.entries.joinToString("\n") { (key, bundle) ->
-            "$key: $bundle"
+        return constraints.entries.joinToString(" ") { (key, bundle) ->
+            "$key[$bundle]"
         }
     }
 

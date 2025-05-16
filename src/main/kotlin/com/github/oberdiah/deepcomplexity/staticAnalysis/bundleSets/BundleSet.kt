@@ -77,7 +77,15 @@ class BundleSet<T : Any> private constructor(
             if (constraints.isUnconstrained()) {
                 return variances.toDebugString(constraints)
             }
-            return "(${variances.toDebugString(constraints)} | $constraints)"
+            val variancesStr = variances.toDebugString(constraints)
+            val constraintsToPrint = constraints.constraints.entries.filter { !variances.isTrackingVar(it.key) }
+
+            if (constraintsToPrint.isEmpty()) {
+                return "($variancesStr)"
+            }
+
+            val constraintsStr = constraintsToPrint.joinToString { "${it.key}[${it.value}]" }
+            return "(${variancesStr} | $constraintsStr)"
         }
     }
 

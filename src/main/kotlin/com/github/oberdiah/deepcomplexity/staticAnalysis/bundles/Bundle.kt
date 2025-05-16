@@ -9,6 +9,11 @@ interface Bundle<T : Any> {
     fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>?
     fun contains(element: T): Boolean
     fun isEmpty(): Boolean
+
+    /**
+     * True if the bundle is full, meaning it contains all possible values.
+     */
+    fun isFull(): Boolean
     fun intersect(other: Bundle<T>): Bundle<T>
     fun union(other: Bundle<T>): Bundle<T>
     fun toConstVariance(): Variances<T>

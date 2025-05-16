@@ -8,6 +8,10 @@ class GenericBundle<T : Any>(val values: Set<T>) : Bundle<T> {
         TODO("Not yet implemented")
     }
 
+    override fun isFull(): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun isEmpty(): Boolean {
         TODO("Not yet implemented")
     }
