@@ -181,17 +181,20 @@ public class AITestData {
 		}
 	}
 	
-	// Test 9: Compound operation with underflow potential
-	@RequiredScore(0.5)
-	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	public static short compoundUnderflow(short x) {
+	public static short nearlyImpossible(short x) {
 		short y = (short) (x - 1);
-		
 		if (x < 0 && y > 0) {
-			// Underflow occurred
-			return MIN_SHORT;
+			return 0;
 		} else {
-			return (short) (y * 2);
+			return 1;
+		}
+	}
+	
+	public static short actuallyImpossible(short x) {
+		if (x < 0 && (x - 1) > 0) {
+			return 0;
+		} else {
+			return 1;
 		}
 	}
 	

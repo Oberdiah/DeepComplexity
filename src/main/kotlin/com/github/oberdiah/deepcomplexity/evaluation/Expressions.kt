@@ -85,6 +85,13 @@ fun <T : Any> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<T>? {
 fun IExpr<Boolean>.getConstraints(): List<Constraints> =
     ExprConstrain.getConstraints(this)
 
+/**
+ * An expression that doesn't return anything.
+ *
+ * This is used in `if` statements, void methods, etc.
+ */
+class VoidExpression : Expr<VoidExpression>()
+
 class ArithmeticExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>() {
     init {
         assert(lhs.ind == rhs.ind) {

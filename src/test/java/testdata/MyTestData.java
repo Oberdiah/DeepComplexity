@@ -540,15 +540,17 @@ public class MyTestData {
 		}
 	}
 	
-	public static short operationEvaluationOrder1(short x) {
+	@RequiredScore(1.0)
+	public static short operationEvalOrder1(short x) {
 		int j = 1;
-		int i = (j = 2) / (j = 3);
+		int i = (j = 2) * (j = 3);
 		return (short) j;
 	}
 	
-	public static short operationEvaluationOrder2(short x) {
+	@RequiredScore(1.0)
+	public static short operationEvalOrder2(short x) {
 		int j = 1;
-		int i = (j = 2) / (j = 3);
+		int i = (j = 2) * (j = 3);
 		return (short) i;
 	}
 	
@@ -558,6 +560,30 @@ public class MyTestData {
 			int a = x;
 			int b = 0;
 			return (short) (a - b);
+		}
+		return 0;
+	}
+	
+	public static short largeMultiplication1(short x) {
+		return (short) (x * (short) 65535);
+	}
+	
+	public static short largeMultiplication2(short x) {
+		return (short) (x * 0xffffffff);
+	}
+	
+	public static short addingVariables(short x) {
+		int a = 0;
+		if (x < 40) {
+			a = x * 3;
+		} else if (x < 50) {
+			a = x * 2;
+		} else {
+			a = x;
+		}
+		
+		if (a < 100) {
+			return x;
 		}
 		return 0;
 	}

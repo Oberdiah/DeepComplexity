@@ -34,6 +34,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
         fun <T : Any> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
+                is VoidExpression -> throw IllegalStateException("Void expression has no set indicator")
                 is IfExpression -> expr.trueExpr.ind
                 is UnionExpression -> expr.lhs.ind
                 is ArithmeticExpression -> expr.lhs.ind

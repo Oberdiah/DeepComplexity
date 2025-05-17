@@ -21,6 +21,7 @@ object ExprTreeVisitor {
 
     fun visitTree(expr: IExpr<*>, visitor: (IExpr<*>) -> Unit) {
         when (expr) {
+            is VoidExpression -> {}
             is ConstExpr -> {}
             is VariableExpression -> {}
             is BooleanExpression -> {

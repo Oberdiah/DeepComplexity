@@ -37,7 +37,7 @@ object MethodProcessing {
     private fun processPsiElement(
         psi: PsiElement,
         context: Context
-    ) {
+    ): IExpr<*> {
         when (psi) {
             is PsiBlockStatement -> {
                 processPsiElement(psi.codeBlock, context)
@@ -59,7 +59,7 @@ object MethodProcessing {
                     if (element is PsiLocalVariable) {
                         val rExpression = element.initializer
                         if (rExpression != null) {
-                            val rhs = buildExpressionFromPsi(rExpression, context)
+                            val rhs = processPsiElement(rExpression, context)
                             context.putVar(element, rhs)
                         } else {
                             TODO("Eventually we'll replace this with either null or 0")
@@ -72,49 +72,8 @@ object MethodProcessing {
                 }
             }
 
-            is PsiAssignmentExpression -> {
-                psi.rExpression?.let { rExpression ->
-                    val opSign = psi.operationSign
-                    when (opSign.tokenType) {
-                        JavaTokenType.EQ -> {
-                            val rhs = buildExpressionFromPsi(rExpression, context)
-                            context.putVar(psi.lExpression.resolveIfNeeded(), rhs)
-                        }
-
-                        JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
-                            val resolvedLhs = psi.lExpression.resolveIfNeeded()
-                            val lhs = context.getVar(resolvedLhs).castToNumbers()
-                            val rhs = buildExpressionFromPsi(
-                                rExpression,
-                                context
-                            ).castToNumbers()
-
-                            ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
-                                context.putVar(
-                                    resolvedLhs,
-                                    ArithmeticExpression(
-                                        lhs,
-                                        rhs,
-                                        BinaryNumberOp.fromJavaTokenType(psi.operationSign.tokenType)
-                                            ?: throw IllegalArgumentException(
-                                                "As-yet unsupported assignment operation: ${psi.operationSign}"
-                                            )
-                                    )
-                                )
-                            }
-                        }
-
-                        else -> {
-                            TODO(
-                                "As-yet unsupported assignment operation: ${psi.operationSign}"
-                            )
-                        }
-                    }
-                }
-            }
-
             is PsiIfStatement -> {
-                val condition = buildExpressionFromPsi(
+                val condition = processPsiElement(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     context
                 ).castToBoolean()
@@ -129,7 +88,7 @@ object MethodProcessing {
                     IfExpression.new(a, b, condition)
                 }
 
-                return context.stack(ifContext)
+                context.stack(ifContext)
             }
 
             is PsiForStatement -> {
@@ -144,7 +103,7 @@ object MethodProcessing {
                 psi.update?.let { processPsiElement(it, bodyContext) }
 
                 val conditionExpr = psi.condition?.let { condition ->
-                    buildExpressionFromPsi(condition, bodyContext).tryCastTo(BooleanSetIndicator)
+                    processPsiElement(condition, bodyContext).tryCastTo(BooleanSetIndicator)
                         ?: TODO("Failed to cast to BooleanSet: ${condition.text}")
                 }.orElse {
                     ConstantExpression.TRUE
@@ -152,16 +111,16 @@ object MethodProcessing {
 
                 LoopSolver.processLoopContext(bodyContext, conditionExpr)
 
-                return context.stack(bodyContext)
+                context.stack(bodyContext)
             }
 
 
             is PsiReturnStatement -> {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
-                    val returnExpr = buildExpressionFromPsi(returnExpression, context)
+                    val returnExpr = processPsiElement(returnExpression, context)
 
-                    return if (context.variables.keys.none { it.isMethod() }) {
+                    if (context.variables.keys.none { it.isMethod() }) {
                         // If there's no 'method' key yet, create one.
                         context.putVar(psi, returnExpr)
                     } else {
@@ -179,24 +138,6 @@ object MethodProcessing {
                 // Ignore whitespace, comments, etc.
             }
 
-            is PsiExpression -> {
-                // It's not assigned to anything, so we ignore the result.
-                buildExpressionFromPsi(psi, context)
-            }
-
-            else -> {
-                println("WARN: Unsupported PsiElement type: ${psi::class} (${psi.text})")
-            }
-        }
-    }
-
-    /**
-     * Builds up the expression tree.
-     *
-     * Nothing in here should be declaring variables.
-     */
-    private fun buildExpressionFromPsi(psi: PsiExpression, context: Context): IExpr<*> {
-        when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()
                 return ConstantExpression.fromAny(value)
@@ -217,7 +158,7 @@ object MethodProcessing {
                     UnaryNumberOp.NEGATE, UnaryNumberOp.PLUS -> {
                         val operand =
                             ConversionsAndPromotion.unaryNumericPromotion(
-                                buildExpressionFromPsi(
+                                processPsiElement(
                                     operand,
                                     context
                                 ).castToNumbers()
@@ -234,7 +175,7 @@ object MethodProcessing {
                         context.putVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
 
                         // Build the expression after the assignment for a prefix increment/decrement
-                        return buildExpressionFromPsi(operand, context).castToNumbers()
+                        return processPsiElement(operand, context).castToNumbers()
                     }
                 }
             }
@@ -246,7 +187,7 @@ object MethodProcessing {
 
 
                 // Build the expression before the assignment for a postfix increment/decrement
-                val builtExpr = buildExpressionFromPsi(psi.operand, context)
+                val builtExpr = processPsiElement(psi.operand, context)
 
                 // Assign the value to the variable
                 val resolvedOperand = psi.operand.resolveIfNeeded()
@@ -262,14 +203,14 @@ object MethodProcessing {
 
                 val tokenType = psi.operationSign.tokenType
 
-                val lhs = buildExpressionFromPsi(lhsOperand, context)
-                val rhs = buildExpressionFromPsi(rhsOperand, context)
+                val lhs = processPsiElement(lhsOperand, context)
+                val rhs = processPsiElement(rhsOperand, context)
 
-                return processBinaryExpr(context, lhs, rhs, tokenType)
+                return processBinaryExpr(lhs, rhs, tokenType)
             }
 
             is PsiTypeCastExpression -> {
-                val expr = buildExpressionFromPsi(
+                val expr = processPsiElement(
                     psi.operand ?: throw ExpressionIncompleteException(),
                     context
                 )
@@ -285,7 +226,7 @@ object MethodProcessing {
             }
 
             is PsiParenthesizedExpression -> {
-                return buildExpressionFromPsi(psi.expression ?: throw ExpressionIncompleteException(), context)
+                return processPsiElement(psi.expression ?: throw ExpressionIncompleteException(), context)
             }
 
             is PsiPolyadicExpression -> {
@@ -295,26 +236,72 @@ object MethodProcessing {
                 } else {
                     // Process it as a bunch of binary expressions in a row, left to right.
                     val tokenType = psi.operationTokenType
-                    val originalLhs = buildExpressionFromPsi(operands[0], context)
-                    val originalRhs = buildExpressionFromPsi(operands[1], context)
+                    val originalLhs = processPsiElement(operands[0], context)
+                    val originalRhs = processPsiElement(operands[1], context)
 
-                    var currentExpr = processBinaryExpr(context, originalLhs, originalRhs, tokenType)
+                    var currentExpr = processBinaryExpr(originalLhs, originalRhs, tokenType)
 
                     for (i in 2 until operands.size) {
-                        val nextRhs = buildExpressionFromPsi(operands[i], context)
-                        val newExpr = processBinaryExpr(context, currentExpr, nextRhs, tokenType)
+                        val nextRhs = processPsiElement(operands[i], context)
+                        val newExpr = processBinaryExpr(currentExpr, nextRhs, tokenType)
                         currentExpr = newExpr
                     }
 
                     return currentExpr
                 }
             }
+
+            is PsiAssignmentExpression -> {
+                val lExpression = psi.lExpression
+                val rExpression = psi.rExpression ?: throw ExpressionIncompleteException()
+                val opSign = psi.operationSign
+
+                return when (opSign.tokenType) {
+                    JavaTokenType.EQ -> {
+                        val rhs = processPsiElement(rExpression, context)
+                        context.putVar(lExpression.resolveIfNeeded(), rhs)
+                        rhs
+                    }
+
+                    JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
+                        val resolvedLhs = lExpression.resolveIfNeeded()
+                        val lhs = context.getVar(resolvedLhs).castToNumbers()
+                        val rhs = processPsiElement(
+                            rExpression,
+                            context
+                        ).castToNumbers()
+
+                        ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
+                            val expr = ArithmeticExpression(
+                                lhs,
+                                rhs,
+                                BinaryNumberOp.fromJavaTokenType(opSign.tokenType)
+                                    ?: throw IllegalArgumentException(
+                                        "As-yet unsupported assignment operation: $opSign"
+                                    )
+                            )
+                            context.putVar(resolvedLhs, expr)
+                            expr
+                        }
+                    }
+
+                    else -> {
+                        TODO(
+                            "As-yet unsupported assignment operation: $opSign"
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                println("WARN: Unsupported PsiElement type: ${psi::class} (${psi.text})")
+            }
         }
-        TODO("As-yet unsupported PsiExpression type ${psi::class} (${psi.text})")
+
+        return VoidExpression()
     }
 
     private fun processBinaryExpr(
-        context: Context,
         lhsPrecast: IExpr<*>,
         rhsPrecast: IExpr<*>,
         tokenType: IElementType

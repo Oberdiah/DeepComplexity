@@ -24,12 +24,14 @@ object ExprToString {
             is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
             is TypeCastExpression<*, *> -> {
-                return if (expr.explicit) {
+                if (expr.explicit) {
                     "(${expr.setInd}) ${expr.expr}"
                 } else {
                     "${expr.expr}"
                 }
             }
+
+            is VoidExpression -> "void"
         }
     }
 
@@ -99,6 +101,8 @@ object ExprToString {
                     expr.expr.dStr()
                 }
             }
+
+            is VoidExpression -> "void"
         }
     }
 }
