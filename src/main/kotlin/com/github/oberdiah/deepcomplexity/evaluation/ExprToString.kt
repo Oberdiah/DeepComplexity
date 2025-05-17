@@ -47,7 +47,7 @@ object ExprToString {
             is BooleanExpression -> booleanExprToString(expr)
             is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "'for'"
-            is TypeCastExpression<*, *> -> toExprKey(expr)
+            is TypeCastExpression<*, *> -> toExprKey(expr.expr)
             is VoidExpression -> "'void'"
         }
     }
