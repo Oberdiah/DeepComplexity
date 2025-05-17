@@ -18,17 +18,16 @@ object ExprConstrain {
                 val rhsConstrained = condition.rhs.getConstraints()
 
                 val outputConstraints: MutableList<Constraints> = mutableListOf()
-                // oo yeah, O(n^2)!
-                for (lhs in lhsConstrained) {
-                    for (rhs in rhsConstrained) {
-                        when (condition.op) {
-                            BooleanOp.AND -> {
-                                outputConstraints.add(lhs.and(rhs))
-                            }
+                when (condition.op) {
+                    BooleanOp.OR -> {
+                        outputConstraints.addAll(lhsConstrained)
+                        outputConstraints.addAll(rhsConstrained)
+                    }
 
-                            BooleanOp.OR -> {
-                                outputConstraints.add(lhs)
-                                outputConstraints.add(rhs)
+                    BooleanOp.AND -> {
+                        for (lhs in lhsConstrained) {
+                            for (rhs in rhsConstrained) {
+                                outputConstraints.add(lhs.and(rhs))
                             }
                         }
                     }
