@@ -72,7 +72,7 @@ object TestUtilities {
     }
 
     private fun getMethodScore(method: Method, psiMethod: PsiMethod): Pair<String, Double> {
-        val methodKey = Context.Key.Method(psiMethod)
+        val methodKey = Context.Key.MethodKey(psiMethod)
 
         val context = try {
             MethodProcessing.getMethodContext(psiMethod)

@@ -7,6 +7,14 @@ import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAP
 import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
 
 public class MyTestData {
+	public static short throwawayTest(short x) {
+		int multiplier1 = 200;
+		int multiplier2 = 300;
+		
+		int result2 = x * (multiplier1 + multiplier2);
+		return (short) (result2);
+	}
+	
 	@RequiredScore(1.0)
 	public static short test1(short x) {
 		if (x < 3) {
@@ -135,11 +143,29 @@ public class MyTestData {
 		return (short) (x * x - x * x);
 	}
 	
+	@RequiredScore(1.0)
 	public static short zeroTest6(short x) {
 		int b = x % 100;
 		
 		return (short) (b - b);
 	}
+	
+	@RequiredScore(1.0)
+	public static short zeroTest7(short x) {
+		int a = 0;
+		if (x > 50) {
+			a = 5;
+		} else if (x > 20) {
+			a = 2;
+		} else if (x > 5) {
+			a = 1;
+		}
+		
+		int b = a + 10;
+		
+		return (short) (a - b);
+	}
+	
 	
 	@RequiredScore(1.0)
 	public static short oneTest(short x) {
@@ -584,14 +610,12 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short largeMultiplication1(short x) {
-		return (short) (x * (short) 65535);
+		return (short) (x * 65536);
 	}
 	
-	public static short largeMultiplication2(short x) {
-		return (short) (x * 0xffffffff);
-	}
-	
+	@RequiredScore(0.5014)
 	public static short addingVariables(short x) {
 		int a = 0;
 		if (x < 40) {
@@ -660,6 +684,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short actuallyImpossible(short x) {
 		if (x < 0 && (x - 1) > 0) {
 			return 0;

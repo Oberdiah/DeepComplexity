@@ -138,7 +138,7 @@ object ConstraintSolver {
             val castVariable = variable as VariableExpression<out Number>
 
             val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
-            constraints = constraints.addConstraint(variable.key, variableConstraints)
+            constraints = constraints.withConstraint(variable.key, variableConstraints)
         }
 
         return constraints

@@ -14,9 +14,7 @@ class GenericVariances<T : Any>(private val value: GenericBundle<T>) : Variances
         TODO("Not yet implemented")
     }
 
-    override fun isTrackingVar(key: Context.Key): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun varsTracking(): Collection<Context.Key> = emptyList()
 
     override fun collapse(constraints: Constraints): Bundle<T> = value
 

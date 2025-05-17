@@ -9,28 +9,13 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ExprEvaluate {
-    private val expressionCache = mutableMapOf<ExprKey, BundleSet<*>>()
-
-    fun clearCache() {
-        expressionCache.clear()
-    }
-
-    data class ExprKey(val exprKey: Context.Key, val conditionKey: Context.Key)
-
     fun <T : Any> evaluate(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {
-        val key = ExprKey(expr.exprKey, condition.exprKey)
-
-        val bundle = expressionCache.getOrPut(key) {
-            when (expr.ind) {
-                is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), condition)
-                is GenericSetIndicator -> evaluateGenerics(expr as Expr<*>, condition)
-                BooleanSetIndicator -> evaluateBools(expr.castToBoolean(), condition)
-            }
-        }
-
-        assert(bundle.ind == expr.ind)
         @Suppress("UNCHECKED_CAST")
-        return bundle as BundleSet<T>
+        return when (expr.ind) {
+            is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), condition)
+            is GenericSetIndicator -> evaluateGenerics(expr as Expr<*>, condition)
+            BooleanSetIndicator -> evaluateBools(expr.castToBoolean(), condition)
+        } as BundleSet<T>
     }
 
     private fun <T : Number> evaluateNums(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {
@@ -39,7 +24,7 @@ object ExprEvaluate {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
 
-                lhs.arithmeticOperation(rhs, expr.op)
+                lhs.arithmeticOperation(rhs, expr.op, expr.exprKey)
             }
 
             is NegateExpression -> evaluate(expr.expr, condition).negate()
@@ -67,7 +52,7 @@ object ExprEvaluate {
                 val lhs = evaluate(expr.lhs, condition)
                 val rhs = evaluate(expr.rhs, condition)
 
-                lhs.booleanOperation(rhs, expr.op)
+                lhs.booleanOperation(rhs, expr.op, expr.exprKey)
             }
 
             is ComparisonExpression<*> -> {
@@ -75,7 +60,7 @@ object ExprEvaluate {
                     val lhs = evaluate(expr.lhs, condition)
                     val rhs = evaluate(expr.rhs, condition)
 
-                    return lhs.comparisonOperation(rhs, expr.comp)
+                    return lhs.comparisonOperation(rhs, expr.comp, expr.exprKey)
                 }
                 evalC(expr, condition)
             }

@@ -15,5 +15,5 @@ interface Variances<T : Any> {
      * Returns true if this variance is currently tracking the given key, i.e. the variance would
      * return a different value if that key was constrained.
      */
-    fun isTrackingVar(key: Context.Key): Boolean
+    fun varsTracking(): Collection<Context.Key>
 }

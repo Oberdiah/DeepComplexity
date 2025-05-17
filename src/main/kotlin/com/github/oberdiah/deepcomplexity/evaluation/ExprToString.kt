@@ -35,6 +35,23 @@ object ExprToString {
         }
     }
 
+    fun <T : Any> toExprKey(expr: Expr<T>): String {
+        return when (expr) {
+            is ArithmeticExpression -> "'${expr.op}'"
+            is ComparisonExpression<*> -> "'${expr.comp}'"
+            is ConstExpr<*> -> expr.constSet.toString()
+            is IfExpression -> "'if'"
+            is BooleanInvertExpression -> "'!'"
+            is NegateExpression -> "'-'"
+            is UnionExpression -> "'∪'"
+            is BooleanExpression -> booleanExprToString(expr)
+            is VariableExpression -> expr.key.toString()
+            is NumIterationTimesExpression -> "'for'"
+            is TypeCastExpression<*, *> -> toExprKey(expr)
+            is VoidExpression -> "'void'"
+        }
+    }
+
     private fun booleanExprToString(expr: BooleanExpression): String {
         if (expr.lhs == ConstantExpression.TRUE) {
             return when (expr.op) {

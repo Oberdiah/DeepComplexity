@@ -67,7 +67,7 @@ class Constraints private constructor(
         return constraints[key]?.cast(ind) ?: ind.newFullBundle()
     }
 
-    fun addConstraint(key: Context.Key, expr: Bundle<*>): Constraints {
+    fun withConstraint(key: Context.Key, expr: Bundle<*>): Constraints {
         assert(key !is Context.Key.EphemeralKey) {
             "Ephemeral keys shouldn't really be allowed to be added to constraints."
         }

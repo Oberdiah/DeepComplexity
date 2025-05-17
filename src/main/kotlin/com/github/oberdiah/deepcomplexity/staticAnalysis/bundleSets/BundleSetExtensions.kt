@@ -3,18 +3,27 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
-fun <T : Number> BundleSet<T>.arithmeticOperation(other: BundleSet<T>, operation: BinaryNumberOp): BundleSet<T> =
-    this.performBinaryOperation(other) { a, b, constraints ->
+fun <T : Number> BundleSet<T>.arithmeticOperation(
+    other: BundleSet<T>,
+    operation: BinaryNumberOp,
+    exprKey: Context.Key
+): BundleSet<T> =
+    this.performBinaryOperation(other, exprKey) { a, b, constraints ->
         a.into().arithmeticOperation(b.into(), operation, constraints)
     }
 
-fun BundleSet<Boolean>.booleanOperation(other: BundleSet<Boolean>, operation: BooleanOp): BundleSet<Boolean> =
-    this.performBinaryOperation(other) { a, b, constraints ->
+fun BundleSet<Boolean>.booleanOperation(
+    other: BundleSet<Boolean>,
+    operation: BooleanOp,
+    exprKey: Context.Key
+): BundleSet<Boolean> =
+    this.performBinaryOperation(other, exprKey) { a, b, constraints ->
         a.into().booleanOperation(b.into(), operation)
     }
 
@@ -26,8 +35,12 @@ fun <T : Number> BundleSet<T>.isOne(): Boolean = this.bundles.all {
     it.variances.into().isOne(it.constraints)
 }
 
-fun <T : Number> BundleSet<T>.comparisonOperation(other: BundleSet<T>, comparisonOp: ComparisonOp): BundleSet<Boolean> =
-    this.binaryMap(BooleanSetIndicator, other) { a, b, constraints ->
+fun <T : Number> BundleSet<T>.comparisonOperation(
+    other: BundleSet<T>,
+    comparisonOp: ComparisonOp,
+    exprKey: Context.Key
+): BundleSet<Boolean> =
+    this.binaryMap(BooleanSetIndicator, other, exprKey) { a, b, constraints ->
         a.into().comparisonOperation(b.into(), comparisonOp, constraints)
     }
 

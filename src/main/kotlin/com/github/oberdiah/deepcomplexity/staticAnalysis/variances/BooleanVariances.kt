@@ -19,7 +19,7 @@ class BooleanVariances(private val value: BooleanBundle) : Variances<Boolean> {
 
     override fun collapse(constraints: Constraints): Bundle<Boolean> = value
 
-    override fun isTrackingVar(key: Context.Key): Boolean = true
+    override fun varsTracking(): Collection<Context.Key> = emptyList()
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 
