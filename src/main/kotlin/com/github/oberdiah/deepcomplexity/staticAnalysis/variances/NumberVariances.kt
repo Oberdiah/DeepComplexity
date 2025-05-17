@@ -4,6 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
@@ -79,6 +80,19 @@ class NumberVariances<T : Number> private constructor(
 
     override fun varsTracking(): Collection<Context.Key> {
         return multipliers.keys.filter { !it.isEphemeral() }
+    }
+
+    override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<T> {
+        return newFromMultiplierMap(
+            ind,
+            multipliers.entries.associate { (key, v) ->
+                if (scope.shouldKeep(key)) {
+                    key to v
+                } else {
+                    Context.Key.EphemeralKey.new() to v.multiply(grabConstraint(constraints, key))
+                }
+            }
+        )
     }
 
     fun grabConstraint(constraints: Constraints, key: Context.Key): NumberBundle<T> {

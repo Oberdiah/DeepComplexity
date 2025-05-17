@@ -130,14 +130,6 @@ object MethodProcessing {
                 }
             }
 
-            is PsiMethodCallExpression -> {
-                // We're not thinking about methods yet.
-            }
-
-            is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
-                // Ignore whitespace, comments, etc.
-            }
-
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()
                 return ConstantExpression.fromAny(value)
@@ -291,6 +283,14 @@ object MethodProcessing {
                         )
                     }
                 }
+            }
+
+            is PsiMethodCallExpression -> {
+                // We're not thinking about methods yet.
+            }
+
+            is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
+                // Ignore whitespace, comments, etc.
             }
 
             else -> {

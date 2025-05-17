@@ -186,7 +186,7 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
 
     fun evaluateKey(key: Key): BundleSet<*> {
         val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
-        return expr.evaluate(ConstantExpression.TRUE)
+        return expr.evaluate(ExprEvaluate.Scope())
     }
 
     fun getVar(element: PsiElement): Expr<*> {

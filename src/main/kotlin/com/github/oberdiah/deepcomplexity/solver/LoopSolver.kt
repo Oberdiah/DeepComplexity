@@ -67,7 +67,7 @@ object LoopSolver {
 
         val linearTerm = terms.terms[1] ?: return gaveUp
         val constantTerm = terms.terms[0] ?: return gaveUp
-        if (!linearTerm.evaluate(ConstantExpression.TRUE).isOne()) {
+        if (!linearTerm.evaluate(ExprEvaluate.Scope()).isOne()) {
             // We can deal with this if the constant term is 0, but we're not bothering
             // with that for now.
             return gaveUp

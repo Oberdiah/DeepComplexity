@@ -79,7 +79,7 @@ object ExprToString {
     }
 
     fun <T : Any> toDebugString(expr: Expr<T>): String {
-        val myResult = "<| ${expr.evaluate(ConstantExpression.TRUE).toDebugString()} |>"
+        val myResult = "<| ${ExprEvaluate.evaluate(expr, ExprEvaluate.Scope(), true).toDebugString()} |>"
         return when (expr) {
             is ArithmeticExpression -> {
                 val lhsStr = expr.lhs.dStr()

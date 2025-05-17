@@ -166,6 +166,17 @@ public class MyTestData {
 		return (short) (a - b);
 	}
 	
+	@RequiredScore(1.0)
+	public static short zeroTest8(short x) {
+		int b = 0;
+		if (x > 50) {
+			b = x % 100;
+		} else if (x > 25) {
+			b = 3;
+		}
+		
+		return (short) (b - b);
+	}
 	
 	@RequiredScore(1.0)
 	public static short oneTest(short x) {

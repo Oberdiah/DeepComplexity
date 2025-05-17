@@ -22,9 +22,9 @@ object ConstraintSolver {
          */
         val terms: MutableMap<Int, Expr<T>> = mutableMapOf(),
     ) {
-        fun evaluate(condition: Expr<Boolean>): EvaluatedCollectedTerms<T> {
+        fun evaluate(scope: ExprEvaluate.Scope): EvaluatedCollectedTerms<T> {
             return EvaluatedCollectedTerms(
-                terms.mapValues { (_, term) -> term.evaluate(condition) }
+                terms.mapValues { (_, term) -> term.evaluate(scope) }
             )
         }
 
@@ -177,8 +177,8 @@ object ConstraintSolver {
 
             val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
             return if (exponent == 1) {
-                val rhsBundle = rhs.evaluate(ConstantExpression.TRUE).collapse().into()
-                val shouldFlip = coeffLZ.evaluate(ConstantExpression.TRUE).collapse().into()
+                val rhsBundle = rhs.evaluate(ExprEvaluate.Scope()).collapse().into()
+                val shouldFlip = coeffLZ.evaluate(ExprEvaluate.Scope()).collapse().into()
 
                 when (shouldFlip) {
                     BooleanBundle.TRUE -> rhsBundle.getSetSatisfying(expr.comp.flip())

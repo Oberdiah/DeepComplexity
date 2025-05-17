@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
+import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
@@ -11,13 +12,13 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.ExprConstrai
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
-sealed class Expr<T : Any>(private val k: Key? = null) {
+sealed class Expr<T : Any>(private val k: ExpressionKey? = null) {
     /**
      * This is used as a key in the caching system. If two expressions have the same key,
      * they are considered equal.
      */
-    val exprKey: Key by lazy {
-        k ?: Key.ExpressionKey(this)
+    val exprKey: ExpressionKey by lazy {
+        k ?: ExpressionKey(this)
     }
 
     /**
@@ -41,7 +42,7 @@ sealed class Expr<T : Any>(private val k: Key? = null) {
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
 
-    fun evaluate(condition: Expr<Boolean>): BundleSet<T> = ExprEvaluate.evaluate(this, condition)
+    fun evaluate(scope: ExprEvaluate.Scope): BundleSet<T> = ExprEvaluate.evaluate(this, scope)
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
@@ -98,7 +99,12 @@ fun Expr<Boolean>.getConstraints(): List<Constraints> =
  */
 class VoidExpression : Expr<VoidExpression>()
 
-class ArithmeticExpression<T : Number>(val lhs: Expr<T>, val rhs: Expr<T>, val op: BinaryNumberOp, k: Key? = null) :
+class ArithmeticExpression<T : Number>(
+    val lhs: Expr<T>,
+    val rhs: Expr<T>,
+    val op: BinaryNumberOp,
+    k: ExpressionKey? = null
+) :
     Expr<T>(k) {
     init {
         assert(lhs.ind == rhs.ind) {
@@ -107,7 +113,12 @@ class ArithmeticExpression<T : Number>(val lhs: Expr<T>, val rhs: Expr<T>, val o
     }
 }
 
-class ComparisonExpression<T : Number>(val lhs: Expr<T>, val rhs: Expr<T>, val comp: ComparisonOp, k: Key? = null) :
+class ComparisonExpression<T : Number>(
+    val lhs: Expr<T>,
+    val rhs: Expr<T>,
+    val comp: ComparisonOp,
+    k: ExpressionKey? = null
+) :
     Expr<Boolean>(k) {
     init {
         assert(lhs.ind == rhs.ind) {
@@ -118,7 +129,7 @@ class ComparisonExpression<T : Number>(val lhs: Expr<T>, val rhs: Expr<T>, val c
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we do not know the value of yet.
-class VariableExpression<T : Any>(val key: Key, k: Key? = null) : Expr<T>(k)
+class VariableExpression<T : Any>(val key: Key, k: ExpressionKey? = null) : Expr<T>(k)
 
 /**
  * Tries to cast the expression to the given set indicator.
@@ -131,14 +142,14 @@ class TypeCastExpression<T : Any, Q : Any>(
     val expr: Expr<Q>,
     val setInd: SetIndicator<T>,
     val explicit: Boolean,
-    k: Key? = null
+    k: ExpressionKey? = null
 ) : Expr<T>(k)
 
 class IfExpression<T : Any>(
     val trueExpr: Expr<T>,
     val falseExpr: Expr<T>,
     val thisCondition: Expr<Boolean>,
-    k: Key? = null
+    k: ExpressionKey? = null
 ) : Expr<T>(k) {
     init {
         assert(trueExpr.ind == falseExpr.ind) {
@@ -162,7 +173,7 @@ class IfExpression<T : Any>(
     }
 }
 
-class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>, k: Key? = null) : Expr<T>(k) {
+class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>, k: ExpressionKey? = null) : Expr<T>(k) {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -170,7 +181,7 @@ class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>, k: Key? = nul
     }
 }
 
-class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp, k: Key? = null) :
+class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp, k: ExpressionKey? = null) :
     Expr<Boolean>(k) {
     init {
         assert(lhs.ind == rhs.ind) {
@@ -179,14 +190,14 @@ class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: 
     }
 }
 
-class ConstExpr<T : Any>(val constSet: BundleSet<T>, key: Key? = null) : Expr<T>(key) {
+class ConstExpr<T : Any>(val constSet: BundleSet<T>, key: ExpressionKey? = null) : Expr<T>(key) {
     companion object {
         fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
     }
 }
 
-class BooleanInvertExpression(val expr: Expr<Boolean>, k: Key? = null) : Expr<Boolean>(k)
-class NegateExpression<T : Number>(val expr: Expr<T>, k: Key? = null) : Expr<T>(k)
+class BooleanInvertExpression(val expr: Expr<Boolean>, k: ExpressionKey? = null) : Expr<Boolean>(k)
+class NegateExpression<T : Number>(val expr: Expr<T>, k: ExpressionKey? = null) : Expr<T>(k)
 
 class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,
@@ -196,7 +207,7 @@ class NumIterationTimesExpression<T : Number>(
     val variable: VariableExpression<T>,
     // How the variable is changing each iteration.
     val terms: ConstraintSolver.CollectedTerms<T>,
-    k: Key? = null
+    k: ExpressionKey? = null
 ) : Expr<T>(k) {
     companion object {
         fun <T : Number> new(

@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
@@ -20,6 +21,10 @@ class BooleanVariances(private val value: BooleanBundle) : Variances<Boolean> {
     override fun collapse(constraints: Constraints): Bundle<Boolean> = value
 
     override fun varsTracking(): Collection<Context.Key> = emptyList()
+
+    override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<Boolean> {
+        return this
+    }
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 

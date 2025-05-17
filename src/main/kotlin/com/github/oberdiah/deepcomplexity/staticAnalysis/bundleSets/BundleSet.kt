@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
+import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
@@ -75,6 +76,13 @@ class BundleSet<T : Any> private constructor(
             return toDebugString()
         }
 
+        fun reduceAndSimplify(scope: ExprEvaluate.Scope): ConstrainedVariances<T> {
+            return ConstrainedVariances(
+                variances.reduceAndSimplify(scope, constraints),
+                constraints.reduceAndSimplify(scope)
+            )
+        }
+
         fun toDebugString(): String {
             if (constraints.isUnconstrained()) {
                 return variances.toDebugString(constraints)
@@ -107,6 +115,10 @@ class BundleSet<T : Any> private constructor(
         return bundles.joinToString {
             it.toDebugString()
         }
+    }
+
+    fun reduceAndSimplify(scope: ExprEvaluate.Scope): BundleSet<T> {
+        return BundleSet(ind, bundles.map { it.reduceAndSimplify(scope) })
     }
 
     fun union(other: BundleSet<T>): BundleSet<T> {

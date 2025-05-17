@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
@@ -52,6 +53,10 @@ class Constraints private constructor(
         return constraints.entries.joinToString(" ") { (key, bundle) ->
             "$key[$bundle]"
         }
+    }
+
+    fun reduceAndSimplify(scope: ExprEvaluate.Scope): Constraints {
+        return Constraints(constraints.filterKeys { scope.shouldKeep(it) })
     }
 
     fun isUnconstrained(): Boolean {
