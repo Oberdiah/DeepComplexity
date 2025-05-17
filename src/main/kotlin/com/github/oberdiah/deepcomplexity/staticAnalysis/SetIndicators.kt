@@ -130,8 +130,8 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
 
     fun onlyZeroSet(): NumberBundle<T> = newConstantBundle(getZero())
     fun onlyOneSet(): NumberBundle<T> = newConstantBundle(getOne())
-    fun allPositiveNumbers(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
-    fun allNegativeNumbers(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
+    fun positiveNumbersAndZero(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
+    fun negativeNumbersAndZero(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
     fun getZero(): T = getInt(0)
     fun getOne(): T = getInt(1)
 

@@ -49,7 +49,8 @@ enum class BinaryNumberOp {
     ADDITION,
     SUBTRACTION,
     MULTIPLICATION,
-    DIVISION;
+    DIVISION,
+    MODULO;
 
     override fun toString(): String {
         return when (this) {
@@ -57,6 +58,7 @@ enum class BinaryNumberOp {
             SUBTRACTION -> "-"
             MULTIPLICATION -> "*"
             DIVISION -> "/"
+            MODULO -> "%"
         }
     }
 
@@ -67,10 +69,13 @@ enum class BinaryNumberOp {
                 JavaTokenType.MINUSEQ -> SUBTRACTION
                 JavaTokenType.ASTERISKEQ -> MULTIPLICATION
                 JavaTokenType.DIVEQ -> DIVISION
+                JavaTokenType.PERCEQ -> MODULO
+
                 JavaTokenType.PLUS -> ADDITION
                 JavaTokenType.MINUS -> SUBTRACTION
                 JavaTokenType.ASTERISK -> MULTIPLICATION
                 JavaTokenType.DIV -> DIVISION
+                JavaTokenType.PERC -> MODULO
                 else -> null
             }
         }

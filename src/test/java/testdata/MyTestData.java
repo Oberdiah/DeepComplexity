@@ -135,6 +135,26 @@ public class MyTestData {
 		return (short) (x * x - x * x);
 	}
 	
+	public static short zeroTest6(short x) {
+		int b = x % 100;
+		
+		return (short) (b - b);
+	}
+	
+	@RequiredScore(1.0)
+	public static short oneTest(short x) {
+		return (short) (x + 1 - x);
+	}
+	
+	public static short oneTest2(short x) {
+		return (short) (x / x);
+	}
+	
+	@RequiredScore(1.0)
+	public static short oneTest3(short x) {
+		return (short) ((short) (x + 1) - x);
+	}
+	
 	@RequiredScore(0.5)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short simpleAdd(short x) {
@@ -588,7 +608,20 @@ public class MyTestData {
 		return 0;
 	}
 	
-	public static short twoVars(short x) {
+	@RequiredScore(1.0)
+	public static short modulo1(short x) {
+		return (short) (x % 100);
+	}
+	
+	@RequiredScore(1.0)
+	public static short modulo2(short x) {
+		if (x >= 0) {
+			return (short) (x % 100);
+		}
+		return 0;
+	}
+	
+	public static short twoVars1(short x) {
 		int b = x % 100;
 		int a = x % 100;
 		

@@ -17,6 +17,7 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.isOne
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.isZero
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.min
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.negate
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
@@ -89,6 +90,8 @@ class NumberBundle<T : Number>(
             SUBTRACTION -> NumberRange<T>::subtract
             MULTIPLICATION -> NumberRange<T>::multiply
             DIVISION -> NumberRange<T>::divide
+            // No point doing the ranges^2 stuff here.
+            MODULO -> return doModulo(other)
         }
 
         val newList: MutableList<NumberRange<T>> = mutableListOf()
@@ -99,6 +102,20 @@ class NumberBundle<T : Number>(
         }
 
         return makeNew(newList)
+    }
+
+    private fun doModulo(other: NumberBundle<T>): NumberBundle<T> {
+        val otherRange = other.getRange()
+        val maxOther = otherRange.first.negate().max(otherRange.second)
+
+        val positiveSet = newFromConstant(maxOther).getSetSatisfying(LESS_THAN)
+        val negativeSet = newFromConstant(maxOther.negate()).getSetSatisfying(GREATER_THAN)
+
+        return if (comparisonOperation(zero(ind), GREATER_THAN_OR_EQUAL) == BooleanBundle.TRUE) {
+            positiveSet.intersect(ind.positiveNumbersAndZero())
+        } else {
+            negativeSet.intersect(positiveSet)
+        }
     }
 
     fun comparisonOperation(

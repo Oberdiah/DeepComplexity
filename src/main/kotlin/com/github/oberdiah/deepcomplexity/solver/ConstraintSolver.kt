@@ -102,6 +102,8 @@ object ConstraintSolver {
                     }
                     CollectedTerms(setIndicator, newTerms)
                 }
+
+                MODULO -> TODO("Modulo constraints are not supported yet.")
             }
         }
     }

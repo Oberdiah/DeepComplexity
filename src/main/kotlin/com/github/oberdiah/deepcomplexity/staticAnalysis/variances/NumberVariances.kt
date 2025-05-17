@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
+import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
@@ -131,14 +132,14 @@ class NumberVariances<T : Number> private constructor(
         constraints: Constraints
     ): NumberVariances<T> {
         when (operation) {
-            BinaryNumberOp.ADDITION, BinaryNumberOp.SUBTRACTION -> {
+            ADDITION, SUBTRACTION -> {
                 return newFromMultiplierMap(
                     ind, Functional.mergeMapsWithBlank(
                         multipliers,
                         other.multipliers,
                         ind.onlyZeroSet()
                     ) { me, other ->
-                        if (operation == BinaryNumberOp.ADDITION) {
+                        if (operation == ADDITION) {
                             me.add(other)
                         } else {
                             me.subtract(other)
@@ -146,7 +147,7 @@ class NumberVariances<T : Number> private constructor(
                     })
             }
 
-            BinaryNumberOp.MULTIPLICATION -> {
+            MULTIPLICATION -> {
                 val newMultipliers = mutableMapOf<Context.Key, NumberBundle<T>>()
 
                 for ((key, meMultiplier) in multipliers) {
@@ -179,7 +180,7 @@ class NumberVariances<T : Number> private constructor(
 
                             if (key == otherKey) {
                                 // If the keys are the same, we're squaring, so we can only have a positive output.
-                                newMultiplier = newMultiplier.intersect(ind.allPositiveNumbers())
+                                newMultiplier = newMultiplier.intersect(ind.positiveNumbersAndZero())
                             }
 
                             // No new multiplier is needed since we've collapsed the variances.
@@ -192,13 +193,22 @@ class NumberVariances<T : Number> private constructor(
                 return newFromMultiplierMap(ind, newMultipliers)
             }
 
-            BinaryNumberOp.DIVISION -> {
+            DIVISION -> {
                 if (other.isOne(constraints)) {
                     return this
                 }
 
-                // Division is going to be really hard to get right due to order of operations.
+                // Division is going to be really hard to get right due to order-of-operations.
                 TODO("DIVISION :(")
+            }
+
+            MODULO -> {
+                val meCollapsed = this.collapse(constraints)
+                val otherCollapsed = other.collapse(constraints)
+
+                return newFromConstant(
+                    meCollapsed.arithmeticOperation(otherCollapsed, MODULO)
+                )
             }
         }
     }
