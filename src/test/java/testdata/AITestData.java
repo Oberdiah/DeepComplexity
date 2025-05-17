@@ -181,23 +181,6 @@ public class AITestData {
 		}
 	}
 	
-	public static short nearlyImpossible(short x) {
-		short y = (short) (x - 1);
-		if (x < 0 && y > 0) {
-			return 0;
-		} else {
-			return 1;
-		}
-	}
-	
-	public static short actuallyImpossible(short x) {
-		if (x < 0 && (x - 1) > 0) {
-			return 0;
-		} else {
-			return 1;
-		}
-	}
-	
 	// Test 10: Mixed arithmetic with potential intermediate overflow
 	public static short mixedArithmeticOverflow(short x) {
 		int temp = x;

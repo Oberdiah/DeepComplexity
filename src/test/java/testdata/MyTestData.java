@@ -587,4 +587,51 @@ public class MyTestData {
 		}
 		return 0;
 	}
+	
+	public static short twoVars(short x) {
+		int b = x % 100;
+		int a = x % 100;
+		
+		if (a < b && b > a) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short twoVars2(short x) {
+		int b = x % 100;
+		int a = x % 100;
+		
+		if (b > 10 && a > b) {
+			return (short) a;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short wrappingComparison(short x) {
+		if ((short) (x - 1) > 0) {
+			return x;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short nearlyImpossible(short x) {
+		short y = (short) (x - 1);
+		if (x < 0 && y > 0) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+	
+	public static short actuallyImpossible(short x) {
+		if (x < 0 && (x - 1) > 0) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
 }
