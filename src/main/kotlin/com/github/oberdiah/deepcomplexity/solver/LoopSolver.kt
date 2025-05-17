@@ -9,7 +9,7 @@ object LoopSolver {
     /**
      * Given the context for the loop body, and the condition, figure out our new context.
      */
-    fun processLoopContext(context: Context, condition: IExpr<Boolean>) {
+    fun processLoopContext(context: Context, condition: Expr<Boolean>) {
         var numLoops: NumIterationTimesExpression<*>? = null
 
         val conditionVariables = condition.getVariables()
@@ -17,7 +17,7 @@ object LoopSolver {
             val variablesMatchingCondition = expr.getVariables()
                 .filter { vari -> conditionVariables.any { vari.key == it.key } }
 
-            fun <T : Number> ugly(numExpr: IExpr<T>) {
+            fun <T : Number> ugly(numExpr: Expr<T>) {
                 if (variablesMatchingCondition.isEmpty()) return
                 // We now have an expression that is looping stuff.
                 val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: return
@@ -49,10 +49,10 @@ object LoopSolver {
 
     private fun <T : Number> repeatExpression(
         numLoops: NumIterationTimesExpression<out Number>?,
-        expr: IExpr<T>,
+        expr: Expr<T>,
         psiElement: PsiElement,
         allUnresolved: List<VariableExpression<*>>
-    ): IExpr<T> {
+    ): Expr<T> {
         val gaveUp = ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.EphemeralKey.new())
 
         if (numLoops == null) {
@@ -79,11 +79,11 @@ object LoopSolver {
             )
         }
         @Suppress("UNCHECKED_CAST")
-        return ArithmeticExpression(constantTerm, numLoops as IExpr<T>, BinaryNumberOp.MULTIPLICATION)
+        return ArithmeticExpression(constantTerm, numLoops as Expr<T>, BinaryNumberOp.MULTIPLICATION)
     }
 
     private fun <T : Number> collectTerms(
-        expr: IExpr<T>,
+        expr: Expr<T>,
         psiElement: PsiElement,
         variables: List<VariableExpression<*>>
     ): Pair<ConstraintSolver.CollectedTerms<T>, VariableExpression<T>>? {

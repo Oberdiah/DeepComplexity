@@ -6,27 +6,27 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 
 object ExprTreeRebuilder {
     interface Replacer {
-        fun <T : Any> replace(expr: IExpr<T>): IExpr<T>
+        fun <T : Any> replace(expr: Expr<T>): Expr<T>
     }
 
     fun <T : Any> rebuildTree(
-        expr: IExpr<T>,
+        expr: Expr<T>,
         replacer: Replacer
-    ): IExpr<T> {
+    ): Expr<T> {
         return replacer.replace(
             @Suppress("UNCHECKED_CAST")
             when (expr.ind) {
-                is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as IExpr<T>
-                is GenericSetIndicator -> rebuildTreeGenerics(expr as IExpr<*>, replacer) as IExpr<T>
-                BooleanSetIndicator -> rebuildTreeBooleans(expr as IExpr<Boolean>, replacer) as IExpr<T>
+                is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as Expr<T>
+                is GenericSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer) as Expr<T>
+                BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer) as Expr<T>
             }
         )
     }
 
     fun <T : Number> rebuildTreeNums(
-        expr: IExpr<T>,
+        expr: Expr<T>,
         replacer: Replacer
-    ): IExpr<T> {
+    ): Expr<T> {
         return when (expr) {
             is ArithmeticExpression -> ArithmeticExpression(
                 rebuildTree(expr.lhs, replacer),
@@ -49,9 +49,9 @@ object ExprTreeRebuilder {
     }
 
     fun rebuildTreeBooleans(
-        expr: IExpr<Boolean>,
+        expr: Expr<Boolean>,
         replacer: Replacer
-    ): IExpr<Boolean> {
+    ): Expr<Boolean> {
         return when (expr) {
             is BooleanExpression -> BooleanExpression(
                 rebuildTree(expr.lhs, replacer),
@@ -77,16 +77,16 @@ object ExprTreeRebuilder {
     }
 
     fun <T : Any> rebuildTreeGenerics(
-        expr: IExpr<T>,
+        expr: Expr<T>,
         replacer: Replacer
-    ): IExpr<T> {
+    ): Expr<T> {
         return rebuildTreeAnythings(expr, replacer)
     }
 
     fun <T : Any> rebuildTreeAnythings(
-        expr: IExpr<T>,
+        expr: Expr<T>,
         replacer: Replacer
-    ): IExpr<T> {
+    ): Expr<T> {
         return when (expr) {
             is UnionExpression -> UnionExpression(
                 rebuildTree(expr.lhs, replacer),
@@ -109,7 +109,7 @@ object ExprTreeRebuilder {
                 )
 
                 @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
-                extra(expr) as IExpr<T>
+                extra(expr) as Expr<T>
             }
 
             is ConstExpr<*> -> expr

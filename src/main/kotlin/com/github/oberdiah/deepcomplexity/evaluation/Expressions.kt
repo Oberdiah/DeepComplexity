@@ -10,12 +10,16 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.ExprConstrai
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
-sealed interface IExpr<T : Any> {
+sealed class Expr<T : Any> {
     /**
      * The indicator represents what the expression will be once evaluated.
      */
     val ind: SetIndicator<T>
         get() = SetIndicator.getSetIndicator(this)
+
+    override fun toString(): String {
+        return ExprToString.toString(this)
+    }
 
     /**
      * Rebuilds every expression in the tree.
@@ -23,39 +27,32 @@ sealed interface IExpr<T : Any> {
      * you want.
      */
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
-    fun iterateTree(): Sequence<IExpr<*>> = ExprTreeVisitor.iterateTree(this)
+    fun iterateTree(): Sequence<Expr<*>> = ExprTreeVisitor.iterateTree(this)
     fun getVariables(): Set<VariableExpression<*>> = iterateTree()
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
 
-    fun evaluate(condition: IExpr<Boolean>): BundleSet<T> = ExprEvaluate.evaluate(this, condition)
+    fun evaluate(condition: Expr<Boolean>): BundleSet<T> = ExprEvaluate.evaluate(this, condition)
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
-// todo remove IExpr?
-sealed class Expr<T : Any> : IExpr<T> {
-    override fun toString(): String {
-        return ExprToString.toString(this)
-    }
-}
+fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
 
-fun <T : Number> IExpr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
-
-fun IExpr<*>.castToNumbers(): IExpr<out Number> {
+fun Expr<*>.castToNumbers(): Expr<out Number> {
     if (this.ind is NumberSetIndicator<*>) {
         @Suppress("UNCHECKED_CAST")
-        return this as IExpr<out Number>
+        return this as Expr<out Number>
     } else {
         throw IllegalStateException("Failed to cast to a number: $this ($ind)")
     }
 }
 
-fun IExpr<*>.castToBoolean(): IExpr<Boolean> {
+fun Expr<*>.castToBoolean(): Expr<Boolean> {
     return this.tryCastTo(BooleanSetIndicator)
         ?: throw IllegalStateException("Failed to cast to a boolean: $this ($ind)")
 }
 
-inline fun <Set : Any, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
+inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
     return if (this::class == T::class && indicator == this.ind) {
         @Suppress("UNCHECKED_CAST")
         this as T
@@ -64,25 +61,25 @@ inline fun <Set : Any, reified T : IExpr<Set>> IExpr<*>.tryCastExact(indicator: 
     }
 }
 
-fun <T : Any> IExpr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): IExpr<T> {
+fun <T : Any> Expr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): Expr<T> {
     return if (this.ind == indicator) {
         @Suppress("UNCHECKED_CAST")
-        this as IExpr<T>
+        this as Expr<T>
     } else {
         TypeCastExpression(this, indicator, explicit)
     }
 }
 
-fun <T : Any> IExpr<*>.tryCastTo(indicator: SetIndicator<T>): IExpr<T>? {
+fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     return if (this.ind == indicator) {
         @Suppress("UNCHECKED_CAST")
-        this as IExpr<T>
+        this as Expr<T>
     } else {
         null
     }
 }
 
-fun IExpr<Boolean>.getConstraints(): List<Constraints> =
+fun Expr<Boolean>.getConstraints(): List<Constraints> =
     ExprConstrain.getConstraints(this)
 
 /**
@@ -92,7 +89,7 @@ fun IExpr<Boolean>.getConstraints(): List<Constraints> =
  */
 class VoidExpression : Expr<VoidExpression>()
 
-class ArithmeticExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val op: BinaryNumberOp) : Expr<T>() {
+class ArithmeticExpression<T : Number>(val lhs: Expr<T>, val rhs: Expr<T>, val op: BinaryNumberOp) : Expr<T>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -100,7 +97,7 @@ class ArithmeticExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val
     }
 }
 
-class ComparisonExpression<T : Number>(val lhs: IExpr<T>, val rhs: IExpr<T>, val comp: ComparisonOp) :
+class ComparisonExpression<T : Number>(val lhs: Expr<T>, val rhs: Expr<T>, val comp: ComparisonOp) :
     Expr<Boolean>() {
     init {
         assert(lhs.ind == rhs.ind) {
@@ -121,15 +118,15 @@ class VariableExpression<T : Any>(val key: Context.Key) : Expr<T>()
  * explicit isn't strictly necessary, but it's nice debugging and printing purposes.
  */
 class TypeCastExpression<T : Any, Q : Any>(
-    val expr: IExpr<Q>,
+    val expr: Expr<Q>,
     val setInd: SetIndicator<T>,
     val explicit: Boolean
 ) : Expr<T>()
 
 class IfExpression<T : Any>(
-    val trueExpr: IExpr<T>,
-    val falseExpr: IExpr<T>,
-    val thisCondition: IExpr<Boolean>
+    val trueExpr: Expr<T>,
+    val falseExpr: Expr<T>,
+    val thisCondition: Expr<Boolean>
 ) : Expr<T>() {
     init {
         assert(trueExpr.ind == falseExpr.ind) {
@@ -139,13 +136,13 @@ class IfExpression<T : Any>(
 
     companion object {
         fun <A : Any, B : Any> new(
-            a: IExpr<A>,
-            b: IExpr<B>,
-            condition: IExpr<Boolean>
-        ): IExpr<A> {
+            a: Expr<A>,
+            b: Expr<B>,
+            condition: Expr<Boolean>
+        ): Expr<A> {
             return if (a.ind == b.ind) {
                 @Suppress("UNCHECKED_CAST")
-                IfExpression(a, b as IExpr<A>, condition)
+                IfExpression(a, b as Expr<A>, condition)
             } else {
                 throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
             }
@@ -153,7 +150,7 @@ class IfExpression<T : Any>(
     }
 }
 
-class UnionExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>() {
+class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -161,7 +158,7 @@ class UnionExpression<T : Any>(val lhs: IExpr<T>, val rhs: IExpr<T>) : Expr<T>()
     }
 }
 
-class BooleanExpression(val lhs: IExpr<Boolean>, val rhs: IExpr<Boolean>, val op: BooleanOp) :
+class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) :
     Expr<Boolean>() {
     init {
         assert(lhs.ind == rhs.ind) {
@@ -176,8 +173,8 @@ class ConstExpr<T : Any>(val constSet: BundleSet<T>) : Expr<T>() {
     }
 }
 
-class BooleanInvertExpression(val expr: IExpr<Boolean>) : Expr<Boolean>()
-class NegateExpression<T : Number>(val expr: IExpr<T>) : Expr<T>()
+class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
+class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()
 
 class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,

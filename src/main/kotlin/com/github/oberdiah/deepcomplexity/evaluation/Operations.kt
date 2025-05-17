@@ -18,7 +18,7 @@ enum class UnaryNumberOp {
         }
     }
 
-    fun <T : Number> applyToExpr(expr: IExpr<T>): IExpr<T> {
+    fun <T : Number> applyToExpr(expr: Expr<T>): Expr<T> {
         return when (this) {
             PLUS -> expr
             NEGATE -> NegateExpression(expr)

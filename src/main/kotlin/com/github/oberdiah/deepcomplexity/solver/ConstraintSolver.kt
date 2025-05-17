@@ -20,9 +20,9 @@ object ConstraintSolver {
         /**
          * Map from exponent to coefficient. 0th is constant, 1st is linear, 2nd is quadratic, etc.
          */
-        val terms: MutableMap<Int, IExpr<T>> = mutableMapOf(),
+        val terms: MutableMap<Int, Expr<T>> = mutableMapOf(),
     ) {
-        fun evaluate(condition: IExpr<Boolean>): EvaluatedCollectedTerms<T> {
+        fun evaluate(condition: Expr<Boolean>): EvaluatedCollectedTerms<T> {
             return EvaluatedCollectedTerms(
                 terms.mapValues { (_, term) -> term.evaluate(condition) }
             )
@@ -51,7 +51,7 @@ object ConstraintSolver {
             )
 
         fun negate(): CollectedTerms<T> {
-            val newTerms = mutableMapOf<Int, IExpr<T>>()
+            val newTerms = mutableMapOf<Int, Expr<T>>()
 
             for ((exp, term) in terms) {
                 newTerms[exp] = NegateExpression(term)
@@ -64,7 +64,7 @@ object ConstraintSolver {
             return when (op) {
                 ADDITION, SUBTRACTION -> {
                     // Combine terms
-                    val newTerms = mutableMapOf<Int, IExpr<T>>()
+                    val newTerms = mutableMapOf<Int, Expr<T>>()
                     newTerms.putAll(terms)
 
                     for ((exp, term) in other.terms) {
@@ -76,7 +76,7 @@ object ConstraintSolver {
 
                 MULTIPLICATION -> {
                     // Multiply terms together
-                    val newTerms = mutableMapOf<Int, IExpr<T>>()
+                    val newTerms = mutableMapOf<Int, Expr<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
@@ -90,7 +90,7 @@ object ConstraintSolver {
                 }
 
                 DIVISION -> {
-                    val newTerms = mutableMapOf<Int, IExpr<T>>()
+                    val newTerms = mutableMapOf<Int, Expr<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
@@ -108,7 +108,7 @@ object ConstraintSolver {
         }
     }
 
-    private fun <T : Number> merge(lhs: IExpr<T>?, rhs: IExpr<T>, op: BinaryNumberOp): IExpr<T> {
+    private fun <T : Number> merge(lhs: Expr<T>?, rhs: Expr<T>, op: BinaryNumberOp): Expr<T> {
         return if (lhs == null) {
             ArithmeticExpression(ConstantExpression.zero(rhs), rhs, op)
         } else {
@@ -206,7 +206,7 @@ object ConstraintSolver {
     private fun <T : Number> normalizeComparisonExpression(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
-    ): Pair<CollectedTerms<T>, IExpr<T>>? {
+    ): Pair<CollectedTerms<T>, Expr<T>>? {
         // Collect terms from both sides
         val leftTerms = expandTerms(expr.lhs, variable)
         val rightTerms = expandTerms(expr.rhs, variable)
@@ -224,7 +224,7 @@ object ConstraintSolver {
         return lhs to constant
     }
 
-    fun <T : Number> expandTerms(expr: IExpr<*>, variable: VariableExpression<T>): CollectedTerms<T>? {
+    fun <T : Number> expandTerms(expr: Expr<*>, variable: VariableExpression<T>): CollectedTerms<T>? {
         val setIndicator = variable.ind as NumberSetIndicator<T>
         val castExpr = TypeCastExpression(expr, setIndicator, true)
         return when (expr) {
@@ -251,7 +251,7 @@ object ConstraintSolver {
             is NegateExpression -> expandTerms(expr.expr, variable)?.negate()
             is NumIterationTimesExpression -> TODO("Maybe one day? Unsure if this is possible")
             is TypeCastExpression<*, *> -> {
-                fun <Q : Number> extra(expr: IExpr<Q>): CollectedTerms<T>? =
+                fun <Q : Number> extra(expr: Expr<Q>): CollectedTerms<T>? =
                     expandTerms(expr, variable)?.castTo(setIndicator)
 
                 extra(expr.expr.castToNumbers())

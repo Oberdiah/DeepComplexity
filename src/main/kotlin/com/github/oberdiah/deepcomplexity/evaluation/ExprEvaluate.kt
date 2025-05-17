@@ -9,16 +9,16 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ExprEvaluate {
-    fun <T : Any> evaluate(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
+    fun <T : Any> evaluate(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {
         @Suppress("UNCHECKED_CAST")
         return when (expr.ind) {
             is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), condition) as BundleSet<T>
-            is GenericSetIndicator -> evaluateGenerics(expr as IExpr<*>, condition) as BundleSet<T>
-            BooleanSetIndicator -> evaluateBools(expr as IExpr<Boolean>, condition) as BundleSet<T>
+            is GenericSetIndicator -> evaluateGenerics(expr as Expr<*>, condition) as BundleSet<T>
+            BooleanSetIndicator -> evaluateBools(expr as Expr<Boolean>, condition) as BundleSet<T>
         }
     }
 
-    private fun <T : Number> evaluateNums(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
+    private fun <T : Number> evaluateNums(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {
         val toReturn = when (expr) {
             is ArithmeticExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
@@ -46,7 +46,7 @@ object ExprEvaluate {
         return toReturn
     }
 
-    private fun evaluateBools(expr: IExpr<Boolean>, condition: IExpr<Boolean>): BundleSet<Boolean> {
+    private fun evaluateBools(expr: Expr<Boolean>, condition: Expr<Boolean>): BundleSet<Boolean> {
         val toReturn = when (expr) {
             is BooleanExpression -> {
                 val lhs = evaluate(expr.lhs, condition)
@@ -56,7 +56,7 @@ object ExprEvaluate {
             }
 
             is ComparisonExpression<*> -> {
-                fun <T : Number> evalC(expr: ComparisonExpression<T>, condition: IExpr<Boolean>): BundleSet<Boolean> {
+                fun <T : Number> evalC(expr: ComparisonExpression<T>, condition: Expr<Boolean>): BundleSet<Boolean> {
                     val lhs = evaluate(expr.lhs, condition)
                     val rhs = evaluate(expr.rhs, condition)
 
@@ -71,11 +71,11 @@ object ExprEvaluate {
         return toReturn
     }
 
-    private fun <T : Any> evaluateGenerics(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
+    private fun <T : Any> evaluateGenerics(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {
         return evaluateAnythings(expr, condition)
     }
 
-    private fun <T : Any> evaluateAnythings(expr: IExpr<T>, condition: IExpr<Boolean>): BundleSet<T> {
+    private fun <T : Any> evaluateAnythings(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {
         val toReturn: BundleSet<T> = when (expr) {
             is UnionExpression -> evaluate(expr.lhs, condition).union(evaluate(expr.rhs, condition))
             is IfExpression -> {

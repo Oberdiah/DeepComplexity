@@ -1,15 +1,15 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 object ExprTreeVisitor {
-    fun iterateTree(expr: IExpr<*>): Sequence<IExpr<*>> {
-        return object : Iterator<IExpr<*>> {
+    fun iterateTree(expr: Expr<*>): Sequence<Expr<*>> {
+        return object : Iterator<Expr<*>> {
             private val stack = mutableListOf(expr)
 
             override fun hasNext(): Boolean {
                 return stack.isNotEmpty()
             }
 
-            override fun next(): IExpr<*> {
+            override fun next(): Expr<*> {
                 val current = stack.removeAt(stack.size - 1)
                 visitTree(current) {
                     stack.add(it)
@@ -19,7 +19,7 @@ object ExprTreeVisitor {
         }.asSequence()
     }
 
-    fun visitTree(expr: IExpr<*>, visitor: (IExpr<*>) -> Unit) {
+    fun visitTree(expr: Expr<*>, visitor: (Expr<*>) -> Unit) {
         when (expr) {
             is VoidExpression -> {}
             is ConstExpr -> {}

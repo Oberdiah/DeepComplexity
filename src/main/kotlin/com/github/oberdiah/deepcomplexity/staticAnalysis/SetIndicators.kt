@@ -31,7 +31,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     abstract fun newVariance(key: Context.Key): Variances<T>
 
     companion object {
-        fun <T : Any> getSetIndicator(expr: IExpr<T>): SetIndicator<T> {
+        fun <T : Any> getSetIndicator(expr: Expr<T>): SetIndicator<T> {
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
                 is VoidExpression -> throw IllegalStateException("Void expression has no set indicator")

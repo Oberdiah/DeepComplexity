@@ -1,42 +1,42 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
-import com.github.oberdiah.deepcomplexity.evaluation.IExpr
+import com.github.oberdiah.deepcomplexity.evaluation.Expr
 import com.github.oberdiah.deepcomplexity.evaluation.performACastTo
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 
 object ConversionsAndPromotion {
-    class TypedPair<T : Any>(val first: IExpr<T>, val second: IExpr<T>) {
-        fun <R> map(operation: (IExpr<T>, IExpr<T>) -> R): R = operation(first, second)
+    class TypedPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {
+        fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
     }
 
-    fun castAToB(exprA: IExpr<*>, exprB: IExpr<*>, explicit: Boolean): TypedPair<*> {
-        fun <T : Any> castTo(exprB: IExpr<T>): TypedPair<*> {
-            val castExprA: IExpr<T> = exprA.performACastTo(exprB.ind, explicit)
+    fun castAToB(exprA: Expr<*>, exprB: Expr<*>, explicit: Boolean): TypedPair<*> {
+        fun <T : Any> castTo(exprB: Expr<T>): TypedPair<*> {
+            val castExprA: Expr<T> = exprA.performACastTo(exprB.ind, explicit)
             return TypedPair(castExprA, exprB)
         }
         return castTo(exprB)
     }
 
     fun castNumbersAToB(
-        exprA: IExpr<out Number>,
-        exprB: IExpr<out Number>,
+        exprA: Expr<out Number>,
+        exprB: Expr<out Number>,
         explicit: Boolean
     ): TypedPair<out Number> {
-        fun <T : Number> castTo(exprB: IExpr<T>): TypedPair<out Number> {
-            val castExprA: IExpr<T> = exprA.performACastTo(exprB.ind, explicit)
+        fun <T : Number> castTo(exprB: Expr<T>): TypedPair<out Number> {
+            val castExprA: Expr<T> = exprA.performACastTo(exprB.ind, explicit)
             return TypedPair(castExprA, exprB)
         }
         return castTo(exprB)
     }
 
     fun <T : Number> castBothNumbersTo(
-        exprA: IExpr<out Number>,
-        exprB: IExpr<out Number>,
+        exprA: Expr<out Number>,
+        exprB: Expr<out Number>,
         indicator: NumberSetIndicator<T>,
         explicit: Boolean
     ): TypedPair<T> {
-        val castExprA: IExpr<T> = exprA.performACastTo(indicator, explicit)
-        val castExprB: IExpr<T> = exprB.performACastTo(indicator, explicit)
+        val castExprA: Expr<T> = exprA.performACastTo(indicator, explicit)
+        val castExprB: Expr<T> = exprB.performACastTo(indicator, explicit)
         return TypedPair(castExprA, castExprB)
     }
 
@@ -46,7 +46,7 @@ object ConversionsAndPromotion {
     // - Unary plus/minus
     // - Bitwise complement: ~
     // - >>, >>>, or <<, but only >>> in some cases.
-    fun unaryNumericPromotion(expr: IExpr<out Number>): IExpr<out Number> {
+    fun unaryNumericPromotion(expr: Expr<out Number>): Expr<out Number> {
         // Java Spec 5.6.1:
         // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
         return when (expr.ind) {
@@ -56,8 +56,8 @@ object ConversionsAndPromotion {
     }
 
     fun binaryNumericPromotion(
-        exprA: IExpr<out Number>,
-        exprB: IExpr<out Number>,
+        exprA: Expr<out Number>,
+        exprB: Expr<out Number>,
     ): TypedPair<out Number> {
         // Java Spec 5.6.2:
         // If either operand is of type double, the other is converted to double.

@@ -37,7 +37,7 @@ object MethodProcessing {
     private fun processPsiElement(
         psi: PsiElement,
         context: Context
-    ): IExpr<*> {
+    ): Expr<*> {
         when (psi) {
             is PsiBlockStatement -> {
                 processPsiElement(psi.codeBlock, context)
@@ -302,10 +302,10 @@ object MethodProcessing {
     }
 
     private fun processBinaryExpr(
-        lhsPrecast: IExpr<*>,
-        rhsPrecast: IExpr<*>,
+        lhsPrecast: Expr<*>,
+        rhsPrecast: Expr<*>,
         tokenType: IElementType
-    ): IExpr<*> {
+    ): Expr<*> {
         val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
         val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
         val booleanOp = BooleanOp.fromJavaTokenType(tokenType)

@@ -9,7 +9,7 @@ import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiVariable
 
-class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mutableMapOf()) {
+class Context private constructor(val variables: MutableMap<Key, Expr<*>> = mutableMapOf()) {
     sealed class Key {
         // Variable is where the variable is defined —
         // either PsiLocalVariable, PsiParameter, or PsiField
@@ -62,7 +62,7 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
          * Could potentially be used one day to allow us to equate expressions,
          * for now does nothing.
          */
-        data class ExpressionKey(val expr: IExpr<*>) : Key() {
+        data class ExpressionKey(val expr: Expr<*>) : Key() {
             override fun toString(): String {
                 return expr.toString()
             }
@@ -139,8 +139,8 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
          *
          * `a` and `b` (The two contexts) must not be used again after this operation.
          */
-        fun combine(a: Context, b: Context, how: (a: IExpr<*>, b: IExpr<*>) -> IExpr<*>): Context {
-            val newMap = mutableMapOf<Key, IExpr<*>>()
+        fun combine(a: Context, b: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
+            val newMap = mutableMapOf<Key, Expr<*>>()
 
             val allKeys = a.variables.keys + b.variables.keys
 
@@ -178,18 +178,18 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
         return expr.evaluate(ConstantExpression.TRUE)
     }
 
-    fun getVar(element: PsiElement): IExpr<*> {
+    fun getVar(element: PsiElement): Expr<*> {
         return getVar(element.toKey())
     }
 
-    fun getVar(element: Key): IExpr<*> {
+    fun getVar(element: Key): Expr<*> {
         return variables[element] ?: VariableExpression<Any>(element)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun putVar(key: Key, expr: IExpr<*>) {
+    fun putVar(key: Key, expr: Expr<*>) {
         // We're just going to always perform this cast for now.
         // If the code compiles, it's reasonable to do so.
         variables[key] = expr.performACastTo(key.ind, false)
@@ -198,21 +198,21 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
     /**
      * Performs a cast if necessary.
      */
-    fun putVar(element: PsiElement, expr: IExpr<*>) {
+    fun putVar(element: PsiElement, expr: Expr<*>) {
         putVar(element.toKey(), expr)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun resolveVar(element: PsiElement, expr: IExpr<*>) {
+    fun resolveVar(element: PsiElement, expr: Expr<*>) {
         return resolveVar(element.toKey(), expr)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun resolveVar(key: Key, expr: IExpr<*>) {
+    fun resolveVar(key: Key, expr: Expr<*>) {
         val castExpr = expr.performACastTo(key.ind, false)
 
         variables.replaceAll { _, oldExpr ->
@@ -250,10 +250,10 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
     }
 
     private fun variableExpressionReplacer(
-        replacement: (VariableExpression<*>) -> IExpr<*>?
+        replacement: (VariableExpression<*>) -> Expr<*>?
     ): ExprTreeRebuilder.Replacer {
         return object : ExprTreeRebuilder.Replacer {
-            override fun <T : Any> replace(expr: IExpr<T>): IExpr<T> {
+            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
                 if (expr is VariableExpression) {
                     val resolved = replacement(expr)
                     if (resolved != null) {
@@ -262,7 +262,7 @@ class Context private constructor(val variables: MutableMap<Key, IExpr<*>> = mut
                         }
 
                         @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
-                        return resolved as IExpr<T>
+                        return resolved as Expr<T>
                     }
                 }
 

@@ -1,6 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
-import com.github.oberdiah.deepcomplexity.evaluation.IExpr
+import com.github.oberdiah.deepcomplexity.evaluation.Expr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -167,7 +167,7 @@ class BundleSet<T : Any> private constructor(
      * The expression you provide is converted into a set of constraints and then
      * combined with this bundle set.
      */
-    fun constrainWith(constraintExpr: IExpr<Boolean>): BundleSet<T> {
+    fun constrainWith(constraintExpr: Expr<Boolean>): BundleSet<T> {
         val constraints = ExprConstrain.getConstraints(constraintExpr)
         return BundleSet(ind, bundles.flatMap { bundle ->
             constraints.map { constraint ->

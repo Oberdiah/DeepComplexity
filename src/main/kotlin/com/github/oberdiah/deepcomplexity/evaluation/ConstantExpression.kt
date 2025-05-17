@@ -11,19 +11,19 @@ object ConstantExpression {
     fun <T : Number> zero(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
         ConstExpr.new(NumberBundle.zero(setIndicator).toConstVariance())
 
-    fun <T : Number> zero(expr: IExpr<T>): ConstExpr<T> =
+    fun <T : Number> zero(expr: Expr<T>): ConstExpr<T> =
         zero(expr.getNumberSetIndicator())
 
     fun <T : Number> one(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
         ConstExpr.new(NumberBundle.one(setIndicator).toConstVariance())
 
-    fun <T : Number> one(expr: IExpr<T>): ConstExpr<T> =
+    fun <T : Number> one(expr: Expr<T>): ConstExpr<T> =
         zero(expr.getNumberSetIndicator())
 
-    fun <T : Any> fullExprFromExprAndKey(expr: IExpr<T>, key: Context.Key): IExpr<T> =
+    fun <T : Any> fullExprFromExprAndKey(expr: Expr<T>, key: Context.Key): Expr<T> =
         ConstExpr.new(expr.ind.newVariance(key))
 
-    fun fromAny(value: Any): IExpr<*> {
+    fun fromAny(value: Any): Expr<*> {
         return ConstExpr.new(
             when (value) {
                 is Boolean -> BooleanBundle.fromBoolean(value)

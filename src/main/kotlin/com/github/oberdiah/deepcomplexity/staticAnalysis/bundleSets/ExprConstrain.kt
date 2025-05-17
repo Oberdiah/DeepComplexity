@@ -11,7 +11,7 @@ object ExprConstrain {
      * Typically, it returns a single constraint, but if an OR is involved, it may return multiple
      * as each side of the OR is a separate constraint.
      */
-    fun getConstraints(condition: IExpr<Boolean>): List<Constraints> {
+    fun getConstraints(condition: Expr<Boolean>): List<Constraints> {
         return when (condition) {
             is BooleanExpression -> {
                 val lhsConstrained = condition.lhs.getConstraints()
