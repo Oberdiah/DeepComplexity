@@ -9,13 +9,28 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ExprEvaluate {
+    private val expressionCache = mutableMapOf<ExprKey, BundleSet<*>>()
+
+    fun clearCache() {
+        expressionCache.clear()
+    }
+
+    data class ExprKey(val exprKey: Context.Key, val conditionKey: Context.Key)
+
     fun <T : Any> evaluate(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {
-        @Suppress("UNCHECKED_CAST")
-        return when (expr.ind) {
-            is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), condition) as BundleSet<T>
-            is GenericSetIndicator -> evaluateGenerics(expr as Expr<*>, condition) as BundleSet<T>
-            BooleanSetIndicator -> evaluateBools(expr as Expr<Boolean>, condition) as BundleSet<T>
+        val key = ExprKey(expr.exprKey, condition.exprKey)
+
+        val bundle = expressionCache.getOrPut(key) {
+            when (expr.ind) {
+                is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), condition)
+                is GenericSetIndicator -> evaluateGenerics(expr as Expr<*>, condition)
+                BooleanSetIndicator -> evaluateBools(expr.castToBoolean(), condition)
+            }
         }
+
+        assert(bundle.ind == expr.ind)
+        @Suppress("UNCHECKED_CAST")
+        return bundle as BundleSet<T>
     }
 
     private fun <T : Number> evaluateNums(expr: Expr<T>, condition: Expr<Boolean>): BundleSet<T> {

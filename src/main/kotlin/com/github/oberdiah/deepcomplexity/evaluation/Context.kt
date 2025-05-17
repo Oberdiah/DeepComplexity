@@ -59,8 +59,7 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
         }
 
         /**
-         * Could potentially be used one day to allow us to equate expressions,
-         * for now does nothing.
+         * Used to allow us to equate expressions.
          */
         data class ExpressionKey(val expr: Expr<*>) : Key() {
             override fun toString(): String {
@@ -86,6 +85,10 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
 
         val ind: SetIndicator<*>
             get() {
+                if (this is ExpressionKey) {
+                    return this.ind
+                }
+
                 val type: PsiType = getType()
                 val clazz = Utilities.psiTypeToKClass(type)
                     ?: throw IllegalArgumentException("Unsupported type for variable expression")
@@ -174,6 +177,9 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
     }
 
     fun evaluateKey(key: Key): BundleSet<*> {
+        // This isn't necessary — the keys won't collide or anything — it's just to prevent it from getting too large.
+        ExprEvaluate.clearCache()
+
         val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
         return expr.evaluate(ConstantExpression.TRUE)
     }

@@ -31,17 +31,20 @@ object ExprTreeRebuilder {
             is ArithmeticExpression -> ArithmeticExpression(
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
-                expr.op
+                expr.op,
+                expr.exprKey
             )
 
             is NegateExpression -> NegateExpression(
-                rebuildTree(expr.expr, replacer)
+                rebuildTree(expr.expr, replacer),
+                expr.exprKey
             )
 
             is NumIterationTimesExpression -> NumIterationTimesExpression(
                 expr.constraint,
                 rebuildTree(expr.variable, replacer) as VariableExpression<T>,
-                expr.terms
+                expr.terms,
+                expr.exprKey
             )
 
             else -> rebuildTreeAnythings(expr, replacer)
@@ -56,18 +59,21 @@ object ExprTreeRebuilder {
             is BooleanExpression -> BooleanExpression(
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
-                expr.op
+                expr.op,
+                expr.exprKey
             )
 
             is BooleanInvertExpression -> BooleanInvertExpression(
-                rebuildTree(expr.expr, replacer)
+                rebuildTree(expr.expr, replacer),
+                expr.exprKey
             )
 
             is ComparisonExpression<*> -> {
                 fun <T : Number> extra(expr: ComparisonExpression<T>): ComparisonExpression<T> = ComparisonExpression(
                     rebuildTree(expr.lhs, replacer),
                     rebuildTree(expr.rhs, replacer),
-                    expr.comp
+                    expr.comp,
+                    expr.exprKey
                 )
                 extra(expr)
             }
@@ -90,13 +96,15 @@ object ExprTreeRebuilder {
         return when (expr) {
             is UnionExpression -> UnionExpression(
                 rebuildTree(expr.lhs, replacer),
-                rebuildTree(expr.rhs, replacer)
+                rebuildTree(expr.rhs, replacer),
+                expr.exprKey
             )
 
             is IfExpression -> IfExpression(
                 rebuildTree(expr.trueExpr, replacer),
                 rebuildTree(expr.falseExpr, replacer),
-                rebuildTree(expr.thisCondition, replacer)
+                rebuildTree(expr.thisCondition, replacer),
+                expr.exprKey
             )
 
             is TypeCastExpression<*, *> -> {
@@ -105,7 +113,8 @@ object ExprTreeRebuilder {
                 ): TypeCastExpression<T, Q> = TypeCastExpression(
                     rebuildTree(expr.expr, replacer),
                     expr.setInd,
-                    expr.explicit
+                    expr.explicit,
+                    expr.exprKey
                 )
 
                 @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
