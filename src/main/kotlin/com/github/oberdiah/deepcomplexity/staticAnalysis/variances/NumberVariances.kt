@@ -13,6 +13,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
+import com.jetbrains.rd.util.first
 
 @ConsistentCopyVisibility
 data class NumberVariances<T : Number> private constructor(
@@ -23,6 +24,30 @@ data class NumberVariances<T : Number> private constructor(
         assert(multipliers.keys.count { it.isEphemeral() } <= 1) {
             "Only one ephemeral key is allowed in the variances map"
         }
+    }
+
+    /**
+     * They're equal if everything matches except the ephemeral key, which can be different.
+     */
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is NumberVariances<*>) return false
+        if (ind != other.ind) return false
+        val myNonEphemeralMultipliers = multipliers.filterKeys { !it.isEphemeral() }
+        val otherNonEphemeralMultipliers = other.multipliers.filterKeys { !it.isEphemeral() }
+        if (myNonEphemeralMultipliers != otherNonEphemeralMultipliers) return false
+        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.first().value
+        val otherEphemeralMultiplier = other.multipliers.filterKeys { it.isEphemeral() }.first().value
+        return myEphemeralMultiplier == otherEphemeralMultiplier
+    }
+
+    override fun hashCode(): Int {
+        var result = ind.hashCode()
+        val myNonEphemeralMultipliers = multipliers.filterKeys { !it.isEphemeral() }
+        result = 31 * result + myNonEphemeralMultipliers.hashCode()
+        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.first().value
+        result = 31 * result + myEphemeralMultiplier.hashCode()
+        return result
     }
 
     override fun toString(): String {
@@ -39,7 +64,6 @@ data class NumberVariances<T : Number> private constructor(
             return newFromMultiplierMap(ind, mapOf(key to ind.onlyOneSet()))
         }
 
-        val VARIANCE_EPHEMERAL_KEY = Context.Key.EphemeralKey.new()
         private fun <T : Number> newFromMultiplierMap(
             ind: NumberSetIndicator<T>,
             multipliers: Map<Context.Key, NumberSet<T>>
@@ -57,7 +81,7 @@ data class NumberVariances<T : Number> private constructor(
 
             return NumberVariances(
                 ind,
-                notEphemeralMap + (VARIANCE_EPHEMERAL_KEY to ephemeralMultiplier)
+                notEphemeralMap + (Context.Key.EphemeralKey.new() to ephemeralMultiplier)
             )
         }
     }
