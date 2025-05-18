@@ -123,25 +123,27 @@ class NumberRange<T : Number> private constructor(
                 )
             )
         } else {
-            val a = divide(start, other.start)
-            val b = divide(end, other.start)
-            val c = divide(start, other.end)
-            val d = divide(end, other.end)
+            fun doDividing(other2: NumberRange<T>): Iterable<NumberRange<T>?> {
+                val a = divide(start, other2.start)
+                val b = divide(end, other2.start)
+                val c = divide(start, other2.end)
+                val d = divide(end, other2.end)
 
-            val min = min(a, b, c, d)
-            val max = max(a, b, c, d)
+                val min = min(a, b, c, d)
+                val max = max(a, b, c, d)
 
-            if (min == null || max == null) {
-                return listOf(null)
+                if (min == null || max == null) {
+                    return listOf(null)
+                }
+
+                return resolvePotentialOverflow(min, max)
             }
-
-            return if (other.start < 0 && other.end > 0) {
-                // Split into two ranges, one for negative and one for positive
-                val range = resolvePotentialOverflow(min, BigInteger.ONE.negate()) +
-                        resolvePotentialOverflow(BigInteger.ONE, max)
-                NumberUtilities.mergeAndDeduplicate(range) + null
+            if (other.start < 0 && other.end > 0) {
+                val ranges = doDividing(NumberRange(ind, other.start, ind.getOne())) +
+                        doDividing(NumberRange(ind, ind.getOne(), other.end))
+                NumberUtilities.mergeAndDeduplicate(ranges.filterNotNull()) + null
             } else {
-                resolvePotentialOverflow(min, max)
+                doDividing(other)
             }
         }
     }
@@ -172,6 +174,10 @@ class NumberRange<T : Number> private constructor(
         initialLower: BigInteger,
         initialUpper: BigInteger
     ): Iterable<NumberRange<T>> {
+        assert(initialLower <= initialUpper) {
+            "Lower bound $initialLower is greater than upper bound $initialUpper"
+        }
+
         val indMin = BigInteger.valueOf(ind.getMinValue().toLong())
         val indMax = BigInteger.valueOf(ind.getMaxValue().toLong())
         val setSize = BigInteger.valueOf(ind.clazz.getSetSize().toLong())
