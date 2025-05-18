@@ -57,7 +57,7 @@ public class AITestData {
 	// 7. Control flow based on int, but returned value cast
 	public static short tricky7(short x) {
 		int y = x * 5000;
-		if (y > 100000) return (short) y;
+		if (y > 100000) return 1;
 		return 0;
 	}
 	

@@ -21,15 +21,25 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.negate
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
-class NumberSet<T : Number>(
+class NumberSet<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
+    val hasThrownDivideByZero: Boolean,
     // In order, and non-overlapping
     val ranges: List<NumberRange<T>>
 ) : ISet<T> {
     val clazz: KClass<T> = ind.clazz
 
-    override fun toString(): String = ranges.joinToString {
-        it.toString()
+    override fun toString(): String {
+        val mainStr = ranges.joinToString {
+            it.toString()
+        }
+        val divideByZeroWarning = if (hasThrownDivideByZero) {
+            " (divide by zero)"
+        } else {
+            ""
+        }
+
+        return "$mainStr$divideByZeroWarning"
     }
 
     override fun isEmpty(): Boolean = ranges.isEmpty()
@@ -39,8 +49,12 @@ class NumberSet<T : Number>(
         return range.first == ind.getMinValue() && range.second == ind.getMaxValue()
     }
 
-    private fun makeNew(ranges: List<NumberRange<T>>): NumberSet<T> {
-        return newFromDataAndInd(ind, NumberUtilities.mergeAndDeduplicate(ranges))
+    private fun makeNew(ranges: List<NumberRange<T>>, thrownDivByZero: Boolean? = null): NumberSet<T> {
+        return NumberSet(
+            ind,
+            thrownDivByZero ?: hasThrownDivideByZero,
+            NumberUtilities.mergeAndDeduplicate(ranges)
+        )
     }
 
     /**
@@ -66,7 +80,11 @@ class NumberSet<T : Number>(
             assert(newInd.isWholeNum() && ind.isWholeNum()) {
                 "Attempted to cast to a floating point number."
             }
-            return newFromDataAndInd(newInd, ranges.flatMap { it.castTo(newInd) })
+            return NumberSet(
+                newInd,
+                hasThrownDivideByZero,
+                NumberUtilities.mergeAndDeduplicate(ranges.flatMap { it.castTo(newInd) })
+            )
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -94,14 +112,20 @@ class NumberSet<T : Number>(
             MODULO -> return doModulo(other)
         }
 
+        var hasThrownDivideByZero = false
         val newList: MutableList<NumberRange<T>> = mutableListOf()
         for (range in ranges) {
             for (otherRange in other.ranges) {
-                newList.addAll(rangeOp(range, otherRange))
+                val ranges = rangeOp(range, otherRange)
+
+                if (ranges.any { it == null }) {
+                    hasThrownDivideByZero = true
+                }
+                newList.addAll(ranges.filterNotNull())
             }
         }
 
-        return makeNew(newList)
+        return makeNew(newList, hasThrownDivideByZero)
     }
 
     private fun doModulo(other: NumberSet<T>): NumberSet<T> {
@@ -332,13 +356,15 @@ class NumberSet<T : Number>(
     }
 
     companion object {
-        fun <T : Number> zero(ind: NumberSetIndicator<T>): NumberSet<T> = newFromDataAndInd(
+        fun <T : Number> zero(ind: NumberSetIndicator<T>): NumberSet<T> = NumberSet(
             ind,
+            false,
             listOf(NumberRange.fromConstant(ind.getZero())),
         )
 
-        fun <T : Number> one(ind: NumberSetIndicator<T>): NumberSet<T> = newFromDataAndInd(
+        fun <T : Number> one(ind: NumberSetIndicator<T>): NumberSet<T> = NumberSet(
             ind,
+            false,
             listOf(NumberRange.fromConstant(ind.getOne())),
         )
 
@@ -346,21 +372,17 @@ class NumberSet<T : Number>(
             constant: T
         ): NumberSet<T> {
             val ind = SetIndicator.fromValue(constant)
-            return newFromDataAndInd(
+            return NumberSet(
                 ind,
+                false,
                 listOf(NumberRange.fromConstant(constant)),
             )
         }
 
-        fun <T : Number> newFull(ind: NumberSetIndicator<T>): NumberSet<T> =
-            newFromDataAndInd(ind, listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue())))
+        fun <T : Number> newEmpty(ind: NumberSetIndicator<T>): NumberSet<T> =
+            NumberSet(ind, false, emptyList())
 
-        @Suppress("UNCHECKED_CAST")
-        private fun <T : Number> newFromDataAndInd(
-            ind: NumberSetIndicator<T>,
-            ranges: List<NumberRange<T>>,
-        ): NumberSet<T> {
-            return NumberSet(ind, ranges)
-        }
+        fun <T : Number> newFull(ind: NumberSetIndicator<T>): NumberSet<T> =
+            NumberSet(ind, false, listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue())))
     }
 }

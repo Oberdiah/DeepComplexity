@@ -271,6 +271,30 @@ object Utilities {
         } as T // This cast shouldn't be necessary.
     }
 
+    fun <T : Number> max(vararg values: T?): T? {
+        if (values.isEmpty()) return null
+        var maxValue: T = values[0] ?: return null
+
+        for (value in values) {
+            if (value != null && value > maxValue) {
+                maxValue = value
+            }
+        }
+        return maxValue
+    }
+
+    fun <T : Number> min(vararg values: T?): T? {
+        if (values.isEmpty()) return null
+        var minValue: T = values[0] ?: return null
+
+        for (value in values) {
+            if (value != null && value < minValue) {
+                minValue = value
+            }
+        }
+        return minValue
+    }
+
     // Min and max extension functions for Number
     fun <T : Number> T.min(other: T): T {
         assert(this::class == other::class) {

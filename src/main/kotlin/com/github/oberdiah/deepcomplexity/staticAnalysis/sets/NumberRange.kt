@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.div
@@ -109,7 +110,7 @@ class NumberRange<T : Number> private constructor(
         }
     }
 
-    fun divide(other: NumberRange<T>): Iterable<NumberRange<T>> {
+    fun divide(other: NumberRange<T>): Iterable<NumberRange<T>?> {
         return if (clazz.isFloatingPoint()) {
             val a = start / other.start
             val b = start / other.end
@@ -127,10 +128,21 @@ class NumberRange<T : Number> private constructor(
             val c = divide(start, other.end)
             val d = divide(end, other.end)
 
-            resolvePotentialOverflow(
-                a.min(b).min(c).min(d),
-                a.max(b).max(c).max(d),
-            )
+            val min = min(a, b, c, d)
+            val max = max(a, b, c, d)
+
+            if (min == null || max == null) {
+                return listOf(null)
+            }
+
+            return if (other.start < 0 && other.end > 0) {
+                // Split into two ranges, one for negative and one for positive
+                val range = resolvePotentialOverflow(min, BigInteger.ONE.negate()) +
+                        resolvePotentialOverflow(BigInteger.ONE, max)
+                NumberUtilities.mergeAndDeduplicate(range) + null
+            } else {
+                resolvePotentialOverflow(min, max)
+            }
         }
     }
 
@@ -138,14 +150,9 @@ class NumberRange<T : Number> private constructor(
         return BigInteger.valueOf(a.toLong()).multiply(BigInteger.valueOf(b.toLong()))
     }
 
-    private fun divide(a: Number, b: Number): BigInteger {
+    private fun divide(a: Number, b: Number): BigInteger? {
         if (b.toLong() == 0L) {
-            // Could potentially warn of overflow here one day?
-            return if (a > 0) {
-                BigInteger.valueOf(ind.getMaxValue().toLong())
-            } else {
-                BigInteger.valueOf(ind.getMinValue().toLong())
-            }
+            return null
         }
 
         return BigInteger.valueOf(a.toLong()).divide(BigInteger.valueOf(b.toLong()))

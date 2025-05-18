@@ -572,6 +572,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short equalityTest2(short x) {
 		if (x == x + 1) {
 			return 1;
@@ -635,7 +636,7 @@ public class MyTestData {
 		return (short) (x * 65536);
 	}
 	
-	@RequiredScore(0.5014)
+	@RequiredScore(0.9998)
 	public static short addingVariables(short x) {
 		int a = 0;
 		if (x < 40) {

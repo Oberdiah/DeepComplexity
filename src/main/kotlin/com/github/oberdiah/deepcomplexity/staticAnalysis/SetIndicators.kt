@@ -90,8 +90,8 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 
 sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     override fun newFullSet(): NumberSet<T> = NumberSet.newFull(this)
+    override fun newEmptySet(): NumberSet<T> = NumberSet.newEmpty(this)
     override fun newConstantSet(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
-    override fun newEmptySet(): NumberSet<T> = NumberSet(this, emptyList())
     override fun newVariance(key: Context.Key): Variances<T> = NumberVariances.newFromVariance(this, key)
 
     abstract fun getMaxValue(): T
