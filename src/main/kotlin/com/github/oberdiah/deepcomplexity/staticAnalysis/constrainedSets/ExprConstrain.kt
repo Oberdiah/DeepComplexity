@@ -1,8 +1,8 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
+package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ExprConstrain {
     /**
@@ -49,11 +49,11 @@ object ExprConstrain {
             }
 
             is ConstExpr -> {
-                return condition.constSet.bundles.map {
+                return condition.constSet.variances.map {
                     when (it.variances.collapse(it.constraints).into()) {
                         // Unsure if this is correct
-                        BooleanBundle.TRUE, BooleanBundle.BOTH -> Constraints.completelyUnconstrained()
-                        BooleanBundle.FALSE, BooleanBundle.NEITHER -> Constraints.unreachable()
+                        BooleanSet.TRUE, BooleanSet.BOTH -> Constraints.completelyUnconstrained()
+                        BooleanSet.FALSE, BooleanSet.NEITHER -> Constraints.unreachable()
                     }
                 }
             }

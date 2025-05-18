@@ -1,9 +1,9 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
+package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
-class GenericBundle<T : Any>(val values: Set<T>) : Bundle<T> {
+class GenericSet<T : Any>(val values: Set<T>) : ISet<T> {
     override fun toConstVariance(): Variances<T> {
         TODO("Not yet implemented")
     }
@@ -19,11 +19,11 @@ class GenericBundle<T : Any>(val values: Set<T>) : Bundle<T> {
     override val ind: SetIndicator<T>
         get() = TODO("Not yet implemented")
 
-    override fun invert(): Bundle<T> {
+    override fun invert(): ISet<T> {
         TODO("Not yet implemented")
     }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
         TODO("Not yet implemented")
     }
 
@@ -31,11 +31,11 @@ class GenericBundle<T : Any>(val values: Set<T>) : Bundle<T> {
         TODO("Not yet implemented")
     }
 
-    override fun intersect(other: Bundle<T>): Bundle<T> {
+    override fun intersect(other: ISet<T>): ISet<T> {
         TODO("Not yet implemented")
     }
 
-    override fun union(other: Bundle<T>): Bundle<T> {
+    override fun union(other: ISet<T>): ISet<T> {
         TODO("Not yet implemented")
     }
 }

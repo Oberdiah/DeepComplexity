@@ -1,17 +1,17 @@
 package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 
 object CastSolver {
     fun <T : Any> castFrom(
-        from: BundleSet<*>,
+        from: Bundle<*>,
         targetType: SetIndicator<T>,
         implicit: Boolean
-    ): BundleSet<T> {
+    ): Bundle<T> {
         if (from.ind == targetType) {
             @Suppress("UNCHECKED_CAST")
-            return from as BundleSet<T>
+            return from as Bundle<T>
         }
 
         return from.cast(targetType)!!

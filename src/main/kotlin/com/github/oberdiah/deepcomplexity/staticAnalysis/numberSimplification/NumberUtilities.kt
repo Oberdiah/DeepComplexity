@@ -1,6 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberRange
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberRange
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
 

@@ -3,7 +3,7 @@ package com.github.oberdiah.deepcomplexity
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.intellij.psi.PsiMethod
 import java.lang.reflect.Method
 
@@ -84,8 +84,8 @@ object TestUtilities {
 
         val range = try {
             println(context.debugKey(methodKey).prependIndent())
-            val bundleSet: BundleSet<*> = context.evaluateKey(methodKey)
-            bundleSet.cast(ShortSetIndicator)!!.collapse()
+            val bundle: Bundle<*> = context.evaluateKey(methodKey)
+            bundle.cast(ShortSetIndicator)!!.collapse()
         } catch (e: Throwable) {
             e.printStackTrace()
             return (e.message ?: "Failed to parse PSI")

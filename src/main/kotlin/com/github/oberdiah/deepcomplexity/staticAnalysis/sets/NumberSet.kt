@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
+package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
@@ -21,11 +21,11 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.negate
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
-class NumberBundle<T : Number>(
+class NumberSet<T : Number>(
     override val ind: NumberSetIndicator<T>,
     // In order, and non-overlapping
     val ranges: List<NumberRange<T>>
-) : Bundle<T> {
+) : ISet<T> {
     val clazz: KClass<T> = ind.clazz
 
     override fun toString(): String = ranges.joinToString {
@@ -39,7 +39,7 @@ class NumberBundle<T : Number>(
         return range.first == ind.getMinValue() && range.second == ind.getMaxValue()
     }
 
-    private fun makeNew(ranges: List<NumberRange<T>>): NumberBundle<T> {
+    private fun makeNew(ranges: List<NumberRange<T>>): NumberSet<T> {
         return newFromDataAndInd(ind, NumberUtilities.mergeAndDeduplicate(ranges))
     }
 
@@ -52,17 +52,17 @@ class NumberBundle<T : Number>(
         return Pair(smallest, largest)
     }
 
-    fun negate(): NumberBundle<T> {
+    fun negate(): NumberSet<T> {
         val zero = NumberRange.fromConstant(ind.getZero())
         return makeNew(ranges.flatMap { elem -> zero.subtract(elem) })
     }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Bundle<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
         if (newInd !is NumberSetIndicator<*>) {
             return null
         }
 
-        fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberBundle<OutT> {
+        fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberSet<OutT> {
             assert(newInd.isWholeNum() && ind.isWholeNum()) {
                 "Attempted to cast to a floating point number."
             }
@@ -71,18 +71,18 @@ class NumberBundle<T : Number>(
 
         @Suppress("UNCHECKED_CAST")
         // Safety: Trivially true by checking the signature of extra().
-        return extra(newInd) as Bundle<Q>
+        return extra(newInd) as ISet<Q>
     }
 
-    fun add(other: NumberBundle<T>): NumberBundle<T> = arithmeticOperation(other, ADDITION)
-    fun subtract(other: NumberBundle<T>): NumberBundle<T> = arithmeticOperation(other, SUBTRACTION)
-    fun multiply(other: NumberBundle<T>): NumberBundle<T> = arithmeticOperation(other, MULTIPLICATION)
-    fun divide(other: NumberBundle<T>): NumberBundle<T> = arithmeticOperation(other, DIVISION)
+    fun add(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, ADDITION)
+    fun subtract(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, SUBTRACTION)
+    fun multiply(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, MULTIPLICATION)
+    fun divide(other: NumberSet<T>): NumberSet<T> = arithmeticOperation(other, DIVISION)
 
     fun arithmeticOperation(
-        other: NumberBundle<T>,
+        other: NumberSet<T>,
         operation: BinaryNumberOp
-    ): NumberBundle<T> {
+    ): NumberSet<T> {
         assert(ind == other.ind)
 
         val rangeOp = when (operation) {
@@ -104,14 +104,14 @@ class NumberBundle<T : Number>(
         return makeNew(newList)
     }
 
-    private fun doModulo(other: NumberBundle<T>): NumberBundle<T> {
+    private fun doModulo(other: NumberSet<T>): NumberSet<T> {
         val otherRange = other.getRange()
         val maxOther = otherRange.first.negate().max(otherRange.second)
 
         val positiveSet = newFromConstant(maxOther).getSetSatisfying(LESS_THAN)
         val negativeSet = newFromConstant(maxOther.negate()).getSetSatisfying(GREATER_THAN)
 
-        return if (comparisonOperation(zero(ind), GREATER_THAN_OR_EQUAL) == BooleanBundle.TRUE) {
+        return if (comparisonOperation(zero(ind), GREATER_THAN_OR_EQUAL) == BooleanSet.TRUE) {
             positiveSet.intersect(ind.positiveNumbersAndZero())
         } else {
             negativeSet.intersect(positiveSet)
@@ -119,9 +119,9 @@ class NumberBundle<T : Number>(
     }
 
     fun comparisonOperation(
-        other: NumberBundle<T>,
+        other: NumberSet<T>,
         operation: ComparisonOp
-    ): BooleanBundle {
+    ): BooleanSet {
         assert(ind == other.ind)
         val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
         val (otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
@@ -129,33 +129,33 @@ class NumberBundle<T : Number>(
         when (operation) {
             LESS_THAN -> {
                 if (myLargestPossibleValue < otherSmallestPossibleValue) {
-                    return BooleanBundle.TRUE
+                    return BooleanSet.TRUE
                 } else if (mySmallestPossibleValue >= otherLargestPossibleValue) {
-                    return BooleanBundle.FALSE
+                    return BooleanSet.FALSE
                 }
             }
 
             LESS_THAN_OR_EQUAL -> {
                 if (myLargestPossibleValue <= otherSmallestPossibleValue) {
-                    return BooleanBundle.TRUE
+                    return BooleanSet.TRUE
                 } else if (mySmallestPossibleValue > otherLargestPossibleValue) {
-                    return BooleanBundle.FALSE
+                    return BooleanSet.FALSE
                 }
             }
 
             GREATER_THAN -> {
                 if (mySmallestPossibleValue > otherLargestPossibleValue) {
-                    return BooleanBundle.TRUE
+                    return BooleanSet.TRUE
                 } else if (myLargestPossibleValue <= otherSmallestPossibleValue) {
-                    return BooleanBundle.FALSE
+                    return BooleanSet.FALSE
                 }
             }
 
             GREATER_THAN_OR_EQUAL -> {
                 if (mySmallestPossibleValue >= otherLargestPossibleValue) {
-                    return BooleanBundle.TRUE
+                    return BooleanSet.TRUE
                 } else if (myLargestPossibleValue < otherSmallestPossibleValue) {
-                    return BooleanBundle.FALSE
+                    return BooleanSet.FALSE
                 }
             }
 
@@ -164,11 +164,11 @@ class NumberBundle<T : Number>(
                     otherSmallestPossibleValue == otherLargestPossibleValue &&
                     mySmallestPossibleValue == otherSmallestPossibleValue
                 ) { // We can only sure we are equal if we're both literally a single value, otherwise there's uncertainty there.
-                    return BooleanBundle.TRUE
+                    return BooleanSet.TRUE
                 } else if (myLargestPossibleValue < otherSmallestPossibleValue ||
                     mySmallestPossibleValue > otherLargestPossibleValue
                 ) {
-                    return BooleanBundle.FALSE
+                    return BooleanSet.FALSE
                 }
             }
 
@@ -176,23 +176,23 @@ class NumberBundle<T : Number>(
                 if (myLargestPossibleValue < otherSmallestPossibleValue ||
                     mySmallestPossibleValue > otherLargestPossibleValue
                 ) {
-                    return BooleanBundle.TRUE
+                    return BooleanSet.TRUE
                 } else if (mySmallestPossibleValue == myLargestPossibleValue &&
                     otherSmallestPossibleValue == otherLargestPossibleValue &&
                     mySmallestPossibleValue == otherSmallestPossibleValue
                 ) {
-                    return BooleanBundle.FALSE
+                    return BooleanSet.FALSE
                 }
             }
         }
 
-        return BooleanBundle.BOTH
+        return BooleanSet.BOTH
     }
 
     fun evaluateLoopingRange(
         changeTerms: ConstraintSolver.CollectedTerms<T>,
-        valid: NumberBundle<T>
-    ): NumberBundle<T> {
+        valid: NumberSet<T>
+    ): NumberSet<T> {
         // This was half-implemented in the old version.
         TODO("Not yet implemented")
     }
@@ -205,7 +205,7 @@ class NumberBundle<T : Number>(
      * For inequality, all values are returned, unless we are a single value.
      * We're the right-hand side of the equation.
      */
-    fun getSetSatisfying(comp: ComparisonOp): NumberBundle<T> {
+    fun getSetSatisfying(comp: ComparisonOp): NumberSet<T> {
         val range = getRange()
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
@@ -268,13 +268,13 @@ class NumberBundle<T : Number>(
         return false
     }
 
-    override fun union(other: Bundle<T>): NumberBundle<T> {
+    override fun union(other: ISet<T>): NumberSet<T> {
         assert(ind == other.ind)
 
         return makeNew(ranges + other.into().ranges)
     }
 
-    override fun intersect(other: Bundle<T>): NumberBundle<T> {
+    override fun intersect(other: ISet<T>): NumberSet<T> {
         assert(ind == other.ind)
 
         val newList: MutableList<NumberRange<T>> = mutableListOf()
@@ -295,7 +295,7 @@ class NumberBundle<T : Number>(
         return makeNew(newList)
     }
 
-    override fun invert(): NumberBundle<T> {
+    override fun invert(): NumberSet<T> {
         val newList: MutableList<NumberRange<T>> = mutableListOf()
 
         // Affine death is inevitable here.
@@ -332,19 +332,19 @@ class NumberBundle<T : Number>(
     }
 
     companion object {
-        fun <T : Number> zero(ind: NumberSetIndicator<T>): NumberBundle<T> = newFromDataAndInd(
+        fun <T : Number> zero(ind: NumberSetIndicator<T>): NumberSet<T> = newFromDataAndInd(
             ind,
             listOf(NumberRange.fromConstant(ind.getZero())),
         )
 
-        fun <T : Number> one(ind: NumberSetIndicator<T>): NumberBundle<T> = newFromDataAndInd(
+        fun <T : Number> one(ind: NumberSetIndicator<T>): NumberSet<T> = newFromDataAndInd(
             ind,
             listOf(NumberRange.fromConstant(ind.getOne())),
         )
 
         fun <T : Number> newFromConstant(
             constant: T
-        ): NumberBundle<T> {
+        ): NumberSet<T> {
             val ind = SetIndicator.fromValue(constant)
             return newFromDataAndInd(
                 ind,
@@ -352,15 +352,15 @@ class NumberBundle<T : Number>(
             )
         }
 
-        fun <T : Number> newFull(ind: NumberSetIndicator<T>): NumberBundle<T> =
+        fun <T : Number> newFull(ind: NumberSetIndicator<T>): NumberSet<T> =
             newFromDataAndInd(ind, listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue())))
 
         @Suppress("UNCHECKED_CAST")
         private fun <T : Number> newFromDataAndInd(
             ind: NumberSetIndicator<T>,
             ranges: List<NumberRange<T>>,
-        ): NumberBundle<T> {
-            return NumberBundle(ind, ranges)
+        ): NumberSet<T> {
+            return NumberSet(ind, ranges)
         }
     }
 }

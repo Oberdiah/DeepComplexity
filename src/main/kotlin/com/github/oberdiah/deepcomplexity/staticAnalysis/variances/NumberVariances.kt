@@ -8,10 +8,10 @@ import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**
@@ -19,7 +19,7 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  */
 class NumberVariances<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
-    private val multipliers: Map<Context.Key, NumberBundle<T>> = mapOf()
+    private val multipliers: Map<Context.Key, NumberSet<T>> = mapOf()
 ) : Variances<T> {
     init {
         assert(multipliers.keys.count { it.isEphemeral() } <= 1) {
@@ -34,7 +34,7 @@ class NumberVariances<T : Number> private constructor(
     }
 
     companion object {
-        fun <T : Number> newFromConstant(constant: NumberBundle<T>): NumberVariances<T> =
+        fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
             NumberVariances(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))
 
         fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Context.Key): NumberVariances<T> {
@@ -43,7 +43,7 @@ class NumberVariances<T : Number> private constructor(
 
         private fun <T : Number> newFromMultiplierMap(
             ind: NumberSetIndicator<T>,
-            multipliers: Map<Context.Key, NumberBundle<T>>
+            multipliers: Map<Context.Key, NumberSet<T>>
         ): NumberVariances<T> {
             val ephemeralMap = multipliers.filterKeys { it.isEphemeral() }
             val notEphemeralMap = multipliers.filterKeys { !it.isEphemeral() }
@@ -96,7 +96,7 @@ class NumberVariances<T : Number> private constructor(
         )
     }
 
-    fun grabConstraint(constraints: Constraints, key: Context.Key): NumberBundle<T> {
+    fun grabConstraint(constraints: Constraints, key: Context.Key): NumberSet<T> {
         return if (key is Context.Key.EphemeralKey) {
             // Constants/ephemeral keys don't have any variance or constraints,
             // so the 'variable', if you can call it that, is always constrained to exactly 1.
@@ -111,7 +111,7 @@ class NumberVariances<T : Number> private constructor(
      * Requires constraints because a NumberVariance on its own doesn't contain
      * all the information it needs alone.
      */
-    override fun collapse(constraints: Constraints): NumberBundle<T> =
+    override fun collapse(constraints: Constraints): NumberSet<T> =
         multipliers.entries.fold(ind.onlyZeroSet()) { acc, (key, multiplier) ->
             acc.add(multiplier.multiply(grabConstraint(constraints, key)))
         }
@@ -163,7 +163,7 @@ class NumberVariances<T : Number> private constructor(
             }
 
             MULTIPLICATION -> {
-                val newMultipliers = mutableMapOf<Context.Key, NumberBundle<T>>()
+                val newMultipliers = mutableMapOf<Context.Key, NumberSet<T>>()
 
                 for ((key, meMultiplier) in multipliers) {
                     for ((otherKey, otherMultiplier) in other.multipliers) {
@@ -187,8 +187,8 @@ class NumberVariances<T : Number> private constructor(
 
                         val baseKey = if (myImportance >= otherImportance) key else otherKey
 
-                        newMultipliers.compute(baseKey) { _, bundle ->
-                            bundle?.add(newMultiplier) ?: newMultiplier
+                        newMultipliers.compute(baseKey) { _, set ->
+                            set?.add(newMultiplier) ?: newMultiplier
                         }
                     }
                 }
@@ -243,7 +243,7 @@ class NumberVariances<T : Number> private constructor(
                     .cast(keyInd)!!.into()
 
                 if (coefficient.isZero()) {
-                    constraints = constraints.withConstraint(key, keyInd.newEmptyBundle())
+                    constraints = constraints.withConstraint(key, keyInd.newEmptySet())
                     return
                 }
 
@@ -262,12 +262,12 @@ class NumberVariances<T : Number> private constructor(
 
                 val rhs = constant.divide(coefficient)
                 val constraint = when (shouldFlip) {
-                    BooleanBundle.TRUE -> rhs.getSetSatisfying(comp.flip())
-                    BooleanBundle.FALSE -> rhs.getSetSatisfying(comp)
-                    BooleanBundle.BOTH -> rhs.getSetSatisfying(comp)
+                    BooleanSet.TRUE -> rhs.getSetSatisfying(comp.flip())
+                    BooleanSet.FALSE -> rhs.getSetSatisfying(comp)
+                    BooleanSet.BOTH -> rhs.getSetSatisfying(comp)
                         .union(rhs.getSetSatisfying(comp.flip()))
 
-                    BooleanBundle.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
 
                 constraints = constraints.withConstraint(key, constraint)
@@ -281,6 +281,6 @@ class NumberVariances<T : Number> private constructor(
 
     fun evaluateLoopingRange(
         changeTerms: ConstraintSolver.CollectedTerms<T>,
-        valid: NumberBundle<T>
+        valid: NumberSet<T>
     ): NumberVariances<T> = TODO("Not yet implemented")
 }

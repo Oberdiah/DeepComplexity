@@ -5,11 +5,11 @@ import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 
-class BooleanVariances(private val value: BooleanBundle) : Variances<Boolean> {
+class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> {
     override fun toString(): String = value.toString()
 
     fun invert(): BooleanVariances = BooleanVariances(value.invert())
@@ -18,7 +18,7 @@ class BooleanVariances(private val value: BooleanBundle) : Variances<Boolean> {
     override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? =
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
-    override fun collapse(constraints: Constraints): Bundle<Boolean> = value
+    override fun collapse(constraints: Constraints): ISet<Boolean> = value
 
     override fun varsTracking(): Collection<Context.Key> = emptyList()
 

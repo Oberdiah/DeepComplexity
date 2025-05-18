@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
+package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator

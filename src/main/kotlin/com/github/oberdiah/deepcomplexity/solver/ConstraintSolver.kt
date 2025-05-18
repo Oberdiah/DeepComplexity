@@ -4,16 +4,16 @@ import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ConstraintSolver {
     data class CollectedTerms<T : Number>(
         val ind: SetIndicator<T>,
-        val terms: MutableMap<Int, NumberBundle<T>>,
+        val terms: MutableMap<Int, NumberSet<T>>,
     ) {
         override fun toString(): String {
             if (terms.entries.isEmpty()) {
@@ -45,7 +45,7 @@ object ConstraintSolver {
             return when (op) {
                 ADDITION, SUBTRACTION -> {
                     // Combine terms
-                    val newTerms = mutableMapOf<Int, NumberBundle<T>>()
+                    val newTerms = mutableMapOf<Int, NumberSet<T>>()
                     newTerms.putAll(terms)
 
                     for ((exp, term) in other.terms) {
@@ -57,7 +57,7 @@ object ConstraintSolver {
 
                 MULTIPLICATION -> {
                     // Multiply terms together
-                    val newTerms = mutableMapOf<Int, NumberBundle<T>>()
+                    val newTerms = mutableMapOf<Int, NumberSet<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
@@ -71,7 +71,7 @@ object ConstraintSolver {
                 }
 
                 DIVISION -> {
-                    val newTerms = mutableMapOf<Int, NumberBundle<T>>()
+                    val newTerms = mutableMapOf<Int, NumberSet<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
@@ -91,8 +91,8 @@ object ConstraintSolver {
         }
     }
 
-    private fun <T : Number> merge(lhs: NumberBundle<T>?, rhs: NumberBundle<T>, op: BinaryNumberOp): NumberBundle<T> {
-        return (lhs ?: NumberBundle.zero(rhs.ind))
+    private fun <T : Number> merge(lhs: NumberSet<T>?, rhs: NumberSet<T>, op: BinaryNumberOp): NumberSet<T> {
+        return (lhs ?: NumberSet.zero(rhs.ind))
             .arithmeticOperation(rhs, op)
     }
 
@@ -133,7 +133,7 @@ object ConstraintSolver {
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
         condition: Expr<Boolean>,
-    ): Bundle<T>? {
+    ): ISet<T>? {
         if (expr.getVariables().none { it.key == variable.key }) {
             // The variable wasn't found in the expression.
             return null
@@ -158,12 +158,12 @@ object ConstraintSolver {
             val rhs = constant.divide(coefficient)
             return if (exponent == 1) {
                 when (shouldFlip) {
-                    BooleanBundle.TRUE -> rhs.getSetSatisfying(expr.comp.flip())
-                    BooleanBundle.FALSE -> rhs.getSetSatisfying(expr.comp)
-                    BooleanBundle.BOTH -> rhs.getSetSatisfying(expr.comp)
+                    BooleanSet.TRUE -> rhs.getSetSatisfying(expr.comp.flip())
+                    BooleanSet.FALSE -> rhs.getSetSatisfying(expr.comp)
+                    BooleanSet.BOTH -> rhs.getSetSatisfying(expr.comp)
                         .union(rhs.getSetSatisfying(expr.comp.flip()))
 
-                    BooleanBundle.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
             } else {
                 println("Cannot constraint solve yet: $lhs (exponent $exponent)")
@@ -184,7 +184,7 @@ object ConstraintSolver {
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
         condition: Expr<Boolean>,
-    ): Pair<CollectedTerms<T>, NumberBundle<T>>? {
+    ): Pair<CollectedTerms<T>, NumberSet<T>>? {
         // Collect terms from both sides
         val leftTerms = expandTerms(expr.lhs, variable, condition)
         val rightTerms = expandTerms(expr.rhs, variable, condition)

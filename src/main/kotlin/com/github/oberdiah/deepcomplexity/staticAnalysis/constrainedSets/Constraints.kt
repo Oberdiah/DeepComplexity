@@ -1,11 +1,11 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
+package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
 /**
@@ -24,7 +24,7 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  */
 class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    val constraints: Map<Context.Key, Bundle<*>>,
+    val constraints: Map<Context.Key, ISet<*>>,
 ) {
     /**
      * The constraints as a whole are unsatisfiable if any individual
@@ -34,7 +34,7 @@ class Constraints private constructor(
         get() = constraints.any { it.value.isEmpty() }
 
     companion object {
-        fun constrainedBy(constraints: Map<Context.Key, Bundle<*>>): Constraints {
+        fun constrainedBy(constraints: Map<Context.Key, ISet<*>>): Constraints {
             return Constraints(constraints)
         }
 
@@ -43,7 +43,7 @@ class Constraints private constructor(
         }
 
         fun unreachable(): Constraints {
-            return Constraints(mapOf(Context.Key.EphemeralKey.new() to BooleanBundle.NEITHER))
+            return Constraints(mapOf(Context.Key.EphemeralKey.new() to BooleanSet.NEITHER))
         }
     }
 
@@ -63,23 +63,23 @@ class Constraints private constructor(
         return constraints.isEmpty()
     }
 
-    fun <T : Any> getConstraint(variable: VariableExpression<T>): Bundle<T> {
+    fun <T : Any> getConstraint(variable: VariableExpression<T>): ISet<T> {
         return constraints[variable.key]?.cast(variable.ind)
-            ?: variable.ind.newFullBundle()
+            ?: variable.ind.newFullSet()
     }
 
-    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Context.Key): Bundle<T> {
-        return constraints[key]?.cast(ind) ?: ind.newFullBundle()
+    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Context.Key): ISet<T> {
+        return constraints[key]?.cast(ind) ?: ind.newFullSet()
     }
 
-    fun withConstraint(key: Context.Key, bundle: Bundle<*>): Constraints {
+    fun withConstraint(key: Context.Key, ISet: ISet<*>): Constraints {
         assert(key !is Context.Key.EphemeralKey) {
             "Ephemeral keys shouldn't really be allowed to be added to constraints."
         }
-        assert(key.ind == bundle.ind) {
-            "Key and bundle must have the same type. (${key.ind} != ${bundle.ind})"
+        assert(key.ind == ISet.ind) {
+            "Key and bundle must have the same type. (${key.ind} != ${ISet.ind})"
         }
-        return and(constrainedBy(mapOf(key to bundle)))
+        return and(constrainedBy(mapOf(key to ISet)))
     }
 
     fun invert(): Constraints {
@@ -96,10 +96,10 @@ class Constraints private constructor(
         if (other.unreachable) return other
 
         val newConstraints = Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
-            fun <T : Any> ugly(l: Bundle<T>): Bundle<T> =
+            fun <T : Any> ugly(l: ISet<T>): ISet<T> =
                 // Safety: We've asserted that the types are the same.
                 @Suppress("UNCHECKED_CAST")
-                l.intersect(rhs as Bundle<T>)
+                l.intersect(rhs as ISet<T>)
 
             assert(lhs.ind == rhs.ind)
 

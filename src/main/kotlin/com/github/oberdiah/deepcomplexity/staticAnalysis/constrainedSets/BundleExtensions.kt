@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
+package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
@@ -6,61 +6,61 @@ import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
-fun <T : Number> BundleSet<T>.arithmeticOperation(
-    other: BundleSet<T>,
+fun <T : Number> Bundle<T>.arithmeticOperation(
+    other: Bundle<T>,
     operation: BinaryNumberOp,
     exprKey: Context.Key
-): BundleSet<T> =
+): Bundle<T> =
     this.performBinaryOperation(other, exprKey) { a, b, constraints ->
         a.into().arithmeticOperation(b.into(), operation, constraints)
     }
 
-fun <T : Number> BundleSet<T>.generateConstraintsFrom(
-    other: BundleSet<T>,
+fun <T : Number> Bundle<T>.generateConstraintsFrom(
+    other: Bundle<T>,
     operation: ComparisonOp,
 ): List<Constraints> =
     this.binaryMap(other) { a, b, constraints ->
         a.into().generateConstraintsFrom(b.into(), operation, constraints)
     }
 
-fun BundleSet<Boolean>.booleanOperation(
-    other: BundleSet<Boolean>,
+fun Bundle<Boolean>.booleanOperation(
+    other: Bundle<Boolean>,
     operation: BooleanOp,
     exprKey: Context.Key
-): BundleSet<Boolean> =
+): Bundle<Boolean> =
     this.performBinaryOperation(other, exprKey) { a, b, constraints ->
         a.into().booleanOperation(b.into(), operation)
     }
 
-fun BundleSet<Boolean>.invert() = performUnaryOperation {
+fun Bundle<Boolean>.invert() = performUnaryOperation {
     it.into().invert()
 }
 
-fun <T : Number> BundleSet<T>.isOne(): Boolean = this.bundles.all {
+fun <T : Number> Bundle<T>.isOne(): Boolean = this.variances.all {
     it.variances.into().isOne(it.constraints)
 }
 
-fun <T : Number> BundleSet<T>.comparisonOperation(
-    other: BundleSet<T>,
+fun <T : Number> Bundle<T>.comparisonOperation(
+    other: Bundle<T>,
     comparisonOp: ComparisonOp,
     exprKey: Context.Key
-): BundleSet<Boolean> =
+): Bundle<Boolean> =
     this.binaryMapToVariances(BooleanSetIndicator, other, exprKey) { a, b, constraints ->
         a.into().comparisonOperation(b.into(), comparisonOp, constraints)
     }
 
-fun <T : Number> BundleSet<T>.negate(): BundleSet<T> =
+fun <T : Number> Bundle<T>.negate(): Bundle<T> =
     this.performUnaryOperation { a ->
         a.into().negate()
     }
 
-fun <T : Number> BundleSet<T>.evaluateLoopingRange(
+fun <T : Number> Bundle<T>.evaluateLoopingRange(
     evaluate: ConstraintSolver.CollectedTerms<T>,
-    constraint: NumberBundle<T>
-): BundleSet<T> =
+    constraint: NumberSet<T>
+): Bundle<T> =
     this.performUnaryOperation { a ->
         a.into().evaluateLoopingRange(evaluate, constraint)
     }

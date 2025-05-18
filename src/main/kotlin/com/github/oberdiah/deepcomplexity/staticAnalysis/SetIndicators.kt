@@ -1,10 +1,10 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.GenericBundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.GenericSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -16,17 +16,17 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     /**
      * Instantiate a bundle with no valid values.
      */
-    abstract fun newEmptyBundle(): Bundle<T>
+    abstract fun newEmptySet(): ISet<T>
 
     /**
      * Instantiate a bundle that says 'my value is always equal to this constant'
      */
-    abstract fun newConstantBundle(constant: T): Bundle<T>
+    abstract fun newConstantSet(constant: T): ISet<T>
 
     /**
      * Instantiate a bundle representing a full set of values.
      */
-    abstract fun newFullBundle(): Bundle<T>
+    abstract fun newFullSet(): ISet<T>
 
     abstract fun newVariance(key: Context.Key): Variances<T>
 
@@ -89,9 +89,9 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 }
 
 sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
-    override fun newFullBundle(): NumberBundle<T> = NumberBundle.newFull(this)
-    override fun newConstantBundle(constant: T): NumberBundle<T> = NumberBundle.newFromConstant(constant)
-    override fun newEmptyBundle(): NumberBundle<T> = NumberBundle(this, emptyList())
+    override fun newFullSet(): NumberSet<T> = NumberSet.newFull(this)
+    override fun newConstantSet(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
+    override fun newEmptySet(): NumberSet<T> = NumberSet(this, emptyList())
     override fun newVariance(key: Context.Key): Variances<T> = NumberVariances.newFromVariance(this, key)
 
     abstract fun getMaxValue(): T
@@ -128,10 +128,10 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
                 || this is ByteSetIndicator
     }
 
-    fun onlyZeroSet(): NumberBundle<T> = newConstantBundle(getZero())
-    fun onlyOneSet(): NumberBundle<T> = newConstantBundle(getOne())
-    fun positiveNumbersAndZero(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
-    fun negativeNumbersAndZero(): NumberBundle<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
+    fun onlyZeroSet(): NumberSet<T> = newConstantSet(getZero())
+    fun onlyOneSet(): NumberSet<T> = newConstantSet(getOne())
+    fun positiveNumbersAndZero(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
+    fun negativeNumbersAndZero(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
     fun getZero(): T = getInt(0)
     fun getOne(): T = getInt(1)
 
@@ -175,16 +175,16 @@ data object ByteSetIndicator : NumberSetIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
-    override fun newVariance(key: Context.Key): Variances<Boolean> = BooleanVariances(BooleanBundle.BOTH)
-    override fun newFullBundle(): Bundle<Boolean> = BooleanBundle.BOTH
-    override fun newEmptyBundle(): BooleanBundle = BooleanBundle.NEITHER
-    override fun newConstantBundle(constant: Boolean): Bundle<Boolean> =
-        BooleanBundle.fromBoolean(constant)
+    override fun newVariance(key: Context.Key): Variances<Boolean> = BooleanVariances(BooleanSet.BOTH)
+    override fun newFullSet(): ISet<Boolean> = BooleanSet.BOTH
+    override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
+    override fun newConstantSet(constant: Boolean): ISet<Boolean> =
+        BooleanSet.fromBoolean(constant)
 }
 
 class GenericSetIndicator<T : Any>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     override fun newVariance(key: Context.Key): Variances<T> = TODO()
-    override fun newConstantBundle(constant: T): Bundle<T> = GenericBundle(setOf(constant))
-    override fun newEmptyBundle(): Bundle<T> = GenericBundle(emptySet())
-    override fun newFullBundle(): Bundle<T> = TODO()
+    override fun newConstantSet(constant: T): ISet<T> = GenericSet(setOf(constant))
+    override fun newEmptySet(): ISet<T> = GenericSet(emptySet())
+    override fun newFullSet(): ISet<T> = TODO()
 }

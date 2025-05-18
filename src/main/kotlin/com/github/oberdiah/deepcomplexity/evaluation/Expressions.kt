@@ -6,10 +6,10 @@ import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.ExprConstrain
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 sealed class Expr<T : Any>(private val k: ExpressionKey? = null) {
@@ -42,7 +42,7 @@ sealed class Expr<T : Any>(private val k: ExpressionKey? = null) {
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
 
-    fun evaluate(scope: ExprEvaluate.Scope): BundleSet<T> = ExprEvaluate.evaluate(this, scope)
+    fun evaluate(scope: ExprEvaluate.Scope): Bundle<T> = ExprEvaluate.evaluate(this, scope)
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
@@ -190,9 +190,9 @@ class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: 
     }
 }
 
-class ConstExpr<T : Any>(val constSet: BundleSet<T>, key: ExpressionKey? = null) : Expr<T>(key) {
+class ConstExpr<T : Any>(val constSet: Bundle<T>, key: ExpressionKey? = null) : Expr<T>(key) {
     companion object {
-        fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(BundleSet.unconstrainedBundle(bundle))
+        fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(Bundle.unconstrained(bundle))
     }
 }
 
@@ -202,7 +202,7 @@ class NegateExpression<T : Number>(val expr: Expr<T>, k: ExpressionKey? = null) 
 class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.
-    val constraint: NumberBundle<T>,
+    val constraint: NumberSet<T>,
     // The variable that's being modified as it changes inside the loop.
     val variable: VariableExpression<T>,
     // How the variable is changing each iteration.
@@ -211,7 +211,7 @@ class NumIterationTimesExpression<T : Number>(
 ) : Expr<T>(k) {
     companion object {
         fun <T : Number> new(
-            constraint: NumberBundle<T>,
+            constraint: NumberSet<T>,
             variable: VariableExpression<out Number>,
             terms: ConstraintSolver.CollectedTerms<out Number>
         ): NumIterationTimesExpression<T> {

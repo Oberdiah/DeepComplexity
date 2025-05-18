@@ -3,11 +3,11 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.GenericBundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.GenericSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 
-class GenericVariances<T : Any>(private val value: GenericBundle<T>) : Variances<T> {
+class GenericVariances<T : Any>(private val value: GenericSet<T>) : Variances<T> {
     override val ind: SetIndicator<T>
         get() = TODO("Not yet implemented")
 
@@ -17,7 +17,7 @@ class GenericVariances<T : Any>(private val value: GenericBundle<T>) : Variances
 
     override fun varsTracking(): Collection<Context.Key> = emptyList()
 
-    override fun collapse(constraints: Constraints): Bundle<T> = value
+    override fun collapse(constraints: Constraints): ISet<T> = value
 
     override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<T> {
         return this

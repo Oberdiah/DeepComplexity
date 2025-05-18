@@ -1,14 +1,14 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundles
+package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
-fun <T : Number> Bundle<T>.into(): NumberBundle<T> =
-    this as NumberBundle<T>
+fun <T : Number> ISet<T>.into(): NumberSet<T> =
+    this as NumberSet<T>
 
-fun Bundle<Boolean>.into(): BooleanBundle =
-    this as BooleanBundle
+fun ISet<Boolean>.into(): BooleanSet =
+    this as BooleanSet
 
 fun <T : Number> Variances<T>.into(): NumberVariances<T> =
     this as NumberVariances<T>

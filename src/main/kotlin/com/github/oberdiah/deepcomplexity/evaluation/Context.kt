@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.intellij.psi.PsiElement
@@ -184,7 +184,7 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
         return variables.containsKey(variable.key)
     }
 
-    fun evaluateKey(key: Key): BundleSet<*> {
+    fun evaluateKey(key: Key): Bundle<*> {
         val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
         return expr.evaluate(ExprEvaluate.Scope())
     }

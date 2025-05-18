@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.ExprConstrain
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.intellij.psi.PsiElement
 
 object LoopSolver {

@@ -4,9 +4,9 @@ import com.github.oberdiah.deepcomplexity.solver.CastSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
+import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ExprEvaluate {
     data class Scope(
@@ -34,18 +34,18 @@ object ExprEvaluate {
      *
      * skipSimplify is just used for debug printing, which likes to see the non-reduced version.
      */
-    fun <T : Any> evaluate(expr: Expr<T>, scope: Scope, skipSimplify: Boolean = false): BundleSet<T> {
+    fun <T : Any> evaluate(expr: Expr<T>, scope: Scope, skipSimplify: Boolean = false): Bundle<T> {
         @Suppress("UNCHECKED_CAST")
         val evaluatedBundle = when (expr.ind) {
             is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), scope)
             is GenericSetIndicator -> evaluateGenerics(expr as Expr<*>, scope)
             BooleanSetIndicator -> evaluateBools(expr.castToBoolean(), scope)
-        } as BundleSet<T>
+        } as Bundle<T>
 
         return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)
     }
 
-    private fun <T : Number> evaluateNums(expr: Expr<T>, scope: Scope): BundleSet<T> {
+    private fun <T : Number> evaluateNums(expr: Expr<T>, scope: Scope): Bundle<T> {
         val toReturn = when (expr) {
             is ArithmeticExpression -> {
                 val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
@@ -70,7 +70,7 @@ object ExprEvaluate {
         return toReturn
     }
 
-    private fun evaluateBools(expr: Expr<Boolean>, scope: Scope): BundleSet<Boolean> {
+    private fun evaluateBools(expr: Expr<Boolean>, scope: Scope): Bundle<Boolean> {
         val toReturn = when (expr) {
             is BooleanExpression -> {
                 val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
@@ -80,7 +80,7 @@ object ExprEvaluate {
             }
 
             is ComparisonExpression<*> -> {
-                fun <T : Number> evalC(expr: ComparisonExpression<T>, scope: Scope): BundleSet<Boolean> {
+                fun <T : Number> evalC(expr: ComparisonExpression<T>, scope: Scope): Bundle<Boolean> {
                     val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
                     val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
 
@@ -95,12 +95,12 @@ object ExprEvaluate {
         return toReturn
     }
 
-    private fun <T : Any> evaluateGenerics(expr: Expr<T>, scope: Scope): BundleSet<T> {
+    private fun <T : Any> evaluateGenerics(expr: Expr<T>, scope: Scope): Bundle<T> {
         return evaluateAnythings(expr, scope)
     }
 
-    private fun <T : Any> evaluateAnythings(expr: Expr<T>, scope: Scope): BundleSet<T> {
-        val toReturn: BundleSet<T> = when (expr) {
+    private fun <T : Any> evaluateAnythings(expr: Expr<T>, scope: Scope): Bundle<T> {
+        val toReturn: Bundle<T> = when (expr) {
             is UnionExpression -> evaluate(expr.lhs, scope).union(evaluate(expr.rhs, scope))
             is IfExpression -> {
                 val ifCondition = expr.thisCondition
@@ -137,7 +137,7 @@ object ExprEvaluate {
 
             is ConstExpr -> expr.constSet.constrainWith(scope)
             is VariableExpression ->
-                BundleSet.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
+                Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
                     .constrainWith(scope)
 
             else -> {

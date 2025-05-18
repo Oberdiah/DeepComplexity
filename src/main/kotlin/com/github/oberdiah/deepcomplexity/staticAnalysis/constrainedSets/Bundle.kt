@@ -1,10 +1,10 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
+package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
@@ -33,17 +33,17 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
  * if (a > 5 || (a > 10 && b > 15)) {
  * ```
  */
-class BundleSet<T : Any> private constructor(
+class Bundle<T : Any> private constructor(
     val ind: SetIndicator<T>,
-    val bundles: List<ConstrainedVariances<T>>
+    val variances: List<ConstrainedVariances<T>>
 ) {
     companion object {
-        fun <T : Any> empty(ind: SetIndicator<T>): BundleSet<T> {
-            return BundleSet(ind, listOf())
+        fun <T : Any> empty(ind: SetIndicator<T>): Bundle<T> {
+            return Bundle(ind, listOf())
         }
 
-        fun <T : Any> unconstrainedBundle(bundle: Variances<T>): BundleSet<T> {
-            return BundleSet(
+        fun <T : Any> unconstrained(bundle: Variances<T>): Bundle<T> {
+            return Bundle(
                 bundle.ind,
                 listOf(
                     ConstrainedVariances.new(bundle, Constraints.completelyUnconstrained())
@@ -51,8 +51,8 @@ class BundleSet<T : Any> private constructor(
             )
         }
 
-        fun <T : Any> constrained(variances: Variances<T>, constraints: Constraints): BundleSet<T> {
-            return BundleSet(
+        fun <T : Any> constrained(variances: Variances<T>, constraints: Constraints): Bundle<T> {
+            return Bundle(
                 variances.ind,
                 listOf(
                     ConstrainedVariances.new(variances, constraints)
@@ -108,29 +108,29 @@ class BundleSet<T : Any> private constructor(
      * Might return additional information beyond simply what the set contains.
      */
     fun toDebugString(): String {
-        if (bundles.size == 1) {
-            return bundles.first().toDebugString()
+        if (variances.size == 1) {
+            return variances.first().toDebugString()
         }
 
-        return bundles.joinToString {
+        return variances.joinToString {
             it.toDebugString()
         }
     }
 
-    fun reduceAndSimplify(scope: ExprEvaluate.Scope): BundleSet<T> {
-        return BundleSet(ind, bundles.map { it.reduceAndSimplify(scope) })
+    fun reduceAndSimplify(scope: ExprEvaluate.Scope): Bundle<T> {
+        return Bundle(ind, variances.map { it.reduceAndSimplify(scope) })
     }
 
-    fun union(other: BundleSet<T>): BundleSet<T> {
-        return BundleSet(ind, bundles.union(other.bundles).toList())
+    fun union(other: Bundle<T>): Bundle<T> {
+        return Bundle(ind, variances.union(other.variances).toList())
     }
 
     fun <Q : Any> unaryMapAndUnion(
         newInd: SetIndicator<Q>,
-        op: (Variances<T>, Constraints) -> BundleSet<Q>
-    ): BundleSet<Q> =
-        BundleSet(newInd, bundles.flatMap { bundle ->
-            op(bundle.variances, bundle.constraints).bundles.mapNotNull { newBundle ->
+        op: (Variances<T>, Constraints) -> Bundle<Q>
+    ): Bundle<Q> =
+        Bundle(newInd, variances.flatMap { bundle ->
+            op(bundle.variances, bundle.constraints).variances.mapNotNull { newBundle ->
                 val newConstraints = bundle.constraints.and(newBundle.constraints)
 
                 if (newConstraints.unreachable) {
@@ -142,32 +142,32 @@ class BundleSet<T : Any> private constructor(
         })
 
 
-    fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): BundleSet<T> = unaryMap(ind, op)
+    fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): Bundle<T> = unaryMap(ind, op)
 
-    fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): BundleSet<Q> {
-        return BundleSet(newInd, bundles.map {
+    fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): Bundle<Q> {
+        return Bundle(newInd, variances.map {
             ConstrainedVariances.new(op(it.variances), it.constraints)
         })
     }
 
     fun performBinaryOperation(
-        other: BundleSet<T>,
+        other: Bundle<T>,
         exprKey: Context.Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>
-    ): BundleSet<T> =
+    ): Bundle<T> =
         binaryMapToVariances(ind, other, exprKey, op)
 
     fun <Q : Any> binaryMapToVariances(
         newInd: SetIndicator<Q>,
-        other: BundleSet<T>,
+        other: Bundle<T>,
         exprKey: Context.Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
-    ): BundleSet<Q> {
+    ): Bundle<Q> {
         assert(ind == other.ind)
 
         val newBundles = mutableListOf<ConstrainedVariances<Q>>()
-        for (myBundle in bundles) {
-            for (otherBundle in other.bundles) {
+        for (myBundle in variances) {
+            for (otherBundle in other.variances) {
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
 
                 if (newConstraints.unreachable) continue
@@ -191,16 +191,16 @@ class BundleSet<T : Any> private constructor(
             }
         }
 
-        return BundleSet(newInd, newBundles)
+        return Bundle(newInd, newBundles)
     }
 
     fun <Q : Any> binaryMap(
-        other: BundleSet<T>,
+        other: Bundle<T>,
         op: (Variances<T>, Variances<T>, Constraints) -> Q
     ): List<Q> {
         val listOut = mutableListOf<Q>()
-        for (myBundle in bundles) {
-            for (otherBundle in other.bundles) {
+        for (myBundle in variances) {
+            for (otherBundle in other.variances) {
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
                 if (newConstraints.unreachable) continue
                 listOut.add(op(myBundle.variances, otherBundle.variances, newConstraints))
@@ -213,13 +213,13 @@ class BundleSet<T : Any> private constructor(
      * The expression you provide is converted into a set of constraints and then
      * combined with this bundle set.
      */
-    fun constrainWith(scope: ExprEvaluate.Scope): BundleSet<T> {
+    fun constrainWith(scope: ExprEvaluate.Scope): Bundle<T> {
         if (scope.condition == ConstantExpression.TRUE) {
             return this
         }
 
         val constraints = ExprConstrain.getConstraints(scope.condition)
-        return BundleSet(ind, bundles.flatMap { bundle ->
+        return Bundle(ind, variances.flatMap { bundle ->
             constraints.map { constraint ->
                 ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))
             }
@@ -231,19 +231,19 @@ class BundleSet<T : Any> private constructor(
      *
      * @return A single bundle representing the collapsed state of the current bundle set.
      */
-    fun collapse(): Bundle<T> {
-        if (bundles.isEmpty()) {
-            return ind.newEmptyBundle()
+    fun collapse(): ISet<T> {
+        if (variances.isEmpty()) {
+            return ind.newEmptySet()
         }
 
-        return bundles.fold(ind.newEmptyBundle()) { acc, bundle ->
+        return variances.fold(ind.newEmptySet()) { acc, bundle ->
             acc.union(bundle.variances.collapse(bundle.constraints))
         }
     }
 
-    fun <Q : Any> cast(indicator: SetIndicator<Q>): BundleSet<Q>? {
-        val cast = BundleSet(
-            indicator, bundles.map {
+    fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
+        val cast = Bundle(
+            indicator, variances.map {
                 ConstrainedVariances.new(it.variances.cast(indicator) ?: return null, it.constraints)
             }
         )
