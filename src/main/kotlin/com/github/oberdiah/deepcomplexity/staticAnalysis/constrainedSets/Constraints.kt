@@ -22,7 +22,8 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  * In this case, we know a > 2 and b < 10, and `hello` equaling 5 has to be
  * burdened with that information.
  */
-class Constraints private constructor(
+@ConsistentCopyVisibility
+data class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
     val constraints: Map<Context.Key, ISet<*>>,
 ) {

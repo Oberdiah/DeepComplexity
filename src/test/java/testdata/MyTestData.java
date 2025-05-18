@@ -650,18 +650,17 @@ public class MyTestData {
 		return (short) (x * 65536);
 	}
 	
-	@RequiredScore(0.9998)
 	public static short addingVariables(short x) {
 		int a = 0;
 		if (x < 40) {
-			a = x * 3;
+			a = x - 10;
 		} else if (x < 50) {
-			a = x * 2;
+			a = x - 5;
 		} else {
 			a = x;
 		}
 		
-		if (a < 100) {
+		if (a < 100 && a > 0) {
 			return x;
 		}
 		return 0;
@@ -694,7 +693,7 @@ public class MyTestData {
 		int b = x % 100;
 		int a = x % 100;
 		
-		if (a < b && b > a) {
+		if (a < b && a > b) {
 			return 1;
 		} else {
 			return 0;
@@ -709,6 +708,17 @@ public class MyTestData {
 		
 		if (a > b) {
 			return (short) a;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short twoVars3(short x) {
+		int b = x % 100;
+		int a = x % 100;
+		
+		if (a > 10 && a < 20 && b == a) {
+			return (short) b;
 		} else {
 			return 0;
 		}
@@ -741,7 +751,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short runNowTest(short x) {
+	public static short valueCascade(short x) {
 		if (x == 5) {
 			return -10;
 		} else if (x == 5 - 1) {

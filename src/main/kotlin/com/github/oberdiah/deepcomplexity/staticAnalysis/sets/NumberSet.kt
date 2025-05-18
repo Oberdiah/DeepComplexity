@@ -21,7 +21,8 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.negate
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
-class NumberSet<T : Number> private constructor(
+@ConsistentCopyVisibility
+data class NumberSet<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
     val hasThrownDivideByZero: Boolean,
     // In order, and non-overlapping

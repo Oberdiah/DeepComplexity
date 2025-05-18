@@ -14,10 +14,8 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
 
-/**
- *
- */
-class NumberVariances<T : Number> private constructor(
+@ConsistentCopyVisibility
+data class NumberVariances<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
     private val multipliers: Map<Context.Key, NumberSet<T>> = mapOf()
 ) : Variances<T> {
@@ -35,12 +33,13 @@ class NumberVariances<T : Number> private constructor(
 
     companion object {
         fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
-            NumberVariances(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))
+            newFromMultiplierMap(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))
 
         fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Context.Key): NumberVariances<T> {
-            return NumberVariances(ind, mapOf(key to ind.onlyOneSet()))
+            return newFromMultiplierMap(ind, mapOf(key to ind.onlyOneSet()))
         }
 
+        val VARIANCE_EPHEMERAL_KEY = Context.Key.EphemeralKey.new()
         private fun <T : Number> newFromMultiplierMap(
             ind: NumberSetIndicator<T>,
             multipliers: Map<Context.Key, NumberSet<T>>
@@ -58,7 +57,7 @@ class NumberVariances<T : Number> private constructor(
 
             return NumberVariances(
                 ind,
-                notEphemeralMap + (Context.Key.EphemeralKey.new() to ephemeralMultiplier)
+                notEphemeralMap + (VARIANCE_EPHEMERAL_KEY to ephemeralMultiplier)
             )
         }
     }
@@ -97,7 +96,7 @@ class NumberVariances<T : Number> private constructor(
     }
 
     fun grabConstraint(constraints: Constraints, key: Context.Key): NumberSet<T> {
-        return if (key is Context.Key.EphemeralKey) {
+        return if (key.isEphemeral()) {
             // Constants/ephemeral keys don't have any variance or constraints,
             // so the 'variable', if you can call it that, is always constrained to exactly 1.
             ind.onlyOneSet()

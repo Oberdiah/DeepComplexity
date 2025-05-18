@@ -16,7 +16,8 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.times
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-class NumberRange<T : Number> private constructor(
+@ConsistentCopyVisibility
+data class NumberRange<T : Number> private constructor(
     val ind: NumberSetIndicator<T>,
     val start: T,
     val end: T

@@ -156,7 +156,7 @@ data object IntSetIndicator : NumberSetIndicator<Int>(Int::class) {
     override fun getInt(int: Int): Int = int
 }
 
-object LongSetIndicator : NumberSetIndicator<Long>(Long::class) {
+data object LongSetIndicator : NumberSetIndicator<Long>(Long::class) {
     override fun getMaxValue(): Long = Long.MAX_VALUE
     override fun getMinValue(): Long = Long.MIN_VALUE
     override fun getInt(int: Int): Long = int.toLong()
@@ -187,4 +187,17 @@ class GenericSetIndicator<T : Any>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     override fun newConstantSet(constant: T): ISet<T> = GenericSet(setOf(constant))
     override fun newEmptySet(): ISet<T> = GenericSet(emptySet())
     override fun newFullSet(): ISet<T> = TODO()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is GenericSetIndicator<*>) return false
+
+        if (clazz != other.clazz) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return clazz.hashCode()
+    }
 }

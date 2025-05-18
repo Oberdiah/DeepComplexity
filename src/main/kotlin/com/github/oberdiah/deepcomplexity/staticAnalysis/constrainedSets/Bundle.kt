@@ -7,6 +7,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 /**
  * This is the set of possible values an expression can take, with their constraints.
@@ -35,17 +36,17 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
  */
 class Bundle<T : Any> private constructor(
     val ind: SetIndicator<T>,
-    val variances: List<ConstrainedVariances<T>>
+    val variances: Set<ConstrainedVariances<T>>
 ) {
     companion object {
         fun <T : Any> empty(ind: SetIndicator<T>): Bundle<T> {
-            return Bundle(ind, listOf())
+            return Bundle(ind, setOf())
         }
 
         fun <T : Any> unconstrained(bundle: Variances<T>): Bundle<T> {
             return Bundle(
                 bundle.ind,
-                listOf(
+                setOf(
                     ConstrainedVariances.new(bundle, Constraints.completelyUnconstrained())
                 )
             )
@@ -54,7 +55,7 @@ class Bundle<T : Any> private constructor(
         fun <T : Any> constrained(variances: Variances<T>, constraints: Constraints): Bundle<T> {
             return Bundle(
                 variances.ind,
-                listOf(
+                setOf(
                     ConstrainedVariances.new(variances, constraints)
                 )
             )
@@ -118,11 +119,11 @@ class Bundle<T : Any> private constructor(
     }
 
     fun reduceAndSimplify(scope: ExprEvaluate.Scope): Bundle<T> {
-        return Bundle(ind, variances.map { it.reduceAndSimplify(scope) })
+        return Bundle(ind, variances.mapToSet { it.reduceAndSimplify(scope) })
     }
 
     fun union(other: Bundle<T>): Bundle<T> {
-        return Bundle(ind, variances.union(other.variances).toList())
+        return Bundle(ind, variances.union(other.variances))
     }
 
     fun <Q : Any> unaryMapAndUnion(
@@ -139,13 +140,13 @@ class Bundle<T : Any> private constructor(
                     ConstrainedVariances.new(newBundle.variances, newConstraints)
                 }
             }
-        })
+        }.toSet())
 
 
     fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): Bundle<T> = unaryMap(ind, op)
 
     fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): Bundle<Q> {
-        return Bundle(newInd, variances.map {
+        return Bundle(newInd, variances.mapToSet {
             ConstrainedVariances.new(op(it.variances), it.constraints)
         })
     }
@@ -165,7 +166,7 @@ class Bundle<T : Any> private constructor(
     ): Bundle<Q> {
         assert(ind == other.ind)
 
-        val newBundles = mutableListOf<ConstrainedVariances<Q>>()
+        val newBundles = mutableSetOf<ConstrainedVariances<Q>>()
         for (myBundle in variances) {
             for (otherBundle in other.variances) {
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
@@ -223,7 +224,7 @@ class Bundle<T : Any> private constructor(
             constraints.map { constraint ->
                 ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))
             }
-        })
+        }.toSet())
     }
 
     /**
@@ -243,7 +244,7 @@ class Bundle<T : Any> private constructor(
 
     fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
         val cast = Bundle(
-            indicator, variances.map {
+            indicator, variances.mapToSet {
                 ConstrainedVariances.new(it.variances.cast(indicator) ?: return null, it.constraints)
             }
         )
