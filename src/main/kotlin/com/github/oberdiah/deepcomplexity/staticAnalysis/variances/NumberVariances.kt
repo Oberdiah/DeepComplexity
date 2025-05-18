@@ -9,6 +9,7 @@ import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
@@ -222,6 +223,61 @@ class NumberVariances<T : Number> private constructor(
     ): BooleanVariances =
         // We could maybe do something smarter here long-term, but this'll do for now.
         collapse(constraints).comparisonOperation(other.collapse(constraints), operation).toConstVariance().into()
+
+    fun generateConstraintsFrom(
+        other: NumberVariances<T>,
+        comp: ComparisonOp,
+        incomingConstraints: Constraints
+    ): Constraints {
+        val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isEphemeral() }
+
+        var constraints = Constraints.completelyUnconstrained()
+
+        for (key in allKeys) {
+            val myKeyMultiplier = multipliers[key] ?: ind.onlyZeroSet()
+            val otherKeyMultiplier = other.multipliers[key] ?: ind.onlyZeroSet()
+
+            fun <T : Number> extra(keyInd: NumberSetIndicator<T>) {
+                // Move all the keys onto the left
+                val coefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
+                    .cast(keyInd)!!.into()
+
+                if (coefficient.isZero()) {
+                    constraints = constraints.withConstraint(key, keyInd.newEmptyBundle())
+                    return
+                }
+
+                val lhsConstant =
+                    newFromMultiplierMap(ind, multipliers.filter { it.key != key })
+                        .collapse(incomingConstraints)
+                        .cast(keyInd)!!.into()
+                val rhsConstant =
+                    newFromMultiplierMap(ind, other.multipliers.filter { it.key != key })
+                        .collapse(incomingConstraints)
+                        .cast(keyInd)!!.into()
+
+                val constant = rhsConstant.subtract(lhsConstant)
+
+                val shouldFlip = otherKeyMultiplier.comparisonOperation(ind.onlyZeroSet(), ComparisonOp.LESS_THAN)
+
+                val rhs = constant.divide(coefficient)
+                val constraint = when (shouldFlip) {
+                    BooleanBundle.TRUE -> rhs.getSetSatisfying(comp.flip())
+                    BooleanBundle.FALSE -> rhs.getSetSatisfying(comp)
+                    BooleanBundle.BOTH -> rhs.getSetSatisfying(comp)
+                        .union(rhs.getSetSatisfying(comp.flip()))
+
+                    BooleanBundle.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                }
+
+                constraints = constraints.withConstraint(key, constraint)
+            }
+
+            extra(key.ind as NumberSetIndicator<*>)
+        }
+
+        return constraints
+    }
 
     fun evaluateLoopingRange(
         changeTerms: ConstraintSolver.CollectedTerms<T>,

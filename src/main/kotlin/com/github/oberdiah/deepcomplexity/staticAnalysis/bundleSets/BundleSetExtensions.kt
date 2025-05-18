@@ -18,6 +18,14 @@ fun <T : Number> BundleSet<T>.arithmeticOperation(
         a.into().arithmeticOperation(b.into(), operation, constraints)
     }
 
+fun <T : Number> BundleSet<T>.generateConstraintsFrom(
+    other: BundleSet<T>,
+    operation: ComparisonOp,
+): List<Constraints> =
+    this.binaryMap(other) { a, b, constraints ->
+        a.into().generateConstraintsFrom(b.into(), operation, constraints)
+    }
+
 fun BundleSet<Boolean>.booleanOperation(
     other: BundleSet<Boolean>,
     operation: BooleanOp,
@@ -40,7 +48,7 @@ fun <T : Number> BundleSet<T>.comparisonOperation(
     comparisonOp: ComparisonOp,
     exprKey: Context.Key
 ): BundleSet<Boolean> =
-    this.binaryMap(BooleanSetIndicator, other, exprKey) { a, b, constraints ->
+    this.binaryMapToVariances(BooleanSetIndicator, other, exprKey) { a, b, constraints ->
         a.into().comparisonOperation(b.into(), comparisonOp, constraints)
     }
 

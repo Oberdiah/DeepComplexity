@@ -220,6 +220,7 @@ public class AITestData {
 	}
 	
 	// Test 13: Edge case with maximum short value
+	@RequiredScore(1.0)
 	public static short testMaxShortEquivalence(short x) {
 		if (x == MAX_SHORT) {
 			// This creates a scenario where casting the multiplier vs. the result

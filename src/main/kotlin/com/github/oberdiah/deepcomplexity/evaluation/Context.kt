@@ -80,7 +80,7 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
         val ind: SetIndicator<*>
             get() {
                 if (this is ExpressionKey) {
-                    return this.ind
+                    return this.expr.ind
                 }
 
                 val type: PsiType = getType()

@@ -69,6 +69,15 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	public static short test6(short x) {
+		if (x > x) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	@RequiredScore(1.0)
 	public static short negateTest(short x) {
 		return (short) (-x);
 	}
@@ -656,6 +665,16 @@ public class MyTestData {
 		return 0;
 	}
 	
+	public static short modulo3(short x) {
+		int a = x % 100;
+		if (a > a) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	
 	public static short twoVars1(short x) {
 		int b = x % 100;
 		int a = x % 100;
@@ -671,7 +690,7 @@ public class MyTestData {
 		int b = x % 100;
 		int a = x % 100;
 		
-		if (b > 10 && a > b) {
+		if (a > b) {
 			return (short) a;
 		} else {
 			return 0;

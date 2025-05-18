@@ -72,11 +72,14 @@ class Constraints private constructor(
         return constraints[key]?.cast(ind) ?: ind.newFullBundle()
     }
 
-    fun withConstraint(key: Context.Key, expr: Bundle<*>): Constraints {
+    fun withConstraint(key: Context.Key, bundle: Bundle<*>): Constraints {
         assert(key !is Context.Key.EphemeralKey) {
             "Ephemeral keys shouldn't really be allowed to be added to constraints."
         }
-        return and(constrainedBy(mapOf(key to expr)))
+        assert(key.ind == bundle.ind) {
+            "Key and bundle must have the same type. (${key.ind} != ${bundle.ind})"
+        }
+        return and(constrainedBy(mapOf(key to bundle)))
     }
 
     fun invert(): Constraints {

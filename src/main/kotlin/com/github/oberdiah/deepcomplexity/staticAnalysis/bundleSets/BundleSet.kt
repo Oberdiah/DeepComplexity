@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets
 
+import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
 import com.github.oberdiah.deepcomplexity.evaluation.Context
-import com.github.oberdiah.deepcomplexity.evaluation.Expr
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
@@ -155,9 +155,9 @@ class BundleSet<T : Any> private constructor(
         exprKey: Context.Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>
     ): BundleSet<T> =
-        binaryMap(ind, other, exprKey, op)
+        binaryMapToVariances(ind, other, exprKey, op)
 
-    fun <Q : Any> binaryMap(
+    fun <Q : Any> binaryMapToVariances(
         newInd: SetIndicator<Q>,
         other: BundleSet<T>,
         exprKey: Context.Key,
@@ -194,12 +194,31 @@ class BundleSet<T : Any> private constructor(
         return BundleSet(newInd, newBundles)
     }
 
+    fun <Q : Any> binaryMap(
+        other: BundleSet<T>,
+        op: (Variances<T>, Variances<T>, Constraints) -> Q
+    ): List<Q> {
+        val listOut = mutableListOf<Q>()
+        for (myBundle in bundles) {
+            for (otherBundle in other.bundles) {
+                val newConstraints = myBundle.constraints.and(otherBundle.constraints)
+                if (newConstraints.unreachable) continue
+                listOut.add(op(myBundle.variances, otherBundle.variances, newConstraints))
+            }
+        }
+        return listOut
+    }
+
     /**
      * The expression you provide is converted into a set of constraints and then
      * combined with this bundle set.
      */
-    fun constrainWith(constraintExpr: Expr<Boolean>): BundleSet<T> {
-        val constraints = ExprConstrain.getConstraints(constraintExpr)
+    fun constrainWith(scope: ExprEvaluate.Scope): BundleSet<T> {
+        if (scope.condition == ConstantExpression.TRUE) {
+            return this
+        }
+
+        val constraints = ExprConstrain.getConstraints(scope.condition)
         return BundleSet(ind, bundles.flatMap { bundle ->
             constraints.map { constraint ->
                 ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))

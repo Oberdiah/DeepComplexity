@@ -135,10 +135,10 @@ object ExprEvaluate {
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 
-            is ConstExpr -> expr.constSet.constrainWith(scope.condition)
+            is ConstExpr -> expr.constSet.constrainWith(scope)
             is VariableExpression ->
                 BundleSet.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
-                    .constrainWith(scope.condition)
+                    .constrainWith(scope)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
