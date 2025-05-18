@@ -6,9 +6,6 @@ import com.github.oberdiah.deepcomplexity.RequiredScore;
 import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
 
 public class AITestData {
-	static final int MAX_SHORT = 32767;
-	static final int MIN_SHORT = -32768;
-	
 	// 1. Short overflow, but int is fine — subtle wrap
 	@RequiredScore(1.0)
 	public static short tricky1(short x) {
@@ -101,15 +98,16 @@ public class AITestData {
 	}
 	
 	// Test 3: Boundary value testing with cascading conditions
+	@RequiredScore(1.0)
 	public static short boundaryValueCascade(short x) {
-		if (x == MAX_SHORT) {
+		if (x == 32767) {
 			return -10;
-		} else if (x == MAX_SHORT - 1) {
+		} else if (x == 32767 - 1) {
 			return 42;
-		} else if (x > MAX_SHORT - 10) {
+		} else if (x > 32767 - 10) {
 			return 100;
 		} else {
-			return (short) (x + 1);
+			return 200;
 		}
 	}
 	
@@ -172,12 +170,12 @@ public class AITestData {
 	public static short multiplyAndCompare(short x) {
 		int doubled = x * 2;
 		
-		if (doubled > MAX_SHORT || doubled < MIN_SHORT) {
+		if (doubled > 32768 || doubled < -32768) {
 			return -1;
-		} else if (doubled == MAX_SHORT) {
+		} else if (doubled == 32768) {
 			return 1;
 		} else {
-			return (short) doubled;
+			return 0;
 		}
 	}
 	
@@ -190,8 +188,8 @@ public class AITestData {
 			
 			if (temp < 0) {
 				// Integer overflow occurred
-				return MAX_SHORT;
-			} else if (temp > MAX_SHORT) {
+				return 32767;
+			} else if (temp > 32767) {
 				return (short) (temp % 10000);
 			}
 		} else {
@@ -222,7 +220,7 @@ public class AITestData {
 	// Test 13: Edge case with maximum short value
 	@RequiredScore(1.0)
 	public static short testMaxShortEquivalence(short x) {
-		if (x == MAX_SHORT) {
+		if (x == 32767) {
 			// This creates a scenario where casting the multiplier vs. the result
 			// might lead to different outcomes due to overflow handling
 			int a = x * 2;    // Overflows in int calculation

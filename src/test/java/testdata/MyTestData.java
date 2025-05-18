@@ -234,6 +234,17 @@ public class MyTestData {
 		return (short) (a * 2 - b * 2);
 	}
 	
+	@RequiredScore(0.5)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
+	public static short multiplyTest2(short x) {
+		int a = x * 2;
+		if (a == 7) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
 	@RequiredScore(1.0)
 	public static short barTest1(short x) {
 		int bar = 0;
