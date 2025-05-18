@@ -397,6 +397,7 @@ public class MyTestData {
 		return (short) (a * b);
 	}
 	
+	@RequiredScore(1.0)
 	public static short chainedConstraintTest1(short x) {
 		int a = 0;
 		int b = x + 5;
@@ -410,6 +411,7 @@ public class MyTestData {
 		return (short) (a);
 	}
 	
+	@RequiredScore(1.0)
 	public static short chainedConstraintTest2(short x) {
 		int a = 0;
 		int b = x * 5;
@@ -421,6 +423,7 @@ public class MyTestData {
 		return (short) (a);
 	}
 	
+	@RequiredScore(1.0)
 	public static short intelliJTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -576,6 +579,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short equalityTest1(short x) {
 		if (x == x) {
 			return 1;

@@ -52,6 +52,7 @@ public class AITestData {
 	}
 	
 	// 7. Control flow based on int, but returned value cast
+	@RequiredScore(1.0)
 	public static short tricky7(short x) {
 		int y = x * 5000;
 		if (y > 100000) return 1;
