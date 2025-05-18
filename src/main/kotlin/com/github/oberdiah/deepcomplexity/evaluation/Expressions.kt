@@ -219,8 +219,8 @@ class NumIterationTimesExpression<T : Number>(
             assert(setIndicator == variable.ind) {
                 "Variable and constraint have different set indicators: ${variable.ind} and $setIndicator"
             }
-            assert(setIndicator == terms.setIndicator) {
-                "Variable and terms have different set indicators: ${variable.ind} and ${terms.setIndicator}"
+            assert(setIndicator == terms.ind) {
+                "Variable and terms have different set indicators: ${variable.ind} and ${terms.ind}"
             }
 
             @Suppress("UNCHECKED_CAST")

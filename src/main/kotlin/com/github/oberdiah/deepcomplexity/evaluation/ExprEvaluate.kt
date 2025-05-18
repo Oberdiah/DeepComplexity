@@ -62,10 +62,7 @@ object ExprEvaluate {
                 // This could get pretty complex, but we'll keep it relatively simple for now.
 
                 val startingValue = expr.variable.evaluate(scope)
-                startingValue.evaluateLoopingRange(
-                    terms.evaluate(scope),
-                    expr.constraint
-                )
+                startingValue.evaluateLoopingRange(terms, expr.constraint)
             }
 
             else -> evaluateAnythings(expr, scope)

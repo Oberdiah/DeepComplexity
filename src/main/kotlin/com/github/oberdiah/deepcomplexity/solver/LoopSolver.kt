@@ -2,7 +2,6 @@ package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.ExprConstrain
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.isOne
 import com.intellij.psi.PsiElement
 
 object LoopSolver {
@@ -67,7 +66,7 @@ object LoopSolver {
 
         val linearTerm = terms.terms[1] ?: return gaveUp
         val constantTerm = terms.terms[0] ?: return gaveUp
-        if (!linearTerm.evaluate(ExprEvaluate.Scope()).isOne()) {
+        if (!linearTerm.isOne()) {
             // We can deal with this if the constant term is 0, but we're not bothering
             // with that for now.
             return gaveUp
@@ -79,7 +78,8 @@ object LoopSolver {
             )
         }
         @Suppress("UNCHECKED_CAST")
-        return ArithmeticExpression(constantTerm, numLoops as Expr<T>, BinaryNumberOp.MULTIPLICATION)
+//        return ArithmeticExpression(constantTerm, numLoops as Expr<T>, BinaryNumberOp.MULTIPLICATION)
+        TODO()
     }
 
     private fun <T : Number> collectTerms(
@@ -99,7 +99,7 @@ object LoopSolver {
         // I'm not going to bother for now.
         if (!unresolved.key.matchesElement(psiElement)) return null
 
-        val terms = ConstraintSolver.expandTerms(expr, unresolved)
+        val terms = ConstraintSolver.expandTerms(expr, unresolved, ConstantExpression.TRUE)
         if (terms == null) return null
         return terms to unresolved
     }

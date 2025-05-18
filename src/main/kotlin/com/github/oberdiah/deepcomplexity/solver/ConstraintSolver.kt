@@ -4,30 +4,17 @@ import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.BundleSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundleSets.Constraints
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.BooleanBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.NumberBundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.bundles.into
 
 object ConstraintSolver {
-    data class EvaluatedCollectedTerms<T : Number>(
-        val terms: Map<Int, BundleSet<T>>,
-    )
-
     data class CollectedTerms<T : Number>(
-        val setIndicator: SetIndicator<T>,
-        /**
-         * Map from exponent to coefficient. 0th is constant, 1st is linear, 2nd is quadratic, etc.
-         */
-        val terms: MutableMap<Int, Expr<T>> = mutableMapOf(),
+        val ind: SetIndicator<T>,
+        val terms: MutableMap<Int, NumberBundle<T>>,
     ) {
-        fun evaluate(scope: ExprEvaluate.Scope): EvaluatedCollectedTerms<T> {
-            return EvaluatedCollectedTerms(
-                terms.mapValues { (_, term) -> term.evaluate(scope) }
-            )
-        }
-
         override fun toString(): String {
             if (terms.entries.isEmpty()) {
                 return "0"
@@ -45,75 +32,68 @@ object ConstraintSolver {
         fun <Q : Number> castTo(setIndicator: SetIndicator<Q>): CollectedTerms<Q> =
             CollectedTerms(
                 setIndicator,
-                // I'm suspicious of this. It feels like the most obvious thing to do
+                // I'm suspicious of this. It feels like the most obvious thing to do,
                 // but I'm not 100% sure it's actually fine.
-                terms.mapValues { (_, term) -> term.performACastTo(setIndicator, true) }.toMutableMap()
+                terms.mapValues { (_, term) -> term.cast(setIndicator)!!.into() }.toMutableMap()
             )
 
         fun negate(): CollectedTerms<T> {
-            val newTerms = mutableMapOf<Int, Expr<T>>()
-
-            for ((exp, term) in terms) {
-                newTerms[exp] = NegateExpression(term)
-            }
-
-            return CollectedTerms(setIndicator, newTerms)
+            return CollectedTerms(ind, terms.mapValues { (_, term) -> term.negate() }.toMutableMap())
         }
 
         fun combine(other: CollectedTerms<T>, op: BinaryNumberOp): CollectedTerms<T> {
             return when (op) {
                 ADDITION, SUBTRACTION -> {
                     // Combine terms
-                    val newTerms = mutableMapOf<Int, Expr<T>>()
+                    val newTerms = mutableMapOf<Int, NumberBundle<T>>()
                     newTerms.putAll(terms)
 
                     for ((exp, term) in other.terms) {
                         newTerms[exp] = merge(newTerms[exp], term, op)
                     }
 
-                    CollectedTerms(setIndicator, newTerms)
+                    CollectedTerms(ind, newTerms)
                 }
 
                 MULTIPLICATION -> {
                     // Multiply terms together
-                    val newTerms = mutableMapOf<Int, Expr<T>>()
+                    val newTerms = mutableMapOf<Int, NumberBundle<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
                             // Add exponents and multiply coefficients
                             val newExp = exp1 + exp2
-                            val newTerm = ArithmeticExpression(term1, term2, MULTIPLICATION)
+                            val newTerm = term1.arithmeticOperation(term2, MULTIPLICATION)
                             newTerms[newExp] = merge(newTerms[newExp], newTerm, ADDITION)
                         }
                     }
-                    CollectedTerms(setIndicator, newTerms)
+                    CollectedTerms(ind, newTerms)
                 }
 
                 DIVISION -> {
-                    val newTerms = mutableMapOf<Int, Expr<T>>()
+                    val newTerms = mutableMapOf<Int, NumberBundle<T>>()
 
                     for ((exp1, term1) in terms) {
                         for ((exp2, term2) in other.terms) {
                             // Subtract exponents and divide coefficients
                             val newExp = exp1 - exp2
-                            val newTerm = ArithmeticExpression(term1, term2, DIVISION)
+                            val newTerm = term1.arithmeticOperation(term2, DIVISION)
                             newTerms[newExp] = merge(newTerms[newExp], newTerm, ADDITION)
                         }
                     }
-                    CollectedTerms(setIndicator, newTerms)
+                    CollectedTerms(ind, newTerms)
                 }
 
-                MODULO -> TODO("Modulo constraints are not supported yet.")
+                MODULO -> {
+                    TODO()
+                }
             }
         }
     }
 
-    private fun <T : Number> merge(lhs: Expr<T>?, rhs: Expr<T>, op: BinaryNumberOp): Expr<T> {
-        return if (lhs == null) {
-            ArithmeticExpression(ConstantExpression.zero(rhs), rhs, op)
-        } else {
-            ArithmeticExpression(lhs, rhs, op)
-        }
+    private fun <T : Number> merge(lhs: NumberBundle<T>?, rhs: NumberBundle<T>, op: BinaryNumberOp): NumberBundle<T> {
+        return (lhs ?: NumberBundle.zero(rhs.ind))
+            .arithmeticOperation(rhs, op)
     }
 
     /**
@@ -137,7 +117,7 @@ object ConstraintSolver {
             @Suppress("UNCHECKED_CAST")
             val castVariable = variable as VariableExpression<out Number>
 
-            val variableConstraints = getVariableConstraints(expr, castVariable) ?: continue
+            val variableConstraints = getVariableConstraints(expr, castVariable, ConstantExpression.TRUE) ?: continue
             constraints = constraints.withConstraint(variable.key, variableConstraints)
         }
 
@@ -152,13 +132,14 @@ object ConstraintSolver {
     private fun <T : Number> getVariableConstraints(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
+        condition: Expr<Boolean>,
     ): Bundle<T>? {
         if (expr.getVariables().none { it.key == variable.key }) {
             // The variable wasn't found in the expression.
             return null
         }
 
-        val (lhs, constant) = normalizeComparisonExpression(expr, variable) ?: return null
+        val (lhs, constant) = normalizeComparisonExpression(expr, variable, condition) ?: return null
 
         if (lhs.terms.isEmpty()) {
             // The variable wasn't found in the expression, but we should have caught this earlier.
@@ -169,22 +150,18 @@ object ConstraintSolver {
             // This is good, we can solve this now.
             val (exponent, coefficient) = lhs.terms.entries.first()
 
-            val coeffLZ = ComparisonExpression(
-                coefficient,
-                ConstantExpression.zero(variable.getNumberSetIndicator()),
+            val shouldFlip = coefficient.comparisonOperation(
+                variable.getNumberSetIndicator().onlyZeroSet(),
                 ComparisonOp.LESS_THAN
             )
 
-            val rhs = ArithmeticExpression(constant, coefficient, DIVISION)
+            val rhs = constant.divide(coefficient)
             return if (exponent == 1) {
-                val rhsBundle = rhs.evaluate(ExprEvaluate.Scope()).collapse().into()
-                val shouldFlip = coeffLZ.evaluate(ExprEvaluate.Scope()).collapse().into()
-
                 when (shouldFlip) {
-                    BooleanBundle.TRUE -> rhsBundle.getSetSatisfying(expr.comp.flip())
-                    BooleanBundle.FALSE -> rhsBundle.getSetSatisfying(expr.comp)
-                    BooleanBundle.BOTH -> rhsBundle.getSetSatisfying(expr.comp)
-                        .union(rhsBundle.getSetSatisfying(expr.comp.flip()))
+                    BooleanBundle.TRUE -> rhs.getSetSatisfying(expr.comp.flip())
+                    BooleanBundle.FALSE -> rhs.getSetSatisfying(expr.comp)
+                    BooleanBundle.BOTH -> rhs.getSetSatisfying(expr.comp)
+                        .union(rhs.getSetSatisfying(expr.comp.flip()))
 
                     BooleanBundle.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
@@ -193,7 +170,7 @@ object ConstraintSolver {
                 null
             }
         } else {
-            // We might be able to solve this in future, for now we'll not bother.
+            // We might be able to solve this in the future, for now we'll not bother.
             println("Cannot constraint solve yet as it has zero terms: $lhs")
             null
         }
@@ -206,10 +183,11 @@ object ConstraintSolver {
     private fun <T : Number> normalizeComparisonExpression(
         expr: ComparisonExpression<*>,
         variable: VariableExpression<T>,
-    ): Pair<CollectedTerms<T>, Expr<T>>? {
+        condition: Expr<Boolean>,
+    ): Pair<CollectedTerms<T>, NumberBundle<T>>? {
         // Collect terms from both sides
-        val leftTerms = expandTerms(expr.lhs, variable)
-        val rightTerms = expandTerms(expr.rhs, variable)
+        val leftTerms = expandTerms(expr.lhs, variable, condition)
+        val rightTerms = expandTerms(expr.rhs, variable, condition)
 
         if (leftTerms == null || rightTerms == null) {
             return null
@@ -218,46 +196,49 @@ object ConstraintSolver {
         // Subtract right from left
         val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
 
-        val indicator = variable.getNumberSetIndicator()
-        val constant = NegateExpression(lhs.terms.remove(0) ?: ConstantExpression.zero(indicator))
+        val ind = variable.getNumberSetIndicator()
+        val constant = (lhs.terms.remove(0) ?: ind.onlyZeroSet()).negate()
 
         return lhs to constant
     }
 
-    fun <T : Number> expandTerms(expr: Expr<*>, variable: VariableExpression<T>): CollectedTerms<T>? {
-        val setIndicator = variable.ind as NumberSetIndicator<T>
-        val castExpr = TypeCastExpression(expr, setIndicator, true)
+    fun <T : Number> expandTerms(
+        expr: Expr<*>,
+        variable: VariableExpression<T>,
+        condition: Expr<Boolean>
+    ): CollectedTerms<T>? {
+        val ind = variable.getNumberSetIndicator()
+
         return when (expr) {
             is ArithmeticExpression -> {
-                val lhs = expandTerms(expr.lhs, variable)
-                val rhs = expandTerms(expr.rhs, variable)
+                val lhs = expandTerms(expr.lhs, variable, condition)
+                val rhs = expandTerms(expr.rhs, variable, condition)
 
                 lhs?.let { rhs?.let { lhs.combine(rhs, expr.op) } }
             }
 
-            is ConstExpr -> CollectedTerms(
-                setIndicator,
-                terms = mutableMapOf(0 to castExpr)
-            )
-
-            is VariableExpression -> {
-                if (expr.key == variable.key) {
-                    CollectedTerms(setIndicator, terms = mutableMapOf(1 to ConstantExpression.one(setIndicator)))
-                } else {
-                    CollectedTerms(setIndicator, terms = mutableMapOf(0 to castExpr))
-                }
-            }
             // I think this is correct?
-            is NegateExpression -> expandTerms(expr.expr, variable)?.negate()
+            is NegateExpression -> expandTerms(expr.expr, variable, condition)?.negate()
             is NumIterationTimesExpression -> TODO("Maybe one day? Unsure if this is possible")
             is TypeCastExpression<*, *> -> {
                 fun <Q : Number> extra(expr: Expr<Q>): CollectedTerms<T>? =
-                    expandTerms(expr, variable)?.castTo(setIndicator)
+                    expandTerms(expr, variable, condition)?.castTo(ind)
 
                 extra(expr.expr.castToNumbers())
             }
             // This is quite solidly beyond our abilities.
             is IfExpression<*> -> null
+
+            is ConstExpr, is VariableExpression -> {
+                if (expr is VariableExpression && expr.key == variable.key) {
+                    CollectedTerms(ind, terms = mutableMapOf(1 to ind.onlyOneSet()))
+                } else {
+                    val bundle = expr.evaluate(ExprEvaluate.Scope(condition = condition)).collapse()
+                    val castExpr = bundle.cast(ind)!!.into()
+                    CollectedTerms(ind, terms = mutableMapOf(0 to castExpr))
+                }
+            }
+
             else -> TODO("Not implemented constraints for $expr")
         }
     }

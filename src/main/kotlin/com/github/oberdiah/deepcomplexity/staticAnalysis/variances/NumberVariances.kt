@@ -224,7 +224,7 @@ class NumberVariances<T : Number> private constructor(
         collapse(constraints).comparisonOperation(other.collapse(constraints), operation).toConstVariance().into()
 
     fun evaluateLoopingRange(
-        changeTerms: ConstraintSolver.EvaluatedCollectedTerms<T>,
+        changeTerms: ConstraintSolver.CollectedTerms<T>,
         valid: NumberBundle<T>
     ): NumberVariances<T> = TODO("Not yet implemented")
 }

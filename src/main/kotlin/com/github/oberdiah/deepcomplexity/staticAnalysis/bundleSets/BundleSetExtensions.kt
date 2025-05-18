@@ -50,7 +50,7 @@ fun <T : Number> BundleSet<T>.negate(): BundleSet<T> =
     }
 
 fun <T : Number> BundleSet<T>.evaluateLoopingRange(
-    evaluate: ConstraintSolver.EvaluatedCollectedTerms<T>,
+    evaluate: ConstraintSolver.CollectedTerms<T>,
     constraint: NumberBundle<T>
 ): BundleSet<T> =
     this.performUnaryOperation { a ->

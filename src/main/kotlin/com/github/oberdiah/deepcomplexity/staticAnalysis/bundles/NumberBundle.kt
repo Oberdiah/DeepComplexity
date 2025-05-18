@@ -190,7 +190,7 @@ class NumberBundle<T : Number>(
     }
 
     fun evaluateLoopingRange(
-        changeTerms: ConstraintSolver.EvaluatedCollectedTerms<T>,
+        changeTerms: ConstraintSolver.CollectedTerms<T>,
         valid: NumberBundle<T>
     ): NumberBundle<T> {
         // This was half-implemented in the old version.
