@@ -3,8 +3,7 @@ package testdata;
 import com.github.oberdiah.deepcomplexity.GoodEnough;
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
-import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
-import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
+import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.*;
 
 public class MyTestData {
 	public static short throwawayTest(short x) {
@@ -691,7 +690,6 @@ public class MyTestData {
 		}
 	}
 	
-	
 	public static short twoVars1(short x) {
 		int b = x % 100;
 		int a = x % 100;
@@ -703,6 +701,8 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(0.0051)
+	@GoodEnough(REQUIRES_IDENTIFYING_IDENTICAL_EXPRESSIONS)
 	public static short twoVars2(short x) {
 		int b = x % 100;
 		int a = x % 100;
@@ -741,7 +741,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short valueCascade(short x) {
+	public static short runNowTest(short x) {
 		if (x == 5) {
 			return -10;
 		} else if (x == 5 - 1) {

@@ -181,8 +181,12 @@ public class AITestData {
 	}
 	
 	// Test 10: Mixed arithmetic with potential intermediate overflow
-	@RequiredScore(0.1833)
+	@RequiredScore(1.0)
 	public static short mixedArithmeticOverflow(short x) {
+		if (x > 120) {
+			return 0;
+		}
+		
 		int temp = x;
 		
 		if (x > 0) {
@@ -195,7 +199,7 @@ public class AITestData {
 				return (short) (temp % 10000);
 			}
 		} else {
-			temp = x * x * -1; // Different behavior for negative
+			temp = x * -1; // Different behavior for negative
 		}
 		
 		return (short) temp;

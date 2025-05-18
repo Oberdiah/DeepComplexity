@@ -19,5 +19,15 @@ annotation class GoodEnough(val value: GoodEnoughReason) {
          * higher powers of x — e.g. x^2
          */
         GAPS_FROM_POWERS,
+
+        /**
+         * To resolve these situations further, we would need to identify when two black-box functions
+         * are the same and then assign them the same ID.
+         *
+         * Currently, we're treating modulo (%) as a black-box function. There is an argument to be made
+         * that we should be able to track it better, and if we do do that, the functions marked with this
+         * annotation will want to be updated to continue using black-box functions.
+         */
+        REQUIRES_IDENTIFYING_IDENTICAL_EXPRESSIONS,
     }
 }

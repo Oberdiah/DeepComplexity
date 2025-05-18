@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberRange
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 
 object NumberUtilities {
     fun <T : Number> mergeAndDeduplicate(ranges: List<NumberRange<T>>): List<NumberRange<T>> {
@@ -16,7 +17,7 @@ object NumberUtilities {
         var currentRange = sortedRange[0]
         for (i in 1 until sortedRange.size) {
             val nextRange = sortedRange[i]
-            if (currentRange.end >= nextRange.start) {
+            if (currentRange.end >= nextRange.start || currentRange.end.upOneEpsilon() == nextRange.start) {
                 currentRange = NumberRange.new(
                     currentRange.start,
                     nextRange.end.max(currentRange.end),
