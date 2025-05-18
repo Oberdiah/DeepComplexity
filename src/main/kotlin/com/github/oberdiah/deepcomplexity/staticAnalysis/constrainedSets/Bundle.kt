@@ -218,7 +218,7 @@ class Bundle<T : Any> private constructor(
             return this
         }
 
-        val constraints = ExprConstrain.getConstraints(scope.condition)
+        val constraints = ExprConstrain.getConstraints(scope.condition, scope.scopesToKeep)
         return Bundle(ind, variances.flatMap { bundle ->
             constraints.map { constraint ->
                 ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))

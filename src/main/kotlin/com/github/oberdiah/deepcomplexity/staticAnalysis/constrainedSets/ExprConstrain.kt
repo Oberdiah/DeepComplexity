@@ -1,20 +1,47 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ExprConstrain {
+    fun invert(expr: Expr<Boolean>): Expr<Boolean> {
+        return when (expr) {
+            is BooleanInvertExpression -> expr.expr
+            is BooleanExpression -> {
+                BooleanExpression(
+                    expr.lhs.inverted(),
+                    expr.rhs.inverted(),
+                    when (expr.op) {
+                        BooleanOp.AND -> BooleanOp.OR
+                        BooleanOp.OR -> BooleanOp.AND
+                    }
+                )
+            }
+
+            is ComparisonExpression<*> -> {
+                fun <Q : Number> extra(me: ComparisonExpression<Q>): Expr<Boolean> =
+                    ComparisonExpression(me.lhs, me.rhs, me.comp.invert())
+                extra(expr)
+            }
+
+            is ConstExpr -> ConstExpr(expr.constSet.invert())
+
+            else -> TODO("Not implemented for $expr")
+        }
+    }
+
     /**
      * Returns a list of constraints.
      * Typically, it returns a single constraint, but if an OR is involved, it may return multiple
      * as each side of the OR is a separate constraint.
      */
-    fun getConstraints(condition: Expr<Boolean>): List<Constraints> {
+    fun getConstraints(condition: Expr<Boolean>, scopesToKeep: Set<Context.Key.ExpressionKey>): List<Constraints> {
         return when (condition) {
             is BooleanExpression -> {
-                val lhsConstrained = condition.lhs.getConstraints()
-                val rhsConstrained = condition.rhs.getConstraints()
+                val lhsConstrained = condition.lhs.getConstraints(scopesToKeep)
+                val rhsConstrained = condition.rhs.getConstraints(scopesToKeep)
 
                 val outputConstraints: MutableList<Constraints> = mutableListOf()
                 when (condition.op) {
@@ -36,8 +63,12 @@ object ExprConstrain {
 
             is ComparisonExpression<*> -> {
                 fun <Q : Number> extra(me: ComparisonExpression<Q>): List<Constraints> {
-                    val lhsBundleSet = me.lhs.evaluate(ExprEvaluate.Scope())
-                    val rhsBundleSet = me.rhs.evaluate(ExprEvaluate.Scope())
+                    val lhsBundleSet = me.lhs.evaluate(
+                        ExprEvaluate.Scope(ConstantExpression.TRUE, scopesToKeep)
+                    )
+                    val rhsBundleSet = me.rhs.evaluate(
+                        ExprEvaluate.Scope(ConstantExpression.TRUE, scopesToKeep)
+                    )
 
                     return lhsBundleSet.generateConstraintsFrom(
                         rhsBundleSet,
@@ -58,7 +89,7 @@ object ExprConstrain {
                 }
             }
 
-            is BooleanInvertExpression -> condition.expr.getConstraints().map { it.invert() }
+            is BooleanInvertExpression -> condition.expr.inverted().getConstraints(scopesToKeep)
             else -> TODO("Not implemented constraints for $condition")
         }
     }

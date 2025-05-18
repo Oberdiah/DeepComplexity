@@ -180,6 +180,7 @@ public class AITestData {
 	}
 	
 	// Test 10: Mixed arithmetic with potential intermediate overflow
+	@RequiredScore(0.1833)
 	public static short mixedArithmeticOverflow(short x) {
 		int temp = x;
 		

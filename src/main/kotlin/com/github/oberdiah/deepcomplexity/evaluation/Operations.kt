@@ -123,6 +123,17 @@ enum class ComparisonOp {
         }
     }
 
+    fun invert(): ComparisonOp {
+        return when (this) {
+            LESS_THAN -> GREATER_THAN_OR_EQUAL
+            LESS_THAN_OR_EQUAL -> GREATER_THAN
+            GREATER_THAN -> LESS_THAN_OR_EQUAL
+            GREATER_THAN_OR_EQUAL -> LESS_THAN
+            EQUAL -> NOT_EQUAL
+            NOT_EQUAL -> EQUAL
+        }
+    }
+
     fun flip(): ComparisonOp {
         return when (this) {
             LESS_THAN -> GREATER_THAN

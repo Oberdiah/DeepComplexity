@@ -242,11 +242,6 @@ class NumberVariances<T : Number> private constructor(
                 val coefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
                     .cast(keyInd)!!.into()
 
-                if (coefficient.isZero()) {
-                    constraints = constraints.withConstraint(key, keyInd.newEmptySet())
-                    return
-                }
-
                 val lhsConstant =
                     newFromMultiplierMap(ind, multipliers.filter { it.key != key })
                         .collapse(incomingConstraints)
@@ -258,19 +253,30 @@ class NumberVariances<T : Number> private constructor(
 
                 val constant = rhsConstant.subtract(lhsConstant)
 
-                val shouldFlip = otherKeyMultiplier.comparisonOperation(ind.onlyZeroSet(), ComparisonOp.LESS_THAN)
+                if (coefficient.isZero()) {
+                    // The key has cancelled itself out, this is now an all-or-nothing situation:
+                    // either the constraint is met, or it isn't.
+                    // The equation at this point looks like `0x blah constant`
+                    // So we can just check the constant against zero.
+                    val meetsConstraint = keyInd.onlyZeroSet().comparisonOperation(constant, comp)
+                    constraints = when (meetsConstraint) {
+                        BooleanSet.BOTH, BooleanSet.TRUE -> constraints.withConstraint(key, keyInd.newFullSet())
+                        BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, keyInd.newEmptySet())
+                    }
+                } else {
+                    val shouldFlip = coefficient.comparisonOperation(keyInd.onlyZeroSet(), ComparisonOp.LESS_THAN)
+                    val rhs = constant.divide(coefficient)
+                    val constraint = when (shouldFlip) {
+                        BooleanSet.TRUE -> rhs.getSetSatisfying(comp.flip())
+                        BooleanSet.FALSE -> rhs.getSetSatisfying(comp)
+                        BooleanSet.BOTH -> rhs.getSetSatisfying(comp)
+                            .union(rhs.getSetSatisfying(comp.flip()))
 
-                val rhs = constant.divide(coefficient)
-                val constraint = when (shouldFlip) {
-                    BooleanSet.TRUE -> rhs.getSetSatisfying(comp.flip())
-                    BooleanSet.FALSE -> rhs.getSetSatisfying(comp)
-                    BooleanSet.BOTH -> rhs.getSetSatisfying(comp)
-                        .union(rhs.getSetSatisfying(comp.flip()))
+                        BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                    }
 
-                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                    constraints = constraints.withConstraint(key, constraint)
                 }
-
-                constraints = constraints.withConstraint(key, constraint)
             }
 
             extra(key.ind as NumberSetIndicator<*>)

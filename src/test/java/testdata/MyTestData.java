@@ -677,6 +677,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short modulo3(short x) {
 		int a = x % 100;
 		if (a > a) {
@@ -732,6 +733,28 @@ public class MyTestData {
 			return 0;
 		} else {
 			return 1;
+		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short valueCascade(short x) {
+		if (x == 5) {
+			return -10;
+		} else if (x == 5 - 1) {
+			return 42;
+		} else if (x > 5 - 10) {
+			return 100;
+		} else {
+			return 200;
+		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleValueCheck(short x) {
+		if (x > (5 - 10)) {
+			return 100;
+		} else {
+			return 200;
 		}
 	}
 }

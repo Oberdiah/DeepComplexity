@@ -236,21 +236,17 @@ class NumberSet<T : Number> private constructor(
 
         var newData: List<NumberRange<T>> =
             when (comp) {
-                LESS_THAN, LESS_THAN_OR_EQUAL ->
-                    listOf(
-                        NumberRange.new(
-                            ind.getMinValue(),
-                            smallestValue.downOneEpsilon()
-                        )
-                    )
+                LESS_THAN_OR_EQUAL ->
+                    listOf(NumberRange.new(ind.getMinValue(), biggestValue))
 
-                GREATER_THAN, GREATER_THAN_OR_EQUAL ->
-                    listOf(
-                        NumberRange.new(
-                            biggestValue.upOneEpsilon(),
-                            ind.getMaxValue()
-                        )
-                    )
+                LESS_THAN ->
+                    listOf(NumberRange.new(ind.getMinValue(), biggestValue.downOneEpsilon()))
+
+                GREATER_THAN_OR_EQUAL ->
+                    listOf(NumberRange.new(smallestValue, ind.getMaxValue()))
+
+                GREATER_THAN ->
+                    listOf(NumberRange.new(smallestValue.upOneEpsilon(), ind.getMaxValue()))
 
                 EQUAL -> ranges
                 NOT_EQUAL -> {
