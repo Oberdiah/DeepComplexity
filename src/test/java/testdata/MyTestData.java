@@ -713,6 +713,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short twoVars3(short x) {
 		int b = x % 100;
 		int a = x % 100;
@@ -724,6 +725,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short twoVars4(short x) {
 		int b = x % 100;
 		int a = x % 90;
@@ -745,6 +747,18 @@ public class MyTestData {
 		} else {
 			return 0;
 		}
+	}
+	
+	public static short twoVars6(short x) {
+		int b = x % 100;
+		int a = x % 90;
+		
+		if (b == a) {
+			if (a > 10 && a < 20) {
+				return (short) b;
+			}
+		}
+		return 0;
 	}
 	
 	public static short wrappingComparison(short x) {

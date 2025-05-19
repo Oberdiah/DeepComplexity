@@ -51,7 +51,7 @@ object ExprConstrain {
         return when (condition) {
             is BooleanExpression -> {
                 val lhsConstrained = condition.lhs.getConstraints(scope)
-                val rhsConstrained = condition.rhs.getConstraints(scope)
+                val rhsConstrained = condition.rhs.getConstraints(scope.constrainWith(lhsConstrained))
 
                 val outputConstraints: MutableSet<Constraints> = mutableSetOf()
                 when (condition.op) {
