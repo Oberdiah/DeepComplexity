@@ -24,7 +24,7 @@ object LoopSolver {
                 val constraints = ExprConstrain.getConstraints(condition, emptySet())
                 // Temporary
                 assert(constraints.size == 1)
-                val constraint = constraints[0].getConstraint(variable)
+//                val constraint = constraints[0].getConstraint(variable)
                 TODO()
                 // Temporary
 //                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)

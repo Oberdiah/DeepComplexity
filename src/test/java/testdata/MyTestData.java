@@ -724,6 +724,18 @@ public class MyTestData {
 		}
 	}
 	
+	public static short twoVars4(short x) {
+		int b = x % 100;
+		int a = x % 90;
+		
+		if (a > 10 && a < 20) {
+			if (b == a) {
+				return (short) b;
+			}
+		}
+		return 0;
+	}
+	
 	public static short wrappingComparison(short x) {
 		if ((short) (x - 1) > 0) {
 			return x;

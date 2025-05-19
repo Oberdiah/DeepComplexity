@@ -233,9 +233,10 @@ object ConstraintSolver {
                 if (expr is VariableExpression && expr.key == variable.key) {
                     CollectedTerms(ind, terms = mutableMapOf(1 to ind.onlyOneSet()))
                 } else {
-                    val bundle = expr.evaluate(ExprEvaluate.Scope(condition = condition)).collapse()
-                    val castExpr = bundle.cast(ind)!!.into()
-                    CollectedTerms(ind, terms = mutableMapOf(0 to castExpr))
+//                    val bundle = expr.evaluate(ExprEvaluate.Scope(condition = condition)).collapse()
+//                    val castExpr = bundle.cast(ind)!!.into()
+//                    CollectedTerms(ind, terms = mutableMapOf(0 to castExpr))
+                    TODO()
                 }
             }
 

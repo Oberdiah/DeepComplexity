@@ -21,10 +21,10 @@ fun <T : Number> Bundle<T>.arithmeticOperation(
 fun <T : Number> Bundle<T>.generateConstraintsFrom(
     other: Bundle<T>,
     operation: ComparisonOp,
-): List<Constraints> =
+): Set<Constraints> =
     this.binaryMap(other) { a, b, constraints ->
         a.into().generateConstraintsFrom(b.into(), operation, constraints)
-    }
+    }.toSet()
 
 fun Bundle<Boolean>.booleanOperation(
     other: Bundle<Boolean>,

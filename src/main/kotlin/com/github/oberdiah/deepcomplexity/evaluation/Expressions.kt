@@ -89,7 +89,7 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     }
 }
 
-fun Expr<Boolean>.getConstraints(scopesToKeep: Set<ExpressionKey>): List<Constraints> =
+fun Expr<Boolean>.getConstraints(scopesToKeep: Set<ExpressionKey>): Set<Constraints> =
     ExprConstrain.getConstraints(this, scopesToKeep)
 
 /**

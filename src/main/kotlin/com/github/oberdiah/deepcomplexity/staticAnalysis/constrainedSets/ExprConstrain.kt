@@ -6,6 +6,16 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ExprConstrain {
+    fun combineConstraints(a: Set<Constraints>, b: Set<Constraints>): Set<Constraints> {
+        val outputConstraints: MutableSet<Constraints> = mutableSetOf()
+        for (lhs in a) {
+            for (rhs in b) {
+                outputConstraints.add(lhs.and(rhs))
+            }
+        }
+        return outputConstraints
+    }
+
     fun invert(expr: Expr<Boolean>): Expr<Boolean> {
         return when (expr) {
             is BooleanInvertExpression -> expr.expr
@@ -37,13 +47,13 @@ object ExprConstrain {
      * Typically, it returns a single constraint, but if an OR is involved, it may return multiple
      * as each side of the OR is a separate constraint.
      */
-    fun getConstraints(condition: Expr<Boolean>, scopesToKeep: Set<Context.Key.ExpressionKey>): List<Constraints> {
+    fun getConstraints(condition: Expr<Boolean>, scopesToKeep: Set<Context.Key.ExpressionKey>): Set<Constraints> {
         return when (condition) {
             is BooleanExpression -> {
                 val lhsConstrained = condition.lhs.getConstraints(scopesToKeep)
                 val rhsConstrained = condition.rhs.getConstraints(scopesToKeep)
 
-                val outputConstraints: MutableList<Constraints> = mutableListOf()
+                val outputConstraints: MutableSet<Constraints> = mutableSetOf()
                 when (condition.op) {
                     BooleanOp.OR -> {
                         outputConstraints.addAll(lhsConstrained)
@@ -62,12 +72,12 @@ object ExprConstrain {
             }
 
             is ComparisonExpression<*> -> {
-                fun <Q : Number> extra(me: ComparisonExpression<Q>): List<Constraints> {
+                fun <Q : Number> extra(me: ComparisonExpression<Q>): Set<Constraints> {
                     val lhsBundleSet = me.lhs.evaluate(
-                        ExprEvaluate.Scope(ConstantExpression.TRUE, scopesToKeep)
+                        ExprEvaluate.Scope(scopesToKeep = scopesToKeep)
                     )
                     val rhsBundleSet = me.rhs.evaluate(
-                        ExprEvaluate.Scope(ConstantExpression.TRUE, scopesToKeep)
+                        ExprEvaluate.Scope(scopesToKeep = scopesToKeep)
                     )
 
                     return lhsBundleSet.generateConstraintsFrom(
@@ -86,7 +96,7 @@ object ExprConstrain {
                         BooleanSet.TRUE, BooleanSet.BOTH -> Constraints.completelyUnconstrained()
                         BooleanSet.FALSE, BooleanSet.NEITHER -> Constraints.unreachable()
                     }
-                }
+                }.toSet()
             }
 
             is BooleanInvertExpression -> condition.expr.inverted().getConstraints(scopesToKeep)

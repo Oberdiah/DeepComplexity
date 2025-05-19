@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.github.oberdiah.deepcomplexity.evaluation.ConstantExpression
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
@@ -215,13 +214,12 @@ class Bundle<T : Any> private constructor(
      * combined with this bundle set.
      */
     fun constrainWith(scope: ExprEvaluate.Scope): Bundle<T> {
-        if (scope.condition == ConstantExpression.TRUE) {
+        if (scope.isUnconstrained()) {
             return this
         }
 
-        val constraints = ExprConstrain.getConstraints(scope.condition, scope.scopesToKeep)
         return Bundle(ind, variances.flatMap { bundle ->
-            constraints.map { constraint ->
+            scope.constraints.map { constraint ->
                 ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))
             }
         }.toSet())

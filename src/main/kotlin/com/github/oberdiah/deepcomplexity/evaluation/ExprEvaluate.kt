@@ -10,11 +10,13 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ExprEvaluate {
     data class Scope(
-        val condition: Expr<Boolean> = ConstantExpression.TRUE,
+        val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
         val scopesToKeep: Set<Context.Key.ExpressionKey> = mutableSetOf()
     ) {
-        override fun toString(): String = condition.toString()
+        override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Context.Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
+
+        fun isUnconstrained(): Boolean = constraints.all { it.isUnconstrained() }
 
         /**
          * Adds the expression's keys to the scopes we want to keep around.
@@ -25,7 +27,7 @@ object ExprEvaluate {
          */
         fun withScope(expr: Expr<*>): Scope {
             val newScopes = expr.iterateTree().map { it.exprKey }.toSet()
-            return Scope(condition, scopesToKeep + newScopes)
+            return Scope(constraints, scopesToKeep + newScopes)
         }
     }
 
@@ -111,17 +113,25 @@ object ExprEvaluate {
 
                 val evaluatedCond = evaluate(ifCondition, condScope)
 
-                val trueCondition = BooleanExpression(ifCondition, scope.condition, BooleanOp.AND)
-                val falseCondition =
-                    BooleanExpression(BooleanInvertExpression(ifCondition), scope.condition, BooleanOp.AND)
+                val trueConstraints =
+                    ExprConstrain.combineConstraints(
+                        ExprConstrain.getConstraints(ifCondition, trueScope.scopesToKeep),
+                        scope.constraints
+                    )
+
+                val falseConstraints =
+                    ExprConstrain.combineConstraints(
+                        ExprConstrain.getConstraints(BooleanInvertExpression(ifCondition), falseScope.scopesToKeep),
+                        scope.constraints
+                    )
 
                 evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
                     when (bundle.collapse(constraints).into()) {
-                        TRUE -> evaluate(expr.trueExpr, Scope(trueCondition, trueScope.scopesToKeep))
-                        FALSE -> evaluate(expr.falseExpr, Scope(falseCondition, falseScope.scopesToKeep))
+                        TRUE -> evaluate(expr.trueExpr, Scope(trueConstraints, trueScope.scopesToKeep))
+                        FALSE -> evaluate(expr.falseExpr, Scope(falseConstraints, falseScope.scopesToKeep))
                         BOTH -> {
-                            val trueValue = evaluate(expr.trueExpr, Scope(trueCondition, trueScope.scopesToKeep))
-                            val falseValue = evaluate(expr.falseExpr, Scope(falseCondition, falseScope.scopesToKeep))
+                            val trueValue = evaluate(expr.trueExpr, Scope(trueConstraints, trueScope.scopesToKeep))
+                            val falseValue = evaluate(expr.falseExpr, Scope(falseConstraints, falseScope.scopesToKeep))
                             trueValue.union(falseValue)
                         }
 
