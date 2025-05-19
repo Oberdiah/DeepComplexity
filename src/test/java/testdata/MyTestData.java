@@ -736,6 +736,17 @@ public class MyTestData {
 		return 0;
 	}
 	
+	public static short twoVars5(short x) {
+		int b = x % 100;
+		int a = x % 100;
+		
+		if (b == a && a > 10 && a < 20) {
+			return (short) b;
+		} else {
+			return 0;
+		}
+	}
+	
 	public static short wrappingComparison(short x) {
 		if ((short) (x - 1) > 0) {
 			return x;

@@ -29,6 +29,13 @@ object ExprEvaluate {
             val newScopes = expr.iterateTree().map { it.exprKey }.toSet()
             return Scope(constraints, scopesToKeep + newScopes)
         }
+
+        fun constrainWith(constraints: Set<Constraints>): Scope {
+            return Scope(
+                ExprConstrain.combineConstraints(constraints, this.constraints),
+                scopesToKeep
+            )
+        }
     }
 
     /**
@@ -108,30 +115,25 @@ object ExprEvaluate {
                 val ifCondition = expr.thisCondition
 
                 val condScope = scope.withScope(expr.trueExpr).withScope(expr.falseExpr)
-                val trueScope = scope.withScope(expr.thisCondition).withScope(expr.falseExpr)
-                val falseScope = scope.withScope(expr.thisCondition).withScope(expr.trueExpr)
+                var trueScope = scope.withScope(expr.thisCondition).withScope(expr.falseExpr)
+                var falseScope = scope.withScope(expr.thisCondition).withScope(expr.trueExpr)
 
                 val evaluatedCond = evaluate(ifCondition, condScope)
 
-                val trueConstraints =
-                    ExprConstrain.combineConstraints(
-                        ExprConstrain.getConstraints(ifCondition, trueScope),
-                        scope.constraints
-                    )
-
-                val falseConstraints =
-                    ExprConstrain.combineConstraints(
-                        ExprConstrain.getConstraints(BooleanInvertExpression(ifCondition), falseScope),
-                        scope.constraints
-                    )
+                trueScope = trueScope.constrainWith(
+                    ExprConstrain.getConstraints(ifCondition, trueScope)
+                )
+                falseScope = falseScope.constrainWith(
+                    ExprConstrain.getConstraints(BooleanInvertExpression(ifCondition), falseScope)
+                )
 
                 evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
                     when (bundle.collapse(constraints).into()) {
-                        TRUE -> evaluate(expr.trueExpr, Scope(trueConstraints, trueScope.scopesToKeep))
-                        FALSE -> evaluate(expr.falseExpr, Scope(falseConstraints, falseScope.scopesToKeep))
+                        TRUE -> evaluate(expr.trueExpr, trueScope)
+                        FALSE -> evaluate(expr.falseExpr, falseScope)
                         BOTH -> {
-                            val trueValue = evaluate(expr.trueExpr, Scope(trueConstraints, trueScope.scopesToKeep))
-                            val falseValue = evaluate(expr.falseExpr, Scope(falseConstraints, falseScope.scopesToKeep))
+                            val trueValue = evaluate(expr.trueExpr, trueScope)
+                            val falseValue = evaluate(expr.falseExpr, falseScope)
                             trueValue.union(falseValue)
                         }
 
