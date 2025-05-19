@@ -231,6 +231,10 @@ data class NumberSet<T : Number> private constructor(
      * We're the right-hand side of the equation.
      */
     fun getSetSatisfying(comp: ComparisonOp): NumberSet<T> {
+        if (ranges.isEmpty()) {
+            return this
+        }
+
         val range = getRange()
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)

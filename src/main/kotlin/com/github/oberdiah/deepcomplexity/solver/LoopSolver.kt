@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.intellij.psi.PsiElement
 
 object LoopSolver {
@@ -21,9 +20,9 @@ object LoopSolver {
                 // We now have an expression that is looping stuff.
                 val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: return
 
-                val constraints = ExprConstrain.getConstraints(condition, emptySet())
+//                val constraints = ExprConstrain.getConstraints(condition, emptySet())
                 // Temporary
-                assert(constraints.size == 1)
+//                assert(constraints.size == 1)
 //                val constraint = constraints[0].getConstraint(variable)
                 TODO()
                 // Temporary

@@ -115,13 +115,13 @@ object ExprEvaluate {
 
                 val trueConstraints =
                     ExprConstrain.combineConstraints(
-                        ExprConstrain.getConstraints(ifCondition, trueScope.scopesToKeep),
+                        ExprConstrain.getConstraints(ifCondition, trueScope),
                         scope.constraints
                     )
 
                 val falseConstraints =
                     ExprConstrain.combineConstraints(
-                        ExprConstrain.getConstraints(BooleanInvertExpression(ifCondition), falseScope.scopesToKeep),
+                        ExprConstrain.getConstraints(BooleanInvertExpression(ifCondition), falseScope),
                         scope.constraints
                     )
 

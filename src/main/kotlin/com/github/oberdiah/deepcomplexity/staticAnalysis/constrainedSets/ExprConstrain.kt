@@ -47,11 +47,11 @@ object ExprConstrain {
      * Typically, it returns a single constraint, but if an OR is involved, it may return multiple
      * as each side of the OR is a separate constraint.
      */
-    fun getConstraints(condition: Expr<Boolean>, scopesToKeep: Set<Context.Key.ExpressionKey>): Set<Constraints> {
+    fun getConstraints(condition: Expr<Boolean>, scope: ExprEvaluate.Scope): Set<Constraints> {
         return when (condition) {
             is BooleanExpression -> {
-                val lhsConstrained = condition.lhs.getConstraints(scopesToKeep)
-                val rhsConstrained = condition.rhs.getConstraints(scopesToKeep)
+                val lhsConstrained = condition.lhs.getConstraints(scope)
+                val rhsConstrained = condition.rhs.getConstraints(scope)
 
                 val outputConstraints: MutableSet<Constraints> = mutableSetOf()
                 when (condition.op) {
@@ -73,12 +73,8 @@ object ExprConstrain {
 
             is ComparisonExpression<*> -> {
                 fun <Q : Number> extra(me: ComparisonExpression<Q>): Set<Constraints> {
-                    val lhsBundleSet = me.lhs.evaluate(
-                        ExprEvaluate.Scope(scopesToKeep = scopesToKeep)
-                    )
-                    val rhsBundleSet = me.rhs.evaluate(
-                        ExprEvaluate.Scope(scopesToKeep = scopesToKeep)
-                    )
+                    val lhsBundleSet = me.lhs.evaluate(scope)
+                    val rhsBundleSet = me.rhs.evaluate(scope)
 
                     return lhsBundleSet.generateConstraintsFrom(
                         rhsBundleSet,
@@ -99,7 +95,7 @@ object ExprConstrain {
                 }.toSet()
             }
 
-            is BooleanInvertExpression -> condition.expr.inverted().getConstraints(scopesToKeep)
+            is BooleanInvertExpression -> condition.expr.inverted().getConstraints(scope)
             else -> TODO("Not implemented constraints for $condition")
         }
     }
