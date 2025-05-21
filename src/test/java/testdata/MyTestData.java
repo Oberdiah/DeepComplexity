@@ -778,6 +778,15 @@ public class MyTestData {
 		}
 	}
 	
+	public static short alsoNearlyImpossible(short x) {
+		int a = x * -65536 - 65535;
+		if (a < 0 && a - 1 > 0) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+	
 	@RequiredScore(1.0)
 	public static short actuallyImpossible(short x) {
 		if (x < 0 && (x - 1) > 0) {
