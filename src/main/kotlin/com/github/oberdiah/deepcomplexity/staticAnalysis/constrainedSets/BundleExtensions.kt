@@ -14,8 +14,8 @@ fun <T : Number> Bundle<T>.arithmeticOperation(
     operation: BinaryNumberOp,
     exprKey: Context.Key
 ): Bundle<T> =
-    this.performBinaryOperation(other, exprKey) { a, b, constraints ->
-        a.into().arithmeticOperation(b.into(), operation, constraints)
+    this.performBinaryOperation(other, exprKey) { a, b ->
+        a.into().arithmeticOperation(b.into(), operation)
     }
 
 fun <T : Number> Bundle<T>.generateConstraintsFrom(
@@ -23,7 +23,7 @@ fun <T : Number> Bundle<T>.generateConstraintsFrom(
     operation: ComparisonOp,
 ): Set<Constraints> =
     this.binaryMap(other) { a, b, constraints ->
-        a.into().generateConstraintsFrom(b.into(), operation, constraints)
+        a.into().generateConstraintsFrom(b.into(), operation)
     }.toSet()
 
 fun Bundle<Boolean>.booleanOperation(
@@ -31,7 +31,7 @@ fun Bundle<Boolean>.booleanOperation(
     operation: BooleanOp,
     exprKey: Context.Key
 ): Bundle<Boolean> =
-    this.performBinaryOperation(other, exprKey) { a, b, constraints ->
+    this.performBinaryOperation(other, exprKey) { a, b ->
         a.into().booleanOperation(b.into(), operation)
     }
 
@@ -40,7 +40,7 @@ fun Bundle<Boolean>.invert() = performUnaryOperation {
 }
 
 fun <T : Number> Bundle<T>.isOne(): Boolean = this.variances.all {
-    it.variances.into().isOne(it.constraints)
+    it.variances.into().isOne()
 }
 
 fun <T : Number> Bundle<T>.comparisonOperation(
@@ -48,8 +48,8 @@ fun <T : Number> Bundle<T>.comparisonOperation(
     comparisonOp: ComparisonOp,
     exprKey: Context.Key
 ): Bundle<Boolean> =
-    this.binaryMapToVariances(BooleanSetIndicator, other, exprKey) { a, b, constraints ->
-        a.into().comparisonOperation(b.into(), comparisonOp, constraints)
+    this.binaryMapToVariances(BooleanSetIndicator, other, exprKey) { a, b ->
+        a.into().comparisonOperation(b.into(), comparisonOp)
     }
 
 fun <T : Number> Bundle<T>.negate(): Bundle<T> =

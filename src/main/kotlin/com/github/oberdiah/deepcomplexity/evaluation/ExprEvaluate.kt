@@ -128,7 +128,7 @@ object ExprEvaluate {
                 )
 
                 evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
-                    when (bundle.collapse(constraints).into()) {
+                    when (bundle.collapse().into()) {
                         TRUE -> evaluate(expr.trueExpr, trueScope)
                         FALSE -> evaluate(expr.falseExpr, falseScope)
                         BOTH -> {
