@@ -46,6 +46,10 @@ data class NumberSet<T : Number> private constructor(
     override fun isEmpty(): Boolean = ranges.isEmpty()
 
     override fun isFull(): Boolean {
+        if (ranges.isEmpty()) {
+            return false
+        }
+
         val range = getRange()
         return range.first == ind.getMinValue() && range.second == ind.getMaxValue()
     }
@@ -147,6 +151,10 @@ data class NumberSet<T : Number> private constructor(
         other: NumberSet<T>,
         operation: ComparisonOp
     ): BooleanSet {
+        if (isEmpty() || other.isEmpty()) {
+            return BooleanSet.NEITHER
+        }
+
         assert(ind == other.ind)
         val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
         val (otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
