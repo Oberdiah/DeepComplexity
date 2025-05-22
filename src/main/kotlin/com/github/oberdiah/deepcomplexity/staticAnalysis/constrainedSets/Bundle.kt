@@ -72,6 +72,19 @@ class Bundle<T : Any> private constructor(
             }
         }
 
+        fun <Q : Any> map(op: (Variances<T>) -> Variances<Q>): ConstrainedVariances<Q> {
+            // Note: We don't need to update the variances with the constraints here, as we
+            // can guarantee they've not changed.
+            return ConstrainedVariances(op(variances), constraints)
+        }
+
+        fun <Q : Any> mapNullable(op: (Variances<T>) -> Variances<Q>?): ConstrainedVariances<Q>? {
+            // Note: We don't need to update the variances with the constraints here, as we
+            // can guarantee they've not changed.
+            val p = op(variances) ?: return null
+            return ConstrainedVariances(p, constraints)
+        }
+
         override fun toString(): String {
             return toDebugString()
         }
@@ -127,19 +140,25 @@ class Bundle<T : Any> private constructor(
 
     fun <Q : Any> unaryMapAndUnion(
         newInd: SetIndicator<Q>,
-        op: (Variances<T>, Constraints) -> Bundle<Q>
+        op: (Variances<T>) -> Bundle<Q>
     ): Bundle<Q> =
-        Bundle(newInd, variances.flatMap { bundle ->
-            op(bundle.variances, bundle.constraints).variances.mapNotNull { newBundle ->
-                val newConstraints = bundle.constraints.and(newBundle.constraints)
+        Bundle(newInd, variances.flatMap { oldVariances ->
+            op(oldVariances.variances).variances.mapNotNull { newVariances ->
+                val newConstraints = oldVariances.constraints.and(newVariances.constraints)
 
                 if (newConstraints.unreachable) {
                     null
                 } else {
-                    ConstrainedVariances.new(
-                        newBundle.variances.updateConstraints(newConstraints),
-                        newConstraints
-                    )
+                    if (oldVariances.constraints.isUnconstrained()) {
+                        // No need to combine the constraints as we've got nothing new to add,
+                        // we can just return the new bundle
+                        newVariances
+                    } else {
+                        ConstrainedVariances.new(
+                            newVariances.variances.updateConstraints(newConstraints),
+                            newConstraints
+                        )
+                    }
                 }
             }
         }.toSet())
@@ -148,9 +167,7 @@ class Bundle<T : Any> private constructor(
     fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): Bundle<T> = unaryMap(ind, op)
 
     fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): Bundle<Q> {
-        return Bundle(newInd, variances.mapToSet {
-            ConstrainedVariances.new(op(it.variances), it.constraints)
-        })
+        return Bundle(newInd, variances.mapToSet { it.map(op) })
     }
 
     fun performBinaryOperation(
@@ -249,7 +266,7 @@ class Bundle<T : Any> private constructor(
     fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
         val cast = Bundle(
             indicator, variances.mapToSet {
-                ConstrainedVariances.new(it.variances.cast(indicator) ?: return null, it.constraints)
+                it.mapNullable { v -> v.cast(indicator) } ?: return null
             }
         )
         return cast

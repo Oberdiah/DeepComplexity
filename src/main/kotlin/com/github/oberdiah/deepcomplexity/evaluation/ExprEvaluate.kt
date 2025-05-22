@@ -127,7 +127,7 @@ object ExprEvaluate {
                     ExprConstrain.getConstraints(BooleanInvertExpression(ifCondition), falseScope)
                 )
 
-                evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
+                evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle ->
                     when (bundle.collapse().into()) {
                         TRUE -> evaluate(expr.trueExpr, trueScope)
                         FALSE -> evaluate(expr.falseExpr, falseScope)

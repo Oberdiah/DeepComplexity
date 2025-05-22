@@ -15,7 +15,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short test1(short x) {
+	public static short go(short x) {
 		if (x < 3) {
 			return 2;
 		} else {
