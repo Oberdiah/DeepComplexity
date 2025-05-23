@@ -8,6 +8,9 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 object ExprConstrain {
     fun combineConstraints(a: Set<Constraints>, b: Set<Constraints>): Set<Constraints> {
         val outputConstraints: MutableSet<Constraints> = mutableSetOf()
+        if (a.size > 10 || b.size > 10) {
+            println("Warning: Combining constraints with size > 10: $a, $b")
+        }
         for (lhs in a) {
             for (rhs in b) {
                 outputConstraints.add(lhs.and(rhs))
@@ -48,10 +51,12 @@ object ExprConstrain {
      * as each side of the OR is a separate constraint.
      */
     fun getConstraints(condition: Expr<Boolean>, scope: ExprEvaluate.Scope): Set<Constraints> {
-        return when (condition) {
+        val startTime = System.currentTimeMillis()
+        val constraints = when (condition) {
             is BooleanExpression -> {
-                val lhsConstrained = condition.lhs.getConstraints(scope)
-                val rhsConstrained = condition.rhs.getConstraints(scope.constrainWith(lhsConstrained))
+                val lhsConstrained = getConstraints(condition.lhs, scope)
+                val constrainedScope = scope.constrainWith(lhsConstrained)
+                val rhsConstrained = getConstraints(condition.rhs, constrainedScope)
 
                 val outputConstraints: MutableSet<Constraints> = mutableSetOf()
                 when (condition.op) {
@@ -95,8 +100,14 @@ object ExprConstrain {
                 }.toSet()
             }
 
-            is BooleanInvertExpression -> condition.expr.inverted().getConstraints(scope)
+            is BooleanInvertExpression -> getConstraints(condition.expr.inverted(), scope)
             else -> TODO("Not implemented constraints for $condition")
         }
+        val endTime = System.currentTimeMillis()
+        if (endTime - startTime > 10) {
+            println("Warning: getConstraints took ${endTime - startTime}ms")
+        }
+
+        return constraints
     }
 }

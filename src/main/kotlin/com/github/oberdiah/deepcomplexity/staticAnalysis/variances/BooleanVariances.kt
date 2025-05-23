@@ -9,7 +9,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constra
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 
-class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> {
+data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> {
     override fun toString(): String = value.toString()
 
     fun invert(): BooleanVariances = BooleanVariances(value.invert())

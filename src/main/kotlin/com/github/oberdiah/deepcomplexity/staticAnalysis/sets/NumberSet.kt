@@ -117,6 +117,10 @@ data class NumberSet<T : Number> private constructor(
             MODULO -> return doModulo(other)
         }
 
+        if (ranges.size > 10) {
+            println("Warning: NumberSet has more than 5 ranges, this may be slow.")
+        }
+
         var hasThrownDivideByZero = false
         val newList: MutableList<NumberRange<T>> = mutableListOf()
         for (range in ranges) {

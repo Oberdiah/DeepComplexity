@@ -15,7 +15,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short go(short x) {
+	public static short test1(short x) {
 		if (x < 3) {
 			return 2;
 		} else {
@@ -664,6 +664,26 @@ public class MyTestData {
 			return x;
 		}
 		return 0;
+	}
+	
+	public static short nastyPerformanceTest(short x) {
+		int a = 0;
+		
+		if (x > 2 && x < 10) {
+			a = x;
+		}
+		
+		int b = 0;
+		if (a > 0 && a < 10) {
+			b = a;
+		}
+		
+		int c = 0;
+		if (b > 0 && b < 10) {
+			c = b;
+		}
+		
+		return (short) (a + b + c);
 	}
 	
 	@RequiredScore(1.0)

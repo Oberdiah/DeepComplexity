@@ -37,6 +37,12 @@ class Bundle<T : Any> private constructor(
     val ind: SetIndicator<T>,
     val variances: Set<ConstrainedVariances<T>>
 ) {
+    init {
+        assert(variances.size < 50) {
+            "Bundle has far too many variances: ${variances.size} ($variances)"
+        }
+    }
+
     companion object {
         fun <T : Any> empty(ind: SetIndicator<T>): Bundle<T> {
             return Bundle(ind, setOf())

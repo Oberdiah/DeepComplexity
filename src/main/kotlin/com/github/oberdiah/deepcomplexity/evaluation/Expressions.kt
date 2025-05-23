@@ -7,8 +7,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
@@ -88,9 +86,6 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
         null
     }
 }
-
-fun Expr<Boolean>.getConstraints(scope: ExprEvaluate.Scope): Set<Constraints> =
-    ExprConstrain.getConstraints(this, scope)
 
 /**
  * An expression that doesn't return anything.

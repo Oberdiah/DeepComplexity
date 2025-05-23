@@ -83,7 +83,7 @@ object TestUtilities {
         }
 
         val range = try {
-//            println(context.debugKey(methodKey).prependIndent())
+            println(context.debugKey(methodKey).prependIndent())
             val bundle: Bundle<*> = context.evaluateKey(methodKey)
             bundle.cast(ShortSetIndicator)!!.collapse()
         } catch (e: Throwable) {
