@@ -13,54 +13,15 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
-import com.jetbrains.rd.util.firstOrNull
-
-// Ok, here's the new thinking:
-// This is a really difficult problem, and it's not possible to do it 100% correctly, but we're going to
-// try as best we can, because there's a lot to gain from getting most of the way there.
-// The idea is that we're going to go back to variances storing their own version of constraints internally.
-// To begin with we'll keep all the constraints being passed in, we'll just also keep track of them inside
-// and update our internal representation as we go along.
-// Using that, we're going to make best-guesses at how to perform each of these operations on this strange
-// data structure.
-// The important part is we're going to start verifying that the result, when collapsed, is the same as
-// the result of the operation done on the collapsed version instead.
-// We can specify that as an invariant when getting started.
-// That way we can quickly catch mistakes that we make along the way.
-// This doesn't solve the problem of generating the constraints themselves, which I think may still be quite
-// hard to do correctly, but at the very least it sorts most of the stuff out.
-// Long term for that I want to store constraints as variances.
+import com.jetbrains.rd.util.first
 
 @ConsistentCopyVisibility
 data class NumberVariances<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
-    private val variances: Map<Context.Key, Variance<T>> = mapOf()
+    private val multipliers: Map<Context.Key, NumberSet<T>> = mapOf()
 ) : Variances<T> {
-    class Variance<T : Number>(
-        private val ind: NumberSetIndicator<T>,
-        /**
-         * The value that the underlying variable is being multiplied by.
-         * This should always be 1 for ephemeral keys.
-         */
-        val multiplier: NumberSet<T> = ind.onlyOneSet(),
-        /**
-         * Whatever the underlying variable is known to be constrained within.
-         * This can be tighter than constraints passed in, for example, after a casting operation.
-         */
-        val restrictor: NumberSet<T> = ind.newFullSet()
-    ) {
-        fun collapse(): NumberSet<T> = multiplier.multiply(restrictor)
-        override fun toString(): String {
-            return if (restrictor.isFull() || restrictor.isZero()) {
-                "$multiplier"
-            } else {
-                "$multiplier[$restrictor]"
-            }
-        }
-    }
-
     init {
-        assert(variances.keys.count { it.isEphemeral() } <= 1) {
+        assert(multipliers.keys.count { it.isEphemeral() } <= 1) {
             "Only one ephemeral key is allowed in the variances map"
         }
     }
@@ -72,34 +33,68 @@ data class NumberVariances<T : Number> private constructor(
         if (this === other) return true
         if (other !is NumberVariances<*>) return false
         if (ind != other.ind) return false
-        val myNonEphemeralMultipliers = variances.filterKeys { !it.isEphemeral() }
-        val otherNonEphemeralMultipliers = other.variances.filterKeys { !it.isEphemeral() }
+        val myNonEphemeralMultipliers = multipliers.filterKeys { !it.isEphemeral() }
+        val otherNonEphemeralMultipliers = other.multipliers.filterKeys { !it.isEphemeral() }
         if (myNonEphemeralMultipliers != otherNonEphemeralMultipliers) return false
-        val myEphemeralMultiplier = variances.filterKeys { it.isEphemeral() }.firstOrNull()?.value
-        val otherEphemeralMultiplier = other.variances.filterKeys { it.isEphemeral() }.firstOrNull()?.value
+        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.first().value
+        val otherEphemeralMultiplier = other.multipliers.filterKeys { it.isEphemeral() }.first().value
         return myEphemeralMultiplier == otherEphemeralMultiplier
     }
 
     override fun hashCode(): Int {
         var result = ind.hashCode()
-        val myNonEphemeralMultipliers = variances.filterKeys { !it.isEphemeral() }
+        val myNonEphemeralMultipliers = multipliers.filterKeys { !it.isEphemeral() }
         result = 31 * result + myNonEphemeralMultipliers.hashCode()
-        val myEphemeralMultiplier = variances.filterKeys { it.isEphemeral() }.firstOrNull()?.value
+        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.first().value
         result = 31 * result + myEphemeralMultiplier.hashCode()
         return result
     }
 
     override fun toString(): String {
+        return multipliers.entries.joinToString(", ") { (key, multiplier) ->
+            "$key: ($multiplier)"
+        }
+    }
+
+    companion object {
+        fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
+            newFromMultiplierMap(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))
+
+        fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Context.Key): NumberVariances<T> {
+            return newFromMultiplierMap(ind, mapOf(key to ind.onlyOneSet()))
+        }
+
+        private fun <T : Number> newFromMultiplierMap(
+            ind: NumberSetIndicator<T>,
+            multipliers: Map<Context.Key, NumberSet<T>>
+        ): NumberVariances<T> {
+            val ephemeralMap = multipliers.filterKeys { it.isEphemeral() }
+            val notEphemeralMap = multipliers.filterKeys { !it.isEphemeral() }
+
+            // Ensure only one ephemeral key is present.
+            // If more than one is present, we need to merge them through addition.
+            // I think proving division with this might be really hard.
+            val ephemeralMultiplier =
+                ephemeralMap.values.fold(ind.onlyZeroSet()) { acc, multiplier ->
+                    acc.add(multiplier)
+                }
+
+            return NumberVariances(
+                ind,
+                notEphemeralMap + (Context.Key.EphemeralKey.new() to ephemeralMultiplier)
+            )
+        }
+    }
+
+    override fun toDebugString(constraints: Constraints): String {
         return if (varsTracking().isEmpty()) {
-            collapse().toString()
+            collapse(constraints).toString()
         } else {
-            variances.entries
-                .filter { (k, m) -> !(m.restrictor.isZero() && k.isAutogenerated()) }
-                .joinToString(" + ") { (key, variance) ->
-                    val multiplierStr =
-                        if (variance.multiplier.isOne() && !key.isEphemeral()) "" else "${variance.multiplier}"
+            multipliers.entries.filter { (k, m) -> !(m.isZero() && k.isAutogenerated()) }
+                .joinToString(" + ") { (key, multiplier) ->
+                    val multiplierStr = if (multiplier.isOne() && !key.isEphemeral()) "" else "$multiplier"
                     val keyStr = if (key.isEphemeral()) "" else key.toString()
-                    val constraint = variance.restrictor
+                    val constraint = constraints.getConstraint(ind, key)
                     val constraintStr = if (constraint.isFull()) "" else "[$constraint]"
 
                     "$multiplierStr$keyStr$constraintStr"
@@ -107,72 +102,31 @@ data class NumberVariances<T : Number> private constructor(
         }
     }
 
-    companion object {
-        fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
-            newFromVariances(
-                constant.ind,
-                mapOf(Context.Key.EphemeralKey.new() to Variance(constant.ind, restrictor = constant))
-            )
-
-        fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Context.Key): NumberVariances<T> {
-            return newFromVariances(ind, mapOf(key to Variance(ind)))
-        }
-
-        private fun <T : Number> newFromVariances(
-            ind: NumberSetIndicator<T>,
-            variances: Map<Context.Key, Variance<T>>
-        ): NumberVariances<T> {
-            val ephemeralMap = variances.filterKeys { it.isEphemeral() }
-            val notEphemeralMap = variances.filterKeys { !it.isEphemeral() }
-
-            // Ensure only one ephemeral key is present.
-            // If more than one is present, we need to merge them through addition.
-            // I think proving division with this might be really hard.
-            val ephemeralRestrictor =
-                ephemeralMap.values.fold(ind.onlyZeroSet()) { acc, variance ->
-                    acc.add(variance.collapse())
-                }
-
-            val finalMap = if (!ephemeralRestrictor.isEmpty()) {
-                notEphemeralMap + (Context.Key.EphemeralKey.new() to Variance(ind, restrictor = ephemeralRestrictor))
-            } else {
-                notEphemeralMap
-            }
-
-            return NumberVariances(ind, finalMap)
-        }
-    }
-
-    override fun updateConstraints(constraints: Constraints): Variances<T> {
-        return newFromVariances(ind, variances.mapValues { (key, variance) ->
-            Variance(
-                ind,
-                variance.multiplier,
-                variance.restrictor.intersect(constraints.getConstraint(ind, key).into())
-            )
-        })
-    }
-
-    override fun toDebugString(): String = toString()
-
     override fun varsTracking(): Collection<Context.Key> {
-        return variances.keys.filter { !it.isEphemeral() }
+        return multipliers.keys.filter { !it.isEphemeral() }
     }
 
-    override fun reduceAndSimplify(scope: ExprEvaluate.Scope): Variances<T> {
-        return newFromVariances(
+    override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<T> {
+        return newFromMultiplierMap(
             ind,
-            variances.entries.associate { (key, variance) ->
+            multipliers.entries.associate { (key, v) ->
                 if (scope.shouldKeep(key)) {
-                    key to variance
+                    key to v
                 } else {
-                    Context.Key.EphemeralKey.new() to Variance(
-                        ind,
-                        restrictor = variance.collapse()
-                    )
+                    Context.Key.EphemeralKey.new() to v.multiply(grabConstraint(constraints, key))
                 }
             }
         )
+    }
+
+    fun grabConstraint(constraints: Constraints, key: Context.Key): NumberSet<T> {
+        return if (key.isEphemeral()) {
+            // Constants/ephemeral keys don't have any variance or constraints,
+            // so the 'variable', if you can call it that, is always constrained to exactly 1.
+            ind.onlyOneSet()
+        } else {
+            constraints.getConstraint(ind, key).into()
+        }
     }
 
     /**
@@ -180,12 +134,10 @@ data class NumberVariances<T : Number> private constructor(
      * Requires constraints because a NumberVariance on its own doesn't contain
      * all the information it needs alone.
      */
-    override fun collapse(): NumberSet<T> {
-        val result = variances.entries.fold(ind.onlyZeroSet()) { acc, (_, variance) ->
-            acc.add(variance.collapse())
+    override fun collapse(constraints: Constraints): NumberSet<T> =
+        multipliers.entries.fold(ind.onlyZeroSet()) { acc, (key, multiplier) ->
+            acc.add(multiplier.multiply(grabConstraint(constraints, key)))
         }
-        return result
-    }
 
     override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? {
         if (newInd !is NumberSetIndicator<*>) {
@@ -193,12 +145,10 @@ data class NumberVariances<T : Number> private constructor(
         }
 
         fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberVariances<OutT>? {
-            return newFromVariances(newInd, variances.mapValues { (_, variance) ->
-                Variance(
-                    newInd,
-                    multiplier = variance.multiplier.cast(newInd)?.into() ?: return null,
-                    restrictor = variance.restrictor.cast(newInd)?.into() ?: return null
-                )
+            return newFromMultiplierMap(newInd, multipliers.mapValues { (_, multiplier) ->
+                // I have no idea if doing this actually works with wrapping. Probably doesn't.
+                // Worth writing a test for it at some point.
+                multiplier.cast(newInd)?.into() ?: return null
             })
         }
 
@@ -206,69 +156,50 @@ data class NumberVariances<T : Number> private constructor(
         return extra(newInd) as Variances<Q>?
     }
 
-    fun isOne(): Boolean = collapse().isOne()
+    fun isOne(constraints: Constraints): Boolean = collapse(constraints).isOne()
 
     fun negate(): NumberVariances<T> {
-        return newFromVariances(ind, variances.mapValues { (_, variances) ->
-            Variance(
-                ind,
-                multiplier = variances.multiplier.negate(),
-                restrictor = variances.restrictor
-            )
+        return newFromMultiplierMap(ind, multipliers.mapValues { (_, multiplier) ->
+            multiplier.negate()
         })
     }
 
     fun arithmeticOperation(
         other: NumberVariances<T>,
-        operation: BinaryNumberOp
+        operation: BinaryNumberOp,
+        constraints: Constraints
     ): NumberVariances<T> {
         when (operation) {
             ADDITION, SUBTRACTION -> {
-                val me = variances
-                val other = other.variances
-
-                val result = newFromVariances(
+                return newFromMultiplierMap(
                     ind, Functional.mergeMapsWithBlank(
-                        me,
-                        other,
-                        Variance(ind, multiplier = ind.onlyZeroSet())
+                        multipliers,
+                        other.multipliers,
+                        ind.onlyZeroSet()
                     ) { me, other ->
-                        val v = Variance(
-                            ind,
-                            multiplier = if (operation == ADDITION) {
-                                me.multiplier.add(other.multiplier)
-                            } else {
-                                me.multiplier.subtract(other.multiplier)
-                            },
-                            restrictor = me.restrictor.intersect(other.restrictor)
-                        )
-                        v
+                        if (operation == ADDITION) {
+                            me.add(other)
+                        } else {
+                            me.subtract(other)
+                        }
                     })
-
-                return result
             }
 
             MULTIPLICATION -> {
-                val newVariances = mutableMapOf<Context.Key, Variance<T>>()
+                val newMultipliers = mutableMapOf<Context.Key, NumberSet<T>>()
 
-                for ((key, meVariance) in variances) {
-                    for ((otherKey, otherVariance) in other.variances) {
-                        val meCollapsed = meVariance.collapse()
-                        val otherCollapsed = otherVariance.collapse()
+                for ((key, meMultiplier) in multipliers) {
+                    for ((otherKey, otherMultiplier) in other.multipliers) {
+                        val meCollapsed = meMultiplier.multiply(grabConstraint(constraints, key))
+                        val otherCollapsed = otherMultiplier.multiply(grabConstraint(constraints, otherKey))
 
                         val myImportance = key.importance()
                         val otherImportance = otherKey.importance()
 
                         val baseMultiplier = if (myImportance >= otherImportance) {
-                            meVariance.multiplier.multiply(otherCollapsed)
+                            meMultiplier.multiply(otherCollapsed)
                         } else {
-                            otherVariance.multiplier.multiply(meCollapsed)
-                        }
-
-                        val baseRestrictor = if (myImportance >= otherImportance) {
-                            meVariance.restrictor
-                        } else {
-                            otherVariance.restrictor
+                            otherMultiplier.multiply(meCollapsed)
                         }
 
                         val newMultiplier = if (key == otherKey) {
@@ -279,21 +210,17 @@ data class NumberVariances<T : Number> private constructor(
 
                         val baseKey = if (myImportance >= otherImportance) key else otherKey
 
-                        newVariances.compute(baseKey) { _, set ->
-                            Variance(
-                                ind,
-                                multiplier = set?.multiplier?.add(newMultiplier) ?: newMultiplier,
-                                restrictor = set?.restrictor?.intersect(baseRestrictor) ?: baseRestrictor
-                            )
+                        newMultipliers.compute(baseKey) { _, set ->
+                            set?.add(newMultiplier) ?: newMultiplier
                         }
                     }
                 }
 
-                return newFromVariances(ind, newVariances)
+                return newFromMultiplierMap(ind, newMultipliers)
             }
 
             DIVISION -> {
-                if (other.isOne()) {
+                if (other.isOne(constraints)) {
                     return this
                 }
 
@@ -302,8 +229,8 @@ data class NumberVariances<T : Number> private constructor(
             }
 
             MODULO -> {
-                val meCollapsed = this.collapse()
-                val otherCollapsed = other.collapse()
+                val meCollapsed = this.collapse(constraints)
+                val otherCollapsed = other.collapse(constraints)
 
                 return newFromConstant(
                     meCollapsed.arithmeticOperation(otherCollapsed, MODULO)
@@ -315,21 +242,23 @@ data class NumberVariances<T : Number> private constructor(
     fun comparisonOperation(
         other: NumberVariances<T>,
         operation: ComparisonOp,
+        constraints: Constraints
     ): BooleanVariances =
         // We could maybe do something smarter here long-term, but this'll do for now.
-        collapse().comparisonOperation(other.collapse(), operation).toConstVariance().into()
+        collapse(constraints).comparisonOperation(other.collapse(constraints), operation).toConstVariance().into()
 
     fun generateConstraintsFrom(
         other: NumberVariances<T>,
-        comp: ComparisonOp
+        comp: ComparisonOp,
+        incomingConstraints: Constraints
     ): Constraints {
-        val allKeys = (variances.keys + other.variances.keys).filter { !it.isEphemeral() }
+        val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isEphemeral() }
 
         var constraints = Constraints.completelyUnconstrained()
 
         for (key in allKeys) {
-            val myKeyMultiplier = variances[key]?.multiplier ?: ind.onlyZeroSet()
-            val otherKeyMultiplier = other.variances[key]?.multiplier ?: ind.onlyZeroSet()
+            val myKeyMultiplier = multipliers[key] ?: ind.onlyZeroSet()
+            val otherKeyMultiplier = other.multipliers[key] ?: ind.onlyZeroSet()
 
             fun <T : Number> extra(keyInd: NumberSetIndicator<T>) {
                 // Move all the keys onto the left
@@ -337,12 +266,12 @@ data class NumberVariances<T : Number> private constructor(
                     .cast(keyInd)!!.into()
 
                 val lhsConstant =
-                    newFromVariances(ind, variances.filter { it.key != key })
-                        .collapse()
+                    newFromMultiplierMap(ind, multipliers.filter { it.key != key })
+                        .collapse(incomingConstraints)
                         .cast(keyInd)!!.into()
                 val rhsConstant =
-                    newFromVariances(ind, other.variances.filter { it.key != key })
-                        .collapse()
+                    newFromMultiplierMap(ind, other.multipliers.filter { it.key != key })
+                        .collapse(incomingConstraints)
                         .cast(keyInd)!!.into()
 
                 val constant = rhsConstant.subtract(lhsConstant)

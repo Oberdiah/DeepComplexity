@@ -9,14 +9,13 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 interface Variances<T : Any> {
     val ind: SetIndicator<T>
     fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>?
-    fun collapse(): ISet<T>
-    fun toDebugString(): String
+    fun collapse(constraints: Constraints): ISet<T>
+    fun toDebugString(constraints: Constraints): String
 
     /**
      * Returns true if this variance is currently tracking the given key, i.e. the variance would
      * return a different value if that key was constrained.
      */
     fun varsTracking(): Collection<Context.Key>
-    fun reduceAndSimplify(scope: ExprEvaluate.Scope): Variances<T>
-    fun updateConstraints(constraints: Constraints): Variances<T>
+    fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<T>
 }
