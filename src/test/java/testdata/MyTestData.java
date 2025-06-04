@@ -195,7 +195,6 @@ public class MyTestData {
 		return (short) (x / x);
 	}
 	
-	@RequiredScore(1.0)
 	public static short oneTest3(short x) {
 		return (short) ((short) (x + 1) - x);
 	}
@@ -645,7 +644,6 @@ public class MyTestData {
 		return 0;
 	}
 	
-	@RequiredScore(1.0)
 	public static short largeMultiplication1(short x) {
 		return (short) (x * 65536);
 	}
@@ -789,6 +787,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short nearlyImpossible(short x) {
 		short y = (short) (x - 1);
 		if (x < 0 && y > 0) {
@@ -798,6 +797,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short alsoNearlyImpossible(short x) {
 		int a = x * -65536 - 65535;
 		if (a < 0 && a - 1 > 0) {

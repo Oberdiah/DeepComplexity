@@ -13,8 +13,20 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.github.oberdiah.deepcomplexity.utilities.Functional
-import com.jetbrains.rd.util.first
+import com.jetbrains.rd.util.firstOrNull
 
+/**
+ * The way this works with casting is that if the key is not of the base indicator type, we'll assume
+ * casting is the first thing that happens.
+ *
+ * This means we need to be able to figure out whether an equation *could* have wrapped, and if so,
+ * we have no choice but to collapse it. Simple tracking with a constant of 1,
+ * such as `Variances<Short>(x(short): 1)`, can be guaranteed not to wrap, so that stuff is straightforward.
+ *
+ * However, `Variances<Short>(x(short): 2)`, and `Variances<Short>(x(short): 1, y(short): 1)` both may have
+ * ended up wrapping, so with a naive implementation they'd need to be collapsed. Whether I actually
+ * end up doing that or not remains to be seen.
+ */
 @ConsistentCopyVisibility
 data class NumberVariances<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
@@ -36,8 +48,8 @@ data class NumberVariances<T : Number> private constructor(
         val myNonEphemeralMultipliers = multipliers.filterKeys { !it.isEphemeral() }
         val otherNonEphemeralMultipliers = other.multipliers.filterKeys { !it.isEphemeral() }
         if (myNonEphemeralMultipliers != otherNonEphemeralMultipliers) return false
-        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.first().value
-        val otherEphemeralMultiplier = other.multipliers.filterKeys { it.isEphemeral() }.first().value
+        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.firstOrNull()?.value
+        val otherEphemeralMultiplier = other.multipliers.filterKeys { it.isEphemeral() }.firstOrNull()?.value
         return myEphemeralMultiplier == otherEphemeralMultiplier
     }
 
@@ -45,7 +57,7 @@ data class NumberVariances<T : Number> private constructor(
         var result = ind.hashCode()
         val myNonEphemeralMultipliers = multipliers.filterKeys { !it.isEphemeral() }
         result = 31 * result + myNonEphemeralMultipliers.hashCode()
-        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.first().value
+        val myEphemeralMultiplier = multipliers.filterKeys { it.isEphemeral() }.firstOrNull()?.value
         result = 31 * result + myEphemeralMultiplier.hashCode()
         return result
     }
@@ -78,6 +90,11 @@ data class NumberVariances<T : Number> private constructor(
                 ephemeralMap.values.fold(ind.onlyZeroSet()) { acc, multiplier ->
                     acc.add(multiplier)
                 }
+
+            if (ephemeralMultiplier.isZero()) {
+                // If the ephemeral multiplier is zero, we should just ignore it.
+                return NumberVariances(ind, notEphemeralMap)
+            }
 
             return NumberVariances(
                 ind,
@@ -139,17 +156,27 @@ data class NumberVariances<T : Number> private constructor(
             acc.add(multiplier.multiply(grabConstraint(constraints, key)))
         }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>? {
         if (newInd !is NumberSetIndicator<*>) {
             return null
         }
+        if (newInd == ind) {
+            // Safety: newInd == ind.
+            @Suppress("UNCHECKED_CAST")
+            return this as Variances<Q>
+        }
 
         fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberVariances<OutT>? {
-            return newFromMultiplierMap(newInd, multipliers.mapValues { (_, multiplier) ->
-                // I have no idea if doing this actually works with wrapping. Probably doesn't.
-                // Worth writing a test for it at some point.
-                multiplier.cast(newInd)?.into() ?: return null
-            })
+            // If we're only tracking a single variable with a multiplier of 1, and there's no ephemeral offset,
+            // we can safely cast ourselves directly to the new indicator.
+            if (multipliers.size == 1) {
+                if (multipliers.values.first().isOne() && !multipliers.keys.first().isEphemeral()) {
+                    return newFromMultiplierMap(newInd, mapOf(multipliers.keys.first() to newInd.onlyOneSet()))
+                }
+            }
+
+            val q = collapse(constraints).cast(newInd)?.into() ?: return null
+            return newFromConstant(q)
         }
 
         @Suppress("UNCHECKED_CAST") // Safety: Trivially true by checking the signature of extra().
@@ -260,49 +287,44 @@ data class NumberVariances<T : Number> private constructor(
             val myKeyMultiplier = multipliers[key] ?: ind.onlyZeroSet()
             val otherKeyMultiplier = other.multipliers[key] ?: ind.onlyZeroSet()
 
-            fun <T : Number> extra(keyInd: NumberSetIndicator<T>) {
-                // Move all the keys onto the left
-                val coefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
-                    .cast(keyInd)!!.into()
+            // Move all the keys onto the left
+            val coefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
 
-                val lhsConstant =
-                    newFromMultiplierMap(ind, multipliers.filter { it.key != key })
-                        .collapse(incomingConstraints)
-                        .cast(keyInd)!!.into()
-                val rhsConstant =
-                    newFromMultiplierMap(ind, other.multipliers.filter { it.key != key })
-                        .collapse(incomingConstraints)
-                        .cast(keyInd)!!.into()
+            val lhsConstant =
+                newFromMultiplierMap(ind, multipliers.filter { it.key != key })
+                    .collapse(incomingConstraints)
 
-                val constant = rhsConstant.subtract(lhsConstant)
+            val rhsConstant =
+                newFromMultiplierMap(ind, other.multipliers.filter { it.key != key })
+                    .collapse(incomingConstraints)
 
-                if (coefficient.isZero()) {
-                    // The key has cancelled itself out, this is now an all-or-nothing situation:
-                    // either the constraint is met, or it isn't.
-                    // The equation at this point looks like `0x blah constant`
-                    // So we can just check the constant against zero.
-                    val meetsConstraint = keyInd.onlyZeroSet().comparisonOperation(constant, comp)
-                    constraints = when (meetsConstraint) {
-                        BooleanSet.BOTH, BooleanSet.TRUE -> constraints.withConstraint(key, keyInd.newFullSet())
-                        BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, keyInd.newEmptySet())
-                    }
-                } else {
-                    val shouldFlip = coefficient.comparisonOperation(keyInd.onlyZeroSet(), ComparisonOp.LESS_THAN)
-                    val rhs = constant.divide(coefficient)
-                    val constraint = when (shouldFlip) {
-                        BooleanSet.TRUE -> rhs.getSetSatisfying(comp.flip())
-                        BooleanSet.FALSE -> rhs.getSetSatisfying(comp)
-                        BooleanSet.BOTH -> rhs.getSetSatisfying(comp)
-                            .union(rhs.getSetSatisfying(comp.flip()))
+            val constant = rhsConstant.subtract(lhsConstant)
 
-                        BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
-                    }
-
-                    constraints = constraints.withConstraint(key, constraint)
+            if (coefficient.isZero()) {
+                // The key has cancelled itself out, this is now an all-or-nothing situation:
+                // either the constraint is met, or it isn't.
+                // The equation at this point looks like `0x blah constant`
+                // So we can just check the constant against zero.
+                val meetsConstraint = ind.onlyZeroSet().comparisonOperation(constant, comp)
+                constraints = when (meetsConstraint) {
+                    BooleanSet.BOTH, BooleanSet.TRUE -> constraints.withConstraint(key, key.ind.newFullSet())
+                    BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, key.ind.newEmptySet())
                 }
-            }
+            } else {
+                val shouldFlip = coefficient.comparisonOperation(ind.onlyZeroSet(), ComparisonOp.LESS_THAN)
+                val rhs = constant.divide(coefficient)
+                val constraint = when (shouldFlip) {
+                    BooleanSet.TRUE -> rhs.getSetSatisfying(comp.flip())
+                    BooleanSet.FALSE -> rhs.getSetSatisfying(comp)
+                    BooleanSet.BOTH -> rhs.getSetSatisfying(comp)
+                        .union(rhs.getSetSatisfying(comp.flip()))
 
-            extra(key.ind as NumberSetIndicator<*>)
+                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                }
+
+                // I'm slightly unsure about this cast.
+                constraints = constraints.withConstraint(key, constraint.clampCast(key.ind)!!)
+            }
         }
 
         return constraints

@@ -8,7 +8,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 
 interface Variances<T : Any> {
     val ind: SetIndicator<T>
-    fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>?
+    fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>?
     fun collapse(constraints: Constraints): ISet<T>
     fun toDebugString(constraints: Constraints): String
 

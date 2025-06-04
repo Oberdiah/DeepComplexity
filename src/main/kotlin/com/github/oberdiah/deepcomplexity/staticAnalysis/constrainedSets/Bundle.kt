@@ -255,7 +255,7 @@ class Bundle<T : Any> private constructor(
     fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
         val cast = Bundle(
             indicator, variances.mapToSet {
-                ConstrainedVariances.new(it.variances.cast(indicator) ?: return null, it.constraints)
+                ConstrainedVariances.new(it.variances.cast(indicator, it.constraints) ?: return null, it.constraints)
             }
         )
         return cast

@@ -23,7 +23,7 @@ class GenericVariances<T : Any>(private val value: GenericSet<T>) : Variances<T>
         return this
     }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>? {
         TODO("Not yet implemented")
     }
 }
