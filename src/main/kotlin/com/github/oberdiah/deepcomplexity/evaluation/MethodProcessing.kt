@@ -10,6 +10,7 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
+import com.jetbrains.rd.util.firstOrNull
 
 object MethodProcessing {
     fun printMethod(method: PsiMethod, evaluate: Boolean) {
@@ -286,7 +287,29 @@ object MethodProcessing {
             }
 
             is PsiMethodCallExpression -> {
-                // We're not thinking about methods yet.
+                val methodContext = Context.new()
+                val method = psi.methodExpression.resolveIfNeeded() as PsiMethod
+
+                val parameters = method.parameterList.parameters
+                val arguments = psi.argumentList.expressions
+
+                if (parameters.size != arguments.size) {
+                    throw ExpressionIncompleteException(
+                        "Method call ${method.name} expects ${parameters.size} parameters, but got ${arguments.size} arguments."
+                    )
+                }
+
+                for ((param, arg) in parameters.zip(arguments)) {
+                    val argExpr = processPsiElement(arg, context)
+                    methodContext.putVar(param, argExpr)
+                }
+
+                method.body?.let { body ->
+                    processPsiElement(body, methodContext)
+                }
+                // This won't work for arguments passed by reference as they get updated, but for now
+                // this'll be fine.
+                return methodContext.variables.filter { it.key.isMethod() }.firstOrNull()?.value ?: VoidExpression()
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {

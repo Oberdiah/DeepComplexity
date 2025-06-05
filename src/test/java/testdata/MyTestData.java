@@ -837,4 +837,17 @@ public class MyTestData {
 			return 200;
 		}
 	}
+	
+	@RequiredScore(1.0)
+	public static short simpleMethodTest1(short x) {
+		return (short) simplePrivateMethod(x - 10, x);
+	}
+	
+	private static int simplePrivateMethod(int x, int b) {
+		if (x > 0 && x < 10) {
+			return b;
+		} else {
+			return 0;
+		}
+	}
 }

@@ -37,9 +37,11 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
             for (file in outputFiles) {
                 if (file is PsiJavaFile) {
                     list.addAll(file.classes.flatMap { psiClass ->
-                        psiClass.methods.map { psiMethod ->
-                            TestInfo(psiMethod, psiMethod.name, file.name)
-                        }
+                        psiClass.methods
+                            .filter { it.hasModifierProperty("public") }
+                            .map { psiMethod ->
+                                TestInfo(psiMethod, psiMethod.name, file.name)
+                            }
                     })
                 }
             }
