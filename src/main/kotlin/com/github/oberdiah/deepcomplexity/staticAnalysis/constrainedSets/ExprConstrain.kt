@@ -92,7 +92,7 @@ object ExprConstrain {
 
             is ConstExpr -> {
                 return condition.constSet.variances.map {
-                    when (it.variances.collapse().into()) {
+                    when (it.variances.collapse(it.constraints).into()) {
                         // Unsure if this is correct
                         BooleanSet.TRUE, BooleanSet.BOTH -> Constraints.completelyUnconstrained()
                         BooleanSet.FALSE, BooleanSet.NEITHER -> Constraints.unreachable()

@@ -76,6 +76,16 @@ data class NumberSet<T : Number> private constructor(
         return makeNew(ranges.flatMap { elem -> zero.subtract(elem) })
     }
 
+    /**
+     * Like a regular cast, but rather than wrapping it will clamp instead.
+     */
+    fun <Q : Any> clampCast(newInd: SetIndicator<Q>): ISet<Q>? {
+        // Intersect with the new indicator's full set, removing anything that might
+        // result in wrapping, and then cast to the new indicator, guaranteed wrap-free.
+        val newIndFullSet = newInd.newFullSet().cast(ind) ?: return null
+        return this.intersect(newIndFullSet).cast(newInd)
+    }
+
     override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
         if (newInd !is NumberSetIndicator<*>) {
             return null

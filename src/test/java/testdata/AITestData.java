@@ -168,6 +168,7 @@ public class AITestData {
 	}
 	
 	// Test 8: Combination of multiplication and conditional boundary
+	@RequiredScore(1.0)
 	public static short multiplyAndCompare(short x) {
 		int doubled = x * 2;
 		

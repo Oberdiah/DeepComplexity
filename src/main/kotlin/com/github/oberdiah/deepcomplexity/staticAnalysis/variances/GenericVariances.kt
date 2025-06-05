@@ -11,23 +11,19 @@ class GenericVariances<T : Any>(private val value: GenericSet<T>) : Variances<T>
     override val ind: SetIndicator<T>
         get() = TODO("Not yet implemented")
 
-    override fun toDebugString(): String {
+    override fun toDebugString(constraints: Constraints): String {
         TODO("Not yet implemented")
     }
 
     override fun varsTracking(): Collection<Context.Key> = emptyList()
 
-    override fun collapse(): ISet<T> = value
+    override fun collapse(constraints: Constraints): ISet<T> = value
 
-    override fun reduceAndSimplify(scope: ExprEvaluate.Scope): Variances<T> {
+    override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<T> {
         return this
     }
 
-    override fun updateConstraints(constraints: Constraints): Variances<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): Variances<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>? {
         TODO("Not yet implemented")
     }
 }
