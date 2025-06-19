@@ -54,7 +54,23 @@ data class NumberSet<T : Number> private constructor(
         return range.first == ind.getMinValue() && range.second == ind.getMaxValue()
     }
 
-    private fun makeNew(ranges: List<NumberRange<T>>, thrownDivByZero: Boolean? = null): NumberSet<T> {
+    /**
+     * Use when called from a binary operation context.
+     * `other` is for tracking hasThrownDivideByZero. You can override this if you want with `thrownDivByZero`.
+     */
+    private fun binaryMakeNew(
+        other: NumberSet<T>,
+        ranges: List<NumberRange<T>>,
+        thrownDivByZero: Boolean? = null
+    ): NumberSet<T> {
+        return NumberSet(
+            ind,
+            thrownDivByZero ?: (other.hasThrownDivideByZero || hasThrownDivideByZero),
+            NumberUtilities.mergeAndDeduplicate(ranges)
+        )
+    }
+
+    private fun unaryMakeNew(ranges: List<NumberRange<T>>, thrownDivByZero: Boolean? = null): NumberSet<T> {
         return NumberSet(
             ind,
             thrownDivByZero ?: hasThrownDivideByZero,
@@ -73,7 +89,7 @@ data class NumberSet<T : Number> private constructor(
 
     fun negate(): NumberSet<T> {
         val zero = NumberRange.fromConstant(ind.getZero())
-        return makeNew(ranges.flatMap { elem -> zero.subtract(elem) })
+        return unaryMakeNew(ranges.flatMap { elem -> zero.subtract(elem) })
     }
 
     /**
@@ -131,7 +147,7 @@ data class NumberSet<T : Number> private constructor(
             println("Warning: NumberSet has more than 5 ranges, this may be slow.")
         }
 
-        var hasThrownDivideByZero = false
+        var hasThrownDivideByZero = this.hasThrownDivideByZero || other.hasThrownDivideByZero
         val newList: MutableList<NumberRange<T>> = mutableListOf()
         for (range in ranges) {
             for (otherRange in other.ranges) {
@@ -144,7 +160,7 @@ data class NumberSet<T : Number> private constructor(
             }
         }
 
-        return makeNew(newList, hasThrownDivideByZero)
+        return binaryMakeNew(other, newList, hasThrownDivideByZero)
     }
 
     private fun doModulo(other: NumberSet<T>): NumberSet<T> {
@@ -302,7 +318,7 @@ data class NumberSet<T : Number> private constructor(
             newData = ranges + newData
         }
 
-        return makeNew(newData)
+        return unaryMakeNew(newData)
     }
 
     override fun contains(element: T): Boolean {
@@ -318,7 +334,7 @@ data class NumberSet<T : Number> private constructor(
     override fun union(other: ISet<T>): NumberSet<T> {
         assert(ind == other.ind)
 
-        return makeNew(ranges + other.into().ranges)
+        return binaryMakeNew(other.into(), ranges + other.into().ranges)
     }
 
     override fun intersect(other: ISet<T>): NumberSet<T> {
@@ -339,7 +355,7 @@ data class NumberSet<T : Number> private constructor(
             }
         }
 
-        return makeNew(newList)
+        return binaryMakeNew(other.into(), newList)
     }
 
     override fun invert(): NumberSet<T> {
@@ -350,7 +366,7 @@ data class NumberSet<T : Number> private constructor(
         val maxValue = ind.getMaxValue()
 
         if (ranges.isEmpty()) {
-            return makeNew(listOf(NumberRange.new(minValue, maxValue)))
+            return unaryMakeNew(listOf(NumberRange.new(minValue, maxValue)))
         }
 
         var currentMin = minValue
@@ -367,7 +383,7 @@ data class NumberSet<T : Number> private constructor(
             newList.add(NumberRange.new(currentMin, maxValue))
         }
 
-        return makeNew(newList)
+        return unaryMakeNew(newList)
     }
 
     fun isOne(): Boolean {

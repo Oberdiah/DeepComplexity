@@ -850,4 +850,41 @@ public class MyTestData {
 			return 0;
 		}
 	}
+	
+	public static short simpleClassTest1(short x) {
+		NestedClass nested = new NestedClass();
+		nested.x = 1;
+		return (short) nested.x;
+	}
+	
+	public static short simpleClassTest2(short x) {
+		NestedClass nested = new NestedClass();
+		nested.x = 1;
+		if (nested.x == 1) {
+			return 2;
+		}
+		return (short) nested.x;
+	}
+	
+	public static class NestedClass {
+		public int x = 0;
+		
+		public void addOne() {
+			x++;
+		}
+		
+		public int getX() {
+			return x;
+		}
+	}
+	
+	public static short negativeSquaredTest(short x) {
+		if (x < 20 && x > -10) {
+			int a = -2 * x;
+			int b = -2 * x;
+			
+			return (short) (a * b);
+		}
+		return 0;
+	}
 }

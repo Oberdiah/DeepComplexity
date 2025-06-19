@@ -16,6 +16,13 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
 import com.jetbrains.rd.util.firstOrNull
 
 /**
+ * Think of this as a simple equation like the form: `2x + 3y + 4z`
+ * where the keys are the variables (x, y, z) and the values are the multipliers (2, 3, 4).
+ *
+ * Now, we don't store the constraints here; they come in from outside, so we can't calculate a full
+ * range from this alone. So intuitively, when we want to collapse, we take the constraints for each key
+ * and multiply them by the multiplier, and then add them all together.
+ *
  * The way this works with casting is that if the key is not of the base indicator type, we'll assume
  * casting is the first thing that happens.
  *
@@ -223,17 +230,23 @@ data class NumberVariances<T : Number> private constructor(
                         val myImportance = key.importance()
                         val otherImportance = otherKey.importance()
 
-                        val baseMultiplier = if (myImportance >= otherImportance) {
+                        val newMultiplier = if (myImportance >= otherImportance) {
                             meMultiplier.multiply(otherCollapsed)
                         } else {
                             otherMultiplier.multiply(meCollapsed)
                         }
 
-                        val newMultiplier = if (key == otherKey) {
-                            baseMultiplier.intersect(ind.positiveNumbersAndZero())
-                        } else {
-                            baseMultiplier
-                        }
+                        // In regard to multiplying a key with itself, we have two choices:
+                        // 1.  We want to ensure the value is positive. The variable by default
+                        //     may be negative, so if we want this, we'll have to create a new, ephemeral key,
+                        //     losing tracking.
+                        //     Well, that or create a brand-new system where we can track special constraints
+                        //     within our keys. (Note, could be fun, not completely out the window.)
+                        //     Wait, maybe we investigate that idea further, that sounds cool.
+                        // 2.  We treat them as two separate keys and collapse one half.
+                        //     This allows us to maintain part of the idea that we're still dependent on the variable.
+                        //     So that down the road if we multiply by something else that is also dependent on the
+                        //     variable, some of that information is kicking around to infer with.
 
                         val baseKey = if (myImportance >= otherImportance) key else otherKey
 
@@ -251,8 +264,22 @@ data class NumberVariances<T : Number> private constructor(
                     return this
                 }
 
-                // Division is going to be really hard to get right due to order-of-operations.
-                TODO("DIVISION :(")
+                val newMultipliers = mutableMapOf<Context.Key, NumberSet<T>>()
+
+                for ((key, meMultiplier) in multipliers) {
+                    for ((otherKey, otherMultiplier) in other.multipliers) {
+                        val meCollapsed = meMultiplier.multiply(grabConstraint(constraints, key))
+                        val otherCollapsed = otherMultiplier.multiply(grabConstraint(constraints, otherKey))
+
+                        val newValue = meCollapsed.divide(otherCollapsed)
+
+                        newMultipliers.compute(key) { _, set ->
+                            set?.add(newValue) ?: newValue
+                        }
+                    }
+                }
+
+                return newFromMultiplierMap(ind, newMultipliers)
             }
 
             MODULO -> {

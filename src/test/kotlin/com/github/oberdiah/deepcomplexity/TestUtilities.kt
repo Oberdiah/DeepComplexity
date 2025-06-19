@@ -4,7 +4,9 @@ import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.intellij.psi.PsiMethod
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 object TestUtilities {
@@ -83,9 +85,13 @@ object TestUtilities {
         }
 
         val range = try {
-            println(context.debugKey(methodKey).prependIndent())
+            if (method.name != "go") {
+                println(context.debugKey(methodKey).prependIndent())
+            }
             val bundle: Bundle<*> = context.evaluateKey(methodKey)
-            bundle.cast(ShortSetIndicator)!!.collapse()
+            val castBundle = bundle.cast(ShortSetIndicator)!!
+            val collapsedBundle = castBundle.collapse().into()
+            collapsedBundle
         } catch (e: Throwable) {
             e.printStackTrace()
             return (e.message ?: "Failed to parse PSI")
@@ -107,15 +113,31 @@ object TestUtilities {
         }
 
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
-            val result = method.invoke(null, s.toShort()) as Short
+            try {
+                val result = method.invoke(null, s.toShort()) as Short
 
-            if (!range.contains(result)) {
-                return "Failed for input $s, returned $result which is not in range $range" to 0.0
-            } else {
-                if (result !in Short.MIN_VALUE..Short.MAX_VALUE) {
-                    return "Failed for input $s, returned $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}" to 0.0
+                if (!range.contains(result)) {
+                    return "Failed for input $s, returned $result which is not in range $range" to 0.0
+                } else {
+                    if (result !in Short.MIN_VALUE..Short.MAX_VALUE) {
+                        return "Failed for input $s, returned $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}" to 0.0
+                    }
+                    actualArray[result - Short.MIN_VALUE] = true
                 }
-                actualArray[result - Short.MIN_VALUE] = true
+            } catch (e: InvocationTargetException) {
+                if (e.targetException is ArithmeticException &&
+                    e.targetException.message?.contains("by zero") == true
+                ) {
+                    if (range.hasThrownDivideByZero) {
+                        // If the exception is an arithmetic exception for division by zero,
+                        // and we expected that, we can ignore it.
+                        continue
+                    }
+                }
+                return "Failed for input $s, exception: ${e.targetException.message}" to 0.0
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                return "Method ${method.name} threw an unexpected exception for input $s: ${e.message}" to 0.0
             }
         }
 
