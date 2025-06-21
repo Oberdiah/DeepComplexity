@@ -272,6 +272,7 @@ public class MyTestData {
 		return (short) (bar * 2);
 	}
 	
+	@RequiredScore(1.0)
 	public static short barTest3(short x) {
 		int bar = 0;
 		
