@@ -9,6 +9,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.intellij.psi.PsiNewExpression
 
 sealed class Expr<T : Any>(private val k: ExpressionKey? = null) {
     /**
@@ -190,6 +191,12 @@ class ConstExpr<T : Any>(val constSet: Bundle<T>, key: ExpressionKey? = null) : 
         fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(Bundle.unconstrained(bundle))
     }
 }
+
+/**
+ * Represents an expression that creates a new instance of a class.
+ * Contains the context of its constructor.
+ */
+class NewClassExpr(val psi: PsiNewExpression, val context: Context, k: ExpressionKey? = null) : Expr<Any>(k)
 
 class BooleanInvertExpression(val expr: Expr<Boolean>, k: ExpressionKey? = null) : Expr<Boolean>(k)
 class NegateExpression<T : Number>(val expr: Expr<T>, k: ExpressionKey? = null) : Expr<T>(k)

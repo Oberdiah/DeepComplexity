@@ -287,29 +287,26 @@ object MethodProcessing {
             }
 
             is PsiMethodCallExpression -> {
-                val methodContext = Context.new()
-                val method = psi.methodExpression.resolveIfNeeded() as PsiMethod
-
-                val parameters = method.parameterList.parameters
-                val arguments = psi.argumentList.expressions
-
-                if (parameters.size != arguments.size) {
-                    throw ExpressionIncompleteException(
-                        "Method call ${method.name} expects ${parameters.size} parameters, but got ${arguments.size} arguments."
-                    )
+                val qualifier = psi.methodExpression.qualifier
+                if (qualifier != null) {
+                    val processedQualifier = processPsiElement(qualifier, context)
                 }
 
-                for ((param, arg) in parameters.zip(arguments)) {
-                    val argExpr = processPsiElement(arg, context)
-                    methodContext.putVar(param, argExpr)
-                }
-
-                method.body?.let { body ->
-                    processPsiElement(body, methodContext)
-                }
-                // This won't work for arguments passed by reference as they get updated, but for now
-                // this'll be fine.
+                val methodContext = processMethod(context, psi)
                 return methodContext.variables.filter { it.key.isMethod() }.firstOrNull()?.value ?: VoidExpression()
+            }
+
+            is PsiNewExpression -> {
+                val methodContext = processMethod(
+                    context,
+                    psi,
+                )
+
+                // Wacky idea for next time:
+                // What if all expressions held contexts, and that was the only context we had/needed
+                // like it wasn't a separate thing at all.
+
+                return NewClassExpr(psi, methodContext)
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
@@ -322,6 +319,41 @@ object MethodProcessing {
         }
 
         return VoidExpression()
+    }
+
+    /**
+     * Returns the context of the method call.
+     */
+    private fun processMethod(
+        context: Context,
+        callExpr: PsiCallExpression,
+        methodContext: Context = Context.new(),
+    ): Context {
+        val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
+            "Failed to resolve method for call: ${callExpr.text}"
+        )
+
+        val parameters = method.parameterList.parameters
+        val arguments = callExpr.argumentList?.expressions ?: throw ExpressionIncompleteException(
+            "Failed to resolve arguments for method call: ${callExpr.text}"
+        )
+
+        if (parameters.size != arguments.size) {
+            throw ExpressionIncompleteException(
+                "Method call ${method.name} expects ${parameters.size} parameters, but got ${arguments.size} arguments."
+            )
+        }
+
+        for ((param, arg) in parameters.zip(arguments)) {
+            val argExpr = processPsiElement(arg, context)
+            methodContext.putVar(param, argExpr)
+        }
+
+        method.body?.let { body ->
+            processPsiElement(body, methodContext)
+        }
+
+        return methodContext
     }
 
     private fun processBinaryExpr(

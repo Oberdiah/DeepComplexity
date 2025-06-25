@@ -31,11 +31,13 @@ object ExprToString {
                 }
             }
 
+            is NewClassExpr -> "new ${expr.psi.type}"
+
             is VoidExpression -> "void"
         }
     }
 
-    fun <T : Any> toExprKey(expr: Expr<T>): String {
+    fun <T : Any> toExprKeyString(expr: Expr<T>): String {
         return when (expr) {
             is ArithmeticExpression -> "'${expr.op}'"
             is ComparisonExpression<*> -> "'${expr.comp}'"
@@ -47,8 +49,9 @@ object ExprToString {
             is BooleanExpression -> booleanExprToString(expr)
             is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "'for'"
-            is TypeCastExpression<*, *> -> toExprKey(expr.expr)
+            is TypeCastExpression<*, *> -> toExprKeyString(expr.expr)
             is VoidExpression -> "'void'"
+            is NewClassExpr -> "'new ${expr.psi.type}'"
         }
     }
 
@@ -120,6 +123,8 @@ object ExprToString {
             }
 
             is VoidExpression -> "void"
+
+            is NewClassExpr -> "new ${expr.psi.type}"
         }
     }
 }

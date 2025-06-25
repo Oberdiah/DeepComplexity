@@ -66,9 +66,23 @@ object Utilities {
         return null
     }
 
+    fun PsiElement.toStringPretty(): String {
+        val name = "$this"
+        // If ":" exists, we want to remove it and everything before it
+        return if (name.contains(":")) {
+            name.substring(name.indexOf(":") + 1)
+        } else {
+            name
+        }
+    }
+
     fun PsiElement.toKey(): Context.Key {
         return when (this) {
-            is PsiVariable -> Context.Key.VariableKey(this)
+            is PsiVariable -> Context.Key.VariableKey(
+                this,
+                Context.ObjectSituation(listOf())
+            )
+
             is PsiReturnStatement -> {
                 val returnMethod = findContainingMethodOrLambda(this)
                     ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")

@@ -1,26 +1,71 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiMethod
-import com.intellij.psi.PsiType
-import com.intellij.psi.PsiVariable
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
+import com.intellij.psi.*
 
-class Context private constructor(val variables: MutableMap<Key, Expr<*>> = mutableMapOf()) {
+class Context private constructor(
+    val variables: MutableMap<Key, Expr<*>> = mutableMapOf(),
+    /**
+     * The situation we create all of our PsiFields under.
+     * Essentially a list of object paths to tell us where this is defined.
+     * e.g. `a.b.c` means that the variable is defined in the `c` object,
+     * which is a child of `b`, which is a child of `a`.
+     *
+     * Unsure if we'll end up needing this.
+     */
+    private var objectSituation: ObjectSituation = ObjectSituation(listOf())
+) {
+    data class ObjectSituation(
+        /**
+         * These elements with either be PsiVariables (A standard path situation may go PsiLocalVariable.PsiField.PsiField)
+         * or, in the case of creating the object itself, a PsiNewExpression (When we have no root variable yet to tie it to).
+         */
+        val situationPath: List<PsiElement>
+    ) {
+        override fun toString(): String {
+            if (situationPath.isEmpty()) {
+                return ""
+            }
+
+            // Elements separated by dots.
+            return situationPath.joinToString(".") { it.toStringPretty() } + "."
+        }
+    }
+
     sealed class Key {
         // Variable is where the variable is defined —
-        // either PsiLocalVariable, PsiParameter, or PsiField
-        data class VariableKey(val variable: PsiVariable) : Key() {
+        // either PsiLocalVariable, PsiParameter, or PsiField.
+        data class VariableKey(
+            val variable: PsiVariable,
+            // Only PsiFields use their situation.
+            val situation: ObjectSituation
+        ) : Key() {
+            init {
+                val acceptable = variable is PsiLocalVariable
+                        || variable is PsiParameter
+                        || variable is PsiField
+                if (!acceptable) {
+                    throw IllegalArgumentException("Variable must be a PsiLocalVariable, PsiParameter, or PsiField")
+                }
+            }
+
+            fun withPrependedSituation(situation: ObjectSituation): VariableKey {
+                return VariableKey(
+                    variable,
+                    ObjectSituation(situation.situationPath + this.situation.situationPath)
+                )
+            }
+
             override fun toString(): String {
-                val name = "$variable"
-                // If ":" exists, we want to remove it and everything before it
-                return if (name.contains(":")) {
-                    name.substring(name.indexOf(":") + 1)
+                return if (variable is PsiField) {
+                    "$situation${variable.toStringPretty()}"
                 } else {
-                    name
+                    variable.toStringPretty()
                 }
             }
         }
@@ -60,7 +105,7 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
          * Used to allow us to equate expressions.
          */
         data class ExpressionKey(val expr: Expr<*>) : Key() {
-            override fun toString(): String = ExprToString.toExprKey(expr)
+            override fun toString(): String = ExprToString.toExprKeyString(expr)
         }
 
         /**
@@ -85,7 +130,7 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
 
                 val type: PsiType = getType()
                 val clazz = Utilities.psiTypeToKClass(type)
-                    ?: throw IllegalArgumentException("Unsupported type for variable expression")
+                    ?: return GenericSetIndicator(Any::class)
                 return SetIndicator.fromClass(clazz)
             }
 
@@ -174,6 +219,31 @@ class Context private constructor(val variables: MutableMap<Key, Expr<*>> = muta
                 "$key:\n${expr.toString().prependIndent()}"
             }
         return "Context: {\n${variablesString.prependIndent()}\n}"
+    }
+
+    /**
+     * Returns a new context with the same object situation as this one,
+     * but with a new element added to the situation path.
+     */
+    fun newNestedContext(element: PsiElement): Context = Context(
+        objectSituation = ObjectSituation(objectSituation.situationPath + element)
+    )
+
+    /**
+     * Imports all fields from another context, placing them under the provided situation path.
+     */
+    fun importFieldsUnderSituationPath(otherContext: Context, path: PsiElement?) {
+        for ((key, expr) in otherContext.variables) {
+            if (key is Key.VariableKey && key.variable is PsiField) {
+                val preparedKey = if (path != null) {
+                    key.withPrependedSituation(ObjectSituation(listOf(path)))
+                } else {
+                    key
+                }
+
+                putVar(preparedKey.withPrependedSituation(objectSituation), expr)
+            }
+        }
     }
 
     fun debugKey(key: Key): String {
