@@ -11,14 +11,15 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.intellij.psi.PsiNewExpression
 
-sealed class Expr<T : Any>(private val k: ExpressionKey? = null) {
+sealed class Expr<T : Any>() {
     /**
      * This is used as a key in the caching system. If two expressions have the same key,
      * they are considered equal.
+     *
+     * Doing this works because all expressions are data classes, so equality ends up based on the
+     * structure of the expression, not the reference.
      */
-    val exprKey: ExpressionKey by lazy {
-        k ?: ExpressionKey(this)
-    }
+    val exprKey = ExpressionKey(this)
 
     /**
      * The indicator represents what the expression will be once evaluated.
@@ -26,7 +27,7 @@ sealed class Expr<T : Any>(private val k: ExpressionKey? = null) {
     val ind: SetIndicator<T>
         get() = SetIndicator.getSetIndicator(this)
 
-    override fun toString(): String {
+    final override fun toString(): String {
         return ExprToString.toString(this)
     }
 
@@ -93,15 +94,16 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
  *
  * This is used in `if` statements, void methods, etc.
  */
-class VoidExpression : Expr<VoidExpression>()
+class VoidExpression : Expr<VoidExpression>() {
+    override fun hashCode(): Int = 0
+    override fun equals(other: Any?) = other is VoidExpression
+}
 
-class ArithmeticExpression<T : Number>(
+data class ArithmeticExpression<T : Number>(
     val lhs: Expr<T>,
     val rhs: Expr<T>,
     val op: BinaryNumberOp,
-    k: ExpressionKey? = null
-) :
-    Expr<T>(k) {
+) : Expr<T>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -109,13 +111,11 @@ class ArithmeticExpression<T : Number>(
     }
 }
 
-class ComparisonExpression<T : Number>(
+data class ComparisonExpression<T : Number>(
     val lhs: Expr<T>,
     val rhs: Expr<T>,
     val comp: ComparisonOp,
-    k: ExpressionKey? = null
-) :
-    Expr<Boolean>(k) {
+) : Expr<Boolean>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Comparing expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -125,7 +125,7 @@ class ComparisonExpression<T : Number>(
 
 // Element is either PsiLocalVariable, PsiParameter, or PsiField
 // This represents a variable which we do not know the value of yet.
-class VariableExpression<T : Any>(val key: Key, k: ExpressionKey? = null) : Expr<T>(k)
+data class VariableExpression<T : Any>(val key: Key) : Expr<T>()
 
 /**
  * Tries to cast the expression to the given set indicator.
@@ -134,19 +134,17 @@ class VariableExpression<T : Any>(val key: Key, k: ExpressionKey? = null) : Expr
  * Given that there's an assumption baked into all of this that we're working on a compilable program,
  * explicit isn't strictly necessary, but it's nice debugging and printing purposes.
  */
-class TypeCastExpression<T : Any, Q : Any>(
+data class TypeCastExpression<T : Any, Q : Any>(
     val expr: Expr<Q>,
     val setInd: SetIndicator<T>,
     val explicit: Boolean,
-    k: ExpressionKey? = null
-) : Expr<T>(k)
+) : Expr<T>()
 
-class IfExpression<T : Any>(
+data class IfExpression<T : Any>(
     val trueExpr: Expr<T>,
     val falseExpr: Expr<T>,
     val thisCondition: Expr<Boolean>,
-    k: ExpressionKey? = null
-) : Expr<T>(k) {
+) : Expr<T>() {
     init {
         assert(trueExpr.ind == falseExpr.ind) {
             "Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}"
@@ -169,7 +167,7 @@ class IfExpression<T : Any>(
     }
 }
 
-class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>, k: ExpressionKey? = null) : Expr<T>(k) {
+data class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -177,8 +175,7 @@ class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>, k: Expression
     }
 }
 
-class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp, k: ExpressionKey? = null) :
-    Expr<Boolean>(k) {
+data class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) : Expr<Boolean>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -186,7 +183,7 @@ class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: 
     }
 }
 
-class ConstExpr<T : Any>(val constSet: Bundle<T>, key: ExpressionKey? = null) : Expr<T>(key) {
+data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
     companion object {
         fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(Bundle.unconstrained(bundle))
     }
@@ -196,12 +193,12 @@ class ConstExpr<T : Any>(val constSet: Bundle<T>, key: ExpressionKey? = null) : 
  * Represents an expression that creates a new instance of a class.
  * Contains the context of its constructor.
  */
-class NewClassExpr(val psi: PsiNewExpression, val context: Context, k: ExpressionKey? = null) : Expr<Any>(k)
+data class NewClassExpr(val psi: PsiNewExpression, val context: Context) : Expr<Any>()
 
-class BooleanInvertExpression(val expr: Expr<Boolean>, k: ExpressionKey? = null) : Expr<Boolean>(k)
-class NegateExpression<T : Number>(val expr: Expr<T>, k: ExpressionKey? = null) : Expr<T>(k)
+data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
+data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()
 
-class NumIterationTimesExpression<T : Number>(
+data class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.
     val constraint: NumberSet<T>,
@@ -209,8 +206,7 @@ class NumIterationTimesExpression<T : Number>(
     val variable: VariableExpression<T>,
     // How the variable is changing each iteration.
     val terms: ConstraintSolver.CollectedTerms<T>,
-    k: ExpressionKey? = null
-) : Expr<T>(k) {
+) : Expr<T>() {
     companion object {
         fun <T : Number> new(
             constraint: NumberSet<T>,

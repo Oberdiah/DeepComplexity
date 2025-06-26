@@ -708,6 +708,22 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
+	public static short modulo4(short x) {
+		int a = x % 100;
+		if (x < 100 || x > 100) {
+			a = x % 90;
+		}
+		
+		int b = a;
+		int c = a;
+		if (b > c) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
 	public static short twoVars1(short x) {
 		int b = x % 100;
 		int a = x % 100;

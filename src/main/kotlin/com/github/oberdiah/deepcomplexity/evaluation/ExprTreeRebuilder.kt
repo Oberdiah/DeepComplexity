@@ -32,19 +32,16 @@ object ExprTreeRebuilder {
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
                 expr.op,
-                expr.exprKey
             )
 
             is NegateExpression -> NegateExpression(
                 rebuildTree(expr.expr, replacer),
-                expr.exprKey
             )
 
             is NumIterationTimesExpression -> NumIterationTimesExpression(
                 expr.constraint,
                 rebuildTree(expr.variable, replacer) as VariableExpression<T>,
                 expr.terms,
-                expr.exprKey
             )
 
             else -> rebuildTreeAnythings(expr, replacer)
@@ -60,12 +57,10 @@ object ExprTreeRebuilder {
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
                 expr.op,
-                expr.exprKey
             )
 
             is BooleanInvertExpression -> BooleanInvertExpression(
                 rebuildTree(expr.expr, replacer),
-                expr.exprKey
             )
 
             is ComparisonExpression<*> -> {
@@ -73,7 +68,6 @@ object ExprTreeRebuilder {
                     rebuildTree(expr.lhs, replacer),
                     rebuildTree(expr.rhs, replacer),
                     expr.comp,
-                    expr.exprKey
                 )
                 extra(expr)
             }
@@ -97,14 +91,12 @@ object ExprTreeRebuilder {
             is UnionExpression -> UnionExpression(
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
-                expr.exprKey
             )
 
             is IfExpression -> IfExpression(
                 rebuildTree(expr.trueExpr, replacer),
                 rebuildTree(expr.falseExpr, replacer),
                 rebuildTree(expr.thisCondition, replacer),
-                expr.exprKey
             )
 
             is TypeCastExpression<*, *> -> {
@@ -114,7 +106,6 @@ object ExprTreeRebuilder {
                     rebuildTree(expr.expr, replacer),
                     expr.setInd,
                     expr.explicit,
-                    expr.exprKey
                 )
 
                 @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
