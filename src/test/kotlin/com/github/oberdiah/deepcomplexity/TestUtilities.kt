@@ -74,7 +74,7 @@ object TestUtilities {
     }
 
     private fun getMethodScore(method: Method, psiMethod: PsiMethod): Pair<String, Double> {
-        val methodKey = Context.Key.MethodKey(psiMethod)
+        val returnKey = Context.Key.ReturnKey(psiMethod.returnType!!)
 
         val context = try {
             MethodProcessing.getMethodContext(psiMethod)
@@ -86,9 +86,9 @@ object TestUtilities {
 
         val range = try {
             if (method.name != "go") {
-                println(context.debugKey(methodKey).prependIndent())
+                println(context.debugKey(returnKey).prependIndent())
             }
-            val bundle: Bundle<*> = context.evaluateKey(methodKey)
+            val bundle: Bundle<*> = context.evaluateKey(returnKey)
             val castBundle = bundle.cast(ShortSetIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle

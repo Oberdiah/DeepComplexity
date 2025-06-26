@@ -87,7 +87,7 @@ object Utilities {
                 val returnMethod = findContainingMethodOrLambda(this)
                     ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
 
-                Context.Key.MethodKey(returnMethod)
+                Context.Key.ReturnKey(((returnMethod as? PsiMethod)?.returnType)!!)
             }
 
             else -> throw IllegalArgumentException("Unsupported PsiElement type: ${this::class} (${this.text})")
