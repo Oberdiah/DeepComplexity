@@ -90,12 +90,11 @@ class Context private constructor(
          * However, if `a` was instead a `Method`, you'd end up with:
          *
          * ```
-         * { if (x > 5) { 0 } else { a + 5 } }
+         * { a = if (x > 5) { 0 } else { a + 5 } }
          * ```
          * e.g. the rest of the method would get inserted into the context.
          *
-         * As far as I can tell, this is only really going to ever be useful for return statements.
-         * Well that, and grabbing the value returned from a method, which is the same thing really.
+         * It has a type associated with it so that we can perform implicit casts to it.
          */
         data class ReturnKey(val psiType: PsiType) : Key() {
             override fun toString(): String = "Rest of method"
