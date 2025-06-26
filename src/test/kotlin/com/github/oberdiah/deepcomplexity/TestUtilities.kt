@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity
 
-import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -74,8 +73,6 @@ object TestUtilities {
     }
 
     private fun getMethodScore(method: Method, psiMethod: PsiMethod): Pair<String, Double> {
-        val returnKey = Context.Key.ReturnKey(psiMethod.returnType!!)
-
         val context = try {
             MethodProcessing.getMethodContext(psiMethod)
         } catch (e: Throwable) {
@@ -85,6 +82,8 @@ object TestUtilities {
         }
 
         val range = try {
+            val returnKey = context.getReturnKey()!!
+
             if (method.name != "go") {
                 println(context.debugKey(returnKey).prependIndent())
             }

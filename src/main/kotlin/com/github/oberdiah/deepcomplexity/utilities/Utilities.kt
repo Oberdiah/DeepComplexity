@@ -1,6 +1,8 @@
 package com.github.oberdiah.deepcomplexity.utilities
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.*
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
@@ -66,6 +68,11 @@ object Utilities {
         return null
     }
 
+    fun psiTypeToSetIndicator(type: PsiType): SetIndicator<*> {
+        val clazz = psiTypeToKClass(type) ?: return GenericSetIndicator(Any::class)
+        return SetIndicator.fromClass(clazz)
+    }
+
     fun PsiElement.toStringPretty(): String {
         val name = "$this"
         // If ":" exists, we want to remove it and everything before it
@@ -87,7 +94,9 @@ object Utilities {
                 val returnMethod = findContainingMethodOrLambda(this)
                     ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
 
-                Context.Key.ReturnKey(((returnMethod as? PsiMethod)?.returnType)!!)
+                Context.Key.ReturnKey(
+                    psiTypeToSetIndicator(((returnMethod as? PsiMethod)?.returnType)!!)
+                )
             }
 
             else -> throw IllegalArgumentException("Unsupported PsiElement type: ${this::class} (${this.text})")
