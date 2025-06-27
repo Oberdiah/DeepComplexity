@@ -138,7 +138,11 @@ data class TypeCastExpression<T : Any, Q : Any>(
     val expr: Expr<Q>,
     val setInd: SetIndicator<T>,
     val explicit: Boolean,
-) : Expr<T>()
+) : Expr<T>() {
+    init {
+        assert(expr !is VoidExpression)
+    }
+}
 
 data class IfExpression<T : Any>(
     val trueExpr: Expr<T>,

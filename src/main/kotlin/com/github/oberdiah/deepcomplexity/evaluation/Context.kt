@@ -17,7 +17,8 @@ class Context private constructor(
      *
      * Unsure if we'll end up needing this.
      */
-    private var objectSituation: ObjectSituation = ObjectSituation(listOf())
+    private var objectSituation: ObjectSituation = ObjectSituation(listOf()),
+    private var resolvesTo: Expr<*> = VoidExpression()
 ) {
     data class ObjectSituation(
         /**
@@ -70,7 +71,7 @@ class Context private constructor(
         }
 
         /**
-         * This is the key representing a return type itself, or the remaining bits of it still to be processed.
+         * This is the key representing a return type itself.
          * It behaves differently to other keys in that it applies backward when stacking.
          *
          * Normally, if you had two contexts in this order:
@@ -228,16 +229,7 @@ class Context private constructor(
         }
     }
 
-    fun getReturnKey(): Key.ReturnKey? {
-        val numReturnKeys = variables.keys.count { it is Key.ReturnKey }
-        assert(numReturnKeys <= 1) { "$numReturnKeys return keys hmm?" }
-        return variables.entries.firstOrNull { it.key is Key.ReturnKey }?.key as? Key.ReturnKey
-    }
-
-    fun getReturnExpr(): Expr<*>? {
-        val returnKey = getReturnKey() ?: return VoidExpression()
-        return variables[returnKey] ?: VoidExpression()
-    }
+    fun getReturnExpr(): Expr<*> = resolvesTo
 
     fun debugKey(key: Key): String {
         return variables[key]?.dStr() ?: "Key not found"
@@ -276,24 +268,45 @@ class Context private constructor(
         putVar(element.toKey(), expr)
     }
 
-    /**
-     * Performs a cast if necessary.
-     */
-    fun resolveVar(element: PsiElement, expr: Expr<*>) {
-        return resolveVar(element.toKey(), expr)
+    fun nowResolvesTo(expr: Expr<*>): Context {
+        return Context(variables.toMutableMap(), objectSituation, expr)
     }
 
     /**
      * Performs a cast if necessary.
      */
-    fun resolveVar(key: Key, expr: Expr<*>) {
+    fun withVar(key: Key, expr: Expr<*>): Context {
+        if (expr is VoidExpression) {
+            throw IllegalArgumentException("VoidExpressions cannot be assigned!")
+        }
+
+        val newContext = Context(variables.toMutableMap())
+        newContext.putVar(key, expr)
+        return newContext
+    }
+
+    fun withVar(element: PsiElement, expr: Expr<*>): Context {
+        return withVar(element.toKey(), expr)
+    }
+
+    /**
+     * Performs a cast if necessary.
+     */
+    fun withResolvedVar(element: PsiElement, expr: Expr<*>): Context {
+        return withResolvedVar(element.toKey(), expr)
+    }
+
+    /**
+     * Performs a cast if necessary.
+     */
+    fun withResolvedVar(key: Key, expr: Expr<*>): Context {
         val castExpr = expr.performACastTo(key.ind, false)
 
-        variables.replaceAll { _, oldExpr ->
+        return Context(variables.mapValues { (_, oldExpr) ->
             oldExpr.rebuildTree(variableExpressionReplacer {
                 if (it.key == key) castExpr else null
             })
-        }
+        }.toMutableMap())
     }
 
     /**
@@ -303,7 +316,7 @@ class Context private constructor(
      *
      * Conversely, for `Method` keys, this context is prioritised over the later context.
      */
-    fun stack(later: Context) {
+    fun stack(later: Context): Context {
         val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
             expr.rebuildTree(variableExpressionReplacer { variables[it.key] })
         }
@@ -312,15 +325,17 @@ class Context private constructor(
             expr.rebuildTree(variableExpressionReplacer { later.variables[it.key] })
         }
 
-        variables.clear()
+        val newContext = Context()
 
         // For normal keys, later takes priority and gets to override.
-        variables.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
-        variables.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
+        newContext.variables.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
+        newContext.variables.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
 
         // For method keys, this context takes priority.
-        variables.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
-        variables.putAll(meResolvedWithLater.filter { it.key.isMethod() })
+        newContext.variables.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
+        newContext.variables.putAll(meResolvedWithLater.filter { it.key.isMethod() })
+
+        return newContext
     }
 
     private fun variableExpressionReplacer(
