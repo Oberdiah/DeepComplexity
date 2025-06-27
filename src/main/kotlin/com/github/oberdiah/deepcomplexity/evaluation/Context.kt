@@ -9,7 +9,7 @@ import com.intellij.psi.*
 
 class Context private constructor(
     val variables: Map<Key, Expr<*>> = mutableMapOf(),
-    private val resolvesTo: Expr<*> = VoidExpression()
+    val resolvesTo: Expr<*> = VoidExpression()
 ) {
     sealed class Key {
         // Variable is where the variable is defined —
@@ -162,8 +162,6 @@ class Context private constructor(
             }
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
-
-    fun getReturnExpr(): Expr<*> = resolvesTo
 
     fun debugKey(key: Key): String {
         return variables[key]?.dStr() ?: "Key not found"

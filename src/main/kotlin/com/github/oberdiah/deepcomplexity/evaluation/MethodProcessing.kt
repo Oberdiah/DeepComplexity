@@ -57,7 +57,7 @@ object MethodProcessing {
                         val rExpression = element.initializer
                         if (rExpression != null) {
                             context = processPsiElement(rExpression, context)
-                            context = context.withVar(element, context.getReturnExpr())
+                            context = context.withVar(element, context.resolvesTo)
                         } else {
                             TODO("Eventually we'll replace this with either null or 0")
                         }
@@ -74,7 +74,7 @@ object MethodProcessing {
                     psi.condition ?: throw ExpressionIncompleteException(),
                     context
                 )
-                val condition = context.getReturnExpr().castToBoolean()
+                val condition = context.resolvesTo.castToBoolean()
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 var trueBranchContext = Context.new()
@@ -106,7 +106,7 @@ object MethodProcessing {
                 val conditionExpr = psi.condition?.let { condition ->
                     // This isn't correct anymore now that context is immutable.
                     processPsiElement(condition, bodyContext)
-                        .getReturnExpr().tryCastTo(BooleanSetIndicator)
+                        .resolvesTo.tryCastTo(BooleanSetIndicator)
                         ?: TODO("Failed to cast to BooleanSet: ${condition.text}")
                 }.orElse {
                     ConstantExpression.TRUE
@@ -122,7 +122,7 @@ object MethodProcessing {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
                     context = processPsiElement(returnExpression, context)
-                    val returnExpr = context.getReturnExpr()
+                    val returnExpr = context.resolvesTo
 
                     if (context.variables.keys.none { it.isMethod() }) {
                         // If there's no 'method' key yet, create one.
@@ -154,7 +154,7 @@ object MethodProcessing {
                     UnaryNumberOp.NEGATE, UnaryNumberOp.PLUS -> {
                         context = processPsiElement(operand, context)
                         val operand = ConversionsAndPromotion.unaryNumericPromotion(
-                            context.getReturnExpr().castToNumbers()
+                            context.resolvesTo.castToNumbers()
                         )
 
                         unaryOp.applyToExpr(operand)
@@ -168,7 +168,7 @@ object MethodProcessing {
 
                         // Build the expression after the assignment for a prefix increment/decrement
                         context = processPsiElement(operand, context)
-                        context.getReturnExpr().castToNumbers()
+                        context.resolvesTo.castToNumbers()
                     }
                 }
 
@@ -183,7 +183,7 @@ object MethodProcessing {
 
                 // Build the expression before the assignment for a postfix increment/decrement
                 context = processPsiElement(psi.operand, context)
-                val builtExpr = context.getReturnExpr()
+                val builtExpr = context.resolvesTo
 
                 // Assign the value to the variable
                 val resolvedOperand = psi.operand.resolveIfNeeded()
@@ -200,9 +200,9 @@ object MethodProcessing {
                 val tokenType = psi.operationSign.tokenType
 
                 context = processPsiElement(lhsOperand, context)
-                val lhs = context.getReturnExpr()
+                val lhs = context.resolvesTo
                 context = processPsiElement(rhsOperand, context)
-                val rhs = context.getReturnExpr()
+                val rhs = context.resolvesTo
                 context = context.nowResolvesTo(processBinaryExpr(lhs, rhs, tokenType))
             }
 
@@ -211,7 +211,7 @@ object MethodProcessing {
                     psi.operand ?: throw ExpressionIncompleteException(),
                     context
                 )
-                val expr = context.getReturnExpr()
+                val expr = context.resolvesTo
 
                 val psiType = psi.castType ?: throw ExpressionIncompleteException()
                 val setInd = Utilities.psiTypeToSetIndicator(psiType.type)
@@ -230,15 +230,15 @@ object MethodProcessing {
                     // Process it as a bunch of binary expressions in a row, left to right.
                     val tokenType = psi.operationTokenType
                     context = processPsiElement(operands[0], context)
-                    val originalLhs = context.getReturnExpr()
+                    val originalLhs = context.resolvesTo
                     context = processPsiElement(operands[1], context)
-                    val originalRhs = context.getReturnExpr()
+                    val originalRhs = context.resolvesTo
 
                     var currentExpr = processBinaryExpr(originalLhs, originalRhs, tokenType)
 
                     for (i in 2 until operands.size) {
                         context = processPsiElement(operands[i], context)
-                        val nextRhs = context.getReturnExpr()
+                        val nextRhs = context.resolvesTo
                         val newExpr = processBinaryExpr(currentExpr, nextRhs, tokenType)
                         currentExpr = newExpr
                     }
@@ -255,7 +255,7 @@ object MethodProcessing {
                 val exprResult = when (opSign.tokenType) {
                     JavaTokenType.EQ -> {
                         context = processPsiElement(rExpression, context)
-                        val rhs = context.getReturnExpr()
+                        val rhs = context.resolvesTo
                         context = context.withVar(lExpression.resolveIfNeeded(), rhs)
                         rhs
                     }
@@ -264,7 +264,7 @@ object MethodProcessing {
                         val resolvedLhs = lExpression.resolveIfNeeded()
                         val lhs = context.getVar(resolvedLhs).castToNumbers()
                         context = processPsiElement(rExpression, context)
-                        val rhs = context.getReturnExpr().castToNumbers()
+                        val rhs = context.resolvesTo.castToNumbers()
 
                         ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
                             val expr = ArithmeticExpression(
@@ -294,7 +294,7 @@ object MethodProcessing {
                 val qualifier = psi.methodExpression.qualifier
                 if (qualifier != null) {
                     context = processPsiElement(qualifier, context)
-                    val processedQualifier = context.getReturnExpr()
+                    val processedQualifier = context.resolvesTo
                 }
 
                 val (newContext, methodContext) = processMethod(context, psi)
@@ -355,7 +355,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             context = processPsiElement(arg, context)
-            methodContext = methodContext.withVar(param, context.getReturnExpr())
+            methodContext = methodContext.withVar(param, context.resolvesTo)
         }
 
         method.body?.let { body ->
