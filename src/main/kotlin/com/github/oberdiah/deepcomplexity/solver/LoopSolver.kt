@@ -41,7 +41,7 @@ object LoopSolver {
 
             val numExpr = expr.castToNumbers()
             val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
-            context.putVar(key, newExpr)
+//            context.putVar(key, newExpr)
         }
     }
 

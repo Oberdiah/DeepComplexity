@@ -8,42 +8,14 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
 class Context private constructor(
-    val variables: MutableMap<Key, Expr<*>> = mutableMapOf(),
-    /**
-     * The situation we create all of our PsiFields under.
-     * Essentially a list of object paths to tell us where this is defined.
-     * e.g. `a.b.c` means that the variable is defined in the `c` object,
-     * which is a child of `b`, which is a child of `a`.
-     *
-     * Unsure if we'll end up needing this.
-     */
-    private var objectSituation: ObjectSituation = ObjectSituation(listOf()),
-    private var resolvesTo: Expr<*> = VoidExpression()
+    val variables: Map<Key, Expr<*>> = mutableMapOf(),
+    private val resolvesTo: Expr<*> = VoidExpression()
 ) {
-    data class ObjectSituation(
-        /**
-         * These elements with either be PsiVariables (A standard path situation may go PsiLocalVariable.PsiField.PsiField)
-         * or, in the case of creating the object itself, a PsiNewExpression (When we have no root variable yet to tie it to).
-         */
-        val situationPath: List<PsiElement>
-    ) {
-        override fun toString(): String {
-            if (situationPath.isEmpty()) {
-                return ""
-            }
-
-            // Elements separated by dots.
-            return situationPath.joinToString(".") { it.toStringPretty() } + "."
-        }
-    }
-
     sealed class Key {
         // Variable is where the variable is defined —
         // either PsiLocalVariable, PsiParameter, or PsiField.
         data class VariableKey(
             val variable: PsiVariable,
-            // Only PsiFields use their situation.
-            val situation: ObjectSituation
         ) : Key() {
             init {
                 val acceptable = variable is PsiLocalVariable
@@ -54,20 +26,7 @@ class Context private constructor(
                 }
             }
 
-            fun withPrependedSituation(situation: ObjectSituation): VariableKey {
-                return VariableKey(
-                    variable,
-                    ObjectSituation(situation.situationPath + this.situation.situationPath)
-                )
-            }
-
-            override fun toString(): String {
-                return if (variable is PsiField) {
-                    "$situation${variable.toStringPretty()}"
-                } else {
-                    variable.toStringPretty()
-                }
-            }
+            override fun toString(): String = variable.toStringPretty()
         }
 
         /**
@@ -204,31 +163,6 @@ class Context private constructor(
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    /**
-     * Returns a new context with the same object situation as this one,
-     * but with a new element added to the situation path.
-     */
-    fun newNestedContext(element: PsiElement): Context = Context(
-        objectSituation = ObjectSituation(objectSituation.situationPath + element)
-    )
-
-    /**
-     * Imports all fields from another context, placing them under the provided situation path.
-     */
-    fun importFieldsUnderSituationPath(otherContext: Context, path: PsiElement?) {
-        for ((key, expr) in otherContext.variables) {
-            if (key is Key.VariableKey && key.variable is PsiField) {
-                val preparedKey = if (path != null) {
-                    key.withPrependedSituation(ObjectSituation(listOf(path)))
-                } else {
-                    key
-                }
-
-                putVar(preparedKey.withPrependedSituation(objectSituation), expr)
-            }
-        }
-    }
-
     fun getReturnExpr(): Expr<*> = resolvesTo
 
     fun debugKey(key: Key): String {
@@ -252,24 +186,8 @@ class Context private constructor(
         return variables[element] ?: VariableExpression<Any>(element)
     }
 
-    /**
-     * Performs a cast if necessary.
-     */
-    fun putVar(key: Key, expr: Expr<*>) {
-        // We're just going to always perform this cast for now.
-        // If the code compiles, it's reasonable to do so.
-        variables[key] = expr.performACastTo(key.ind, false)
-    }
-
-    /**
-     * Performs a cast if necessary.
-     */
-    fun putVar(element: PsiElement, expr: Expr<*>) {
-        putVar(element.toKey(), expr)
-    }
-
     fun nowResolvesTo(expr: Expr<*>): Context {
-        return Context(variables.toMutableMap(), objectSituation, expr)
+        return Context(variables, expr)
     }
 
     /**
@@ -280,9 +198,8 @@ class Context private constructor(
             throw IllegalArgumentException("VoidExpressions cannot be assigned!")
         }
 
-        val newContext = Context(variables.toMutableMap())
-        newContext.putVar(key, expr)
-        return newContext
+        val castVar = expr.performACastTo(key.ind, false)
+        return Context(variables + (key to castVar))
     }
 
     fun withVar(element: PsiElement, expr: Expr<*>): Context {
@@ -325,17 +242,17 @@ class Context private constructor(
             expr.rebuildTree(variableExpressionReplacer { later.variables[it.key] })
         }
 
-        val newContext = Context()
+        val newVariables = mutableMapOf<Key, Expr<*>>()
 
         // For normal keys, later takes priority and gets to override.
-        newContext.variables.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
-        newContext.variables.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
+        newVariables.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
+        newVariables.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
 
         // For method keys, this context takes priority.
-        newContext.variables.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
-        newContext.variables.putAll(meResolvedWithLater.filter { it.key.isMethod() })
+        newVariables.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
+        newVariables.putAll(meResolvedWithLater.filter { it.key.isMethod() })
 
-        return newContext
+        return Context(newVariables)
     }
 
     private fun variableExpressionReplacer(
