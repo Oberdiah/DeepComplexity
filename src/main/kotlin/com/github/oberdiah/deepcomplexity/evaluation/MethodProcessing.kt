@@ -124,7 +124,7 @@ object MethodProcessing {
                     context = processPsiElement(returnExpression, context)
                     val returnExpr = context.resolvesTo
 
-                    if (context.variables.keys.none { it.isMethod() }) {
+                    if (context.variables.keys.none { it.isReturnKey() }) {
                         // If there's no 'method' key yet, create one.
                         context = context.withVar(psi, returnExpr)
                     } else {
@@ -303,29 +303,30 @@ object MethodProcessing {
             }
 
             is PsiMethodCallExpression -> {
+                val (newContext, methodContext) = processMethod(context, psi)
+                context = newContext
+
                 val qualifier = psi.methodExpression.qualifier
                 if (qualifier != null) {
                     context = processPsiElement(qualifier, context)
                     val processedQualifier = context.resolvesTo
                 }
 
-                val (newContext, methodContext) = processMethod(context, psi)
-                context = newContext
                 context =
                     context.nowResolvesTo(
-                        methodContext.variables.filter { it.key.isMethod() }.firstOrNull()?.value ?: VoidExpression()
+                        methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value ?: VoidExpression()
                     )
             }
 
             is PsiNewExpression -> {
                 val (newContext, methodContext) = processMethod(context, psi)
                 context = newContext
-
                 context = context.nowResolvesTo(ClassExpr(psi, methodContext))
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
                 // Ignore whitespace, comments, etc.
+                // PsiJavaTokens are all the surrounding tokens like `;`, `{`, `)`, etc.
             }
 
             else -> {
@@ -342,10 +343,8 @@ object MethodProcessing {
     private fun processMethod(
         contextIn: Context,
         callExpr: PsiCallExpression,
-        methodContextIn: Context = Context.new(),
     ): Pair<Context, Context> {
         var context = contextIn
-        var methodContext = methodContextIn
         val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
             "Failed to resolve method for call: ${callExpr.text}"
         )
@@ -361,6 +360,7 @@ object MethodProcessing {
             )
         }
 
+        var methodContext = Context.new()
         for ((param, arg) in parameters.zip(arguments)) {
             context = processPsiElement(arg, context)
             methodContext = methodContext.withVar(param, context.resolvesTo)

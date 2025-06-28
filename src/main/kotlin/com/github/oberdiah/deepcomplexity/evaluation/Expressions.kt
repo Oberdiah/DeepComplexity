@@ -198,6 +198,13 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
  */
 data class ClassExpr(val psi: PsiNewExpression, val context: Context) : Expr<Any>()
 
+/**
+ * T is the type returned by the expression itself, Q is the type of the qualifier.
+ *
+ * For example, `foo.bar` would have the type <Foo, Bar>
+ */
+data class QualifiedExpr<T : Any, Q : Any>(val qualifier: Expr<Q>, val expr: Expr<T>) : Expr<T>()
+
 data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
 data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()
 
