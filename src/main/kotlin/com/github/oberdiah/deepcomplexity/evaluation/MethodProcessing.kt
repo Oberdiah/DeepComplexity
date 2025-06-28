@@ -140,7 +140,19 @@ object MethodProcessing {
             }
 
             is PsiReferenceExpression -> {
-                context = context.nowResolvesTo(context.getVar(psi.resolveIfNeeded()))
+                val qualifier = psi.qualifier
+                val resolvedExpr = if (qualifier == null) {
+                    context.getVar(psi.resolveIfNeeded())
+                } else {
+                    // If there's a qualifier, we need to resolve it first.
+                    context = processPsiElement(qualifier, context)
+                    val processedQualifier = context.resolvesTo
+
+//                    context.getVar(psi.resolveIfNeeded(), processedQualifier)
+                    TODO()
+                }
+
+                context = context.nowResolvesTo(resolvedExpr)
             }
 
             is PsiPrefixExpression -> {
@@ -308,10 +320,6 @@ object MethodProcessing {
             is PsiNewExpression -> {
                 val (newContext, methodContext) = processMethod(context, psi)
                 context = newContext
-
-                // Wacky idea for next time:
-                // What if all expressions held contexts, and that was the only context we had/needed
-                // like it wasn't a separate thing at all.
 
                 context = context.nowResolvesTo(NewClassExpr(psi, methodContext))
             }

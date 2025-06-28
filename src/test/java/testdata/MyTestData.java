@@ -870,11 +870,10 @@ public class MyTestData {
 	
 	public static short simpleClassTest0(short x) {
 		MyNestedClass nested = new MyNestedClass();
-		nested.x = 1;
 		return (short) nested.x;
 	}
 	
-	public static short simpleClassTest1(short x) {
+	public static short go(short x) {
 		MyNestedClass nested = new MyNestedClass(2);
 		nested.x = 1;
 		return (short) nested.x;
@@ -961,6 +960,58 @@ public class MyTestData {
 		return (short) new MyNestedClass(50).addOne().addOne().addOne().getX();
 	}
 	
+	public static short simpleClassTest13(short x) {
+		MyNestedClass nested = new MyNestedClass(50);
+		MyNestingClass nesting = new MyNestingClass(nested);
+		return (short) nesting.nested.getX();
+	}
+	
+	public static short simpleClassTest14(short x) {
+		MyNestedClass nested = new MyNestedClass(50);
+		MyNestingClass nesting = new MyNestingClass(nested);
+		nesting.nested.x++;
+		nesting.nested.addOne();
+		return (short) nesting.nested.getX();
+	}
+	
+	public static short simpleClassTest15(short x) {
+		int nested = new MyNestedClass(50).x = 5;
+		return (short) nested;
+	}
+	
+	public static short simpleClassTest16(short x) {
+		MyNestedClass a = new MyNestedClass(1);
+		MyNestedClass b = new MyNestedClass(2);
+		int p = ((x > 0) ? a : b).x;
+		return (short) p;
+	}
+	
+	public static short simpleClassTest17(short x) {
+		MyNestedClass a = new MyNestedClass(1);
+		MyNestedClass b = new MyNestedClass(2);
+		((x > 0) ? a : b).x = 5;
+		return (short) a.x;
+	}
+	
+	public static short simpleClassTest18(short x) {
+		if (x <= 0) {
+			return 0;
+		}
+		MyNestedClass a = new MyNestedClass(1);
+		MyNestedClass b = new MyNestedClass(2);
+		((x > 0) ? a : b).x = 5;
+		return (short) a.x;
+	}
+	
+	public static short simpleClassTest19(short x) {
+		MyNestedClass a = new MyNestedClass(1);
+		MyNestedClass b = new MyNestedClass(2);
+		if (x <= 0) {
+			b = a;
+		}
+		return (short) b.x;
+	}
+	
 	public static class MyNestedClass {
 		public int x = 1000;
 		
@@ -978,6 +1029,15 @@ public class MyTestData {
 		
 		public int getX() {
 			return x;
+		}
+	}
+	
+	public static class MyNestingClass {
+		public MyNestedClass nested;
+		
+		public MyNestingClass(MyNestedClass nested) {
+			nested.x++;
+			this.nested = nested;
 		}
 	}
 	
