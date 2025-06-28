@@ -321,7 +321,7 @@ object MethodProcessing {
                 val (newContext, methodContext) = processMethod(context, psi)
                 context = newContext
 
-                context = context.nowResolvesTo(NewClassExpr(psi, methodContext))
+                context = context.nowResolvesTo(ClassExpr(psi, methodContext))
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {

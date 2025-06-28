@@ -194,10 +194,9 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
 }
 
 /**
- * Represents an expression that creates a new instance of a class.
- * Contains the context of its constructor.
+ * Represents an object.
  */
-data class NewClassExpr(val psi: PsiNewExpression, val context: Context) : Expr<Any>()
+data class ClassExpr(val psi: PsiNewExpression, val context: Context) : Expr<Any>()
 
 data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
 data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()

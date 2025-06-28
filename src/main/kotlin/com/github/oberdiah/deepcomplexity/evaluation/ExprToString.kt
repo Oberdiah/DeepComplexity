@@ -31,7 +31,7 @@ object ExprToString {
                 }
             }
 
-            is NewClassExpr -> "new ${expr.psi.type}"
+            is ClassExpr -> "new ${expr.psi.type}"
 
             is VoidExpression -> "void"
         }
@@ -51,7 +51,7 @@ object ExprToString {
             is NumIterationTimesExpression -> "'for'"
             is TypeCastExpression<*, *> -> toExprKeyString(expr.expr)
             is VoidExpression -> "'void'"
-            is NewClassExpr -> "'new ${expr.psi.type}'"
+            is ClassExpr -> "'new ${expr.psi.type}'"
         }
     }
 
@@ -124,7 +124,7 @@ object ExprToString {
 
             is VoidExpression -> "void"
 
-            is NewClassExpr -> "new ${expr.psi.type}"
+            is ClassExpr -> "new ${expr.psi.type}"
         }
     }
 }

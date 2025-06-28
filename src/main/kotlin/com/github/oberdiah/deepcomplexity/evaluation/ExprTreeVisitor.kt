@@ -24,7 +24,7 @@ object ExprTreeVisitor {
             is VoidExpression -> {}
             is ConstExpr -> {}
             is VariableExpression -> {}
-            is NewClassExpr -> {}
+            is ClassExpr -> {}
             is BooleanExpression -> {
                 visitor(expr.lhs)
                 visitor(expr.rhs)
