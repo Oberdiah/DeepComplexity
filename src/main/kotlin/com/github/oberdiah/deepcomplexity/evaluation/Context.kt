@@ -94,6 +94,7 @@ class Context private constructor(
         fun isEphemeral(): Boolean = this is EphemeralKey
         fun isReturnKey(): Boolean = this is ReturnKey
         fun isExpr(): Boolean = this is ExpressionKey
+        fun isField(): Boolean = this is VariableKey && variable is PsiField
 
         /**
          * When multiplying, we need to decide which one gets to live on.
@@ -221,7 +222,7 @@ class Context private constructor(
             oldExpr.rebuildTree(variableExpressionReplacer {
                 if (it.key == key) castExpr else null
             })
-        }.toMutableMap())
+        })
     }
 
     /**
@@ -251,6 +252,26 @@ class Context private constructor(
         newVariables.putAll(meResolvedWithLater.filter { it.key.isReturnKey() })
 
         return Context(newVariables)
+    }
+
+    /**
+     * Returns a new context with the provided context (heh) of what 'this' is.
+     */
+    fun provideQualifier(qualifier: Expr<*>): Context {
+        return Context(variables.mapValues { (_, oldExpr) ->
+            oldExpr.rebuildTree(variableExpressionReplacer {
+                // In the future we'll also have to replace `this` with the qualifier.
+                if (it.key.isField()) {
+                    QualifiedExpr(
+                        qualifier,
+                        it.ind,
+                        it.key
+                    )
+                } else {
+                    null
+                }
+            })
+        })
     }
 
     private fun variableExpressionReplacer(

@@ -873,7 +873,7 @@ public class MyTestData {
 		return (short) nested.x;
 	}
 	
-	public static short go(short x) {
+	public static short simpleClassTest1(short x) {
 		MyNestedClass nested = new MyNestedClass(2);
 		nested.x = 1;
 		return (short) nested.x;
@@ -1009,7 +1009,7 @@ public class MyTestData {
 		if (x <= 0) {
 			b = a;
 		}
-		return (short) b.x;
+		return (short) b.getX();
 	}
 	
 	public static class MyNestedClass {

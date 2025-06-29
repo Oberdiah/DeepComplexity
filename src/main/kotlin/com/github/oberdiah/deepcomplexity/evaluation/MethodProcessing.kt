@@ -34,7 +34,7 @@ object MethodProcessing {
         psi: PsiElement,
         contextIn: Context
     ): Context {
-        var context = contextIn
+        var context = contextIn.nowResolvesTo(VoidExpression())
         when (psi) {
             is PsiBlockStatement -> {
                 context = processPsiElement(psi.codeBlock, context)
@@ -303,14 +303,26 @@ object MethodProcessing {
             }
 
             is PsiMethodCallExpression -> {
-                val (newContext, methodContext) = processMethod(context, psi)
+                var (newContext, methodContext) = processMethod(context, psi)
                 context = newContext
 
                 val qualifier = psi.methodExpression.qualifier
                 if (qualifier != null) {
                     context = processPsiElement(qualifier, context)
                     val processedQualifier = context.resolvesTo
+                    methodContext = methodContext.provideQualifier(processedQualifier)
                 }
+
+                // Let's have a think about this
+                // The problem is that we may end up with a qualifier that is a branch or an if statement.
+                // Effectively ((x > 5) ? x : y).doFooBar();
+                // In that situation, what do we use for the context for doFooBar?
+                // Well, it's actually ok on the way in, as the context can be nothing at all
+                // and things can be fine.
+                // The real problem is when we try to collapse the results of that.
+                // How do we characterise the resulting thing? I guess we effectively have to take it as
+                // (x > 5) ? x.doFooBar() : y.doFooBar();
+                // Which I guess we know how to handle?
 
                 context =
                     context.nowResolvesTo(

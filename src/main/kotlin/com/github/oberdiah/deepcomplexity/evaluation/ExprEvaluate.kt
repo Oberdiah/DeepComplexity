@@ -152,6 +152,17 @@ object ExprEvaluate {
                 Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
                     .constrainWith(scope)
 
+            is QualifiedExpr<*, *> -> {
+                val qualifier = evaluate(expr.qualifier, scope)
+//                qualifier.getField(expr.key, expr.ind, expr.exprKey)
+                TODO()
+            }
+
+            is ClassExpr -> {
+                expr.context
+                TODO()
+            }
+
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }

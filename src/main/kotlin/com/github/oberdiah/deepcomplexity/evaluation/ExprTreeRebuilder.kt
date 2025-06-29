@@ -114,6 +114,12 @@ object ExprTreeRebuilder {
 
             is ConstExpr<*> -> expr
             is VariableExpression<*> -> expr
+            is ClassExpr -> expr
+            is QualifiedExpr<*, *> -> QualifiedExpr(
+                rebuildTree(expr.qualifier, replacer),
+                expr.ind,
+                expr.key,
+            )
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

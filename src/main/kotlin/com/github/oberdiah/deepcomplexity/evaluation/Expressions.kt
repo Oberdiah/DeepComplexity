@@ -201,9 +201,14 @@ data class ClassExpr(val psi: PsiNewExpression, val context: Context) : Expr<Any
 /**
  * T is the type returned by the expression itself, Q is the type of the qualifier.
  *
- * For example, `foo.bar` would have the type <Foo, Bar>
+ * For example, `foo.bar` would have the type <Foo, Bar>. In that example, `foo` is the qualifier
+ * and a VariableKey for PsiField `bar` is the key.
  */
-data class QualifiedExpr<T : Any, Q : Any>(val qualifier: Expr<Q>, val expr: Expr<T>) : Expr<T>()
+data class QualifiedExpr<T : Any, Q : Any>(
+    val qualifier: Expr<Q>,
+    val myInd: SetIndicator<T>,
+    val key: Key
+) : Expr<T>()
 
 data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
 data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()
