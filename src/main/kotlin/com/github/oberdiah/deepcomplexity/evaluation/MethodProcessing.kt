@@ -313,17 +313,6 @@ object MethodProcessing {
                     methodContext = methodContext.provideQualifier(processedQualifier)
                 }
 
-                // Let's have a think about this
-                // The problem is that we may end up with a qualifier that is a branch or an if statement.
-                // Effectively ((x > 5) ? x : y).doFooBar();
-                // In that situation, what do we use for the context for doFooBar?
-                // Well, it's actually ok on the way in, as the context can be nothing at all
-                // and things can be fine.
-                // The real problem is when we try to collapse the results of that.
-                // How do we characterise the resulting thing? I guess we effectively have to take it as
-                // (x > 5) ? x.doFooBar() : y.doFooBar();
-                // Which I guess we know how to handle?
-
                 context =
                     context.nowResolvesTo(
                         methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value ?: VoidExpression()
