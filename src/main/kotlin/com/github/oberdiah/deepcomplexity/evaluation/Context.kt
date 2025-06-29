@@ -259,14 +259,32 @@ class Context private constructor(
      */
     fun provideQualifier(qualifier: Expr<*>): Context {
         return Context(variables.mapValues { (_, oldExpr) ->
-            oldExpr.rebuildTree(variableExpressionReplacer {
+            oldExpr.rebuildTree(variableExpressionReplacer { variableExpr ->
                 // In the future we'll also have to replace `this` with the qualifier.
-                if (it.key.isField()) {
-                    QualifiedExpr(
-                        qualifier,
-                        it.ind,
-                        it.key
-                    )
+                if (variableExpr.key.isField()) {
+                    // OK, so this is quite fun.
+                    // Sort of nested replacements. For everything that needed a qualifier, we build
+                    // it a custom qualifier expression, resolved correctly.
+
+                    val rebuiltQualifier = qualifier.rebuildTree(object : ExprTreeRebuilder.Replacer {
+                        override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
+                            val newExpr = if (expr is ClassExpr) {
+                                expr.context.variables[variableExpr.key] ?: throw IllegalArgumentException(
+                                    "Qualifier for ${variableExpr.key} not found in context"
+                                )
+                            } else {
+                                expr
+                            }
+
+                            // For next time: rebuilding the tree is going to have to be able to change its type.
+                            assert(newExpr.ind == expr.ind) {
+                                "(${newExpr.ind} != ${expr.ind}) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                            }
+                            @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
+                            return newExpr as Expr<T>
+                        }
+                    })
+                    rebuiltQualifier
                 } else {
                     null
                 }
