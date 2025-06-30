@@ -7,6 +7,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Co
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 import com.jetbrains.rd.util.firstOrNull
@@ -147,9 +148,7 @@ object MethodProcessing {
                     // If there's a qualifier, we need to resolve it first.
                     context = processPsiElement(qualifier, context)
                     val processedQualifier = context.resolvesTo
-
-//                    context.getVar(psi.resolveIfNeeded(), processedQualifier)
-                    TODO()
+                    processedQualifier.getField(psi.resolveIfNeeded().toKey() as Context.Key.VariableKey)
                 }
 
                 context = context.nowResolvesTo(resolvedExpr)
@@ -268,6 +267,10 @@ object MethodProcessing {
                     JavaTokenType.EQ -> {
                         context = processPsiElement(rExpression, context)
                         val rhs = context.resolvesTo
+
+                        context = processPsiElement(lExpression, context)
+                        val lhs = context.resolvesTo
+
                         context = context.withVar(lExpression.resolveIfNeeded(), rhs)
                         rhs
                     }

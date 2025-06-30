@@ -1009,6 +1009,7 @@ public class MyTestData {
 		if (x <= 0) {
 			b = a;
 		}
+		b.x = 0;
 		return (short) b.getX();
 	}
 	
@@ -1019,7 +1020,7 @@ public class MyTestData {
 		}
 		
 		public MyNestedClass(int xArg) {
-			this.x = xArg;
+			x = xArg;
 		}
 		
 		public MyNestedClass addOne() {

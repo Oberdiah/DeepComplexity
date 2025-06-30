@@ -92,6 +92,38 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     }
 }
 
+fun Expr<*>.getField(key: Key.VariableKey): Expr<*> {
+    assert(key.isField()) {
+        "Expected a field key, got ${key::class.simpleName} for $this"
+    }
+    assert(this !is VoidExpression) {
+        "Cannot get field from a VoidExpression: $this"
+    }
+
+    fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
+        return this.replaceLeaves(ExprTreeRebuilder.LeafReplacer(ind) { expr ->
+            val newExpr = if (expr is ClassExpr) {
+                expr.context.variables[key] ?: throw IllegalArgumentException(
+                    "Qualifier for ${key} not found in context"
+                )
+            } else {
+                throw IllegalArgumentException(
+                    "Expected ClassExpr, got ${expr::class.simpleName}"
+                )
+            }
+
+            // For next time: rebuilding the tree is going to have to be able to change its type.
+            assert(newExpr.ind == ind) {
+                "(${newExpr.ind} != ${ind}) ${newExpr.dStr()} does not match ${expr.dStr()}"
+            }
+            @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
+            newExpr as Expr<T>
+        })
+    }
+
+    return extra(key.ind)
+}
+
 /**
  * An expression that doesn't return anything.
  *

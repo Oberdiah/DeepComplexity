@@ -16,7 +16,7 @@ class Context private constructor(
         // either PsiLocalVariable, PsiParameter, or PsiField.
         data class VariableKey(
             val variable: PsiVariable,
-        ) : Key() {
+        ) : Key() { // todo: Make this into three sub-classes
             init {
                 val acceptable = variable is PsiLocalVariable
                         || variable is PsiParameter
@@ -265,29 +265,7 @@ class Context private constructor(
                     // OK, so this is quite fun.
                     // Sort of nested replacements. For everything that needed a qualifier, we build
                     // it a custom qualifier expression, resolved correctly.
-
-                    fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
-                        return qualifier.replaceLeaves(ExprTreeRebuilder.LeafReplacer(ind) { expr ->
-                            val newExpr = if (expr is ClassExpr) {
-                                expr.context.variables[variableExpr.key] ?: throw IllegalArgumentException(
-                                    "Qualifier for ${variableExpr.key} not found in context"
-                                )
-                            } else {
-                                throw IllegalArgumentException(
-                                    "Expected ClassExpr, got ${expr::class.simpleName}"
-                                )
-                            }
-
-                            // For next time: rebuilding the tree is going to have to be able to change its type.
-                            assert(newExpr.ind == ind) {
-                                "(${newExpr.ind} != ${ind}) ${newExpr.dStr()} does not match ${expr.dStr()}"
-                            }
-                            @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
-                            newExpr as Expr<T>
-                        })
-                    }
-
-                    extra(variableExpr.ind)
+                    qualifier.getField(variableExpr.key as Key.VariableKey)
                 } else {
                     null
                 }
