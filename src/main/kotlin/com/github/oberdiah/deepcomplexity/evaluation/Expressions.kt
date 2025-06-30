@@ -37,6 +37,9 @@ sealed class Expr<T : Any>() {
      * you want.
      */
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
+    fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
+        ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
+
     fun iterateTree(): Sequence<Expr<*>> = ExprTreeVisitor.iterateTree(this)
     fun getVariables(): Set<VariableExpression<*>> = iterateTree()
         .filterIsInstance<VariableExpression<*>>()

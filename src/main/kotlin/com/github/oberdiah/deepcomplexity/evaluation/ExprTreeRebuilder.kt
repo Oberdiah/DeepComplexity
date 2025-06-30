@@ -3,8 +3,52 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 
 object ExprTreeRebuilder {
+    class LeafReplacer<T : Any>(val ind: SetIndicator<T>, val replacer: (Expr<*>) -> Expr<T>)
+
+    fun <T : Any> replaceTreeLeaves(
+        expr: Expr<*>,
+        replacer: LeafReplacer<T>
+    ): Expr<T> {
+        return when (expr) {
+            is UnionExpression -> UnionExpression(
+                replaceTreeLeaves(expr.lhs, replacer),
+                replaceTreeLeaves(expr.rhs, replacer),
+            )
+
+            is IfExpression -> IfExpression(
+                replaceTreeLeaves(expr.trueExpr, replacer),
+                replaceTreeLeaves(expr.falseExpr, replacer),
+                expr.thisCondition,
+            )
+
+            is TypeCastExpression<*, *> -> {
+                fun <T : Any, Q : Any> extra(
+                    expr: TypeCastExpression<T, Q>
+                ): TypeCastExpression<T, *> {
+                    return TypeCastExpression(
+                        replaceTreeLeaves(expr.expr, replacer),
+                        expr.setInd,
+                        expr.explicit,
+                    )
+                }
+
+                @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
+                extra(expr) as Expr<T>
+            }
+
+            is ConstExpr<*> -> replacer.replacer(expr)
+            is VariableExpression<*> -> replacer.replacer(expr)
+            is ClassExpr -> replacer.replacer(expr)
+
+            else -> {
+                throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
+            }
+        }
+    }
+
     interface Replacer {
         fun <T : Any> replace(expr: Expr<T>): Expr<T>
     }
