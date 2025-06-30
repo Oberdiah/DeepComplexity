@@ -92,10 +92,7 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     }
 }
 
-fun Expr<*>.getField(key: Key.VariableKey): Expr<*> {
-    assert(key.isField()) {
-        "Expected a field key, got ${key::class.simpleName} for $this"
-    }
+fun Expr<*>.getField(key: Key.FieldKey): Expr<*> {
     assert(this !is VoidExpression) {
         "Cannot get field from a VoidExpression: $this"
     }

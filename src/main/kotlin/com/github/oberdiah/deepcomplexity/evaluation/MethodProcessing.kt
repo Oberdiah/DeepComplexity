@@ -148,7 +148,7 @@ object MethodProcessing {
                     // If there's a qualifier, we need to resolve it first.
                     context = processPsiElement(qualifier, context)
                     val processedQualifier = context.resolvesTo
-                    processedQualifier.getField(psi.resolveIfNeeded().toKey() as Context.Key.VariableKey)
+                    processedQualifier.getField(psi.resolveIfNeeded().toKey() as Context.Key.FieldKey)
                 }
 
                 context = context.nowResolvesTo(resolvedExpr)

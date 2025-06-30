@@ -12,22 +12,13 @@ class Context private constructor(
     val resolvesTo: Expr<*> = VoidExpression()
 ) {
     sealed class Key {
-        // Variable is where the variable is defined —
-        // either PsiLocalVariable, PsiParameter, or PsiField.
-        data class VariableKey(
-            val variable: PsiVariable,
-        ) : Key() { // todo: Make this into three sub-classes
-            init {
-                val acceptable = variable is PsiLocalVariable
-                        || variable is PsiParameter
-                        || variable is PsiField
-                if (!acceptable) {
-                    throw IllegalArgumentException("Variable must be a PsiLocalVariable, PsiParameter, or PsiField")
-                }
-            }
-
+        abstract class VariableKey<T : PsiVariable>(open val variable: T) : Key() {
             override fun toString(): String = variable.toStringPretty()
         }
+
+        data class LocalVariableKey(override val variable: PsiLocalVariable) : VariableKey<PsiLocalVariable>(variable)
+        data class ParameterKey(override val variable: PsiParameter) : VariableKey<PsiParameter>(variable)
+        data class FieldKey(override val variable: PsiField) : VariableKey<PsiField>(variable)
 
         /**
          * This is the key representing a return type itself.
@@ -85,7 +76,7 @@ class Context private constructor(
                 return when (this) {
                     is ExpressionKey -> this.expr.ind
                     is ReturnKey -> type
-                    is VariableKey -> Utilities.psiTypeToSetIndicator(variable.type)
+                    is VariableKey<*> -> Utilities.psiTypeToSetIndicator(variable.type)
                     else -> throw IllegalArgumentException("Cannot get indicator for $this")
                 }
             }
@@ -94,14 +85,13 @@ class Context private constructor(
         fun isEphemeral(): Boolean = this is EphemeralKey
         fun isReturnKey(): Boolean = this is ReturnKey
         fun isExpr(): Boolean = this is ExpressionKey
-        fun isField(): Boolean = this is VariableKey && variable is PsiField
 
         /**
          * When multiplying, we need to decide which one gets to live on.
          */
         fun importance(): Int {
             return when (this) {
-                is VariableKey -> 3
+                is VariableKey<*> -> 3
                 is ReturnKey -> 2
                 is ExpressionKey -> 1
                 is EphemeralKey -> 0
@@ -114,7 +104,7 @@ class Context private constructor(
          */
         fun getElement(): PsiElement {
             return when (this) {
-                is VariableKey -> variable
+                is VariableKey<*> -> variable
                 is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
                 is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")
@@ -261,11 +251,11 @@ class Context private constructor(
         return Context(variables.mapValues { (_, oldExpr) ->
             oldExpr.rebuildTree(variableExpressionReplacer { variableExpr ->
                 // In the future we'll also have to replace `this` with the qualifier.
-                if (variableExpr.key.isField()) {
+                if (variableExpr.key is Key.FieldKey) {
                     // OK, so this is quite fun.
                     // Sort of nested replacements. For everything that needed a qualifier, we build
                     // it a custom qualifier expression, resolved correctly.
-                    qualifier.getField(variableExpr.key as Key.VariableKey)
+                    qualifier.getField(variableExpr.key)
                 } else {
                     null
                 }

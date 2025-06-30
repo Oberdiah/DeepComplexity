@@ -85,7 +85,9 @@ object Utilities {
 
     fun PsiElement.toKey(): Context.Key {
         return when (this) {
-            is PsiVariable -> Context.Key.VariableKey(this)
+            is PsiField -> Context.Key.FieldKey(this)
+            is PsiLocalVariable -> Context.Key.LocalVariableKey(this)
+            is PsiParameter -> Context.Key.ParameterKey(this)
             is PsiReturnStatement -> {
                 val returnMethod = findContainingMethodOrLambda(this)
                     ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
