@@ -1,6 +1,6 @@
 [versions]
 # libraries
-junit = "5.11.4"
+junit = "5.13.2"
 commonsNumbersCore = "1.2"
 
 # plugins
