@@ -92,7 +92,7 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     }
 }
 
-fun Expr<*>.getField(key: Key.FieldKey): Expr<*> {
+fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
     assert(this !is VoidExpression) {
         "Cannot get field from a VoidExpression: $this"
     }
@@ -100,8 +100,12 @@ fun Expr<*>.getField(key: Key.FieldKey): Expr<*> {
     fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
         return this.replaceLeaves(ExprTreeRebuilder.LeafReplacer(ind) { expr ->
             val newExpr = if (expr is ClassExpr) {
-                expr.context.variables[key] ?: throw IllegalArgumentException(
-                    "Qualifier for ${key} not found in context"
+                val heap = context.heap[expr.heapKey] ?: throw IllegalArgumentException(
+                    "Heap for ${expr.heapKey} not found in context"
+                )
+
+                heap.variables[key] ?: throw IllegalArgumentException(
+                    "Qualifier for $key not found in context"
                 )
             } else {
                 throw IllegalArgumentException(
@@ -228,19 +232,26 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
 /**
  * Represents an object.
  */
-data class ClassExpr(val psi: PsiNewExpression, val context: Context) : Expr<Any>()
+data class ClassExpr(val psi: PsiNewExpression, val heapKey: Key.HeapKey) : Expr<Any>()
 
 /**
- * T is the type returned by the expression itself, Q is the type of the qualifier.
+ * Represents any expression that can be used as a left-hand value in an assignment.
  *
- * For example, `foo.bar` would have the type <Foo, Bar>. In that example, `foo` is the qualifier
- * and a VariableKey for PsiField `bar` is the key.
+ * For example, `x` in `x = 5`, or `this.x` in `this.x = 5`.
+ *
+ * The `qualifier` is optional.
  */
-data class QualifiedExpr<T : Any, Q : Any>(
-    val qualifier: Expr<Q>,
-    val myInd: SetIndicator<T>,
-    val key: Key
-) : Expr<T>()
+data class LValueExpr<T : Any>(
+    val key: Key,
+    val qualifier: Expr<*>?,
+    val myInd: SetIndicator<T>
+) : Expr<T>() {
+    init {
+        assert(qualifier == null || key is Key.FieldKey) {
+            "Qualifier can only be set for field keys, got: $key"
+        }
+    }
+}
 
 data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
 data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()

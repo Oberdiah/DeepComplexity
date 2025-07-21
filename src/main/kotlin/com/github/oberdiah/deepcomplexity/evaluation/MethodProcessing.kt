@@ -31,9 +31,23 @@ object MethodProcessing {
         } ?: Context.new()
     }
 
+    private enum class Mode {
+        /**
+         * Standard operating mode, where we evaluate expressions and return their values.
+         */
+        RVALUE,
+
+        /**
+         * We don't fully evaluate expressions, rather we generate LValue expressions instead
+         * that can be used to assign values.
+         */
+        LVALUE
+    }
+
     private fun processPsiElement(
         psi: PsiElement,
-        contextIn: Context
+        contextIn: Context,
+        mode: Mode = Mode.RVALUE
     ): Context {
         var context = contextIn.nowResolvesTo(VoidExpression())
         when (psi) {
@@ -141,17 +155,39 @@ object MethodProcessing {
             }
 
             is PsiReferenceExpression -> {
-                val qualifier = psi.qualifier
-                val resolvedExpr = if (qualifier == null) {
-                    context.getVar(psi.resolveIfNeeded())
-                } else {
-                    // If there's a qualifier, we need to resolve it first.
-                    context = processPsiElement(qualifier, context)
-                    val processedQualifier = context.resolvesTo
-                    processedQualifier.getField(psi.resolveIfNeeded().toKey() as Context.Key.FieldKey)
-                }
+                val key = psi.resolveIfNeeded().toKey()
 
-                context = context.nowResolvesTo(resolvedExpr)
+                when (mode) {
+                    Mode.RVALUE -> {
+                        val qualifier = psi.qualifier
+                        val resolvedExpr = if (qualifier == null) {
+                            context.getVar(key)
+                        } else {
+                            // If there's a qualifier, we need to resolve it first.
+                            context = processPsiElement(qualifier, context)
+                            val processedQualifier = context.resolvesTo
+                            processedQualifier.getField(context, key as Context.Key.FieldKey)
+                        }
+
+                        context = context.nowResolvesTo(resolvedExpr)
+                    }
+
+                    Mode.LVALUE -> {
+                        val qualifier = psi.qualifier?.let {
+                            // If there's a qualifier, we need to resolve it first.
+                            context = processPsiElement(it, context)
+                            context.resolvesTo
+                        }
+
+                        context = context.nowResolvesTo(
+                            LValueExpr(
+                                key,
+                                qualifier,
+                                key.ind
+                            )
+                        )
+                    }
+                }
             }
 
             is PsiPrefixExpression -> {
@@ -173,7 +209,7 @@ object MethodProcessing {
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
                         val resolvedOperand = operand.resolveIfNeeded()
-                        val operandExpr = context.getVar(resolvedOperand).castToNumbers()
+                        val operandExpr = context.getVar(resolvedOperand.toKey()).castToNumbers()
 
                         context = context.withVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
 
@@ -198,7 +234,7 @@ object MethodProcessing {
 
                 // Assign the value to the variable
                 val resolvedOperand = psi.operand.resolveIfNeeded()
-                val operandExpr = context.getVar(resolvedOperand).castToNumbers()
+                val operandExpr = context.getVar(resolvedOperand.toKey()).castToNumbers()
                 context = context.withVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
 
                 context = context.nowResolvesTo(builtExpr.castToNumbers())
@@ -277,7 +313,7 @@ object MethodProcessing {
 
                     JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                         val resolvedLhs = lExpression.resolveIfNeeded()
-                        val lhs = context.getVar(resolvedLhs).castToNumbers()
+                        val lhs = context.getVar(resolvedLhs.toKey()).castToNumbers()
                         context = processPsiElement(rExpression, context)
                         val rhs = context.resolvesTo.castToNumbers()
 
@@ -325,7 +361,9 @@ object MethodProcessing {
             is PsiNewExpression -> {
                 val (newContext, methodContext) = processMethod(context, psi)
                 context = newContext
-                context = context.nowResolvesTo(ClassExpr(psi, methodContext))
+                val heapKey = Context.Key.HeapKey.new()
+                context = context.withHeap(heapKey, methodContext)
+                context = context.nowResolvesTo(ClassExpr(psi, heapKey))
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {

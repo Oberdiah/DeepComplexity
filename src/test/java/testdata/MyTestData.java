@@ -15,7 +15,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short test1(short x) {
+	public static short go(short x) {
 		if (x < 3) {
 			return 2;
 		} else {
@@ -869,18 +869,18 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest0(short x) {
-		MyNestedClass nested = new MyNestedClass();
+		MyClass nested = new MyClass();
 		return (short) nested.x;
 	}
 	
 	public static short simpleClassTest1(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.x = 1;
 		return (short) nested.x;
 	}
 	
 	public static short simpleClassTest2(short x) {
-		MyNestedClass nested = new MyNestedClass(3);
+		MyClass nested = new MyClass(3);
 		nested.x = 1;
 		if (nested.x == 1) {
 			return 2;
@@ -889,7 +889,7 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest3(short x) {
-		MyNestedClass nested = new MyNestedClass(3);
+		MyClass nested = new MyClass(3);
 		if (nested.x == 3) {
 			return 2;
 		}
@@ -897,28 +897,28 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest4(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		updateClassField(nested);
 		return (short) nested.x;
 	}
 	
-	private static void updateClassField(MyNestedClass nested) {
+	private static void updateClassField(MyClass nested) {
 		nested.x = 5;
 	}
 	
 	public static short simpleClassTest5(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.addOne();
 		return (short) nested.x;
 	}
 	
 	public static short simpleClassTest6(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		return (short) (nested.getX() - nested.x);
 	}
 	
 	public static short simpleClassTest7(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.addOne();
 		if (nested.getX() == 3) {
 			return 1;
@@ -927,7 +927,7 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest8(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.addOne();
 		int v = nested.x;
 		nested.addOne();
@@ -935,7 +935,7 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest9(short x) {
-		MyNestedClass nested = new MyNestedClass();
+		MyClass nested = new MyClass();
 		if (nested.getX() == 1000) {
 			return 1;
 		}
@@ -943,31 +943,31 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest10(short x) {
-		MyNestedClass nested = new MyNestedClass(50);
+		MyClass nested = new MyClass(50);
 		if (x == 100) {
-			nested = new MyNestedClass(100);
+			nested = new MyClass(100);
 		}
 		nested.addOne();
 		return (short) nested.getX();
 	}
 	
 	public static short simpleClassTest11(short x) {
-		MyNestedClass nested = new MyNestedClass(50).addOne();
+		MyClass nested = new MyClass(50).addOne();
 		return (short) nested.getX();
 	}
 	
 	public static short simpleClassTest12(short x) {
-		return (short) new MyNestedClass(50).addOne().addOne().addOne().getX();
+		return (short) new MyClass(50).addOne().addOne().addOne().getX();
 	}
 	
 	public static short simpleClassTest13(short x) {
-		MyNestedClass nested = new MyNestedClass(50);
+		MyClass nested = new MyClass(50);
 		MyNestingClass nesting = new MyNestingClass(nested);
 		return (short) nesting.nested.getX();
 	}
 	
 	public static short simpleClassTest14(short x) {
-		MyNestedClass nested = new MyNestedClass(50);
+		MyClass nested = new MyClass(50);
 		MyNestingClass nesting = new MyNestingClass(nested);
 		nesting.nested.x++;
 		nesting.nested.addOne();
@@ -975,20 +975,20 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest15(short x) {
-		int nested = new MyNestedClass(50).x = 5;
+		int nested = new MyClass(50).x = 5;
 		return (short) nested;
 	}
 	
 	public static short simpleClassTest16(short x) {
-		MyNestedClass a = new MyNestedClass(1);
-		MyNestedClass b = new MyNestedClass(2);
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
 		int p = ((x > 0) ? a : b).x;
 		return (short) p;
 	}
 	
 	public static short simpleClassTest17(short x) {
-		MyNestedClass a = new MyNestedClass(1);
-		MyNestedClass b = new MyNestedClass(2);
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
 		((x > 0) ? a : b).x = 5;
 		return (short) a.x;
 	}
@@ -997,15 +997,15 @@ public class MyTestData {
 		if (x <= 0) {
 			return 0;
 		}
-		MyNestedClass a = new MyNestedClass(1);
-		MyNestedClass b = new MyNestedClass(2);
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
 		((x > 0) ? a : b).x = 5;
 		return (short) a.x;
 	}
 	
 	public static short simpleClassTest19(short x) {
-		MyNestedClass a = new MyNestedClass(1);
-		MyNestedClass b = new MyNestedClass(2);
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
 		if (x <= 0) {
 			b = a;
 		}
@@ -1013,17 +1013,70 @@ public class MyTestData {
 		return (short) b.getX();
 	}
 	
-	public static class MyNestedClass {
+	public static short simpleClassTest20(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = a;
+		b.x = 0;
+		return (short) a.getX();
+	}
+	
+	public static short simpleClassTest21(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		if (x <= 0) {
+			b = a;
+		}
+		b.x = 0;
+		
+		// Here's the thing:
+		// In a way, this is the same as
+		// if (x <= 0) {
+		//	 a.x = 5;
+		// } else {
+		//   b.x = 5;
+		// }
+		
+		// And we do know how to handle that situation fine.
+		// The problem, of course, is that we don't currently do that on parsed expression trees.
+		// Like, the above can be easily solved like that.
+		// The problem is that the modified contexts are then trapped within the if statement.
+		// And that's then a problem because these modified contexts need to be accessed globally.
+		// They need to escape the `if`.
+		// So I need a way to bubble the `heap` up through the `if` stack.
+		// I mean, I guess the heap can be an expression that we then resolve?
+		// We need a `context.stack` but for heaps.
+		
+		// I wonder if b shouldn't be equal to `(x <= 0) ? a : b` after all?
+		// Hmm, no. We can't pull the assignment backwards. We don't know that
+		// it's going to be used until that point.
+		
+		// I just don't like the easy solution very much.
+		// If we look at what this looks like in practice, what I'm asking for here is a heap that
+		// ends up as:
+		// b = (x <= 0) ? a : b
+		// { a.x = (x <= 0) ? 0 : b.x, b.x = (x <= 0) ? a.x : 0 }
+		
+		// Isn't that fairly straightforward to do?
+		// Is this actually quite a simple operation and I'm just overcomplicating things?
+		
+		// That doesn't seem out of the question. It might be worth figuring out a list of all objects in the
+		// qualifier, but that might be it?
+		
+		
+		return (short) a.getX();
+	}
+	
+	public static class MyClass {
 		public int x = 1000;
 		
-		public MyNestedClass() {
+		public MyClass() {
 		}
 		
-		public MyNestedClass(int xArg) {
+		public MyClass(int xArg) {
 			x = xArg;
 		}
 		
-		public MyNestedClass addOne() {
+		public MyClass addOne() {
 			x++;
 			return this;
 		}
@@ -1034,9 +1087,9 @@ public class MyTestData {
 	}
 	
 	public static class MyNestingClass {
-		public MyNestedClass nested;
+		public MyClass nested;
 		
-		public MyNestingClass(MyNestedClass nested) {
+		public MyNestingClass(MyClass nested) {
 			nested.x++;
 			this.nested = nested;
 		}

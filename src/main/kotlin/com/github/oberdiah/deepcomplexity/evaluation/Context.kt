@@ -8,8 +8,9 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
 class Context private constructor(
-    val variables: Map<Key, Expr<*>> = mutableMapOf(),
-    val resolvesTo: Expr<*> = VoidExpression()
+    val variables: Map<Key, Expr<*>>,
+    val heap: Map<Key.HeapKey, Context>,
+    val resolvesTo: Expr<*>,
 ) {
     sealed class Key {
         abstract class VariableKey<T : PsiVariable>(open val variable: T) : Key() {
@@ -19,6 +20,15 @@ class Context private constructor(
         data class LocalVariableKey(override val variable: PsiLocalVariable) : VariableKey<PsiLocalVariable>(variable)
         data class ParameterKey(override val variable: PsiParameter) : VariableKey<PsiParameter>(variable)
         data class FieldKey(override val variable: PsiField) : VariableKey<PsiField>(variable)
+
+        @JvmInline
+        value class HeapKey(val key: EphemeralKey) {
+            companion object {
+                fun new(): HeapKey {
+                    return HeapKey(EphemeralKey.new())
+                }
+            }
+        }
 
         /**
          * This is the key representing a return type itself.
@@ -117,11 +127,15 @@ class Context private constructor(
     }
 
     companion object {
-        fun new(): Context = Context()
+        fun new(): Context = Context(
+            variables = emptyMap(),
+            heap = emptyMap(),
+            resolvesTo = VoidExpression()
+        )
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
-         * This does not and can not resolve any unresolved expressions as these two statements
+         * This does not and cannot resolve any unresolved expressions as these two statements
          * are independent of each other.
          *
          * You must define how to resolve conflicts.
@@ -139,7 +153,20 @@ class Context private constructor(
                 newMap[key] = how(aVal, bVal)
             }
 
-            return Context(newMap)
+            val resolvesTo = when {
+                a.resolvesTo is VoidExpression && b.resolvesTo is VoidExpression -> VoidExpression()
+                a.resolvesTo is VoidExpression -> b.resolvesTo
+                b.resolvesTo is VoidExpression -> a.resolvesTo
+                else -> how(a.resolvesTo, b.resolvesTo)
+            }
+
+            return Context(
+                newMap,
+                heap = a.heap + b.heap,
+                // I don't believe this matters for if statements in the real world, but it might for
+                // the ternary operator.
+                resolvesTo = resolvesTo
+            )
         }
     }
 
@@ -167,16 +194,12 @@ class Context private constructor(
         return expr.evaluate(ExprEvaluate.Scope())
     }
 
-    fun getVar(element: PsiElement): Expr<*> {
-        return getVar(element.toKey())
-    }
-
     fun getVar(element: Key): Expr<*> {
         return variables[element] ?: VariableExpression<Any>(element)
     }
 
     fun nowResolvesTo(expr: Expr<*>): Context {
-        return Context(variables, expr)
+        return Context(variables, heap, expr)
     }
 
     /**
@@ -188,7 +211,7 @@ class Context private constructor(
         }
 
         val castVar = expr.performACastTo(key.ind, false)
-        return Context(variables + (key to castVar))
+        return Context(variables + (key to castVar), heap, resolvesTo)
     }
 
     fun withVar(element: PsiElement, expr: Expr<*>): Context {
@@ -212,7 +235,11 @@ class Context private constructor(
             oldExpr.rebuildTree(variableExpressionReplacer {
                 if (it.key == key) castExpr else null
             })
-        })
+        }, heap, resolvesTo)
+    }
+
+    fun withHeap(key: Key.HeapKey, context: Context): Context {
+        return Context(variables, heap + (key to context), resolvesTo)
     }
 
     /**
@@ -241,7 +268,11 @@ class Context private constructor(
         newVariables.putAll(laterResolvedWithMe.filter { it.key.isReturnKey() })
         newVariables.putAll(meResolvedWithLater.filter { it.key.isReturnKey() })
 
-        return Context(newVariables)
+        return Context(
+            newVariables,
+            heap = heap + later.heap,
+            resolvesTo = resolvesTo
+        )
     }
 
     /**
@@ -255,12 +286,12 @@ class Context private constructor(
                     // OK, so this is quite fun.
                     // Sort of nested replacements. For everything that needed a qualifier, we build
                     // it a custom qualifier expression, resolved correctly.
-                    qualifier.getField(variableExpr.key)
+                    qualifier.getField(this, variableExpr.key)
                 } else {
                     null
                 }
             })
-        })
+        }, heap, resolvesTo)
     }
 
     private fun variableExpressionReplacer(

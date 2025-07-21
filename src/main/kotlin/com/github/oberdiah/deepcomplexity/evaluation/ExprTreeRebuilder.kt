@@ -159,10 +159,10 @@ object ExprTreeRebuilder {
             is ConstExpr<*> -> expr
             is VariableExpression<*> -> expr
             is ClassExpr -> expr
-            is QualifiedExpr<*, *> -> QualifiedExpr(
-                rebuildTree(expr.qualifier, replacer),
-                expr.ind,
+            is LValueExpr<*> -> LValueExpr(
                 expr.key,
+                expr.qualifier?.let { rebuildTree(it, replacer) },
+                expr.ind,
             )
 
             else -> {
