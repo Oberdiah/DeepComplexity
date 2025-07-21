@@ -15,7 +15,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short go(short x) {
+	public static short test1(short x) {
 		if (x < 3) {
 			return 2;
 		} else {
@@ -92,7 +92,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short incrementTest(short x) {
+	public static short go(short x) {
 		int a = x;
 		int b = a++;
 		int c = a;

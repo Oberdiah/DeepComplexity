@@ -39,7 +39,8 @@ object MethodProcessing {
 
         /**
          * We don't fully evaluate expressions, rather we generate LValue expressions instead
-         * that can be used to assign values.
+         * that can be used to assign values. You can always convert from this to an RValue
+         * later on by calling `.resolveLValues(context)`.
          */
         LVALUE
     }
@@ -72,7 +73,7 @@ object MethodProcessing {
                         val rExpression = element.initializer
                         if (rExpression != null) {
                             context = processPsiElement(rExpression, context)
-                            context = context.withVar(element, context.resolvesTo)
+                            context = context.withVar(element.toKey(), context.resolvesTo)
                         } else {
                             TODO("Eventually we'll replace this with either null or 0")
                         }
@@ -141,7 +142,7 @@ object MethodProcessing {
 
                     if (context.variables.keys.none { it.isReturnKey() }) {
                         // If there's no 'method' key yet, create one.
-                        context = context.withVar(psi, returnExpr)
+                        context = context.withVar(psi.toKey(), returnExpr)
                     } else {
                         // If there is, resolve the existing one with the new value.
                         context = context.withResolvedVar(psi, returnExpr)
@@ -173,10 +174,13 @@ object MethodProcessing {
                     }
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
-                        val resolvedOperand = operand.resolveIfNeeded()
-                        val operandExpr = context.getVar(resolvedOperand.toKey()).castToNumbers()
+                        context = processPsiElement(operand, context, Mode.LVALUE)
+                        val operandExpr = context.resolvesTo.castToNumbers()
 
-                        context = context.withVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
+                        context = context.withVar(
+                            operandExpr,
+                            unaryOp.applyToExpr(operandExpr.resolveLValues(context))
+                        )
 
                         // Build the expression after the assignment for a prefix increment/decrement
                         context = processPsiElement(operand, context)
@@ -198,9 +202,12 @@ object MethodProcessing {
                 val builtExpr = context.resolvesTo
 
                 // Assign the value to the variable
-                val resolvedOperand = psi.operand.resolveIfNeeded()
-                val operandExpr = context.getVar(resolvedOperand.toKey()).castToNumbers()
-                context = context.withVar(resolvedOperand, unaryOp.applyToExpr(operandExpr))
+                context = processPsiElement(psi.operand, context, Mode.LVALUE)
+                val operandExpr = context.resolvesTo.castToNumbers()
+                context = context.withVar(
+                    operandExpr,
+                    unaryOp.applyToExpr(operandExpr.resolveLValues(context))
+                )
 
                 context = context.nowResolvesTo(builtExpr.castToNumbers())
             }
@@ -258,40 +265,28 @@ object MethodProcessing {
                     context = context.nowResolvesTo(currentExpr)
                 }
             }
-            
+
             is PsiReferenceExpression -> {
                 val key = psi.resolveIfNeeded().toKey()
 
+                val qualifier = psi.qualifier?.let {
+                    // If there's a qualifier, we need to resolve it first.
+                    context = processPsiElement(it, context)
+                    context.resolvesTo
+                }
+
+                val lValue = LValueExpr(
+                    key,
+                    qualifier,
+                    key.ind
+                )
+
                 context = context.nowResolvesTo(
                     when (mode) {
-                        Mode.RVALUE -> {
-                            val qualifier = psi.qualifier
-                            val resolvedExpr = if (qualifier == null) {
-                                context.getVar(key)
-                            } else {
-                                // If there's a qualifier, we need to resolve it first.
-                                context = processPsiElement(qualifier, context)
-                                val processedQualifier = context.resolvesTo
-                                processedQualifier.getField(context, key as Context.Key.FieldKey)
-                            }
-
-                            resolvedExpr
-                        }
-
-                        Mode.LVALUE -> {
-                            val qualifier = psi.qualifier?.let {
-                                // If there's a qualifier, we need to resolve it first.
-                                context = processPsiElement(it, context)
-                                context.resolvesTo
-                            }
-
-                            LValueExpr(
-                                key,
-                                qualifier,
-                                key.ind
-                            )
-                        }
-                    })
+                        Mode.LVALUE -> lValue
+                        Mode.RVALUE -> lValue.resolve(context)
+                    }
+                )
             }
 
             is PsiAssignmentExpression -> {
@@ -299,36 +294,35 @@ object MethodProcessing {
                 val rExpression = psi.rExpression ?: throw ExpressionIncompleteException()
                 val opSign = psi.operationSign
 
+                context = processPsiElement(lExpression, context, Mode.LVALUE)
+                val lhs = context.resolvesTo
+
                 val exprResult = when (opSign.tokenType) {
                     JavaTokenType.EQ -> {
                         context = processPsiElement(rExpression, context)
                         val rhs = context.resolvesTo
 
-                        context = processPsiElement(lExpression, context)
-                        val lhs = context.resolvesTo
-
-                        context = context.withVar(lExpression.resolveIfNeeded(), rhs)
+                        context = context.withVar(lhs, rhs)
                         rhs
                     }
 
                     JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
-                        val resolvedLhs = lExpression.resolveIfNeeded()
-                        val lhs = context.getVar(resolvedLhs.toKey()).castToNumbers()
                         context = processPsiElement(rExpression, context)
                         val rhs = context.resolvesTo.castToNumbers()
 
-                        ConversionsAndPromotion.castNumbersAToB(rhs, lhs, false).map { rhs, lhs ->
-                            val expr = ArithmeticExpression(
-                                lhs,
-                                rhs,
-                                BinaryNumberOp.fromJavaTokenType(opSign.tokenType)
-                                    ?: throw IllegalArgumentException(
-                                        "As-yet unsupported assignment operation: $opSign"
-                                    )
-                            )
-                            context = context.withVar(resolvedLhs, expr)
-                            expr
-                        }
+                        ConversionsAndPromotion.castNumbersAToB(rhs, lhs.resolveLValues(context).castToNumbers(), false)
+                            .map { innerRhs, innerLhs ->
+                                val expr = ArithmeticExpression(
+                                    innerLhs,
+                                    innerRhs,
+                                    BinaryNumberOp.fromJavaTokenType(opSign.tokenType)
+                                        ?: throw IllegalArgumentException(
+                                            "As-yet unsupported assignment operation: $opSign"
+                                        )
+                                )
+                                context = context.withVar(lhs, expr)
+                                expr
+                            }
                     }
 
                     else -> {
@@ -405,7 +399,7 @@ object MethodProcessing {
         var methodContext = Context.new()
         for ((param, arg) in parameters.zip(arguments)) {
             context = processPsiElement(arg, context)
-            methodContext = methodContext.withVar(param, context.resolvesTo)
+            methodContext = methodContext.withVar(param.toKey(), context.resolvesTo)
         }
 
         method.body?.let { body ->

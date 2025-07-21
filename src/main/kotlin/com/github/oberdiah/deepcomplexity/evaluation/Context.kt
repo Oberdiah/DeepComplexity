@@ -205,6 +205,24 @@ class Context private constructor(
     /**
      * Performs a cast if necessary.
      */
+    fun withVar(lExpr: Expr<*>, rExpr: Expr<*>): Context {
+        assert(rExpr.iterateTree().none { it is LValueExpr<*> }) {
+            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
+        }
+
+        if (lExpr is LValueExpr && lExpr.qualifier == null) {
+            return withVar(lExpr.key, rExpr)
+        }
+
+        TODO()
+    }
+
+    /**
+     * This should only be used externally in special circumstances — most of the time
+     * you should be using `withVar(lExpr, rExpr)` instead.
+     *
+     * This will be useful sometimes, though, e.g. setting up return values, declarations, or parameters.
+     */
     fun withVar(key: Key, expr: Expr<*>): Context {
         if (expr is VoidExpression) {
             throw IllegalArgumentException("VoidExpressions cannot be assigned!")
@@ -212,10 +230,6 @@ class Context private constructor(
 
         val castVar = expr.performACastTo(key.ind, false)
         return Context(variables + (key to castVar), heap, resolvesTo)
-    }
-
-    fun withVar(element: PsiElement, expr: Expr<*>): Context {
-        return withVar(element.toKey(), expr)
     }
 
     /**

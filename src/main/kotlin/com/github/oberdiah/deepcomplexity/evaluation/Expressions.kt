@@ -45,6 +45,24 @@ sealed class Expr<T : Any>() {
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
 
+    /**
+     * Resolves all LValueExprs in the expression tree to their underlying expressions using the context.
+     *
+     * LValueExprs cannot end up in the final expression tree.
+     */
+    fun resolveLValues(context: Context): Expr<T> =
+        this.rebuildTree(
+            object : ExprTreeRebuilder.Replacer {
+                override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
+                    return if (expr is LValueExpr) {
+                        expr.resolve(context)
+                    } else {
+                        expr
+                    }
+                }
+            }
+        )
+
     fun evaluate(scope: ExprEvaluate.Scope): Bundle<T> = ExprEvaluate.evaluate(this, scope)
     fun dStr(): String = ExprToString.toDebugString(this)
 }
@@ -250,6 +268,15 @@ data class LValueExpr<T : Any>(
         assert(qualifier == null || key is Key.FieldKey) {
             "Qualifier can only be set for field keys, got: $key"
         }
+    }
+
+    /**
+     * Resolves the expression in the given context, converting it from an LValueExpr to whatever underlying
+     * expr it represents.
+     */
+    fun resolve(context: Context): Expr<T> {
+        val resolved = qualifier?.getField(context, key as Key.FieldKey) ?: context.getVar(key)
+        return resolved.tryCastTo(myInd)!!
     }
 }
 
