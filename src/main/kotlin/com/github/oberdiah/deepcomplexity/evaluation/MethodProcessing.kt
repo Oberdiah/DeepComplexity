@@ -154,41 +154,6 @@ object MethodProcessing {
                 context = context.nowResolvesTo(ConstantExpression.fromAny(value))
             }
 
-            is PsiReferenceExpression -> {
-                val key = psi.resolveIfNeeded().toKey()
-
-                when (mode) {
-                    Mode.RVALUE -> {
-                        val qualifier = psi.qualifier
-                        val resolvedExpr = if (qualifier == null) {
-                            context.getVar(key)
-                        } else {
-                            // If there's a qualifier, we need to resolve it first.
-                            context = processPsiElement(qualifier, context)
-                            val processedQualifier = context.resolvesTo
-                            processedQualifier.getField(context, key as Context.Key.FieldKey)
-                        }
-
-                        context = context.nowResolvesTo(resolvedExpr)
-                    }
-
-                    Mode.LVALUE -> {
-                        val qualifier = psi.qualifier?.let {
-                            // If there's a qualifier, we need to resolve it first.
-                            context = processPsiElement(it, context)
-                            context.resolvesTo
-                        }
-
-                        context = context.nowResolvesTo(
-                            LValueExpr(
-                                key,
-                                qualifier,
-                                key.ind
-                            )
-                        )
-                    }
-                }
-            }
 
             is PsiPrefixExpression -> {
                 val tokenType = psi.operationSign.tokenType
@@ -292,6 +257,41 @@ object MethodProcessing {
 
                     context = context.nowResolvesTo(currentExpr)
                 }
+            }
+            
+            is PsiReferenceExpression -> {
+                val key = psi.resolveIfNeeded().toKey()
+
+                context = context.nowResolvesTo(
+                    when (mode) {
+                        Mode.RVALUE -> {
+                            val qualifier = psi.qualifier
+                            val resolvedExpr = if (qualifier == null) {
+                                context.getVar(key)
+                            } else {
+                                // If there's a qualifier, we need to resolve it first.
+                                context = processPsiElement(qualifier, context)
+                                val processedQualifier = context.resolvesTo
+                                processedQualifier.getField(context, key as Context.Key.FieldKey)
+                            }
+
+                            resolvedExpr
+                        }
+
+                        Mode.LVALUE -> {
+                            val qualifier = psi.qualifier?.let {
+                                // If there's a qualifier, we need to resolve it first.
+                                context = processPsiElement(it, context)
+                                context.resolvesTo
+                            }
+
+                            LValueExpr(
+                                key,
+                                qualifier,
+                                key.ind
+                            )
+                        }
+                    })
             }
 
             is PsiAssignmentExpression -> {
