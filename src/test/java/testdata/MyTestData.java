@@ -92,7 +92,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short go(short x) {
+	public static short incrementTest(short x) {
 		int a = x;
 		int b = a++;
 		int c = a;
