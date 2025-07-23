@@ -873,12 +873,14 @@ public class MyTestData {
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest1(short x) {
 		MyClass nested = new MyClass(2);
 		nested.x = 1;
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest2(short x) {
 		MyClass nested = new MyClass(3);
 		nested.x = 1;
@@ -888,6 +890,7 @@ public class MyTestData {
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest3(short x) {
 		MyClass nested = new MyClass(3);
 		if (nested.x == 3) {
@@ -974,6 +977,7 @@ public class MyTestData {
 		return (short) nesting.nested.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest15(short x) {
 		int nested = new MyClass(50).x = 5;
 		return (short) nested;

@@ -178,6 +178,7 @@ object MethodProcessing {
                         val operandExpr = context.resolvesTo.castToNumbers()
 
                         context = context.withVar(
+                            context,
                             operandExpr,
                             unaryOp.applyToExpr(operandExpr.resolveLValues(context))
                         )
@@ -205,6 +206,7 @@ object MethodProcessing {
                 context = processPsiElement(psi.operand, context, Mode.LVALUE)
                 val operandExpr = context.resolvesTo.castToNumbers()
                 context = context.withVar(
+                    context,
                     operandExpr,
                     unaryOp.applyToExpr(operandExpr.resolveLValues(context))
                 )
@@ -302,7 +304,7 @@ object MethodProcessing {
                         context = processPsiElement(rExpression, context)
                         val rhs = context.resolvesTo
 
-                        context = context.withVar(lhs, rhs)
+                        context = context.withVar(context, lhs, rhs)
                         rhs
                     }
 
@@ -320,7 +322,7 @@ object MethodProcessing {
                                             "As-yet unsupported assignment operation: $opSign"
                                         )
                                 )
-                                context = context.withVar(lhs, expr)
+                                context = context.withVar(context, lhs, expr)
                                 expr
                             }
                     }
