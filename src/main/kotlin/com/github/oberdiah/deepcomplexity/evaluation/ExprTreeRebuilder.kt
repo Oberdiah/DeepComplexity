@@ -8,6 +8,16 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 object ExprTreeRebuilder {
     class LeafReplacer<T : Any>(val ind: SetIndicator<T>, val replacer: (Expr<*>) -> Expr<T>)
 
+    /**
+     * There is a reason to have both this and `rebuildTree`.
+     *
+     * This is to be used when you want to swap the type of the whole expression by changing its leaves.
+     * If you don't want to change the type, use `rebuildTree` instead as it's more flexible (it can replace
+     * leaves too, just can't change their type).
+     *
+     * This replacement only works on a subset of all expressions (only expressions where every node can
+     * take any type, so no `ArithmeticExpression`, `ComparisonExpression`, etc.),
+     */
     fun <T : Any> replaceTreeLeaves(
         expr: Expr<*>,
         replacer: LeafReplacer<T>
@@ -41,7 +51,8 @@ object ExprTreeRebuilder {
 
             is ConstExpr<*> -> replacer.replacer(expr)
             is VariableExpression<*> -> replacer.replacer(expr)
-            is ClassExpr -> replacer.replacer(expr)
+            is ClassExpression -> replacer.replacer(expr)
+            is ThisExpression -> replacer.replacer(expr)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
@@ -158,7 +169,8 @@ object ExprTreeRebuilder {
 
             is ConstExpr<*> -> expr
             is VariableExpression<*> -> expr
-            is ClassExpr -> expr
+            is ClassExpression -> expr
+            is ThisExpression -> expr
             is LValueExpr<*> -> LValueExpr(
                 expr.key,
                 expr.qualifier?.let { rebuildTree(it, replacer) },

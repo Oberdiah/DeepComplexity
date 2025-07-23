@@ -10,6 +10,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.intellij.psi.PsiNewExpression
+import com.intellij.psi.PsiThisExpression
 
 sealed class Expr<T : Any>() {
     /**
@@ -37,6 +38,7 @@ sealed class Expr<T : Any>() {
      * you want.
      */
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
+
     fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
         ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
 
@@ -117,7 +119,7 @@ fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
 
     fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
         return this.replaceLeaves(ExprTreeRebuilder.LeafReplacer(ind) { expr ->
-            val newExpr = if (expr is ClassExpr) {
+            val newExpr = if (expr is ClassExpression) {
                 val heap = context.heap[expr.heapKey] ?: throw IllegalArgumentException(
                     "Heap for ${expr.heapKey} not found in context"
                 )
@@ -250,7 +252,9 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
 /**
  * Represents an object.
  */
-data class ClassExpr(val psi: PsiNewExpression, val heapKey: Key.HeapKey) : Expr<Any>()
+data class ClassExpression(val psi: PsiNewExpression, val heapKey: Key.HeapKey) : Expr<Any>()
+
+data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
 
 /**
  * Represents any expression that can be used as a left-hand value in an assignment.

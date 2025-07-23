@@ -221,7 +221,7 @@ class Context private constructor(
             return withVar(lExpr.key, rExpr)
         }
 
-        if (qualifier is ClassExpr) {
+        if (qualifier is ClassExpression) {
             val heapContext = context.heap[qualifier.heapKey]
                 ?: throw IllegalArgumentException("No heap context found for class expression: $qualifier")
 
@@ -266,7 +266,7 @@ class Context private constructor(
         val castExpr = expr.performACastTo(key.ind, false)
 
         return Context(variables.mapValues { (_, oldExpr) ->
-            oldExpr.rebuildTree(variableExpressionReplacer {
+            oldExpr.rebuildTree(expressionReplacer<VariableExpression<*>> {
                 if (it.key == key) castExpr else null
             })
         }, heap, resolvesTo)
@@ -289,11 +289,11 @@ class Context private constructor(
      */
     fun stack(later: Context): Context {
         val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
-            expr.rebuildTree(variableExpressionReplacer { variables[it.key] })
+            expr.rebuildTree(expressionReplacer<VariableExpression<*>> { variables[it.key] })
         }
 
         val meResolvedWithLater = variables.mapValues { (_, expr) ->
-            expr.rebuildTree(variableExpressionReplacer { later.variables[it.key] })
+            expr.rebuildTree(expressionReplacer<VariableExpression<*>> { later.variables[it.key] })
         }
 
         val newVariables = mutableMapOf<Key, Expr<*>>()
@@ -318,8 +318,7 @@ class Context private constructor(
      */
     fun provideQualifier(qualifier: Expr<*>): Context {
         return Context(variables.mapValues { (_, oldExpr) ->
-            oldExpr.rebuildTree(variableExpressionReplacer { variableExpr ->
-                // In the future we'll also have to replace `this` with the qualifier.
+            val newExpr = oldExpr.rebuildTree(expressionReplacer<VariableExpression<*>> { variableExpr ->
                 if (variableExpr.key is Key.FieldKey) {
                     // OK, so this is quite fun.
                     // Sort of nested replacements. For everything that needed a qualifier, we build
@@ -329,15 +328,17 @@ class Context private constructor(
                     null
                 }
             })
+
+            newExpr
         }, heap, resolvesTo)
     }
 
-    private fun variableExpressionReplacer(
-        replacement: (VariableExpression<*>) -> Expr<*>?
+    private inline fun <reified Q> expressionReplacer(
+        crossinline replacement: (Q) -> Expr<*>?
     ): ExprTreeRebuilder.Replacer {
         return object : ExprTreeRebuilder.Replacer {
             override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
-                if (expr is VariableExpression) {
+                if (expr is Q) {
                     val resolved = replacement(expr)
                     if (resolved != null) {
                         assert(resolved.ind == expr.ind) {

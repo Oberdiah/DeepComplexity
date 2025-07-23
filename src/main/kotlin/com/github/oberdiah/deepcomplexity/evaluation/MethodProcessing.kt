@@ -369,12 +369,18 @@ object MethodProcessing {
                 context = newContext
                 val heapKey = Context.Key.HeapKey.new()
                 context = context.withHeap(heapKey, methodContext)
-                context = context.nowResolvesTo(ClassExpr(psi, heapKey))
+                context = context.nowResolvesTo(ClassExpression(psi, heapKey))
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
                 // Ignore whitespace, comments, etc.
                 // PsiJavaTokens are all the surrounding tokens like `;`, `{`, `)`, etc.
+            }
+
+            is PsiThisExpression -> {
+                // This is a reference to the current object, so we need to resolve it
+                // to the current context.
+                context = context.nowResolvesTo(ThisExpression(psi))
             }
 
             else -> {
