@@ -248,7 +248,7 @@ class Context private constructor(
             throw IllegalArgumentException("VoidExpressions cannot be assigned!")
         }
 
-        val castVar = expr.performACastTo(key.ind, false)
+        val castVar = expr.castToUsingTypeCast(key.ind, false)
         return Context(variables + (key to castVar), heap, resolvesTo)
     }
 
@@ -263,12 +263,12 @@ class Context private constructor(
      * Performs a cast if necessary.
      */
     fun withResolvedVar(key: Key, expr: Expr<*>): Context {
-        val castExpr = expr.performACastTo(key.ind, false)
+        val castExpr = expr.castToUsingTypeCast(key.ind, false)
 
         return Context(variables.mapValues { (_, oldExpr) ->
-            oldExpr.rebuildTree(expressionReplacer<VariableExpression<*>> {
+            oldExpr.replaceTypeInTree<VariableExpression<*>> {
                 if (it.key == key) castExpr else null
-            })
+            }
         }, heap, resolvesTo)
     }
 
@@ -289,11 +289,11 @@ class Context private constructor(
      */
     fun stack(later: Context): Context {
         val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
-            expr.rebuildTree(expressionReplacer<VariableExpression<*>> { variables[it.key] })
+            expr.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
         }
 
         val meResolvedWithLater = variables.mapValues { (_, expr) ->
-            expr.rebuildTree(expressionReplacer<VariableExpression<*>> { later.variables[it.key] })
+            expr.replaceTypeInTree<VariableExpression<*>> { later.variables[it.key] }
         }
 
         val newVariables = mutableMapOf<Key, Expr<*>>()
@@ -318,7 +318,7 @@ class Context private constructor(
      */
     fun provideQualifier(qualifier: Expr<*>): Context {
         return Context(variables.mapValues { (_, oldExpr) ->
-            val newExpr = oldExpr.rebuildTree(expressionReplacer<VariableExpression<*>> { variableExpr ->
+            val newExpr = oldExpr.replaceTypeInTree<VariableExpression<*>> { variableExpr ->
                 if (variableExpr.key is Key.FieldKey) {
                     // OK, so this is quite fun.
                     // Sort of nested replacements. For everything that needed a qualifier, we build
@@ -327,31 +327,9 @@ class Context private constructor(
                 } else {
                     null
                 }
-            })
+            }
 
             newExpr
         }, heap, resolvesTo)
-    }
-
-    private inline fun <reified Q> expressionReplacer(
-        crossinline replacement: (Q) -> Expr<*>?
-    ): ExprTreeRebuilder.Replacer {
-        return object : ExprTreeRebuilder.Replacer {
-            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
-                if (expr is Q) {
-                    val resolved = replacement(expr)
-                    if (resolved != null) {
-                        assert(resolved.ind == expr.ind) {
-                            "(${resolved.ind} != ${expr.ind}) ${resolved.dStr()} does not match ${expr.dStr()}"
-                        }
-
-                        @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
-                        return resolved as Expr<T>
-                    }
-                }
-
-                return expr
-            }
-        }
     }
 }

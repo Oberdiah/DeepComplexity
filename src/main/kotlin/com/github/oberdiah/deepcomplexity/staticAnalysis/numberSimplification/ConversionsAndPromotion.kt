@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.performACastTo
+import com.github.oberdiah.deepcomplexity.evaluation.castToUsingTypeCast
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 
 object ConversionsAndPromotion {
@@ -11,7 +11,7 @@ object ConversionsAndPromotion {
 
     fun castAToB(exprA: Expr<*>, exprB: Expr<*>, explicit: Boolean): TypedPair<*> {
         fun <T : Any> castTo(exprB: Expr<T>): TypedPair<*> {
-            val castExprA: Expr<T> = exprA.performACastTo(exprB.ind, explicit)
+            val castExprA: Expr<T> = exprA.castToUsingTypeCast(exprB.ind, explicit)
             return TypedPair(castExprA, exprB)
         }
         return castTo(exprB)
@@ -23,7 +23,7 @@ object ConversionsAndPromotion {
         explicit: Boolean
     ): TypedPair<out Number> {
         fun <T : Number> castTo(exprB: Expr<T>): TypedPair<out Number> {
-            val castExprA: Expr<T> = exprA.performACastTo(exprB.ind, explicit)
+            val castExprA: Expr<T> = exprA.castToUsingTypeCast(exprB.ind, explicit)
             return TypedPair(castExprA, exprB)
         }
         return castTo(exprB)
@@ -35,8 +35,8 @@ object ConversionsAndPromotion {
         indicator: NumberSetIndicator<T>,
         explicit: Boolean
     ): TypedPair<T> {
-        val castExprA: Expr<T> = exprA.performACastTo(indicator, explicit)
-        val castExprB: Expr<T> = exprB.performACastTo(indicator, explicit)
+        val castExprA: Expr<T> = exprA.castToUsingTypeCast(indicator, explicit)
+        val castExprB: Expr<T> = exprB.castToUsingTypeCast(indicator, explicit)
         return TypedPair(castExprA, castExprB)
     }
 
@@ -51,7 +51,7 @@ object ConversionsAndPromotion {
         // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
         return when (expr.ind) {
             DoubleSetIndicator, FloatSetIndicator, LongSetIndicator, IntSetIndicator -> expr
-            else -> expr.performACastTo(IntSetIndicator, false)
+            else -> expr.castToUsingTypeCast(IntSetIndicator, false)
         }
     }
 

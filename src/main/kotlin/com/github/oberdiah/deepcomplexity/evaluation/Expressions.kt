@@ -39,6 +39,32 @@ sealed class Expr<T : Any>() {
      */
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
 
+    /**
+     * Rebuilds every expression in the tree.
+     * As it's doing that, whenever it encounters an expression of type [Q],
+     * it replaces it with the result of calling [replacement] on it. The replacement expression
+     * has a wild generic type for ergonomic reasons because you're likely not going to have
+     * a typed replacement on hand, so we do the type check and cast at runtime for you.
+     */
+    inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): Expr<T> {
+        return rebuildTree(object : ExprTreeRebuilder.Replacer {
+            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
+                if (expr is Q) {
+                    val resolved = replacement(expr)
+                    if (resolved != null) {
+                        return resolved.tryCastTo(expr.ind)
+                            ?: throw IllegalStateException(
+                                "(${resolved.ind} != ${expr.ind}) ${resolved.dStr()} does not match ${expr.dStr()}"
+                            )
+                    }
+                }
+
+                return expr
+            }
+        }
+        )
+    }
+
     fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
         ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
 
@@ -85,7 +111,7 @@ fun Expr<*>.castToBoolean(): Expr<Boolean> {
         ?: throw IllegalStateException("Failed to cast to a boolean: $this ($ind)")
 }
 
-inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
+inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastToReified(indicator: SetIndicator<Set>): T? {
     return if (this::class == T::class && indicator == this.ind) {
         @Suppress("UNCHECKED_CAST")
         this as T
@@ -94,21 +120,27 @@ inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastExact(indicator: Se
     }
 }
 
-fun <T : Any> Expr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): Expr<T> {
-    return if (this.ind == indicator) {
-        @Suppress("UNCHECKED_CAST")
-        this as Expr<T>
-    } else {
-        TypeCastExpression(this, indicator, explicit)
-    }
-}
-
+/**
+ * Basically a nicer way of doing `this as Expr<T>`, but with type checking :)
+ */
 fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     return if (this.ind == indicator) {
         @Suppress("UNCHECKED_CAST")
         this as Expr<T>
     } else {
         null
+    }
+}
+
+/**
+ * Wrap the expression in a type cast to the given indicator.
+ */
+fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: Boolean): Expr<T> {
+    return if (this.ind == indicator) {
+        @Suppress("UNCHECKED_CAST")
+        this as Expr<T>
+    } else {
+        TypeCastExpression(this, indicator, explicit)
     }
 }
 
@@ -133,12 +165,9 @@ fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
                 )
             }
 
-            // For next time: rebuilding the tree is going to have to be able to change its type.
-            assert(newExpr.ind == ind) {
-                "(${newExpr.ind} != ${ind}) ${newExpr.dStr()} does not match ${expr.dStr()}"
-            }
-            @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
-            newExpr as Expr<T>
+            newExpr.tryCastTo(ind) ?: throw IllegalStateException(
+                "(${newExpr.ind} != $ind) ${newExpr.dStr()} does not match ${expr.dStr()}"
+            )
         })
     }
 
@@ -217,12 +246,10 @@ data class IfExpression<T : Any>(
             b: Expr<B>,
             condition: Expr<Boolean>
         ): Expr<A> {
-            return if (a.ind == b.ind) {
-                @Suppress("UNCHECKED_CAST")
-                IfExpression(a, b as Expr<A>, condition)
-            } else {
-                throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
-            }
+            val castB = b.tryCastTo(a.ind)
+                ?: throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
+
+            return IfExpression(a, castB, condition)
         }
     }
 }
@@ -302,7 +329,8 @@ data class NumIterationTimesExpression<T : Number>(
             variable: VariableExpression<out Number>,
             terms: ConstraintSolver.CollectedTerms<out Number>
         ): NumIterationTimesExpression<T> {
-            val setIndicator = SetIndicator.fromValue(constraint)
+            val setIndicator = constraint.ind
+
             assert(setIndicator == variable.ind) {
                 "Variable and constraint have different set indicators: ${variable.ind} and $setIndicator"
             }
