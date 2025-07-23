@@ -226,7 +226,7 @@ class Context private constructor(
                 ?: throw IllegalArgumentException("No heap context found for class expression: $qualifier")
 
             val newHeapContext = heapContext.withVar(lExpr.key, rExpr)
-            
+
             return Context(
                 variables,
                 heap = context.heap + (qualifier.heapKey to newHeapContext),
@@ -274,6 +274,10 @@ class Context private constructor(
 
     fun withHeap(key: Key.HeapKey, context: Context): Context {
         return Context(variables, heap + (key to context), resolvesTo)
+    }
+
+    fun withHeap(heap: Map<Key.HeapKey, Context>): Context {
+        return Context(variables, this.heap + heap, resolvesTo)
     }
 
     /**

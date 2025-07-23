@@ -899,6 +899,7 @@ public class MyTestData {
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest4(short x) {
 		MyClass nested = new MyClass(2);
 		updateClassField(nested);
@@ -915,6 +916,7 @@ public class MyTestData {
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest6(short x) {
 		MyClass nested = new MyClass(2);
 		return (short) (nested.getX() - nested.x);
@@ -1017,6 +1019,7 @@ public class MyTestData {
 		return (short) b.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest20(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = a;

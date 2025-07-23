@@ -338,14 +338,24 @@ object MethodProcessing {
             }
 
             is PsiMethodCallExpression -> {
+                val qualifier = psi.methodExpression.qualifier?.let {
+                    // This has to come before the method call is processed,
+                    // because this may create an object on the heap that the method call
+                    // would use.
+                    context = processPsiElement(it, context)
+                    context.resolvesTo
+                }
+
                 var (newContext, methodContext) = processMethod(context, psi)
                 context = newContext
 
-                val qualifier = psi.methodExpression.qualifier
-                if (qualifier != null) {
-                    context = processPsiElement(qualifier, context)
-                    val processedQualifier = context.resolvesTo
-                    methodContext = methodContext.provideQualifier(processedQualifier)
+                // The heap is global, it comes out of methods too.
+                context = context.withHeap(methodContext.heap)
+
+                // Provide all the `this.` calls inside the method call with the context
+                // they need to understand what object they were operating on.
+                qualifier?.let {
+                    methodContext = methodContext.provideQualifier(it)
                 }
 
                 context =
@@ -403,6 +413,8 @@ object MethodProcessing {
             context = processPsiElement(arg, context)
             methodContext = methodContext.withVar(param.toKey(), context.resolvesTo)
         }
+        // The heap is global, it gets passed into methods too.
+        methodContext = methodContext.withHeap(context.heap)
 
         method.body?.let { body ->
             methodContext = processPsiElement(body, methodContext)
