@@ -275,6 +275,15 @@ object MethodProcessing {
                     // If there's a qualifier, we need to resolve it first.
                     context = processPsiElement(it, context)
                     context.resolvesTo
+                }.orElse {
+                    // If there's no qualifier, we want to use the 'this' object if available.
+                    if (key is Context.Key.FieldKey) {
+                        context.thisObj ?: throw ExpressionIncompleteException(
+                            "Field reference without qualifier, but no 'this' object available."
+                        )
+                    } else {
+                        null
+                    }
                 }
 
                 val lValue = LValueExpr(
@@ -346,17 +355,8 @@ object MethodProcessing {
                     context.resolvesTo
                 }
 
-                var (newContext, methodContext) = processMethod(context, psi)
+                val (newContext, methodContext) = processMethod(context, psi, qualifier)
                 context = newContext
-
-                // The heap is global, it comes out of methods too.
-                context = context.withHeap(methodContext.heap)
-
-                // Provide all the `this.` calls inside the method call with the context
-                // they need to understand what object they were operating on.
-                qualifier?.let {
-                    methodContext = methodContext.provideQualifier(it)
-                }
 
                 context =
                     context.nowResolvesTo(
@@ -365,11 +365,14 @@ object MethodProcessing {
             }
 
             is PsiNewExpression -> {
-                val (newContext, methodContext) = processMethod(context, psi)
-                context = newContext
                 val heapKey = Context.Key.HeapKey.new()
-                context = context.withHeap(heapKey, methodContext)
-                context = context.nowResolvesTo(ClassExpression(psi, heapKey))
+
+                context = context.withHeap(heapKey, Context.new())
+
+                val classExpr = ClassExpression(psi, heapKey)
+                val (newContext, _) = processMethod(context, psi, classExpr)
+                context = newContext
+                context = context.nowResolvesTo(classExpr)
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
@@ -380,7 +383,7 @@ object MethodProcessing {
             is PsiThisExpression -> {
                 // This is a reference to the current object, so we need to resolve it
                 // to the current context.
-                context = context.nowResolvesTo(ThisExpression(psi))
+                context = context.nowResolvesTo(context.thisObj!!)
             }
 
             else -> {
@@ -397,6 +400,7 @@ object MethodProcessing {
     private fun processMethod(
         contextIn: Context,
         callExpr: PsiCallExpression,
+        qualifier: Expr<*>? = null
     ): Pair<Context, Context> {
         var context = contextIn
         val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
@@ -419,13 +423,17 @@ object MethodProcessing {
             context = processPsiElement(arg, context)
             methodContext = methodContext.withVar(param.toKey(), context.resolvesTo)
         }
-        // The heap is global, it gets passed into methods too.
-        methodContext = methodContext.withHeap(context.heap)
+        // The heap is global, it gets passed into methods.
+        methodContext = methodContext
+            .withHeap(context.heap)
+            .withThis(qualifier)
 
         method.body?.let { body ->
             methodContext = processPsiElement(body, methodContext)
         }
+        context = context.withHeap(methodContext.heap)
 
+        // The heap is global, so it comes out of methods.
         return context to methodContext
     }
 

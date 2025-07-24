@@ -910,6 +910,7 @@ public class MyTestData {
 		nested.x = 5;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest5(short x) {
 		MyClass nested = new MyClass(2);
 		nested.addOne();
@@ -922,6 +923,7 @@ public class MyTestData {
 		return (short) (nested.getX() - nested.x);
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest7(short x) {
 		MyClass nested = new MyClass(2);
 		nested.addOne();
@@ -931,6 +933,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest8(short x) {
 		MyClass nested = new MyClass(2);
 		nested.addOne();
@@ -956,21 +959,25 @@ public class MyTestData {
 		return (short) nested.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest11(short x) {
 		MyClass nested = new MyClass(50).addOne();
 		return (short) nested.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest12(short x) {
 		return (short) new MyClass(50).addOne().addOne().addOne().getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest13(short x) {
 		MyClass nested = new MyClass(50);
 		MyNestingClass nesting = new MyNestingClass(nested);
 		return (short) nesting.nested.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest14(short x) {
 		MyClass nested = new MyClass(50);
 		MyNestingClass nesting = new MyNestingClass(nested);
@@ -1069,8 +1076,20 @@ public class MyTestData {
 		// That doesn't seem out of the question. It might be worth figuring out a list of all objects in the
 		// qualifier, but that might be it?
 		
-		
 		return (short) a.getX();
+	}
+	
+	public static short simpleClassTest22(short x) {
+		MyClass a = new MyClass(1);
+		aliasingMethod(a, a);
+		return (short) a.getX();
+	}
+	
+	private static void aliasingMethod(MyClass a, MyClass b) {
+		a.x = 0;
+		if (b.x == 0) {
+			a.x = 5;
+		}
 	}
 	
 	public static class MyClass {

@@ -11,6 +11,7 @@ class Context private constructor(
     val variables: Map<Key, Expr<*>>,
     val heap: Map<Key.HeapKey, Context>,
     val resolvesTo: Expr<*>,
+    val thisObj: Expr<*>?
 ) {
     sealed class Key {
         abstract class VariableKey<T : PsiVariable>(open val variable: T) : Key() {
@@ -130,7 +131,8 @@ class Context private constructor(
         fun new(): Context = Context(
             variables = emptyMap(),
             heap = emptyMap(),
-            resolvesTo = VoidExpression()
+            resolvesTo = VoidExpression(),
+            thisObj = null
         )
 
         /**
@@ -160,12 +162,19 @@ class Context private constructor(
                 else -> how(a.resolvesTo, b.resolvesTo)
             }
 
+            assert(a.thisObj == b.thisObj) {
+                "I don't quite understand how this could happen. " +
+                        "The `this` object should _surely_ be the same in both contexts?"
+            }
+            val thisObj = a.thisObj
+
             return Context(
                 newMap,
                 heap = a.heap + b.heap,
                 // I don't believe this matters for if statements in the real world, but it might for
                 // the ternary operator.
-                resolvesTo = resolvesTo
+                resolvesTo = resolvesTo,
+                thisObj = thisObj
             )
         }
     }
@@ -199,7 +208,7 @@ class Context private constructor(
     }
 
     fun nowResolvesTo(expr: Expr<*>): Context {
-        return Context(variables, heap, expr)
+        return Context(variables, heap, expr, thisObj)
     }
 
     /**
@@ -230,7 +239,8 @@ class Context private constructor(
             return Context(
                 variables,
                 heap = context.heap + (qualifier.heapKey to newHeapContext),
-                resolvesTo = resolvesTo
+                resolvesTo = resolvesTo,
+                thisObj = thisObj
             )
         } else {
             TODO()
@@ -249,7 +259,7 @@ class Context private constructor(
         }
 
         val castVar = expr.castToUsingTypeCast(key.ind, false)
-        return Context(variables + (key to castVar), heap, resolvesTo)
+        return Context(variables + (key to castVar), heap, resolvesTo, thisObj)
     }
 
     /**
@@ -269,15 +279,15 @@ class Context private constructor(
             oldExpr.replaceTypeInTree<VariableExpression<*>> {
                 if (it.key == key) castExpr else null
             }
-        }, heap, resolvesTo)
+        }, heap, resolvesTo, thisObj)
     }
 
     fun withHeap(key: Key.HeapKey, context: Context): Context {
-        return Context(variables, heap + (key to context), resolvesTo)
+        return Context(variables, heap + (key to context), resolvesTo, thisObj)
     }
 
     fun withHeap(heap: Map<Key.HeapKey, Context>): Context {
-        return Context(variables, this.heap + heap, resolvesTo)
+        return Context(variables, this.heap + heap, resolvesTo, thisObj)
     }
 
     /**
@@ -306,30 +316,20 @@ class Context private constructor(
         newVariables.putAll(laterResolvedWithMe.filter { it.key.isReturnKey() })
         newVariables.putAll(meResolvedWithLater.filter { it.key.isReturnKey() })
 
+        assert(thisObj == later.thisObj) {
+            "The `this` object should be the same in both contexts, surely? " +
+                    "Got: $thisObj and ${later.thisObj}"
+        }
+
         return Context(
             newVariables,
             heap = heap + later.heap,
-            resolvesTo = resolvesTo
+            resolvesTo = resolvesTo,
+            thisObj = thisObj
         )
     }
 
-    /**
-     * Returns a new context with the provided context (heh) of what 'this' is.
-     */
-    fun provideQualifier(qualifier: Expr<*>): Context {
-        return Context(variables.mapValues { (_, oldExpr) ->
-            val newExpr = oldExpr.replaceTypeInTree<VariableExpression<*>> { variableExpr ->
-                if (variableExpr.key is Key.FieldKey) {
-                    // OK, so this is quite fun.
-                    // Sort of nested replacements. For everything that needed a qualifier, we build
-                    // it a custom qualifier expression, resolved correctly.
-                    qualifier.getField(this, variableExpr.key)
-                } else {
-                    null
-                }
-            }
-
-            newExpr
-        }, heap, resolvesTo)
+    fun withThis(thisObj: Expr<*>?): Context {
+        return Context(variables, heap, resolvesTo, thisObj)
     }
 }
