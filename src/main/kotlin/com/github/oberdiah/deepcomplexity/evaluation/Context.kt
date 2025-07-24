@@ -15,7 +15,7 @@ class Context private constructor(
 ) {
     sealed class Key {
         abstract class VariableKey<T : PsiVariable>(open val variable: T) : Key() {
-            override fun toString(): String = variable.toStringPretty()
+            final override fun toString(): String = variable.toStringPretty()
         }
 
         data class LocalVariableKey(override val variable: PsiLocalVariable) : VariableKey<PsiLocalVariable>(variable)
@@ -155,6 +155,7 @@ class Context private constructor(
                 newMap[key] = how(aVal, bVal)
             }
 
+            // For ternary expressions, we need to resolve the `resolvesTo` value.
             val resolvesTo = when {
                 a.resolvesTo is VoidExpression && b.resolvesTo is VoidExpression -> VoidExpression()
                 a.resolvesTo is VoidExpression -> b.resolvesTo
@@ -171,8 +172,6 @@ class Context private constructor(
             return Context(
                 newMap,
                 heap = a.heap + b.heap,
-                // I don't believe this matters for if statements in the real world, but it might for
-                // the ternary operator.
                 resolvesTo = resolvesTo,
                 thisObj = thisObj
             )

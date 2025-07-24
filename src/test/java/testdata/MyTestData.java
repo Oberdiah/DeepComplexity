@@ -1130,4 +1130,56 @@ public class MyTestData {
 		}
 		return 0;
 	}
+	
+	public static short ternaryTest1(short x) {
+		int a = 0;
+		int b = 0;
+		
+		if (x > 0) {
+			a = 1;
+		} else {
+			b = 1;
+		}
+		
+		return (short) ((a > b) ? a : b);
+	}
+	
+	public static short ternaryTest1WithoutTernary(short x) {
+		int a = 0;
+		int b = 0;
+		
+		if (x > 0) {
+			a = 1;
+		} else {
+			b = 1;
+		}
+		
+		int c = 0;
+		if (a > b) {
+			c = a;
+		} else {
+			c = b;
+		}
+		
+		return (short) c;
+	}
+	
+	public static short ternaryTest2(short x) {
+		int a = x;
+		int b = 0;
+		
+		return (short) ((x > 0) ? a : b);
+	}
+	
+	public static short ternaryTest3(short x) {
+		return (short) ((x > x + 4) ? x : 0);
+	}
+	
+	public static short ternaryTest4(short x) {
+		if ((x > 0) ? x > 10 : x < 10) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
 }

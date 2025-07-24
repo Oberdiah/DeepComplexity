@@ -85,6 +85,27 @@ object MethodProcessing {
                 }
             }
 
+            is PsiConditionalExpression -> {
+                context = processPsiElement(psi.condition, context)
+                val condition = context.resolvesTo.castToBoolean()
+
+                val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
+                var trueExprContext = Context.new()
+                trueExprContext = processPsiElement(trueBranch, trueExprContext)
+
+                val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
+                var falseExprContext = Context.new()
+                falseExprContext = processPsiElement(falseBranch, falseExprContext)
+
+                val ifContext = Context.combine(trueExprContext, falseExprContext) { a, b ->
+                    IfExpression.new(a, b, condition)
+                }
+
+                context = context
+                    .stack(ifContext)
+                    .nowResolvesTo(ifContext.resolvesTo)
+            }
+
             is PsiIfStatement -> {
                 context = processPsiElement(
                     psi.condition ?: throw ExpressionIncompleteException(),
