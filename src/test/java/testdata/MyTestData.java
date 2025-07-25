@@ -1186,4 +1186,19 @@ public class MyTestData {
 			return 0;
 		}
 	}
+	
+	public static short earlyReturnTest1(short x) {
+		MyClass nested = new MyClass(2);
+		
+		updateClassField2(nested, x);
+		
+		return (short) nested.x;
+	}
+	
+	private static void updateClassField2(MyClass nested, int x) {
+		if (x < 5) {
+			return;
+		}
+		nested.x = x;
+	}
 }

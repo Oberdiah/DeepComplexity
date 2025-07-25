@@ -21,14 +21,18 @@ object MethodProcessing {
         // we parameterize over.
 
         method.body?.let { body ->
-            println(processPsiElement(body, Context.new()).toString())
+            println(processPsiElement(body, ContextWrapper(Context.new())).toString())
         }
     }
 
     fun getMethodContext(method: PsiMethod): Context {
-        return method.body?.let { body ->
-            processPsiElement(body, Context.new())
-        } ?: Context.new()
+        val wrapper = ContextWrapper(Context.new())
+
+        method.body?.let { body ->
+            processPsiElement(body, wrapper)
+        }
+
+        return wrapper.context
     }
 
     private enum class Mode {
@@ -45,25 +49,50 @@ object MethodProcessing {
         LVALUE
     }
 
+    data class ContextWrapper(var context: Context) {
+        fun addVar(key: Context.Key, value: Expr<*>) {
+            context = context.withVar(key, value)
+        }
+
+        fun addVar(lExpr: Expr<*>, rExpr: Expr<*>) {
+            context = context.withVar(lExpr, rExpr)
+        }
+
+        fun stack(newContext: Context) {
+            context = context.stack(newContext)
+        }
+
+        fun resolveVar(psi: PsiElement, value: Expr<*>) {
+            context = context.withResolvedVar(psi.toKey(), value)
+        }
+
+        fun setHeap(heap: Map<Context.Key.HeapKey, Context>) {
+            context = context.withHeap(heap)
+        }
+
+        fun setThis(thisObj: Expr<*>?) {
+            context = context.withThis(thisObj)
+        }
+    }
+
     private fun processPsiElement(
         psi: PsiElement,
-        contextIn: Context,
+        context: ContextWrapper,
         mode: Mode = Mode.RVALUE
-    ): Context {
-        var context = contextIn.nowResolvesTo(VoidExpression())
+    ): Expr<*>? {
         when (psi) {
             is PsiBlockStatement -> {
-                context = processPsiElement(psi.codeBlock, context)
+                return processPsiElement(psi.codeBlock, context)
             }
 
             is PsiCodeBlock -> {
                 for (line in psi.children) {
-                    context = processPsiElement(line, context)
+                    processPsiElement(line, context)
                 }
             }
 
             is PsiExpressionStatement -> {
-                context = processPsiElement(psi.expression, context)
+                return processPsiElement(psi.expression, context)
             }
 
             is PsiDeclarationStatement -> {
@@ -72,8 +101,10 @@ object MethodProcessing {
                     if (element is PsiLocalVariable) {
                         val rExpression = element.initializer
                         if (rExpression != null) {
-                            context = processPsiElement(rExpression, context)
-                            context = context.withVar(element.toKey(), context.resolvesTo)
+                            context.addVar(
+                                element.toKey(),
+                                processPsiElement(rExpression, context)!!
+                            )
                         } else {
                             TODO("Eventually we'll replace this with either null or 0")
                         }
@@ -86,97 +117,95 @@ object MethodProcessing {
             }
 
             is PsiConditionalExpression -> {
-                context = processPsiElement(psi.condition, context)
-                val condition = context.resolvesTo.castToBoolean()
+                val condition = processPsiElement(psi.condition, context)!!.castToBoolean()
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
-                var trueExprContext = Context.new()
-                trueExprContext = processPsiElement(trueBranch, trueExprContext)
+                val trueExprContext = ContextWrapper(Context.new())
+                val trueResult = context.context.resolveKnownVariables(
+                    processPsiElement(trueBranch, trueExprContext)!!
+                )
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
-                var falseExprContext = Context.new()
-                falseExprContext = processPsiElement(falseBranch, falseExprContext)
+                val falseExprContext = ContextWrapper(Context.new())
+                val falseResult = context.context.resolveKnownVariables(
+                    processPsiElement(falseBranch, falseExprContext)!!
+                )
 
-                val ifContext = Context.combine(trueExprContext, falseExprContext) { a, b ->
+                val ifContext = Context.combine(trueExprContext.context, falseExprContext.context) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
 
-                context = context.stack(ifContext)
+                context.stack(ifContext)
+
+                return IfExpression.new(trueResult, falseResult, condition)
             }
 
             is PsiIfStatement -> {
-                context = processPsiElement(
+                val condition = processPsiElement(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     context
-                )
-                val condition = context.resolvesTo.castToBoolean()
+                )!!.castToBoolean()
 
                 // Definitely need to TODO: Heap modifications and thisObj need to be passed in and out of these branches?
                 // At the very least in and out of the reached branch.
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                var trueBranchContext = Context.new()
-                trueBranchContext = processPsiElement(trueBranch, trueBranchContext)
-                var falseBranchContext = Context.new()
-                falseBranchContext = psi.elseBranch?.let { processPsiElement(it, falseBranchContext) }
-                    ?: Context.new()
+                val trueBranchContext = ContextWrapper(Context.new())
+                processPsiElement(trueBranch, trueBranchContext)
 
-                val ifContext = Context.combine(trueBranchContext, falseBranchContext) { a, b ->
+                val falseBranchContext = ContextWrapper(Context.new())
+                psi.elseBranch?.let { processPsiElement(it, falseBranchContext) }
+
+                val ifContext = Context.combine(trueBranchContext.context, falseBranchContext.context) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
 
-                context = context.stack(ifContext)
+                context.stack(ifContext)
             }
 
             is PsiForStatement -> {
                 val initialization = psi.initialization
                 if (initialization != null) {
-                    context = processPsiElement(initialization, context)
+                    processPsiElement(initialization, context)
                 }
 
-                val bodyContext = Context.new()
+                val bodyContext = ContextWrapper(Context.new())
 
-                // This isn't correct anymore now that context is immutable.
                 psi.body?.let { processPsiElement(it, bodyContext) }
-                // This isn't correct anymore now that context is immutable.
                 psi.update?.let { processPsiElement(it, bodyContext) }
 
                 val conditionExpr = psi.condition?.let { condition ->
                     // This isn't correct anymore now that context is immutable.
-                    processPsiElement(condition, bodyContext)
-                        .resolvesTo.tryCastTo(BooleanSetIndicator)
-                        ?: TODO("Failed to cast to BooleanSet: ${condition.text}")
+                    processPsiElement(condition, bodyContext)!!.tryCastTo(BooleanSetIndicator)
                 }.orElse {
                     ConstantExpression.TRUE
                 }
 
-                LoopSolver.processLoopContext(bodyContext, conditionExpr)
+                LoopSolver.processLoopContext(bodyContext.context, conditionExpr)
 
-                context = context.stack(bodyContext)
+                context.stack(bodyContext.context)
             }
 
 
             is PsiReturnStatement -> {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
-                    context = processPsiElement(returnExpression, context)
-                    val returnExpr = context.resolvesTo
+                    val returnExpr = processPsiElement(returnExpression, context)!!
 
-                    if (context.variables.keys.none { it.isReturnKey() }) {
+                    if (context.context.variables.keys.none { it.isReturnKey() }) {
                         // If there's no 'method' key yet, create one.
-                        context = context.withVar(psi.toKey(), returnExpr)
+                        context.addVar(psi.toKey(), returnExpr)
                     } else {
                         // If there is, resolve the existing one with the new value.
-                        context = context.withResolvedVar(psi, returnExpr)
+                        context.resolveVar(psi, returnExpr)
                     }
                 }
             }
 
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()
-                context = context.nowResolvesTo(ConstantExpression.fromAny(value))
+                return ConstantExpression.fromAny(value)
             }
-
 
             is PsiPrefixExpression -> {
                 val tokenType = psi.operationSign.tokenType
@@ -185,32 +214,27 @@ object MethodProcessing {
 
                 val operand = psi.operand ?: throw ExpressionIncompleteException()
 
-                val exprResult = when (unaryOp) {
+                return when (unaryOp) {
                     UnaryNumberOp.NEGATE, UnaryNumberOp.PLUS -> {
-                        context = processPsiElement(operand, context)
                         val operand = ConversionsAndPromotion.unaryNumericPromotion(
-                            context.resolvesTo.castToNumbers()
+                            processPsiElement(operand, context)!!.castToNumbers()
                         )
 
                         unaryOp.applyToExpr(operand)
                     }
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
-                        context = processPsiElement(operand, context, Mode.LVALUE)
-                        val operandExpr = context.resolvesTo.castToNumbers()
+                        val operandExpr = processPsiElement(operand, context, Mode.LVALUE)!!.castToNumbers()
 
-                        context = context.withVar(
+                        context.addVar(
                             operandExpr,
-                            unaryOp.applyToExpr(operandExpr.resolveLValues(context))
+                            unaryOp.applyToExpr(operandExpr.resolveLValues(context.context))
                         )
 
                         // Build the expression after the assignment for a prefix increment/decrement
-                        context = processPsiElement(operand, context)
-                        context.resolvesTo.castToNumbers()
+                        processPsiElement(operand, context)!!.castToNumbers()
                     }
                 }
-
-                context = context.nowResolvesTo(exprResult)
             }
 
             is PsiPostfixExpression -> {
@@ -220,18 +244,16 @@ object MethodProcessing {
 
 
                 // Build the expression before the assignment for a postfix increment/decrement
-                context = processPsiElement(psi.operand, context)
-                val builtExpr = context.resolvesTo
+                val builtExpr = processPsiElement(psi.operand, context)
 
                 // Assign the value to the variable
-                context = processPsiElement(psi.operand, context, Mode.LVALUE)
-                val operandExpr = context.resolvesTo.castToNumbers()
-                context = context.withVar(
+                val operandExpr = processPsiElement(psi.operand, context, Mode.LVALUE)!!.castToNumbers()
+                context.addVar(
                     operandExpr,
-                    unaryOp.applyToExpr(operandExpr.resolveLValues(context))
+                    unaryOp.applyToExpr(operandExpr.resolveLValues(context.context))
                 )
 
-                context = context.nowResolvesTo(builtExpr.castToNumbers())
+                return builtExpr!!.castToNumbers()
             }
 
             is PsiBinaryExpression -> {
@@ -240,27 +262,24 @@ object MethodProcessing {
 
                 val tokenType = psi.operationSign.tokenType
 
-                context = processPsiElement(lhsOperand, context)
-                val lhs = context.resolvesTo
-                context = processPsiElement(rhsOperand, context)
-                val rhs = context.resolvesTo
-                context = context.nowResolvesTo(processBinaryExpr(lhs, rhs, tokenType))
+                val lhs = processPsiElement(lhsOperand, context)!!
+                val rhs = processPsiElement(rhsOperand, context)!!
+                return processBinaryExpr(lhs, rhs, tokenType)
             }
 
             is PsiTypeCastExpression -> {
-                context = processPsiElement(
+                val expr = processPsiElement(
                     psi.operand ?: throw ExpressionIncompleteException(),
                     context
-                )
-                val expr = context.resolvesTo
+                )!!
 
                 val psiType = psi.castType ?: throw ExpressionIncompleteException()
                 val setInd = Utilities.psiTypeToSetIndicator(psiType.type)
-                context = context.nowResolvesTo(TypeCastExpression(expr, setInd, false))
+                return TypeCastExpression(expr, setInd, false)
             }
 
             is PsiParenthesizedExpression -> {
-                context = processPsiElement(psi.expression ?: throw ExpressionIncompleteException(), context)
+                return processPsiElement(psi.expression ?: throw ExpressionIncompleteException(), context)
             }
 
             is PsiPolyadicExpression -> {
@@ -270,21 +289,18 @@ object MethodProcessing {
                 } else {
                     // Process it as a bunch of binary expressions in a row, left to right.
                     val tokenType = psi.operationTokenType
-                    context = processPsiElement(operands[0], context)
-                    val originalLhs = context.resolvesTo
-                    context = processPsiElement(operands[1], context)
-                    val originalRhs = context.resolvesTo
+                    val originalLhs = processPsiElement(operands[0], context)!!
+                    val originalRhs = processPsiElement(operands[1], context)!!
 
                     var currentExpr = processBinaryExpr(originalLhs, originalRhs, tokenType)
 
                     for (i in 2 until operands.size) {
-                        context = processPsiElement(operands[i], context)
-                        val nextRhs = context.resolvesTo
+                        val nextRhs = processPsiElement(operands[i], context)!!
                         val newExpr = processBinaryExpr(currentExpr, nextRhs, tokenType)
                         currentExpr = newExpr
                     }
 
-                    context = context.nowResolvesTo(currentExpr)
+                    return currentExpr
                 }
             }
 
@@ -293,12 +309,11 @@ object MethodProcessing {
 
                 val qualifier = psi.qualifier?.let {
                     // If there's a qualifier, we need to resolve it first.
-                    context = processPsiElement(it, context)
-                    context.resolvesTo
+                    processPsiElement(it, context)!!
                 }.orElse {
                     // If there's no qualifier, we want to use the 'this' object if available.
                     if (key is Context.Key.FieldKey) {
-                        context.thisObj ?: throw ExpressionIncompleteException(
+                        context.context.thisObj ?: throw ExpressionIncompleteException(
                             "Field reference without qualifier, but no 'this' object available."
                         )
                     } else {
@@ -312,12 +327,10 @@ object MethodProcessing {
                     key.ind
                 )
 
-                context = context.nowResolvesTo(
-                    when (mode) {
-                        Mode.LVALUE -> lValue
-                        Mode.RVALUE -> lValue.resolve(context)
-                    }
-                )
+                return when (mode) {
+                    Mode.LVALUE -> lValue
+                    Mode.RVALUE -> lValue.resolve(context.context)
+                }
             }
 
             is PsiAssignmentExpression -> {
@@ -325,35 +338,35 @@ object MethodProcessing {
                 val rExpression = psi.rExpression ?: throw ExpressionIncompleteException()
                 val opSign = psi.operationSign
 
-                context = processPsiElement(lExpression, context, Mode.LVALUE)
-                val lhs = context.resolvesTo
+                val lhsLvalue = processPsiElement(lExpression, context, Mode.LVALUE)!!
 
-                val exprResult = when (opSign.tokenType) {
+                return when (opSign.tokenType) {
                     JavaTokenType.EQ -> {
-                        context = processPsiElement(rExpression, context)
-                        val rhs = context.resolvesTo
-
-                        context = context.withVar(lhs, rhs)
+                        val rhs = processPsiElement(rExpression, context)!!
+                        context.addVar(lhsLvalue, rhs)
                         rhs
                     }
 
                     JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
-                        context = processPsiElement(rExpression, context)
-                        val rhs = context.resolvesTo.castToNumbers()
+                        val rhs = processPsiElement(rExpression, context)!!.castToNumbers()
+                        val lhs = lhsLvalue.resolveLValues(context.context).castToNumbers()
 
-                        ConversionsAndPromotion.castNumbersAToB(rhs, lhs.resolveLValues(context).castToNumbers(), false)
-                            .map { innerRhs, innerLhs ->
-                                val expr = ArithmeticExpression(
-                                    innerLhs,
-                                    innerRhs,
-                                    BinaryNumberOp.fromJavaTokenType(opSign.tokenType)
-                                        ?: throw IllegalArgumentException(
-                                            "As-yet unsupported assignment operation: $opSign"
-                                        )
-                                )
-                                context = context.withVar(lhs, expr)
-                                expr
-                            }
+                        ConversionsAndPromotion.castNumbersAToB(
+                            rhs,
+                            lhs,
+                            false
+                        ).map { innerRhs, innerLhs ->
+                            val expr = ArithmeticExpression(
+                                innerLhs,
+                                innerRhs,
+                                BinaryNumberOp.fromJavaTokenType(opSign.tokenType)
+                                    ?: throw IllegalArgumentException(
+                                        "As-yet unsupported assignment operation: $opSign"
+                                    )
+                            )
+                            context.addVar(lhsLvalue, expr)
+                            expr
+                        }
                     }
 
                     else -> {
@@ -362,8 +375,6 @@ object MethodProcessing {
                         )
                     }
                 }
-
-                context = context.nowResolvesTo(exprResult)
             }
 
             is PsiMethodCallExpression -> {
@@ -371,28 +382,23 @@ object MethodProcessing {
                     // This has to come before the method call is processed,
                     // because this may create an object on the heap that the method call
                     // would use.
-                    context = processPsiElement(it, context)
-                    context.resolvesTo
+                    processPsiElement(it, context)
                 }
 
-                val (newContext, methodContext) = processMethod(context, psi, qualifier)
-                context = newContext
-
-                context =
-                    context.nowResolvesTo(
-                        methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value ?: VoidExpression()
-                    )
+                val methodContext = processMethod(context, psi, qualifier)
+                return methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value ?: VoidExpression()
             }
 
             is PsiNewExpression -> {
                 val heapKey = Context.Key.HeapKey.new()
 
-                context = context.withHeap(heapKey, Context.new())
+                context.setHeap(context.context.heap + (heapKey to Context.new()))
 
                 val classExpr = ClassExpression(psi, heapKey)
-                val (newContext, _) = processMethod(context, psi, classExpr)
-                context = newContext
-                context = context.nowResolvesTo(classExpr)
+
+                processMethod(context, psi, classExpr)
+
+                return classExpr
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
@@ -403,7 +409,7 @@ object MethodProcessing {
             is PsiThisExpression -> {
                 // This is a reference to the current object, so we need to resolve it
                 // to the current context.
-                context = context.nowResolvesTo(context.thisObj!!)
+                return context.context.thisObj!!
             }
 
             else -> {
@@ -411,18 +417,17 @@ object MethodProcessing {
             }
         }
 
-        return context
+        return null
     }
 
     /**
      * Returns the new updated original context, and then the context of the method call.
      */
     private fun processMethod(
-        contextIn: Context,
+        context: ContextWrapper,
         callExpr: PsiCallExpression,
         qualifier: Expr<*>? = null
-    ): Pair<Context, Context> {
-        var context = contextIn
+    ): Context {
         val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
             "Failed to resolve method for call: ${callExpr.text}"
         )
@@ -438,23 +443,24 @@ object MethodProcessing {
             )
         }
 
-        var methodContext = Context.new()
+        val methodContext = ContextWrapper(Context.new())
         for ((param, arg) in parameters.zip(arguments)) {
-            context = processPsiElement(arg, context)
-            methodContext = methodContext.withVar(param.toKey(), context.resolvesTo)
+            methodContext.addVar(
+                param.toKey(),
+                processPsiElement(arg, context)!!
+            )
         }
         // The heap is global, it gets passed into methods.
-        methodContext = methodContext
-            .withHeap(context.heap)
-            .withThis(qualifier)
+        methodContext.setHeap(context.context.heap)
+        methodContext.setThis(qualifier)
 
         method.body?.let { body ->
-            methodContext = processPsiElement(body, methodContext)
+            processPsiElement(body, methodContext)
         }
-        context = context.withHeap(methodContext.heap)
+        context.setHeap(methodContext.context.heap)
 
         // The heap is global, so it comes out of methods.
-        return context to methodContext
+        return methodContext.context
     }
 
     private fun processBinaryExpr(

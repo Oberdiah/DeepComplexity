@@ -79,6 +79,7 @@ sealed class Expr<T : Any>() {
      * LValueExprs cannot end up in the final expression tree.
      */
     fun resolveLValues(context: Context): Expr<T> =
+        // todo use replaceTypeInTree (super easy)
         this.rebuildTree(
             object : ExprTreeRebuilder.Replacer {
                 override fun <T : Any> replace(expr: Expr<T>): Expr<T> {

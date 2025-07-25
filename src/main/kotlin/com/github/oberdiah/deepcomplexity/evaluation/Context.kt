@@ -10,7 +10,6 @@ import com.intellij.psi.*
 class Context private constructor(
     val variables: Map<Key, Expr<*>>,
     val heap: Map<Key.HeapKey, Context>,
-    val resolvesTo: Expr<*>,
     val thisObj: Expr<*>?
 ) {
     sealed class Key {
@@ -131,7 +130,6 @@ class Context private constructor(
         fun new(): Context = Context(
             variables = emptyMap(),
             heap = emptyMap(),
-            resolvesTo = VoidExpression(),
             thisObj = null
         )
 
@@ -155,14 +153,6 @@ class Context private constructor(
                 newMap[key] = how(aVal, bVal)
             }
 
-            // For ternary expressions, we need to resolve the `resolvesTo` value.
-            val resolvesTo = when {
-                a.resolvesTo is VoidExpression && b.resolvesTo is VoidExpression -> VoidExpression()
-                a.resolvesTo is VoidExpression -> b.resolvesTo
-                b.resolvesTo is VoidExpression -> a.resolvesTo
-                else -> how(a.resolvesTo, b.resolvesTo)
-            }
-
             assert(a.thisObj == b.thisObj) {
                 "I don't quite understand how this could happen. " +
                         "The `this` object should _surely_ be the same in both contexts?"
@@ -172,7 +162,6 @@ class Context private constructor(
             return Context(
                 newMap,
                 heap = a.heap + b.heap,
-                resolvesTo = resolvesTo,
                 thisObj = thisObj
             )
         }
@@ -206,10 +195,6 @@ class Context private constructor(
         return variables[element] ?: VariableExpression<Any>(element)
     }
 
-    fun nowResolvesTo(expr: Expr<*>): Context {
-        return Context(variables, heap, expr, thisObj)
-    }
-
     /**
      * Performs a cast if necessary.
      */
@@ -238,7 +223,6 @@ class Context private constructor(
             return Context(
                 variables,
                 heap = heap + (qualifier.heapKey to newHeapContext),
-                resolvesTo = resolvesTo,
                 thisObj = thisObj
             )
         } else {
@@ -258,7 +242,7 @@ class Context private constructor(
         }
 
         val castVar = expr.castToUsingTypeCast(key.ind, false)
-        return Context(variables + (key to castVar), heap, resolvesTo, thisObj)
+        return Context(variables + (key to castVar), heap, thisObj)
     }
 
     /**
@@ -278,16 +262,26 @@ class Context private constructor(
             oldExpr.replaceTypeInTree<VariableExpression<*>> {
                 if (it.key == key) castExpr else null
             }
-        }, heap, resolvesTo, thisObj)
+        }, heap, thisObj)
     }
 
     fun withHeap(key: Key.HeapKey, context: Context): Context {
-        return Context(variables, heap + (key to context), resolvesTo, thisObj)
+        return Context(variables, heap + (key to context), thisObj)
     }
 
     fun withHeap(heap: Map<Key.HeapKey, Context>): Context {
-        return Context(variables, this.heap + heap, resolvesTo, thisObj)
+        return Context(variables, this.heap + heap, thisObj)
     }
+
+    fun withThis(thisObj: Expr<*>?): Context {
+        return Context(variables, heap, thisObj)
+    }
+
+    /**
+     * Resolves all variables in the expression that are known of in this context.
+     */
+    fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
+        expr.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
 
     /**
      * Stacks the later context on top of this one.
@@ -297,19 +291,8 @@ class Context private constructor(
      * Conversely, for `Method` keys, this context is prioritised over the later context.
      */
     fun stack(later: Context): Context {
-        val resolvesTo = if (later.resolvesTo == VoidExpression()) {
-            VoidExpression()
-        } else {
-            later.resolvesTo.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
-        }
-
-        val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
-            expr.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
-        }
-
-        val meResolvedWithLater = variables.mapValues { (_, expr) ->
-            expr.replaceTypeInTree<VariableExpression<*>> { later.variables[it.key] }
-        }
+        val laterResolvedWithMe = later.variables.mapValues { (_, expr) -> resolveKnownVariables(expr) }
+        val meResolvedWithLater = variables.mapValues { (_, expr) -> later.resolveKnownVariables(expr) }
 
         val newVariables = mutableMapOf<Key, Expr<*>>()
 
@@ -329,12 +312,7 @@ class Context private constructor(
         return Context(
             newVariables,
             heap = heap + later.heap,
-            resolvesTo = resolvesTo,
             thisObj = thisObj
         )
-    }
-
-    fun withThis(thisObj: Expr<*>?): Context {
-        return Context(variables, heap, resolvesTo, thisObj)
     }
 }
