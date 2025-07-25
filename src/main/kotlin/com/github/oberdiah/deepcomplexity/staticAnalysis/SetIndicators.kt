@@ -38,7 +38,6 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
             //   calculating the set indicator (effectively the type verifier) in the first place.
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
-                is VoidExpression -> throw IllegalStateException("Void expression has no set indicator")
                 is IfExpression -> expr.trueExpr.ind
                 is UnionExpression -> expr.lhs.ind
                 is ArithmeticExpression -> expr.lhs.ind

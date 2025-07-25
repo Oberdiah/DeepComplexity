@@ -32,7 +32,7 @@ object MethodProcessing {
             processPsiElement(body, wrapper)
         }
 
-        return wrapper.context
+        return wrapper.c
     }
 
     private enum class Mode {
@@ -49,29 +49,37 @@ object MethodProcessing {
         LVALUE
     }
 
-    data class ContextWrapper(var context: Context) {
+    /**
+     * This feels a bit silly, but in some ways it's nice to keep all of our mutability
+     * contained to this single location.
+     *
+     * If you want to move this mutability into the context itself, first consider
+     * the fact that the context contains a heap, which itself is a map of keys to contexts.
+     * What happens when those contexts get modified? Scary stuff.
+     */
+    data class ContextWrapper(var c: Context) {
         fun addVar(key: Context.Key, value: Expr<*>) {
-            context = context.withVar(key, value)
+            c = c.withVar(key, value)
         }
 
         fun addVar(lExpr: Expr<*>, rExpr: Expr<*>) {
-            context = context.withVar(lExpr, rExpr)
+            c = c.withVar(lExpr, rExpr)
         }
 
         fun stack(newContext: Context) {
-            context = context.stack(newContext)
+            c = c.stack(newContext)
         }
 
         fun resolveVar(psi: PsiElement, value: Expr<*>) {
-            context = context.withResolvedVar(psi.toKey(), value)
+            c = c.withResolvedVar(psi.toKey(), value)
         }
 
         fun setHeap(heap: Map<Context.Key.HeapKey, Context>) {
-            context = context.withHeap(heap)
+            c = c.withHeap(heap)
         }
 
         fun setThis(thisObj: Expr<*>?) {
-            context = context.withThis(thisObj)
+            c = c.withThis(thisObj)
         }
     }
 
@@ -121,17 +129,17 @@ object MethodProcessing {
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
                 val trueExprContext = ContextWrapper(Context.new())
-                val trueResult = context.context.resolveKnownVariables(
+                val trueResult = context.c.resolveKnownVariables(
                     processPsiElement(trueBranch, trueExprContext)!!
                 )
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
                 val falseExprContext = ContextWrapper(Context.new())
-                val falseResult = context.context.resolveKnownVariables(
+                val falseResult = context.c.resolveKnownVariables(
                     processPsiElement(falseBranch, falseExprContext)!!
                 )
 
-                val ifContext = Context.combine(trueExprContext.context, falseExprContext.context) { a, b ->
+                val ifContext = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
 
@@ -156,7 +164,7 @@ object MethodProcessing {
                 val falseBranchContext = ContextWrapper(Context.new())
                 psi.elseBranch?.let { processPsiElement(it, falseBranchContext) }
 
-                val ifContext = Context.combine(trueBranchContext.context, falseBranchContext.context) { a, b ->
+                val ifContext = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
 
@@ -181,9 +189,9 @@ object MethodProcessing {
                     ConstantExpression.TRUE
                 }
 
-                LoopSolver.processLoopContext(bodyContext.context, conditionExpr)
+                LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
 
-                context.stack(bodyContext.context)
+                context.stack(bodyContext.c)
             }
 
 
@@ -192,7 +200,7 @@ object MethodProcessing {
                 if (returnExpression != null) {
                     val returnExpr = processPsiElement(returnExpression, context)!!
 
-                    if (context.context.variables.keys.none { it.isReturnKey() }) {
+                    if (context.c.variables.keys.none { it.isReturnKey() }) {
                         // If there's no 'method' key yet, create one.
                         context.addVar(psi.toKey(), returnExpr)
                     } else {
@@ -228,7 +236,7 @@ object MethodProcessing {
 
                         context.addVar(
                             operandExpr,
-                            unaryOp.applyToExpr(operandExpr.resolveLValues(context.context))
+                            unaryOp.applyToExpr(operandExpr.resolveLValues(context.c))
                         )
 
                         // Build the expression after the assignment for a prefix increment/decrement
@@ -250,7 +258,7 @@ object MethodProcessing {
                 val operandExpr = processPsiElement(psi.operand, context, Mode.LVALUE)!!.castToNumbers()
                 context.addVar(
                     operandExpr,
-                    unaryOp.applyToExpr(operandExpr.resolveLValues(context.context))
+                    unaryOp.applyToExpr(operandExpr.resolveLValues(context.c))
                 )
 
                 return builtExpr!!.castToNumbers()
@@ -313,7 +321,7 @@ object MethodProcessing {
                 }.orElse {
                     // If there's no qualifier, we want to use the 'this' object if available.
                     if (key is Context.Key.FieldKey) {
-                        context.context.thisObj ?: throw ExpressionIncompleteException(
+                        context.c.thisObj ?: throw ExpressionIncompleteException(
                             "Field reference without qualifier, but no 'this' object available."
                         )
                     } else {
@@ -329,7 +337,7 @@ object MethodProcessing {
 
                 return when (mode) {
                     Mode.LVALUE -> lValue
-                    Mode.RVALUE -> lValue.resolve(context.context)
+                    Mode.RVALUE -> lValue.resolve(context.c)
                 }
             }
 
@@ -349,7 +357,7 @@ object MethodProcessing {
 
                     JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                         val rhs = processPsiElement(rExpression, context)!!.castToNumbers()
-                        val lhs = lhsLvalue.resolveLValues(context.context).castToNumbers()
+                        val lhs = lhsLvalue.resolveLValues(context.c).castToNumbers()
 
                         ConversionsAndPromotion.castNumbersAToB(
                             rhs,
@@ -386,13 +394,13 @@ object MethodProcessing {
                 }
 
                 val methodContext = processMethod(context, psi, qualifier)
-                return methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value ?: VoidExpression()
+                return methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value
             }
 
             is PsiNewExpression -> {
                 val heapKey = Context.Key.HeapKey.new()
 
-                context.setHeap(context.context.heap + (heapKey to Context.new()))
+                context.setHeap(context.c.heap + (heapKey to Context.new()))
 
                 val classExpr = ClassExpression(psi, heapKey)
 
@@ -407,9 +415,8 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                // This is a reference to the current object, so we need to resolve it
-                // to the current context.
-                return context.context.thisObj!!
+                // The `this` in the context had better exist if we're using `this`.
+                return context.c.thisObj!!
             }
 
             else -> {
@@ -451,16 +458,17 @@ object MethodProcessing {
             )
         }
         // The heap is global, it gets passed into methods.
-        methodContext.setHeap(context.context.heap)
+        methodContext.setHeap(context.c.heap)
         methodContext.setThis(qualifier)
 
         method.body?.let { body ->
             processPsiElement(body, methodContext)
         }
-        context.setHeap(methodContext.context.heap)
 
         // The heap is global, so it comes out of methods.
-        return methodContext.context
+        context.setHeap(methodContext.c.heap)
+
+        return methodContext.c
     }
 
     private fun processBinaryExpr(

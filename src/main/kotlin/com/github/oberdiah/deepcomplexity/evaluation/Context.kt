@@ -236,10 +236,6 @@ class Context private constructor(
      * This will be useful sometimes, though, e.g. setting up return values, declarations, or parameters.
      */
     fun withVar(key: Key, expr: Expr<*>): Context {
-        if (expr is VoidExpression) {
-            throw IllegalArgumentException("VoidExpressions cannot be assigned!")
-        }
-
         val castVar = expr.castToUsingTypeCast(key.ind, false)
         return Context(variables + (key to castVar), heap, thisObj)
     }

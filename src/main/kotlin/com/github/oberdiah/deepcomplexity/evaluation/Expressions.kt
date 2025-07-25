@@ -134,10 +134,6 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 }
 
 fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
-    assert(this !is VoidExpression) {
-        "Cannot get field from a VoidExpression: $this"
-    }
-
     fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
         return this.replaceLeaves(ExprTreeRebuilder.LeafReplacer(ind) { expr ->
             val newExpr = if (expr is ClassExpression) {
@@ -161,16 +157,6 @@ fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
     }
 
     return extra(key.ind)
-}
-
-/**
- * An expression that doesn't return anything.
- *
- * This is used in `if` statements, void methods, etc.
- */
-class VoidExpression : Expr<VoidExpression>() {
-    override fun hashCode(): Int = 0
-    override fun equals(other: Any?) = other is VoidExpression
 }
 
 data class ArithmeticExpression<T : Number>(
@@ -212,11 +198,7 @@ data class TypeCastExpression<T : Any, Q : Any>(
     val expr: Expr<Q>,
     val setInd: SetIndicator<T>,
     val explicit: Boolean,
-) : Expr<T>() {
-    init {
-        assert(expr !is VoidExpression)
-    }
-}
+) : Expr<T>()
 
 data class IfExpression<T : Any>(
     val trueExpr: Expr<T>,
