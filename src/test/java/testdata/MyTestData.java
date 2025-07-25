@@ -992,6 +992,7 @@ public class MyTestData {
 		return (short) nested;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest16(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1131,6 +1132,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short ternaryTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -1144,7 +1146,8 @@ public class MyTestData {
 		return (short) ((a > b) ? a : b);
 	}
 	
-	public static short ternaryTest1WithoutTernary(short x) {
+	@RequiredScore(1.0)
+	public static short ternaryTest1NoTernary(short x) {
 		int a = 0;
 		int b = 0;
 		
@@ -1164,6 +1167,7 @@ public class MyTestData {
 		return (short) c;
 	}
 	
+	@RequiredScore(1.0)
 	public static short ternaryTest2(short x) {
 		int a = x;
 		int b = 0;

@@ -101,9 +101,7 @@ object MethodProcessing {
                     IfExpression.new(a, b, condition)
                 }
 
-                context = context
-                    .stack(ifContext)
-                    .nowResolvesTo(ifContext.resolvesTo)
+                context = context.stack(ifContext)
             }
 
             is PsiIfStatement -> {
@@ -112,6 +110,9 @@ object MethodProcessing {
                     context
                 )
                 val condition = context.resolvesTo.castToBoolean()
+
+                // Definitely need to TODO: Heap modifications and thisObj need to be passed in and out of these branches?
+                // At the very least in and out of the reached branch.
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 var trueBranchContext = Context.new()

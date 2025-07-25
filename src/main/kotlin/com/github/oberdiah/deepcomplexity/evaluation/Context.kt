@@ -297,6 +297,12 @@ class Context private constructor(
      * Conversely, for `Method` keys, this context is prioritised over the later context.
      */
     fun stack(later: Context): Context {
+        val resolvesTo = if (later.resolvesTo == VoidExpression()) {
+            VoidExpression()
+        } else {
+            later.resolvesTo.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
+        }
+
         val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
             expr.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
         }
