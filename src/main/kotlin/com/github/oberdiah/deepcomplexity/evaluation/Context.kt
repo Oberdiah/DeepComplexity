@@ -213,7 +213,7 @@ class Context private constructor(
     /**
      * Performs a cast if necessary.
      */
-    fun withVar(context: Context, lExpr: Expr<*>, rExpr: Expr<*>): Context {
+    fun withVar(lExpr: Expr<*>, rExpr: Expr<*>): Context {
         assert(rExpr.iterateTree().none { it is LValueExpr<*> }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
         }
@@ -230,14 +230,14 @@ class Context private constructor(
         }
 
         if (qualifier is ClassExpression) {
-            val heapContext = context.heap[qualifier.heapKey]
+            val heapContext = heap[qualifier.heapKey]
                 ?: throw IllegalArgumentException("No heap context found for class expression: $qualifier")
 
             val newHeapContext = heapContext.withVar(lExpr.key, rExpr)
 
             return Context(
                 variables,
-                heap = context.heap + (qualifier.heapKey to newHeapContext),
+                heap = heap + (qualifier.heapKey to newHeapContext),
                 resolvesTo = resolvesTo,
                 thisObj = thisObj
             )
