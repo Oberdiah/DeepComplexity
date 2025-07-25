@@ -3,7 +3,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
@@ -248,13 +247,6 @@ class Context private constructor(
     /**
      * Performs a cast if necessary.
      */
-    fun withResolvedVar(element: PsiElement, expr: Expr<*>): Context {
-        return withResolvedVar(element.toKey(), expr)
-    }
-
-    /**
-     * Performs a cast if necessary.
-     */
     fun withResolvedVar(key: Key, expr: Expr<*>): Context {
         val castExpr = expr.castToUsingTypeCast(key.ind, false)
 
@@ -263,10 +255,6 @@ class Context private constructor(
                 if (it.key == key) castExpr else null
             }
         }, heap, thisObj)
-    }
-
-    fun withHeap(key: Key.HeapKey, context: Context): Context {
-        return Context(variables, heap + (key to context), thisObj)
     }
 
     fun withHeap(heap: Map<Key.HeapKey, Context>): Context {
