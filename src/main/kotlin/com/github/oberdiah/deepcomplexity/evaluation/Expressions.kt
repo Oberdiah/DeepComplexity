@@ -39,6 +39,14 @@ sealed class Expr<T : Any>() {
      */
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
 
+    fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
+        ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
+
+    fun iterateTree(): Sequence<Expr<*>> = ExprTreeVisitor.iterateTree(this)
+    fun getVariables(): Set<VariableExpression<*>> = iterateTree()
+        .filterIsInstance<VariableExpression<*>>()
+        .toSet()
+
     /**
      * Rebuilds every expression in the tree.
      * As it's doing that, whenever it encounters an expression of type [Q],
@@ -61,17 +69,8 @@ sealed class Expr<T : Any>() {
 
                 return expr
             }
-        }
-        )
+        })
     }
-
-    fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
-        ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
-
-    fun iterateTree(): Sequence<Expr<*>> = ExprTreeVisitor.iterateTree(this)
-    fun getVariables(): Set<VariableExpression<*>> = iterateTree()
-        .filterIsInstance<VariableExpression<*>>()
-        .toSet()
 
     /**
      * Resolves all LValueExprs in the expression tree to their underlying expressions using the context.
@@ -121,6 +120,11 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     }
 }
 
+fun <T : Any> Expr<*>.castOrThrow(indicator: SetIndicator<T>): Expr<T> {
+    return this.tryCastTo(indicator)
+        ?: throw IllegalStateException("Failed to cast to $indicator: $this (${this.ind})")
+}
+
 /**
  * Wrap the expression in a type cast to the given indicator.
  */
@@ -134,29 +138,47 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 }
 
 fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
-    fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
-        return this.replaceLeaves(ExprTreeRebuilder.LeafReplacer(ind) { expr ->
-            val newExpr = if (expr is ClassExpression) {
-                val heap = context.heap[expr.heapKey] ?: throw IllegalArgumentException(
-                    "Heap for ${expr.heapKey} not found in context"
-                )
+    return replaceTypeInLeaves<ClassExpression>(key.ind) {
+        val heap = context.heap[it.heapKey] ?: throw IllegalArgumentException(
+            "Heap for ${it.heapKey} not found in context"
+        )
 
-                heap.variables[key] ?: throw IllegalArgumentException(
-                    "Qualifier for $key not found in context"
-                )
-            } else {
-                throw IllegalArgumentException(
-                    "Expected ClassExpr, got ${expr::class.simpleName}"
-                )
-            }
-
-            newExpr.tryCastTo(ind) ?: throw IllegalStateException(
-                "(${newExpr.ind} != $ind) ${newExpr.dStr()} does not match ${expr.dStr()}"
-            )
-        })
+        heap.variables[key] ?: throw IllegalArgumentException(
+            "Qualifier for $key not found in context"
+        )
     }
+}
 
-    return extra(key.ind)
+/**
+ * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
+ *
+ * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
+ * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
+ */
+inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
+    newInd: SetIndicator<*>,
+    crossinline replacement: (Q) -> Expr<*>
+): Expr<*> {
+    return object {
+        inline operator fun <T : Any> invoke(
+            newInd: SetIndicator<T>,
+            crossinline replacement: (Q) -> Expr<*>
+        ): Expr<*> {
+            return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->
+                val newExpr = if (expr is Q) {
+                    replacement(expr)
+                } else {
+                    throw IllegalArgumentException(
+                        "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
+                    )
+                }
+
+                newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
+                    "(${newExpr.ind} != $newInd) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                )
+            })
+        }
+    }(newInd, replacement)
 }
 
 data class ArithmeticExpression<T : Number>(

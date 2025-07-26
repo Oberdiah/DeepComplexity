@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.LeafReplacer
 import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -239,31 +238,18 @@ class Context private constructor(
             val heapContext = heap[key]!!
 
             val key1 = lExpr.key as Key.FieldKey
-            fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
-                return qualifier.replaceLeaves(LeafReplacer(ind) { expr ->
-                    val newExpr = if (expr is ClassExpression) {
-                        val heapVar = if (expr.heapKey == key) {
-                            rExpr
-                        } else {
-                            heapContext.variables[key1] ?: throw IllegalArgumentException(
-                                "Qualifier for $key1 not found in context"
-                            )
-                        }
 
-                        heapVar
-                    } else {
-                        throw IllegalArgumentException(
-                            "Expected ClassExpr, got ${expr::class.simpleName}"
-                        )
-                    }
-
-                    newExpr.tryCastTo(ind) ?: throw IllegalStateException(
-                        "(${newExpr.ind} != $ind) ${newExpr.dStr()} does not match ${expr.dStr()}"
+            val newValue = qualifier.replaceTypeInLeaves<ClassExpression>(key1.ind) { expr ->
+                val heapVar = if (expr.heapKey == key) {
+                    rExpr
+                } else {
+                    heapContext.variables[key1] ?: throw IllegalArgumentException(
+                        "Qualifier for $key1 not found in context"
                     )
-                })
-            }
+                }
 
-            val newValue = extra(key1.ind)
+                heapVar
+            }
 
             newHeap += key to heapContext.withVar(key1, newValue)
         }
