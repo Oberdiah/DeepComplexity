@@ -226,59 +226,54 @@ class Context private constructor(
             return withVar(lExpr.key, rExpr)
         }
 
-        if (qualifier is ClassExpression) {
-            val heapContext = heap[qualifier.heapKey]
-                ?: throw IllegalArgumentException("No heap context found for class expression: $qualifier")
 
-            val newHeapContext = heapContext.withVar(lExpr.key, rExpr)
+        val newHeap = heap.toMutableMap()
 
-            return Context(
-                variables = variables,
-                heap = heap + (qualifier.heapKey to newHeapContext),
-                thisObj = thisObj
-            )
-        } else {
-            // In theory only need to iterate over heaps found in the qualifier.
-            // Would be a cool optimisation in the future.
-            val newHeap = mutableMapOf<Key.HeapKey, Context>()
+        val heapKeysInvolved =
+            qualifier.iterateTree()
+                .filterIsInstance<ClassExpression>()
+                .map { it.heapKey }
+                .toSet()
 
-            for ((key, heapContext) in heap) {
-                val key1 = lExpr.key as Key.FieldKey
-                fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
-                    return qualifier.replaceLeaves(LeafReplacer(ind) { expr ->
-                        val newExpr = if (expr is ClassExpression) {
-                            val heapVar = if (expr.heapKey == key) {
-                                rExpr
-                            } else {
-                                heapContext.variables[key1] ?: throw IllegalArgumentException(
-                                    "Qualifier for $key1 not found in context"
-                                )
-                            }
+        for (key in heapKeysInvolved) {
+            val heapContext = heap[key]!!
 
-                            heapVar
+            val key1 = lExpr.key as Key.FieldKey
+            fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
+                return qualifier.replaceLeaves(LeafReplacer(ind) { expr ->
+                    val newExpr = if (expr is ClassExpression) {
+                        val heapVar = if (expr.heapKey == key) {
+                            rExpr
                         } else {
-                            throw IllegalArgumentException(
-                                "Expected ClassExpr, got ${expr::class.simpleName}"
+                            heapContext.variables[key1] ?: throw IllegalArgumentException(
+                                "Qualifier for $key1 not found in context"
                             )
                         }
 
-                        newExpr.tryCastTo(ind) ?: throw IllegalStateException(
-                            "(${newExpr.ind} != $ind) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                        heapVar
+                    } else {
+                        throw IllegalArgumentException(
+                            "Expected ClassExpr, got ${expr::class.simpleName}"
                         )
-                    })
-                }
+                    }
 
-                val newValue = extra(key1.ind)
-
-                newHeap += key to heapContext.withVar(key1, newValue)
+                    newExpr.tryCastTo(ind) ?: throw IllegalStateException(
+                        "(${newExpr.ind} != $ind) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                    )
+                })
             }
 
-            return Context(
-                variables = variables,
-                heap = newHeap,
-                thisObj = thisObj
-            )
+            val newValue = extra(key1.ind)
+
+            newHeap += key to heapContext.withVar(key1, newValue)
         }
+
+        return Context(
+            variables = variables,
+            heap = newHeap,
+            thisObj = thisObj
+        )
+
     }
 
     /**
