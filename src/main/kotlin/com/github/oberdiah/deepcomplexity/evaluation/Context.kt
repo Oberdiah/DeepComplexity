@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
@@ -56,7 +57,13 @@ class Context private constructor(
          * It has a type associated with it so that we can perform implicit casts to it.
          */
         data class ReturnKey(val type: SetIndicator<*>) : Key() {
-            override fun toString(): String = "Rest of method"
+            companion object {
+                val Me = ReturnKey(DoubleSetIndicator)
+            }
+
+            override fun toString(): String = "Return value"
+            override fun hashCode(): Int = 0
+            override fun equals(other: Any?): Boolean = other is ReturnKey
         }
 
         /**
@@ -165,6 +172,9 @@ class Context private constructor(
             )
         }
     }
+
+    val returnValue: Expr<*>?
+        get() = variables[Key.ReturnKey.Me]
 
     override fun toString(): String {
         val variablesString =

@@ -10,7 +10,6 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
-import com.jetbrains.rd.util.firstOrNull
 
 object MethodProcessing {
     fun printMethod(method: PsiMethod, evaluate: Boolean) {
@@ -150,7 +149,7 @@ object MethodProcessing {
 
                 context.stack(ifContext)
             }
-            
+
             is PsiConditionalExpression -> {
                 val condition = processPsiExpression(psi.condition, context).castToBoolean()
 
@@ -203,7 +202,7 @@ object MethodProcessing {
                 if (returnExpression != null) {
                     val returnExpr = processPsiExpression(returnExpression, context)
 
-                    if (context.c.variables.keys.none { it.isReturnKey() }) {
+                    if (context.c.returnValue == null) {
                         // If there's no 'method' key yet, create one.
                         context.addVar(psi.toKey(), returnExpr)
                     } else {
@@ -231,7 +230,7 @@ object MethodProcessing {
                     processPsiExpression(it, context)
                 }
                 val methodContext = processMethod(context, psi, qualifier)
-                return methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value
+                return methodContext.returnValue
             }
 
             is PsiLiteralExpression -> {
