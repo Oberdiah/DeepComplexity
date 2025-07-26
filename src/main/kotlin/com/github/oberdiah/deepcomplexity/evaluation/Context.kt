@@ -221,12 +221,39 @@ class Context private constructor(
         }
 
         val qualifier = lExpr.qualifier
+        val fieldKey = lExpr.key
+
         if (qualifier == null) {
             return withVar(lExpr.key, rExpr)
         }
 
-
-        val newHeap = heap.toMutableMap()
+        /**
+         * This does look a bit scary, so I'll try to walk you through it:
+         * Essentially, a qualifier may not just be a simple ClassExpression.
+         * In the simplest case it is, and this all becomes a lot easier, but in the general case
+         * it may be any complicated expression.
+         * Let's go with the following example:
+         * ```
+         * a = new C(2);
+         * b = new C(3);
+         * ((x > 0) ? a : b).x = 5
+         * ```
+         * Now, the only objects we should be touching with our operation are `a` and `b`, so we gather
+         * them first into [heapKeysInvolved]. That part's simple enough.
+         *
+         * Then, for the heaps we want to modify, we take our qualifier as specified above, and replace
+         * `a` and `b` with either:
+         *      a) The value already at that object, effectively turning `b` into `b.x`
+         *      b) The value that we're setting this field to
+         *  depending on whether the object we're modifying on the heap is the object being replaced in the
+         *  expression.
+         *
+         *  The result of this is that for something like `((x > 0) ? a : b).x = 5`, the heap ends up
+         *  like so:
+         *      `a = { x: (x > 0) ? 5 : 3 }`
+         *      `b = { x: (x > 0) ? 2 : 5 }`
+         *  which is exactly as desired.
+         */
 
         val heapKeysInvolved =
             qualifier.iterateTree()
@@ -234,24 +261,23 @@ class Context private constructor(
                 .map { it.heapKey }
                 .toSet()
 
-        for (key in heapKeysInvolved) {
-            val heapContext = heap[key]!!
-
-            val key1 = lExpr.key as Key.FieldKey
-
-            val newValue = qualifier.replaceTypeInLeaves<ClassExpression>(key1.ind) { expr ->
-                val heapVar = if (expr.heapKey == key) {
-                    rExpr
-                } else {
-                    heapContext.variables[key1] ?: throw IllegalArgumentException(
-                        "Qualifier for $key1 not found in context"
-                    )
+        val newHeap = heap.mapValues { (heapKey, heapContext) ->
+            if (heapKey !in heapKeysInvolved) {
+                // Don't touch objects on the heap that are not involved in this assignment.
+                heapContext
+            } else {
+                val newValue = qualifier.replaceTypeInLeaves<ClassExpression>(fieldKey.ind) { expr ->
+                    if (expr.heapKey == heapKey) {
+                        rExpr
+                    } else {
+                        heapContext.variables[fieldKey] ?: throw IllegalArgumentException(
+                            "Qualifier for $fieldKey not found in context"
+                        )
+                    }
                 }
 
-                heapVar
+                heapContext.withVar(fieldKey, newValue)
             }
-
-            newHeap += key to heapContext.withVar(key1, newValue)
         }
 
         return Context(
