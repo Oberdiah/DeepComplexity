@@ -1,76 +1,39 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
 class Context private constructor(
-    val variables: MutableMap<Key, Expr<*>> = mutableMapOf(),
-    /**
-     * The situation we create all of our PsiFields under.
-     * Essentially a list of object paths to tell us where this is defined.
-     * e.g. `a.b.c` means that the variable is defined in the `c` object,
-     * which is a child of `b`, which is a child of `a`.
-     *
-     * Unsure if we'll end up needing this.
-     */
-    private var objectSituation: ObjectSituation = ObjectSituation(listOf())
+    val variables: Map<Key, Expr<*>>,
+    val heap: Map<Key.HeapKey, Context>,
+    val thisObj: Expr<*>?
 ) {
-    data class ObjectSituation(
-        /**
-         * These elements with either be PsiVariables (A standard path situation may go PsiLocalVariable.PsiField.PsiField)
-         * or, in the case of creating the object itself, a PsiNewExpression (When we have no root variable yet to tie it to).
-         */
-        val situationPath: List<PsiElement>
-    ) {
-        override fun toString(): String {
-            if (situationPath.isEmpty()) {
-                return ""
-            }
-
-            // Elements separated by dots.
-            return situationPath.joinToString(".") { it.toStringPretty() } + "."
-        }
-    }
-
     sealed class Key {
-        // Variable is where the variable is defined —
-        // either PsiLocalVariable, PsiParameter, or PsiField.
-        data class VariableKey(
-            val variable: PsiVariable,
-            // Only PsiFields use their situation.
-            val situation: ObjectSituation
-        ) : Key() {
-            init {
-                val acceptable = variable is PsiLocalVariable
-                        || variable is PsiParameter
-                        || variable is PsiField
-                if (!acceptable) {
-                    throw IllegalArgumentException("Variable must be a PsiLocalVariable, PsiParameter, or PsiField")
+        abstract class VariableKey<T : PsiVariable>(open val variable: T) : Key() {
+            final override fun toString(): String = variable.toStringPretty()
+        }
+
+        data class LocalVariableKey(override val variable: PsiLocalVariable) : VariableKey<PsiLocalVariable>(variable)
+        data class ParameterKey(override val variable: PsiParameter) : VariableKey<PsiParameter>(variable)
+        data class FieldKey(override val variable: PsiField) : VariableKey<PsiField>(variable)
+
+        @JvmInline
+        value class HeapKey(val key: EphemeralKey) {
+            companion object {
+                fun new(): HeapKey {
+                    return HeapKey(EphemeralKey.new())
                 }
             }
 
-            fun withPrependedSituation(situation: ObjectSituation): VariableKey {
-                return VariableKey(
-                    variable,
-                    ObjectSituation(situation.situationPath + this.situation.situationPath)
-                )
-            }
-
-            override fun toString(): String {
-                return if (variable is PsiField) {
-                    "$situation${variable.toStringPretty()}"
-                } else {
-                    variable.toStringPretty()
-                }
-            }
+            override fun toString(): String = "$key"
         }
 
         /**
-         * This is the key representing a return type itself, or the remaining bits of it still to be processed.
+         * This is the key representing a return type itself.
          * It behaves differently to other keys in that it applies backward when stacking.
          *
          * Normally, if you had two contexts in this order:
@@ -96,7 +59,13 @@ class Context private constructor(
          * It has a type associated with it so that we can perform implicit casts to it.
          */
         data class ReturnKey(val type: SetIndicator<*>) : Key() {
-            override fun toString(): String = "Rest of method"
+            companion object {
+                val Me = ReturnKey(DoubleSetIndicator)
+            }
+
+            override fun toString(): String = "Return value"
+            override fun hashCode(): Int = 0
+            override fun equals(other: Any?): Boolean = other is ReturnKey
         }
 
         /**
@@ -125,14 +94,14 @@ class Context private constructor(
                 return when (this) {
                     is ExpressionKey -> this.expr.ind
                     is ReturnKey -> type
-                    is VariableKey -> Utilities.psiTypeToSetIndicator(variable.type)
+                    is VariableKey<*> -> Utilities.psiTypeToSetIndicator(variable.type)
                     else -> throw IllegalArgumentException("Cannot get indicator for $this")
                 }
             }
 
         fun isAutogenerated(): Boolean = isEphemeral() || isExpr()
         fun isEphemeral(): Boolean = this is EphemeralKey
-        fun isMethod(): Boolean = this is ReturnKey
+        fun isReturnKey(): Boolean = this is ReturnKey
         fun isExpr(): Boolean = this is ExpressionKey
 
         /**
@@ -140,7 +109,7 @@ class Context private constructor(
          */
         fun importance(): Int {
             return when (this) {
-                is VariableKey -> 3
+                is VariableKey<*> -> 3
                 is ReturnKey -> 2
                 is ExpressionKey -> 1
                 is EphemeralKey -> 0
@@ -153,7 +122,7 @@ class Context private constructor(
          */
         fun getElement(): PsiElement {
             return when (this) {
-                is VariableKey -> variable
+                is VariableKey<*> -> variable
                 is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
                 is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")
@@ -166,11 +135,15 @@ class Context private constructor(
     }
 
     companion object {
-        fun new(): Context = Context()
+        fun new(): Context = Context(
+            variables = emptyMap(),
+            heap = emptyMap(),
+            thisObj = null
+        )
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
-         * This does not and can not resolve any unresolved expressions as these two statements
+         * This does not and cannot resolve any unresolved expressions as these two statements
          * are independent of each other.
          *
          * You must define how to resolve conflicts.
@@ -188,9 +161,22 @@ class Context private constructor(
                 newMap[key] = how(aVal, bVal)
             }
 
-            return Context(newMap)
+            assert(a.thisObj == b.thisObj) {
+                "I don't quite understand how this could happen. " +
+                        "The `this` object should _surely_ be the same in both contexts?"
+            }
+            val thisObj = a.thisObj
+
+            return Context(
+                newMap,
+                heap = a.heap + b.heap,
+                thisObj = thisObj
+            )
         }
     }
+
+    val returnValue: Expr<*>?
+        get() = variables[Key.ReturnKey.Me]
 
     override fun toString(): String {
         val variablesString =
@@ -201,42 +187,6 @@ class Context private constructor(
                 "$key:\n${expr.toString().prependIndent()}"
             }
         return "Context: {\n${variablesString.prependIndent()}\n}"
-    }
-
-    /**
-     * Returns a new context with the same object situation as this one,
-     * but with a new element added to the situation path.
-     */
-    fun newNestedContext(element: PsiElement): Context = Context(
-        objectSituation = ObjectSituation(objectSituation.situationPath + element)
-    )
-
-    /**
-     * Imports all fields from another context, placing them under the provided situation path.
-     */
-    fun importFieldsUnderSituationPath(otherContext: Context, path: PsiElement?) {
-        for ((key, expr) in otherContext.variables) {
-            if (key is Key.VariableKey && key.variable is PsiField) {
-                val preparedKey = if (path != null) {
-                    key.withPrependedSituation(ObjectSituation(listOf(path)))
-                } else {
-                    key
-                }
-
-                putVar(preparedKey.withPrependedSituation(objectSituation), expr)
-            }
-        }
-    }
-
-    fun getReturnKey(): Key.ReturnKey? {
-        val numReturnKeys = variables.keys.count { it is Key.ReturnKey }
-        assert(numReturnKeys <= 1) { "$numReturnKeys return keys hmm?" }
-        return variables.entries.firstOrNull { it.key is Key.ReturnKey }?.key as? Key.ReturnKey
-    }
-
-    fun getReturnExpr(): Expr<*>? {
-        val returnKey = getReturnKey() ?: return VoidExpression()
-        return variables[returnKey] ?: VoidExpression()
     }
 
     fun debugKey(key: Key): String {
@@ -252,10 +202,6 @@ class Context private constructor(
         return expr.evaluate(ExprEvaluate.Scope())
     }
 
-    fun getVar(element: PsiElement): Expr<*> {
-        return getVar(element.toKey())
-    }
-
     fun getVar(element: Key): Expr<*> {
         return variables[element] ?: VariableExpression<Any>(element)
     }
@@ -263,38 +209,122 @@ class Context private constructor(
     /**
      * Performs a cast if necessary.
      */
-    fun putVar(key: Key, expr: Expr<*>) {
-        // We're just going to always perform this cast for now.
-        // If the code compiles, it's reasonable to do so.
-        variables[key] = expr.performACastTo(key.ind, false)
-    }
-
-    /**
-     * Performs a cast if necessary.
-     */
-    fun putVar(element: PsiElement, expr: Expr<*>) {
-        putVar(element.toKey(), expr)
-    }
-
-    /**
-     * Performs a cast if necessary.
-     */
-    fun resolveVar(element: PsiElement, expr: Expr<*>) {
-        return resolveVar(element.toKey(), expr)
-    }
-
-    /**
-     * Performs a cast if necessary.
-     */
-    fun resolveVar(key: Key, expr: Expr<*>) {
-        val castExpr = expr.performACastTo(key.ind, false)
-
-        variables.replaceAll { _, oldExpr ->
-            oldExpr.rebuildTree(variableExpressionReplacer {
-                if (it.key == key) castExpr else null
-            })
+    fun withVar(lExpr: Expr<*>, rExpr: Expr<*>): Context {
+        assert(rExpr.iterateTree().none { it is LValueExpr<*> }) {
+            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
         }
+
+        if (lExpr !is LValueExpr) {
+            throw IllegalArgumentException(
+                "Cannot assign to a non-LValueExpr: $lExpr = $rExpr."
+            )
+        }
+
+        val qualifier = lExpr.qualifier
+        val fieldKey = lExpr.key
+
+        if (qualifier == null) {
+            return withVar(lExpr.key, rExpr)
+        }
+
+        /**
+         * This does look a bit scary, so I'll try to walk you through it:
+         * Essentially, a qualifier may not just be a simple ClassExpression.
+         * In the simplest case it is, and this all becomes a lot easier, but in the general case
+         * it may be any complicated expression.
+         * Let's go with the following example:
+         * ```
+         * a = new C(2);
+         * b = new C(3);
+         * ((x > 0) ? a : b).x = 5
+         * ```
+         * Now, the only objects we should be touching with our operation are `a` and `b`, so we gather
+         * them first into [heapKeysInvolved]. That part's simple enough.
+         *
+         * Then, for the heaps we want to modify, we take our qualifier as specified above, and replace
+         * `a` and `b` with either:
+         *      a) The value already at that object, effectively turning `b` into `b.x`
+         *      b) The value that we're setting this field to
+         *  depending on whether the object we're modifying on the heap is the object being replaced in the
+         *  expression.
+         *
+         *  The result of this is that for something like `((x > 0) ? a : b).x = 5`, the heap ends up
+         *  like so:
+         *      `a = { x: (x > 0) ? 5 : 3 }`
+         *      `b = { x: (x > 0) ? 2 : 5 }`
+         *  which is exactly as desired.
+         */
+
+        val heapKeysInvolved =
+            qualifier.iterateTree()
+                .filterIsInstance<ClassExpression>()
+                .map { it.heapKey }
+                .toSet()
+
+        val newHeap = heap.mapValues { (heapKey, heapContext) ->
+            if (heapKey !in heapKeysInvolved) {
+                // Don't touch objects on the heap that are not involved in this assignment.
+                heapContext
+            } else {
+                val newValue = qualifier.replaceTypeInLeaves<ClassExpression>(fieldKey.ind) { expr ->
+                    if (expr.heapKey == heapKey) {
+                        rExpr
+                    } else {
+                        heapContext.variables[fieldKey] ?: throw IllegalArgumentException(
+                            "Qualifier for $fieldKey not found in context"
+                        )
+                    }
+                }
+
+                heapContext.withVar(fieldKey, newValue)
+            }
+        }
+
+        return Context(
+            variables = variables,
+            heap = newHeap,
+            thisObj = thisObj
+        )
+
     }
+
+    /**
+     * This should only be used externally in special circumstances — most of the time
+     * you should be using `withVar(lExpr, rExpr)` instead.
+     *
+     * This will be useful sometimes, though, e.g. setting up return values, declarations, or parameters.
+     */
+    fun withVar(key: Key, expr: Expr<*>): Context {
+        val castVar = expr.castToUsingTypeCast(key.ind, false)
+        return Context(variables + (key to castVar), heap, thisObj)
+    }
+
+    /**
+     * Performs a cast if necessary.
+     */
+    fun withResolvedVar(key: Key, expr: Expr<*>): Context {
+        val castExpr = expr.castToUsingTypeCast(key.ind, false)
+
+        return Context(variables.mapValues { (_, oldExpr) ->
+            oldExpr.replaceTypeInTree<VariableExpression<*>> {
+                if (it.key == key) castExpr else null
+            }
+        }, heap, thisObj)
+    }
+
+    fun withHeap(heap: Map<Key.HeapKey, Context>): Context {
+        return Context(variables, this.heap + heap, thisObj)
+    }
+
+    fun withThis(thisObj: Expr<*>?): Context {
+        return Context(variables, heap, thisObj)
+    }
+
+    /**
+     * Resolves all variables in the expression that are known of in this context.
+     */
+    fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
+        expr.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
 
     /**
      * Stacks the later context on top of this one.
@@ -303,45 +333,29 @@ class Context private constructor(
      *
      * Conversely, for `Method` keys, this context is prioritised over the later context.
      */
-    fun stack(later: Context) {
-        val laterResolvedWithMe = later.variables.mapValues { (_, expr) ->
-            expr.rebuildTree(variableExpressionReplacer { variables[it.key] })
-        }
+    fun stack(later: Context): Context {
+        val laterResolvedWithMe = later.variables.mapValues { (_, expr) -> resolveKnownVariables(expr) }
+        val meResolvedWithLater = variables.mapValues { (_, expr) -> later.resolveKnownVariables(expr) }
 
-        val meResolvedWithLater = variables.mapValues { (_, expr) ->
-            expr.rebuildTree(variableExpressionReplacer { later.variables[it.key] })
-        }
-
-        variables.clear()
+        val newVariables = mutableMapOf<Key, Expr<*>>()
 
         // For normal keys, later takes priority and gets to override.
-        variables.putAll(meResolvedWithLater.filter { !it.key.isMethod() })
-        variables.putAll(laterResolvedWithMe.filter { !it.key.isMethod() })
+        newVariables.putAll(meResolvedWithLater.filter { !it.key.isReturnKey() })
+        newVariables.putAll(laterResolvedWithMe.filter { !it.key.isReturnKey() })
 
         // For method keys, this context takes priority.
-        variables.putAll(laterResolvedWithMe.filter { it.key.isMethod() })
-        variables.putAll(meResolvedWithLater.filter { it.key.isMethod() })
-    }
+        newVariables.putAll(laterResolvedWithMe.filter { it.key.isReturnKey() })
+        newVariables.putAll(meResolvedWithLater.filter { it.key.isReturnKey() })
 
-    private fun variableExpressionReplacer(
-        replacement: (VariableExpression<*>) -> Expr<*>?
-    ): ExprTreeRebuilder.Replacer {
-        return object : ExprTreeRebuilder.Replacer {
-            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
-                if (expr is VariableExpression) {
-                    val resolved = replacement(expr)
-                    if (resolved != null) {
-                        assert(resolved.ind == expr.ind) {
-                            "(${resolved.ind} != ${expr.ind}) ${resolved.dStr()} does not match ${expr.dStr()}"
-                        }
-
-                        @Suppress("UNCHECKED_CAST") // Safety: Verified indicators match.
-                        return resolved as Expr<T>
-                    }
-                }
-
-                return expr
-            }
+        assert(thisObj == later.thisObj) {
+            "The `this` object should be the same in both contexts, surely? " +
+                    "Got: $thisObj and ${later.thisObj}"
         }
+
+        return Context(
+            newVariables,
+            heap = heap + later.heap,
+            thisObj = thisObj
+        )
     }
 }

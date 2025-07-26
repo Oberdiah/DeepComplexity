@@ -869,19 +869,20 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest0(short x) {
-		MyNestedClass nested = new MyNestedClass();
-		nested.x = 1;
+		MyClass nested = new MyClass();
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest1(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.x = 1;
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest2(short x) {
-		MyNestedClass nested = new MyNestedClass(3);
+		MyClass nested = new MyClass(3);
 		nested.x = 1;
 		if (nested.x == 1) {
 			return 2;
@@ -889,37 +890,42 @@ public class MyTestData {
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest3(short x) {
-		MyNestedClass nested = new MyNestedClass(3);
+		MyClass nested = new MyClass(3);
 		if (nested.x == 3) {
 			return 2;
 		}
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest4(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		updateClassField(nested);
 		return (short) nested.x;
 	}
 	
-	private static void updateClassField(MyNestedClass nested) {
+	private static void updateClassField(MyClass nested) {
 		nested.x = 5;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest5(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.addOne();
 		return (short) nested.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest6(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		return (short) (nested.getX() - nested.x);
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest7(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.addOne();
 		if (nested.getX() == 3) {
 			return 1;
@@ -927,8 +933,9 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest8(short x) {
-		MyNestedClass nested = new MyNestedClass(2);
+		MyClass nested = new MyClass(2);
 		nested.addOne();
 		int v = nested.x;
 		nested.addOne();
@@ -936,48 +943,171 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest9(short x) {
-		MyNestedClass nested = new MyNestedClass();
+		MyClass nested = new MyClass();
 		if (nested.getX() == 1000) {
 			return 1;
 		}
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest10(short x) {
-		MyNestedClass nested = new MyNestedClass(50);
+		MyClass nested = new MyClass(50);
 		if (x == 100) {
-			nested = new MyNestedClass(100);
+			nested = new MyClass(100);
 		}
-		nested.addOne();
+		nested.x = 5;
 		return (short) nested.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest11(short x) {
-		MyNestedClass nested = new MyNestedClass(50).addOne();
+		MyClass nested = new MyClass(50).addOne();
 		return (short) nested.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest12(short x) {
-		return (short) new MyNestedClass(50).addOne().addOne().addOne().getX();
+		return (short) new MyClass(50).addOne().addOne().addOne().getX();
 	}
 	
-	public static class MyNestedClass {
+	@RequiredScore(1.0)
+	public static short simpleClassTest13(short x) {
+		MyClass nested = new MyClass(50);
+		MyNestingClass nesting = new MyNestingClass(nested);
+		return (short) nesting.nested.getX();
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest14(short x) {
+		MyClass nested = new MyClass(50);
+		MyNestingClass nesting = new MyNestingClass(nested);
+		nesting.nested.x++;
+		nesting.nested.addOne();
+		return (short) nesting.nested.getX();
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest15(short x) {
+		int nested = new MyClass(50).x = 5;
+		return (short) nested;
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest16(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		int p = ((x > 0) ? a : b).x;
+		return (short) p;
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest17(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		((x > 0) ? a : b).x = 5;
+		return (short) a.x;
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest18(short x) {
+		if (x <= 0) {
+			return 0;
+		}
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		((x > 0) ? a : b).x = 5;
+		return (short) a.x;
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest19(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		if (x <= 0) {
+			b = a;
+		}
+		b.x = 0;
+		return (short) b.getX();
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest20(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = a;
+		b.x = 0;
+		return (short) a.getX();
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest21(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		if (x <= 0) {
+			b = a;
+		}
+		b.x = 0;
+		
+		return (short) a.getX();
+	}
+	
+	public static short simpleClassTest22(short x) {
+		MyClass a = new MyClass(1);
+		aliasingMethod(a, a);
+		return (short) a.getX();
+	}
+	
+	private static void aliasingMethod(MyClass a, MyClass b) {
+		a.x = 0;
+		if (b.x == 0) {
+			a.x = 5;
+		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest23(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		
+		MyClass c = new MyClass(100);
+		
+		if (x > 0) {
+			c = a;
+		} else {
+			c = b;
+		}
+		
+		c.x = 0;
+		
+		return (short) (a.x + b.x);
+	}
+	
+	public static class MyClass {
 		public int x = 1000;
 		
-		public MyNestedClass() {
+		public MyClass() {
 		}
 		
-		public MyNestedClass(int xArg) {
-			this.x = xArg;
+		public MyClass(int xArg) {
+			x = xArg;
 		}
 		
-		public MyNestedClass addOne() {
+		public MyClass addOne() {
 			x++;
 			return this;
 		}
 		
 		public int getX() {
 			return x;
+		}
+	}
+	
+	public static class MyNestingClass {
+		public MyClass nested;
+		
+		public MyNestingClass(MyClass nested) {
+			nested.x++;
+			this.nested = nested;
 		}
 	}
 	
@@ -989,5 +1119,75 @@ public class MyTestData {
 			return (short) (a * b);
 		}
 		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	public static short ternaryTest1(short x) {
+		int a = 0;
+		int b = 0;
+		
+		if (x > 0) {
+			a = 1;
+		} else {
+			b = 1;
+		}
+		
+		return (short) ((a > b) ? a : b);
+	}
+	
+	@RequiredScore(1.0)
+	public static short ternaryTest1NoTernary(short x) {
+		int a = 0;
+		int b = 0;
+		
+		if (x > 0) {
+			a = 1;
+		} else {
+			b = 1;
+		}
+		
+		int c = 0;
+		if (a > b) {
+			c = a;
+		} else {
+			c = b;
+		}
+		
+		return (short) c;
+	}
+	
+	@RequiredScore(1.0)
+	public static short ternaryTest2(short x) {
+		int a = x;
+		int b = 0;
+		
+		return (short) ((x > 0) ? a : b);
+	}
+	
+	public static short ternaryTest3(short x) {
+		return (short) ((x > x + 4) ? x : 0);
+	}
+	
+	public static short ternaryTest4(short x) {
+		if ((x > 0) ? x > 10 : x < 10) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short earlyReturnTest1(short x) {
+		MyClass nested = new MyClass(2);
+		
+		updateClassField2(nested, x);
+		
+		return (short) nested.x;
+	}
+	
+	private static void updateClassField2(MyClass nested, int x) {
+		if (x < 5) {
+			return;
+		}
+		nested.x = x;
 	}
 }

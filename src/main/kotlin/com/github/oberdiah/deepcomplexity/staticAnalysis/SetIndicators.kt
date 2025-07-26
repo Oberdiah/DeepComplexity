@@ -32,9 +32,12 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 
     companion object {
         fun <T : Any> getSetIndicator(expr: Expr<T>): SetIndicator<T> {
+            // Safety:
+            //   This one requires some scrutiny, and each expression needs to be inspected individually.
+            //   It should be the only one that we need to do this for, as it's the one that's actually
+            //   calculating the set indicator (effectively the type verifier) in the first place.
             @Suppress("UNCHECKED_CAST")
             return when (expr) {
-                is VoidExpression -> throw IllegalStateException("Void expression has no set indicator")
                 is IfExpression -> expr.trueExpr.ind
                 is UnionExpression -> expr.lhs.ind
                 is ArithmeticExpression -> expr.lhs.ind
@@ -46,8 +49,10 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
                 is ConstExpr -> expr.constSet.ind
                 is VariableExpression -> expr.key.ind
                 is TypeCastExpression<*, *> -> expr.setInd
+                is LValueExpr<*> -> expr.myInd
                 // This is presumably wrong.
-                is NewClassExpr -> GenericSetIndicator(Any::class)
+                is ClassExpression -> GenericSetIndicator(Any::class)
+                is ThisExpression -> GenericSetIndicator(Any::class)
             } as SetIndicator<T>
         }
 

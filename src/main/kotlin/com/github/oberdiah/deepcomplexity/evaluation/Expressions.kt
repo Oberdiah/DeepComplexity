@@ -10,6 +10,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.intellij.psi.PsiNewExpression
+import com.intellij.psi.PsiThisExpression
 
 sealed class Expr<T : Any>() {
     /**
@@ -37,10 +38,46 @@ sealed class Expr<T : Any>() {
      * you want.
      */
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
+
+    fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
+        ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
+
     fun iterateTree(): Sequence<Expr<*>> = ExprTreeVisitor.iterateTree(this)
     fun getVariables(): Set<VariableExpression<*>> = iterateTree()
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
+
+    /**
+     * Rebuilds every expression in the tree.
+     * As it's doing that, whenever it encounters an expression of type [Q],
+     * it replaces it with the result of calling [replacement] on it. The replacement expression
+     * has a wild generic type for ergonomic reasons because you're likely not going to have
+     * a typed replacement on hand, so we do the type check and cast at runtime for you.
+     */
+    inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): Expr<T> {
+        return rebuildTree(object : ExprTreeRebuilder.Replacer {
+            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
+                if (expr is Q) {
+                    val resolved = replacement(expr)
+                    if (resolved != null) {
+                        return resolved.tryCastTo(expr.ind)
+                            ?: throw IllegalStateException(
+                                "(${resolved.ind} != ${expr.ind}) ${resolved.dStr()} does not match ${expr.dStr()}"
+                            )
+                    }
+                }
+
+                return expr
+            }
+        })
+    }
+
+    /**
+     * Resolves all LValueExprs in the expression tree to their underlying expressions using the context.
+     *
+     * LValueExprs cannot end up in the final expression tree.
+     */
+    fun resolveLValues(context: Context): Expr<T> = replaceTypeInTree<LValueExpr<*>> { it.resolve(context) }
 
     fun evaluate(scope: ExprEvaluate.Scope): Bundle<T> = ExprEvaluate.evaluate(this, scope)
     fun dStr(): String = ExprToString.toDebugString(this)
@@ -62,7 +99,7 @@ fun Expr<*>.castToBoolean(): Expr<Boolean> {
         ?: throw IllegalStateException("Failed to cast to a boolean: $this ($ind)")
 }
 
-inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastExact(indicator: SetIndicator<Set>): T? {
+inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastToReified(indicator: SetIndicator<Set>): T? {
     return if (this::class == T::class && indicator == this.ind) {
         @Suppress("UNCHECKED_CAST")
         this as T
@@ -71,15 +108,9 @@ inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastExact(indicator: Se
     }
 }
 
-fun <T : Any> Expr<*>.performACastTo(indicator: SetIndicator<T>, explicit: Boolean): Expr<T> {
-    return if (this.ind == indicator) {
-        @Suppress("UNCHECKED_CAST")
-        this as Expr<T>
-    } else {
-        TypeCastExpression(this, indicator, explicit)
-    }
-}
-
+/**
+ * Basically a nicer way of doing `this as Expr<T>`, but with type checking :)
+ */
 fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     return if (this.ind == indicator) {
         @Suppress("UNCHECKED_CAST")
@@ -89,14 +120,65 @@ fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
     }
 }
 
+fun <T : Any> Expr<*>.castOrThrow(indicator: SetIndicator<T>): Expr<T> {
+    return this.tryCastTo(indicator)
+        ?: throw IllegalStateException("Failed to cast to $indicator: $this (${this.ind})")
+}
+
 /**
- * An expression that doesn't return anything.
- *
- * This is used in `if` statements, void methods, etc.
+ * Wrap the expression in a type cast to the given indicator.
  */
-class VoidExpression : Expr<VoidExpression>() {
-    override fun hashCode(): Int = 0
-    override fun equals(other: Any?) = other is VoidExpression
+fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: Boolean): Expr<T> {
+    return if (this.ind == indicator) {
+        @Suppress("UNCHECKED_CAST")
+        this as Expr<T>
+    } else {
+        TypeCastExpression(this, indicator, explicit)
+    }
+}
+
+fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
+    return replaceTypeInLeaves<ClassExpression>(key.ind) {
+        val heap = context.heap[it.heapKey] ?: throw IllegalArgumentException(
+            "Heap for ${it.heapKey} not found in context"
+        )
+
+        heap.variables[key] ?: throw IllegalArgumentException(
+            "Qualifier for $key not found in context"
+        )
+    }
+}
+
+/**
+ * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
+ *
+ * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
+ * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
+ */
+inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
+    newInd: SetIndicator<*>,
+    crossinline replacement: (Q) -> Expr<*>
+): Expr<*> {
+    return object {
+        inline operator fun <T : Any> invoke(
+            newInd: SetIndicator<T>,
+            crossinline replacement: (Q) -> Expr<*>
+        ): Expr<*> {
+            return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->
+                val newExpr = if (expr is Q) {
+                    replacement(expr)
+                } else {
+                    throw IllegalArgumentException(
+                        "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
+                    )
+                }
+
+                newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
+                    "(${newExpr.ind} != $newInd) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                )
+            })
+        }
+    }(newInd, replacement)
 }
 
 data class ArithmeticExpression<T : Number>(
@@ -157,12 +239,10 @@ data class IfExpression<T : Any>(
             b: Expr<B>,
             condition: Expr<Boolean>
         ): Expr<A> {
-            return if (a.ind == b.ind) {
-                @Suppress("UNCHECKED_CAST")
-                IfExpression(a, b as Expr<A>, condition)
-            } else {
-                throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
-            }
+            val castB = b.tryCastTo(a.ind)
+                ?: throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
+
+            return IfExpression(a, castB, condition)
         }
     }
 }
@@ -190,10 +270,40 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
 }
 
 /**
- * Represents an expression that creates a new instance of a class.
- * Contains the context of its constructor.
+ * Represents an object.
  */
-data class NewClassExpr(val psi: PsiNewExpression, val context: Context) : Expr<Any>()
+data class ClassExpression(val psi: PsiNewExpression, val heapKey: Key.HeapKey) : Expr<Any>()
+
+data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
+
+/**
+ * Represents any expression that can be used as a left-hand value in an assignment.
+ *
+ * For example, `x` in `x = 5`, or `this.x` in `this.x = 5`.
+ *
+ * The `qualifier` is optional.
+ */
+data class LValueExpr<T : Any>(
+    val key: Key,
+    val qualifier: Expr<*>?,
+    val myInd: SetIndicator<T>
+) : Expr<T>() {
+    init {
+        // todo might be worth trying this as two separate classes (one with qualifier, one without)
+        assert(qualifier == null || key is Key.FieldKey) {
+            "Qualifier can only be set for field keys, got: $key"
+        }
+    }
+
+    /**
+     * Resolves the expression in the given context, converting it from an LValueExpr to whatever underlying
+     * expr it represents.
+     */
+    fun resolve(context: Context): Expr<T> {
+        val resolved = qualifier?.getField(context, key as Key.FieldKey) ?: context.getVar(key)
+        return resolved.tryCastTo(myInd)!!
+    }
+}
 
 data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
 data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()
@@ -213,7 +323,8 @@ data class NumIterationTimesExpression<T : Number>(
             variable: VariableExpression<out Number>,
             terms: ConstraintSolver.CollectedTerms<out Number>
         ): NumIterationTimesExpression<T> {
-            val setIndicator = SetIndicator.fromValue(constraint)
+            val setIndicator = constraint.ind
+
             assert(setIndicator == variable.ind) {
                 "Variable and constraint have different set indicators: ${variable.ind} and $setIndicator"
             }

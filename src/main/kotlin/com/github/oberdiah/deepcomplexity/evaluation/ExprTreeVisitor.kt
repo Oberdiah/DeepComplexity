@@ -19,42 +19,43 @@ object ExprTreeVisitor {
         }.asSequence()
     }
 
-    fun visitTree(expr: Expr<*>, visitor: (Expr<*>) -> Unit) {
-        when (expr) {
-            is VoidExpression -> {}
-            is ConstExpr -> {}
-            is VariableExpression -> {}
-            is NewClassExpr -> {}
-            is BooleanExpression -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
+    fun visitTree(expr: Expr<*>, visitor: (Expr<*>) -> Unit) = when (expr) {
+        is ConstExpr -> {}
+        is VariableExpression -> {}
+        is ClassExpression -> {}
+        is ThisExpression -> {}
+        is BooleanExpression -> {
+            visitor(expr.lhs)
+            visitor(expr.rhs)
+        }
 
-            is ComparisonExpression<*> -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
+        is ComparisonExpression<*> -> {
+            visitor(expr.lhs)
+            visitor(expr.rhs)
+        }
 
-            is BooleanInvertExpression -> visitor(expr.expr)
-            is NegateExpression -> visitor(expr.expr)
-            is ArithmeticExpression -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
+        is BooleanInvertExpression -> visitor(expr.expr)
+        is NegateExpression -> visitor(expr.expr)
+        is ArithmeticExpression -> {
+            visitor(expr.lhs)
+            visitor(expr.rhs)
+        }
 
-            is IfExpression -> {
-                visitor(expr.trueExpr)
-                visitor(expr.falseExpr)
-                visitor(expr.thisCondition)
-            }
+        is IfExpression -> {
+            visitor(expr.trueExpr)
+            visitor(expr.falseExpr)
+            visitor(expr.thisCondition)
+        }
 
-            is UnionExpression -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
+        is UnionExpression -> {
+            visitor(expr.lhs)
+            visitor(expr.rhs)
+        }
 
-            is NumIterationTimesExpression -> visitor(expr.variable)
-            is TypeCastExpression<*, *> -> visitor(expr.expr)
+        is NumIterationTimesExpression -> visitor(expr.variable)
+        is TypeCastExpression<*, *> -> visitor(expr.expr)
+        is LValueExpr<*> -> {
+            expr.qualifier?.let { visitor(it) }
         }
     }
 }

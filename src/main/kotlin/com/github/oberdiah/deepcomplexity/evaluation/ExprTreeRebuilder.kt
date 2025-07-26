@@ -3,8 +3,66 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 
 object ExprTreeRebuilder {
+    /**
+     * `ind` is the indicator of the type that the expression will be converted to.
+     */
+    class LeafReplacer<T : Any>(val ind: SetIndicator<T>, val replacer: (Expr<*>) -> Expr<T>)
+
+    /**
+     * There is a reason to have both this and `rebuildTree`.
+     *
+     * This is to be used when you want to swap the type of the whole expression by changing its leaves.
+     * If you don't want to change the type, use `rebuildTree` instead as it's more flexible (it can replace
+     * leaves too, just can't change their type).
+     *
+     * This replacement only works on a subset of all expressions (only expressions where every node can
+     * take any type, so no `ArithmeticExpression`, `ComparisonExpression`, etc.),
+     */
+    fun <T : Any> replaceTreeLeaves(
+        expr: Expr<*>,
+        replacer: LeafReplacer<T>
+    ): Expr<T> {
+        return when (expr) {
+            is UnionExpression -> UnionExpression(
+                replaceTreeLeaves(expr.lhs, replacer),
+                replaceTreeLeaves(expr.rhs, replacer),
+            )
+
+            is IfExpression -> IfExpression(
+                replaceTreeLeaves(expr.trueExpr, replacer),
+                replaceTreeLeaves(expr.falseExpr, replacer),
+                expr.thisCondition,
+            )
+
+            is TypeCastExpression<*, *> -> {
+                fun <T : Any, Q : Any> extra(
+                    expr: TypeCastExpression<T, Q>
+                ): TypeCastExpression<T, *> {
+                    return TypeCastExpression(
+                        replaceTreeLeaves(expr.expr, replacer),
+                        expr.setInd,
+                        expr.explicit,
+                    )
+                }
+
+                @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
+                extra(expr) as Expr<T>
+            }
+
+            is ConstExpr<*> -> replacer.replacer(expr)
+            is VariableExpression<*> -> replacer.replacer(expr)
+            is ClassExpression -> replacer.replacer(expr)
+            is ThisExpression -> replacer.replacer(expr)
+
+            else -> {
+                throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
+            }
+        }
+    }
+
     interface Replacer {
         fun <T : Any> replace(expr: Expr<T>): Expr<T>
     }
@@ -114,6 +172,13 @@ object ExprTreeRebuilder {
 
             is ConstExpr<*> -> expr
             is VariableExpression<*> -> expr
+            is ClassExpression -> expr
+            is ThisExpression -> expr
+            is LValueExpr<*> -> LValueExpr(
+                expr.key,
+                expr.qualifier?.let { rebuildTree(it, replacer) },
+                expr.ind,
+            )
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

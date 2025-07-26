@@ -41,7 +41,7 @@ object LoopSolver {
 
             val numExpr = expr.castToNumbers()
             val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
-            context.putVar(key, newExpr)
+//            context.putVar(key, newExpr)
         }
     }
 
@@ -91,7 +91,7 @@ object LoopSolver {
         // Some edge cases might be doable in certain situations, for now I'm not going to bother.
         if (variables.size != 1) return null
 
-        val unresolved = variables.first().tryCastExact<T, VariableExpression<T>>(expr.ind) ?: return null
+        val unresolved = variables.first().tryCastToReified<T, VariableExpression<T>>(expr.ind) ?: return null
 
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but

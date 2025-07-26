@@ -11,7 +11,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 object ExprEvaluate {
     data class Scope(
         val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
-        val scopesToKeep: Set<Context.Key.ExpressionKey> = mutableSetOf()
+        val scopesToKeep: Set<Context.Key.ExpressionKey> = mutableSetOf(),
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Context.Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
@@ -151,6 +151,11 @@ object ExprEvaluate {
             is VariableExpression ->
                 Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
                     .constrainWith(scope)
+
+            // In practice `ClassExpression`s and `ThisExpressions` should never be evaluated, but we handle them
+            // here anyway in case they come up in debugging.
+            is ClassExpression -> Bundle.empty(expr.ind)
+            is ThisExpression -> Bundle.empty(expr.ind)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

@@ -1,9 +1,11 @@
 package com.github.oberdiah.deepcomplexity
 
+import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.intellij.psi.PsiMethod
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
@@ -82,7 +84,7 @@ object TestUtilities {
         }
 
         val range = try {
-            val returnKey = context.getReturnKey()!!
+            val returnKey = Context.Key.ReturnKey(Utilities.psiTypeToSetIndicator(psiMethod.returnType!!))
 
             if (method.name != "go") {
                 println(context.debugKey(returnKey).prependIndent())
