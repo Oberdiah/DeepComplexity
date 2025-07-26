@@ -69,8 +69,8 @@ object MethodProcessing {
             c = c.stack(newContext)
         }
 
-        fun resolveVar(psi: PsiElement, value: Expr<*>) {
-            c = c.withResolvedVar(psi.toKey(), value)
+        fun resolveVar(key: Context.Key, expr: Expr<*>) {
+            c = c.withResolvedVar(key, expr)
         }
 
         fun setHeap(heap: Map<Context.Key.HeapKey, Context>) {
@@ -201,13 +201,17 @@ object MethodProcessing {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
                     val returnExpr = processPsiExpression(returnExpression, context)
+                    val returnKey = psi.toKey()
 
                     if (context.c.returnValue == null) {
-                        // If there's no 'method' key yet, create one.
-                        context.addVar(psi.toKey(), returnExpr)
+                        // If we don't have a return value yet, we create one.
+                        context.addVar(returnKey, returnExpr)
                     } else {
-                        // If there is, resolve the existing one with the new value.
-                        context.resolveVar(psi, returnExpr)
+                        // If we do, the existing return value will have unresolved return variables
+                        // in it (by necessity, as this return we're processing here wasn't part of it), so
+                        // we resolve those. I don't think we need to resolve the return across the entire context,
+                        // just the return value, but this method is convenient.
+                        context.resolveVar(returnKey, returnExpr)
                     }
                 }
             }
