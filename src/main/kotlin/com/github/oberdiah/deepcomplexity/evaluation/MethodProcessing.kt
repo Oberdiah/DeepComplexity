@@ -83,11 +83,19 @@ object MethodProcessing {
         }
     }
 
+    private fun processPsiExpression(
+        psi: PsiElement,
+        context: ContextWrapper,
+        mode: Mode = Mode.RVALUE
+    ): Expr<*> = processPsiStatement(psi, context, mode) ?: throw RuntimeException(
+        "Expected to parse an expression, but a statement was parsed instead: ${psi.text} (${psi::class})"
+    )
+
     private fun processPsiStatement(
         psi: PsiElement,
         context: ContextWrapper,
         mode: Mode = Mode.RVALUE
-    ) {
+    ): Expr<*>? {
         when (psi) {
             is PsiBlockStatement -> {
                 processPsiStatement(psi.codeBlock, context)
@@ -142,6 +150,30 @@ object MethodProcessing {
 
                 context.stack(ifContext)
             }
+            
+            is PsiConditionalExpression -> {
+                val condition = processPsiExpression(psi.condition, context).castToBoolean()
+
+                val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
+                val trueExprContext = ContextWrapper(Context.new())
+                val trueResult = context.c.resolveKnownVariables(
+                    processPsiExpression(trueBranch, trueExprContext)
+                )
+
+                val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
+                val falseExprContext = ContextWrapper(Context.new())
+                val falseResult = context.c.resolveKnownVariables(
+                    processPsiExpression(falseBranch, falseExprContext)
+                )
+
+                val ifContext = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
+                    IfExpression.new(a, b, condition)
+                }
+
+                context.stack(ifContext)
+
+                return IfExpression.new(trueResult, falseResult, condition)
+            }
 
             is PsiForStatement -> {
                 val initialization = psi.initialization
@@ -166,7 +198,6 @@ object MethodProcessing {
                 context.stack(bodyContext.c)
             }
 
-
             is PsiReturnStatement -> {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
@@ -182,32 +213,27 @@ object MethodProcessing {
                 }
             }
 
+            is PsiExpressionStatement -> {
+                return processPsiStatement(psi.expression, context)
+            }
+
+            is PsiThisExpression -> {
+                // The `this` in the context had better exist if we're using `this`.
+                return context.c.thisObj!!
+            }
+
             is PsiMethodCallExpression -> {
                 // Can discard the return value if we're calling it as a statement.
-                doMethod(psi, context)
+                val qualifier = psi.methodExpression.qualifier?.let {
+                    // This has to come before the method call is processed,
+                    // because this may create an object on the heap that the method call
+                    // would use.
+                    processPsiExpression(it, context)
+                }
+                val methodContext = processMethod(context, psi, qualifier)
+                return methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value
             }
 
-            is PsiExpressionStatement -> {
-                processPsiStatement(psi.expression, context)
-            }
-
-            is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
-                // Ignore whitespace, comments, etc.
-                // PsiJavaTokens are all the surrounding tokens like `;`, `{`, `)`, etc.
-            }
-
-            else -> {
-                processPsiExpression(psi, context, mode)
-            }
-        }
-    }
-
-    private fun processPsiExpression(
-        psi: PsiElement,
-        context: ContextWrapper,
-        mode: Mode = Mode.RVALUE
-    ): Expr<*> {
-        when (psi) {
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()
                 return ConstantExpression.fromAny(value)
@@ -383,15 +409,6 @@ object MethodProcessing {
                 }
             }
 
-            is PsiMethodCallExpression -> {
-                // When called as an expression, the method call must return a value.
-                return doMethod(psi, context)
-                    ?: throw ExpressionIncompleteException(
-                        "Method call ${psi.methodExpression.text} was called as an expression, " +
-                                "but returned no value."
-                    )
-            }
-
             is PsiNewExpression -> {
                 val heapKey = Context.Key.HeapKey.new()
 
@@ -404,33 +421,9 @@ object MethodProcessing {
                 return classExpr
             }
 
-            is PsiConditionalExpression -> {
-                val condition = processPsiExpression(psi.condition, context).castToBoolean()
-
-                val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
-                val trueExprContext = ContextWrapper(Context.new())
-                val trueResult = context.c.resolveKnownVariables(
-                    processPsiExpression(trueBranch, trueExprContext)
-                )
-
-                val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
-                val falseExprContext = ContextWrapper(Context.new())
-                val falseResult = context.c.resolveKnownVariables(
-                    processPsiExpression(falseBranch, falseExprContext)
-                )
-
-                val ifContext = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
-                    IfExpression.new(a, b, condition)
-                }
-
-                context.stack(ifContext)
-
-                return IfExpression.new(trueResult, falseResult, condition)
-            }
-
-            is PsiThisExpression -> {
-                // The `this` in the context had better exist if we're using `this`.
-                return context.c.thisObj!!
+            is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
+                // Ignore whitespace, comments, etc.
+                // PsiJavaTokens are all the surrounding tokens like `;`, `{`, `)`, etc.
             }
 
             else -> {
@@ -439,19 +432,9 @@ object MethodProcessing {
                 )
             }
         }
+        return null
     }
 
-    private fun doMethod(psi: PsiMethodCallExpression, context: ContextWrapper): Expr<*>? {
-        val qualifier = psi.methodExpression.qualifier?.let {
-            // This has to come before the method call is processed,
-            // because this may create an object on the heap that the method call
-            // would use.
-            processPsiExpression(it, context)
-        }
-
-        val methodContext = processMethod(context, psi, qualifier)
-        return methodContext.variables.filter { it.key.isReturnKey() }.firstOrNull()?.value
-    }
 
     /**
      * Returns the new updated original context, and then the context of the method call.
