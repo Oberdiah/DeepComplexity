@@ -267,6 +267,7 @@ data class LValueExpr<T : Any>(
     val myInd: SetIndicator<T>
 ) : Expr<T>() {
     init {
+        // todo might be worth trying this as two separate classes (one with qualifier, one without)
         assert(qualifier == null || key is Key.FieldKey) {
             "Qualifier can only be set for field keys, got: $key"
         }

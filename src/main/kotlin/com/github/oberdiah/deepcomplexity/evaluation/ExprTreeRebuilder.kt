@@ -6,6 +6,9 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 
 object ExprTreeRebuilder {
+    /**
+     * `ind` is the indicator of the type that the expression will be converted to.
+     */
     class LeafReplacer<T : Any>(val ind: SetIndicator<T>, val replacer: (Expr<*>) -> Expr<T>)
 
     /**

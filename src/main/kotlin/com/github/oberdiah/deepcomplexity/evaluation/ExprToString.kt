@@ -31,7 +31,7 @@ object ExprToString {
                 }
             }
 
-            is ClassExpression -> "new ${expr.psi.type}"
+            is ClassExpression -> "${expr.psi.type}(${expr.heapKey})"
             is ThisExpression -> "this"
             is LValueExpr<*> -> if (expr.qualifier != null) "${expr.qualifier}.${expr.key}" else "${expr.key}"
         }
@@ -50,7 +50,7 @@ object ExprToString {
             is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "'for'"
             is TypeCastExpression<*, *> -> toExprKeyString(expr.expr)
-            is ClassExpression -> "'new ${expr.psi.type}'"
+            is ClassExpression -> "${expr.psi.type}(${expr.heapKey})"
             is ThisExpression -> "this"
             is LValueExpr<*> -> if (expr.qualifier != null) "${expr.qualifier}.${expr.key}" else "${expr.key}"
         }
@@ -123,7 +123,7 @@ object ExprToString {
                 }
             }
 
-            is ClassExpression -> "new ${expr.psi.type}"
+            is ClassExpression -> "${expr.psi.type}(${expr.heapKey})"
             is ThisExpression -> "this"
             is LValueExpr<*> -> "${expr.qualifier}.${expr.key}"
         }

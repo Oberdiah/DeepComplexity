@@ -950,12 +950,13 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest10(short x) {
 		MyClass nested = new MyClass(50);
 		if (x == 100) {
 			nested = new MyClass(100);
 		}
-		nested.addOne();
+		nested.x = 5;
 		return (short) nested.getX();
 	}
 	
@@ -1000,6 +1001,7 @@ public class MyTestData {
 		return (short) p;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest17(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1007,6 +1009,7 @@ public class MyTestData {
 		return (short) a.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest18(short x) {
 		if (x <= 0) {
 			return 0;
@@ -1017,6 +1020,7 @@ public class MyTestData {
 		return (short) a.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest19(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1035,6 +1039,7 @@ public class MyTestData {
 		return (short) a.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest21(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1042,40 +1047,6 @@ public class MyTestData {
 			b = a;
 		}
 		b.x = 0;
-		
-		// Here's the thing:
-		// In a way, this is the same as
-		// if (x <= 0) {
-		//	 a.x = 5;
-		// } else {
-		//   b.x = 5;
-		// }
-		
-		// And we do know how to handle that situation fine.
-		// The problem, of course, is that we don't currently do that on parsed expression trees.
-		// Like, the above can be easily solved like that.
-		// The problem is that the modified contexts are then trapped within the if statement.
-		// And that's then a problem because these modified contexts need to be accessed globally.
-		// They need to escape the `if`.
-		// So I need a way to bubble the `heap` up through the `if` stack.
-		// I mean, I guess the heap can be an expression that we then resolve?
-		// We need a `context.stack` but for heaps.
-		
-		// I wonder if b shouldn't be equal to `(x <= 0) ? a : b` after all?
-		// Hmm, no. We can't pull the assignment backwards. We don't know that
-		// it's going to be used until that point.
-		
-		// I just don't like the easy solution very much.
-		// If we look at what this looks like in practice, what I'm asking for here is a heap that
-		// ends up as:
-		// b = (x <= 0) ? a : b
-		// { a.x = (x <= 0) ? 0 : b.x, b.x = (x <= 0) ? a.x : 0 }
-		
-		// Isn't that fairly straightforward to do?
-		// Is this actually quite a simple operation and I'm just overcomplicating things?
-		
-		// That doesn't seem out of the question. It might be worth figuring out a list of all objects in the
-		// qualifier, but that might be it?
 		
 		return (short) a.getX();
 	}
@@ -1091,6 +1062,24 @@ public class MyTestData {
 		if (b.x == 0) {
 			a.x = 5;
 		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest23(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		
+		MyClass c = new MyClass(100);
+		
+		if (x > 0) {
+			c = a;
+		} else {
+			c = b;
+		}
+		
+		c.x = 0;
+		
+		return (short) (a.x + b.x);
 	}
 	
 	public static class MyClass {

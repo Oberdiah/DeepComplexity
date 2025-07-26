@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.LeafReplacer
 import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -28,6 +29,8 @@ class Context private constructor(
                     return HeapKey(EphemeralKey.new())
                 }
             }
+
+            override fun toString(): String = "$key"
         }
 
         /**
@@ -230,12 +233,51 @@ class Context private constructor(
             val newHeapContext = heapContext.withVar(lExpr.key, rExpr)
 
             return Context(
-                variables,
+                variables = variables,
                 heap = heap + (qualifier.heapKey to newHeapContext),
                 thisObj = thisObj
             )
         } else {
-            TODO()
+            // In theory only need to iterate over heaps found in the qualifier.
+            // Would be a cool optimisation in the future.
+            val newHeap = mutableMapOf<Key.HeapKey, Context>()
+
+            for ((key, heapContext) in heap) {
+                val key1 = lExpr.key as Key.FieldKey
+                fun <T : Any> extra(ind: SetIndicator<T>): Expr<T> {
+                    return qualifier.replaceLeaves(LeafReplacer(ind) { expr ->
+                        val newExpr = if (expr is ClassExpression) {
+                            val heapVar = if (expr.heapKey == key) {
+                                rExpr
+                            } else {
+                                heapContext.variables[key1] ?: throw IllegalArgumentException(
+                                    "Qualifier for $key1 not found in context"
+                                )
+                            }
+
+                            heapVar
+                        } else {
+                            throw IllegalArgumentException(
+                                "Expected ClassExpr, got ${expr::class.simpleName}"
+                            )
+                        }
+
+                        newExpr.tryCastTo(ind) ?: throw IllegalStateException(
+                            "(${newExpr.ind} != $ind) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                        )
+                    })
+                }
+
+                val newValue = extra(key1.ind)
+
+                newHeap += key to heapContext.withVar(key1, newValue)
+            }
+
+            return Context(
+                variables = variables,
+                heap = newHeap,
+                thisObj = thisObj
+            )
         }
     }
 
