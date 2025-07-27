@@ -161,26 +161,40 @@ class Context private constructor(
          * `a` and `b` (The two contexts) must not be used again after this operation.
          */
         fun combine(a: Context, b: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
-            val newMap = mutableMapOf<Key, Expr<*>>()
+            fun mergeMaps(a: Vars, b: Vars, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Vars =
+                (a.keys + b.keys)
+                    .associateWith { key ->
+                        val aVal = a[key] ?: VariableExpression<Any>(key)
+                        val bVal = b[key] ?: VariableExpression<Any>(key)
+                        // This equality is probably not very cheap.
+                        // I'm sure that can be improved in the future.
+                        if (aVal == bVal) {
+                            aVal
+                        } else {
+                            how(aVal, bVal)
+                        }
+                    }
 
-            val allKeys = a.variables.keys + b.variables.keys
+            // Merge the variables.
+            val newVariables = mergeMaps(a.variables, b.variables, how)
 
-            for (key in allKeys) {
-                val aVal = a.variables[key] ?: a.getVar(key)
-                val bVal = b.variables[key] ?: b.getVar(key)
-                newMap[key] = how(aVal, bVal)
+            // Merge the heaps.
+            val newHeap = (a.heap.keys + b.heap.keys).associateWith { heapKey ->
+                mergeMaps(
+                    a.heap[heapKey] ?: emptyMap(),
+                    b.heap[heapKey] ?: emptyMap(),
+                    how
+                )
             }
 
             assert(a.thisObj == b.thisObj) {
-                "I don't quite understand how this could happen. " +
-                        "The `this` object should _surely_ be the same in both contexts?"
+                "How? The `this` object should surely be the same in both contexts?"
             }
-            val thisObj = a.thisObj
 
             return Context(
-                newMap,
-                heap = a.heap + b.heap,
-                thisObj = thisObj
+                newVariables,
+                heap = newHeap,
+                thisObj = a.thisObj
             )
         }
     }
@@ -198,6 +212,8 @@ class Context private constructor(
             }
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
+
+    fun clone(): Context = Context(variables, heap, thisObj)
 
     fun debugKey(key: Key): String {
         return variables[key]?.dStr() ?: "Key not found"

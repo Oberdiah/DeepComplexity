@@ -1051,6 +1051,7 @@ public class MyTestData {
 		return (short) a.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest22(short x) {
 		MyClass a = new MyClass(1);
 		aliasingMethod(a, a);
@@ -1100,6 +1101,7 @@ public class MyTestData {
 		return (short) (a.x + b.x);
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest25(short x) {
 		MyClass b = new MyClass(10);
 		
@@ -1110,6 +1112,7 @@ public class MyTestData {
 		return (short) (b.x);
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest26(short x) {
 		MyClass b = new MyClass(10);
 		
@@ -1120,6 +1123,7 @@ public class MyTestData {
 		return (short) (b.x);
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest27(short x) {
 		MyClass b = new MyClass(10);
 		

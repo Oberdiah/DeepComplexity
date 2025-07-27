@@ -43,6 +43,8 @@ object MethodProcessing {
      * What happens when those contexts get modified? Scary stuff.
      */
     data class ContextWrapper(var c: Context) {
+        fun clone(): ContextWrapper = ContextWrapper(c.clone())
+
         fun addVar(key: Context.Key, value: Expr<*>) {
             c = c.withVar(key, value)
         }
@@ -119,10 +121,10 @@ object MethodProcessing {
                 ).castToBoolean()
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                val trueBranchContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
+                val trueBranchContext = context.clone()
                 processPsiStatement(trueBranch, trueBranchContext)
 
-                val falseBranchContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
+                val falseBranchContext = context.clone()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
                 val ifContext = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
@@ -136,16 +138,12 @@ object MethodProcessing {
                 val condition = processPsiExpression(psi.condition, context).castToBoolean()
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
-                val trueExprContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
-                val trueResult = context.c.resolveKnownVariables(
-                    processPsiExpression(trueBranch, trueExprContext)
-                )
+                val trueExprContext = context.clone()
+                val trueResult = processPsiExpression(trueBranch, trueExprContext)
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
-                val falseExprContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
-                val falseResult = context.c.resolveKnownVariables(
-                    processPsiExpression(falseBranch, falseExprContext)
-                )
+                val falseExprContext = context.clone()
+                val falseResult = processPsiExpression(falseBranch, falseExprContext)
 
                 val ifContext = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
