@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -7,9 +8,11 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
+typealias Heap = Map<Key.HeapKey, Context>
+
 class Context private constructor(
     val variables: Map<Key, Expr<*>>,
-    val heap: Map<Key.HeapKey, Context>,
+    val heap: Heap,
     val thisObj: Expr<*>?
 ) {
     sealed class Key {
@@ -135,11 +138,17 @@ class Context private constructor(
     }
 
     companion object {
-        fun new(): Context = Context(
+        fun new(heap: Heap, thisObj: Expr<*>?): Context = Context(
             variables = emptyMap(),
-            heap = emptyMap(),
-            thisObj = null
+            heap = heap,
+            thisObj = thisObj
         )
+
+        /**
+         * You won't want this often, in nearly all cases it makes sense
+         * to at least inherit the heap.
+         */
+        fun brandNew(): Context = new(emptyMap(), null)
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
@@ -306,7 +315,7 @@ class Context private constructor(
         }, heap, thisObj)
     }
 
-    fun withHeap(heap: Map<Key.HeapKey, Context>): Context {
+    fun withHeap(heap: Heap): Context {
         return Context(variables, this.heap + heap, thisObj)
     }
 

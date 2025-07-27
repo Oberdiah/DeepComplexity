@@ -20,12 +20,12 @@ object MethodProcessing {
         // we parameterize over.
 
         method.body?.let { body ->
-            println(processPsiStatement(body, ContextWrapper(Context.new())).toString())
+            println(processPsiStatement(body, ContextWrapper(Context.brandNew())).toString())
         }
     }
 
     fun getMethodContext(method: PsiMethod): Context {
-        val wrapper = ContextWrapper(Context.new())
+        val wrapper = ContextWrapper(Context.brandNew())
 
         method.body?.let { body ->
             processPsiStatement(body, wrapper)
@@ -59,7 +59,7 @@ object MethodProcessing {
             c = c.withResolvedVar(key, expr)
         }
 
-        fun setHeap(heap: Map<Context.Key.HeapKey, Context>) {
+        fun setHeap(heap: Heap) {
             c = c.withHeap(heap)
         }
 
@@ -118,14 +118,11 @@ object MethodProcessing {
                     context
                 ).castToBoolean()
 
-                // Definitely need to TODO: Heap modifications and thisObj need to be passed in and out of these branches?
-                // At the very least in and out of the reached branch.
-
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                val trueBranchContext = ContextWrapper(Context.new())
+                val trueBranchContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
                 processPsiStatement(trueBranch, trueBranchContext)
 
-                val falseBranchContext = ContextWrapper(Context.new())
+                val falseBranchContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
                 val ifContext = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
@@ -139,13 +136,13 @@ object MethodProcessing {
                 val condition = processPsiExpression(psi.condition, context).castToBoolean()
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
-                val trueExprContext = ContextWrapper(Context.new())
+                val trueExprContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
                 val trueResult = context.c.resolveKnownVariables(
                     processPsiExpression(trueBranch, trueExprContext)
                 )
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
-                val falseExprContext = ContextWrapper(Context.new())
+                val falseExprContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
                 val falseResult = context.c.resolveKnownVariables(
                     processPsiExpression(falseBranch, falseExprContext)
                 )
@@ -165,7 +162,7 @@ object MethodProcessing {
                     processPsiStatement(initialization, context)
                 }
 
-                val bodyContext = ContextWrapper(Context.new())
+                val bodyContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
 
                 psi.body?.let { processPsiStatement(it, bodyContext) }
                 psi.update?.let { processPsiStatement(it, bodyContext) }
@@ -375,7 +372,7 @@ object MethodProcessing {
             is PsiNewExpression -> {
                 val heapKey = Context.Key.HeapKey.new()
 
-                context.setHeap(context.c.heap + (heapKey to Context.new()))
+                context.setHeap(context.c.heap + (heapKey to Context.brandNew()))
 
                 val classExpr = ClassExpression(psi, heapKey)
 
@@ -452,7 +449,8 @@ object MethodProcessing {
             )
         }
 
-        val methodContext = ContextWrapper(Context.new())
+        // `brandNew()` is fine here because we're about to manually set the heap and the `this` object.
+        val methodContext = ContextWrapper(Context.brandNew())
         for ((param, arg) in parameters.zip(arguments)) {
             methodContext.addVar(
                 param.toKey(),
@@ -460,6 +458,8 @@ object MethodProcessing {
             )
         }
         // The heap is global, it gets passed into methods.
+        // It must come after the parameters are set, so any objects
+        // created in the parameters are available in the method's heap.
         methodContext.setHeap(context.c.heap)
         methodContext.setThis(qualifier)
 

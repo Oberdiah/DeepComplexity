@@ -1104,6 +1104,26 @@ public class MyTestData {
 		MyClass b = new MyClass(10);
 		
 		if (x > 0) {
+			b.x = 0;
+		}
+		
+		return (short) (b.x);
+	}
+	
+	public static short simpleClassTest26(short x) {
+		MyClass b = new MyClass(10);
+		
+		if (x > 0) {
+			b.x++;
+		}
+		
+		return (short) (b.x);
+	}
+	
+	public static short simpleClassTest27(short x) {
+		MyClass b = new MyClass(10);
+		
+		if (x > 0) {
 			b.x *= -1;
 		}
 		
