@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.solver.LoopSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
@@ -143,7 +144,28 @@ object MethodProcessing {
                     IfExpression.new(a, b, condition)
                 }
 
-                return IfExpression.new(trueResult, falseResult, condition)
+                if (trueResult.ind == falseResult.ind) {
+                    // This is the easy case, we can always handle this.
+                    return IfExpression.new(trueResult, falseResult, condition)
+                }
+
+                if (trueResult.ind !is NumberSetIndicator<*> || falseResult.ind !is NumberSetIndicator<*>) {
+                    TODO(
+                        "As-yet unsupported conditional expression with non-numeric types: " +
+                                "${trueResult.ind}, ${falseResult.ind}"
+                    )
+                }
+
+                // Loosely based on Java Spec 15.25.
+                // Just doing bnp in all cases isn't strictly correct. For example,
+                // Java will re-interpret int constants down to smaller types if they fit in those smaller types
+                // and the other type is that smaller type.
+                return ConversionsAndPromotion.binaryNumericPromotion(
+                    trueResult.castToNumbers(),
+                    falseResult.castToNumbers()
+                ).map { lhs, rhs ->
+                    IfExpression.new(lhs, rhs, condition)
+                }
             }
 
             is PsiForStatement -> {

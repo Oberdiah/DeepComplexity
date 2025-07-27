@@ -1196,27 +1196,6 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short ternaryTest1NoTernary(short x) {
-		int a = 0;
-		int b = 0;
-		
-		if (x > 0) {
-			a = 1;
-		} else {
-			b = 1;
-		}
-		
-		int c = 0;
-		if (a > b) {
-			c = a;
-		} else {
-			c = b;
-		}
-		
-		return (short) c;
-	}
-	
-	@RequiredScore(1.0)
 	public static short ternaryTest2(short x) {
 		int a = x;
 		int b = 0;
@@ -1224,6 +1203,7 @@ public class MyTestData {
 		return (short) ((x > 0) ? a : b);
 	}
 	
+	@RequiredScore(1.0)
 	public static short ternaryTest3(short x) {
 		return (short) ((x > x + 4) ? x : 0);
 	}
