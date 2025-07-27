@@ -20,7 +20,8 @@ import com.github.oberdiah.deepcomplexity.utilities.Functional
  * }
  * ```
  * In this case, we know a > 2 and b < 10, and `hello` equaling 5 has to be
- * burdened with that information.
+ * burdened with that information, despite the fact that `hello` is not
+ * actually used in the condition.
  */
 @ConsistentCopyVisibility
 data class Constraints private constructor(

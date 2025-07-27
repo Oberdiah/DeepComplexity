@@ -19,6 +19,9 @@ object ExprConstrain {
         return outputConstraints
     }
 
+    /**
+     * Where the expression was previously returning true, it now returns false, and vice versa.
+     */
     fun invert(expr: Expr<Boolean>): Expr<Boolean> {
         return when (expr) {
             is BooleanInvertExpression -> expr.expr
@@ -40,6 +43,13 @@ object ExprConstrain {
             }
 
             is ConstExpr -> ConstExpr(expr.constSet.invert())
+            is IfExpression -> {
+                IfExpression(
+                    expr.thisCondition,
+                    expr.falseExpr.inverted(),
+                    expr.trueExpr.inverted()
+                )
+            }
 
             else -> TODO("Not implemented for $expr")
         }
@@ -101,6 +111,25 @@ object ExprConstrain {
             }
 
             is BooleanInvertExpression -> getConstraints(condition.expr.inverted(), scope)
+            is IfExpression -> {
+                val ifCondition = condition.thisCondition
+                val invertedIf = BooleanInvertExpression(ifCondition)
+
+                // The true and false expressions are also conditions in this context,
+                // as this whole thing must be a condition.
+                val trueCondition = condition.trueExpr
+                val falseCondition = condition.falseExpr
+
+                val convertedToBooleanExpr =
+                    BooleanExpression(
+                        BooleanExpression(ifCondition, trueCondition, BooleanOp.AND),
+                        BooleanExpression(invertedIf, falseCondition, BooleanOp.AND),
+                        BooleanOp.OR
+                    )
+
+                getConstraints(convertedToBooleanExpr, scope)
+            }
+
             else -> TODO("Not implemented constraints for $condition")
         }
         val endTime = System.currentTimeMillis()

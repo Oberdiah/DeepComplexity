@@ -1208,8 +1208,18 @@ public class MyTestData {
 		return (short) ((x > x + 4) ? x : 0);
 	}
 	
+	@RequiredScore(1.0)
 	public static short ternaryTest4(short x) {
 		if ((x > 0) ? x > 10 : x < 10) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short ternaryTest5(short x) {
+		if ((x > 0) ? x > -10 : x < 10) {
 			return 1;
 		} else {
 			return 0;
