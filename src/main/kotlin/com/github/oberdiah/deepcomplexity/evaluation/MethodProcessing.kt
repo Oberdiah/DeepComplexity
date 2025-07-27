@@ -372,7 +372,7 @@ object MethodProcessing {
             is PsiNewExpression -> {
                 val heapKey = Context.Key.HeapKey.new()
 
-                context.setHeap(context.c.heap + (heapKey to Context.brandNew()))
+                context.setHeap(context.c.heap + (heapKey to emptyMap()))
 
                 val classExpr = ClassExpression(psi, heapKey)
 

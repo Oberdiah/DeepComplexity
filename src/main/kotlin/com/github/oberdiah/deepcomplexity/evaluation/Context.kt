@@ -8,10 +8,11 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
-typealias Heap = Map<Key.HeapKey, Context>
+typealias Vars = Map<Key, Expr<*>>
+typealias Heap = Map<Key.HeapKey, Vars>
 
 class Context private constructor(
-    val variables: Map<Key, Expr<*>>,
+    val variables: Vars,
     val heap: Heap,
     val thisObj: Expr<*>?
 ) {
@@ -264,22 +265,22 @@ class Context private constructor(
                 .map { it.heapKey }
                 .toSet()
 
-        val newHeap = heap.mapValues { (heapKey, heapContext) ->
+        val newHeap = heap.mapValues { (heapKey, obj) ->
             if (heapKey !in heapKeysInvolved) {
                 // Don't touch objects on the heap that are not involved in this assignment.
-                heapContext
+                obj
             } else {
                 val newValue = qualifier.replaceTypeInLeaves<ClassExpression>(fieldKey.ind) { expr ->
                     if (expr.heapKey == heapKey) {
                         rExpr
                     } else {
-                        heapContext.variables[fieldKey] ?: throw IllegalArgumentException(
+                        obj[fieldKey] ?: throw IllegalArgumentException(
                             "Qualifier for $fieldKey not found in context"
                         )
                     }
                 }
 
-                heapContext.withVar(fieldKey, newValue)
+                obj + (fieldKey to newValue)
             }
         }
 

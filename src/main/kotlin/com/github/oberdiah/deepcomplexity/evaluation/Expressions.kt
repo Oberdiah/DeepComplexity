@@ -136,8 +136,8 @@ fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
             "Heap for ${it.heapKey} not found in context"
         )
 
-        heap.variables[key] ?: throw IllegalArgumentException(
-            "Qualifier for $key not found in context"
+        heap[key] ?: throw IllegalArgumentException(
+            "Qualifier for $key (getField) not found in context"
         )
     }
 }
