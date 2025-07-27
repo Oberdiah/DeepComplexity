@@ -295,6 +295,8 @@ data class LValueExpr<T : Any>(
         }
     }
 
+    fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>
+
     /**
      * Resolves the expression in the given context, converting it from an LValueExpr to whatever underlying
      * expr it represents.

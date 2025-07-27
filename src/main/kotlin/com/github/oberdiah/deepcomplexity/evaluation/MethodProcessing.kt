@@ -34,20 +34,6 @@ object MethodProcessing {
         return wrapper.c
     }
 
-    private enum class Mode {
-        /**
-         * Standard operating mode, where we evaluate expressions and return their values.
-         */
-        RVALUE,
-
-        /**
-         * We don't fully evaluate expressions, rather we generate LValue expressions instead
-         * that can be used to assign values. You can always convert from this to an RValue
-         * later on by calling `.resolveLValues(context)`.
-         */
-        LVALUE
-    }
-
     /**
      * This feels a bit silly, but in some ways it's nice to keep all of our mutability
      * contained to this single location.
@@ -61,7 +47,7 @@ object MethodProcessing {
             c = c.withVar(key, value)
         }
 
-        fun addVar(lExpr: Expr<*>, rExpr: Expr<*>) {
+        fun addVar(lExpr: LValueExpr<*>, rExpr: Expr<*>) {
             c = c.withVar(lExpr, rExpr)
         }
 
@@ -84,16 +70,15 @@ object MethodProcessing {
 
     private fun processPsiExpression(
         psi: PsiElement,
-        context: ContextWrapper,
-        mode: Mode = Mode.RVALUE
-    ): Expr<*> = processPsiStatement(psi, context, mode) ?: throw RuntimeException(
-        "Expected to parse an expression, but a statement was parsed instead: ${psi.text} (${psi::class})"
+        context: ContextWrapper
+    ): Expr<*> = processPsiStatement(psi, context) ?: throw RuntimeException(
+        "Expected to parse an expression, but a statement was parsed instead: ${psi.text} (${psi::class})\n" +
+                "Well, either that or you've forgotten to return something and it's defaulting to null."
     )
 
     private fun processPsiStatement(
         psi: PsiElement,
-        context: ContextWrapper,
-        mode: Mode = Mode.RVALUE
+        context: ContextWrapper
     ): Expr<*>? {
         when (psi) {
             is PsiBlockStatement -> {
@@ -259,7 +244,7 @@ object MethodProcessing {
                     }
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
-                        val operandExpr = processPsiExpression(operand, context, Mode.LVALUE).castToNumbers()
+                        val operandExpr = processReference(operand, context).castToNumbers()
 
                         context.addVar(
                             operandExpr,
@@ -282,7 +267,7 @@ object MethodProcessing {
                 val builtExpr = processPsiExpression(psi.operand, context)
 
                 // Assign the value to the variable
-                val operandExpr = processPsiExpression(psi.operand, context, Mode.LVALUE).castToNumbers()
+                val operandExpr = processReference(psi.operand, context).castToNumbers()
                 context.addVar(
                     operandExpr,
                     unaryOp.applyToExpr(operandExpr.resolveLValues(context.c))
@@ -340,32 +325,7 @@ object MethodProcessing {
             }
 
             is PsiReferenceExpression -> {
-                val key = psi.resolveIfNeeded().toKey()
-
-                val qualifier = psi.qualifier?.let {
-                    // If there's a qualifier, we need to resolve it first.
-                    processPsiExpression(it, context)
-                }.orElse {
-                    // If there's no qualifier, we want to use the 'this' object if available.
-                    if (key is Context.Key.FieldKey) {
-                        context.c.thisObj ?: throw ExpressionIncompleteException(
-                            "Field reference without qualifier, but no 'this' object available."
-                        )
-                    } else {
-                        null
-                    }
-                }
-
-                val lValue = LValueExpr(
-                    key,
-                    qualifier,
-                    key.ind
-                )
-
-                return when (mode) {
-                    Mode.LVALUE -> lValue
-                    Mode.RVALUE -> lValue.resolve(context.c)
-                }
+                return processReference(psi, context).resolve(context.c)
             }
 
             is PsiAssignmentExpression -> {
@@ -373,7 +333,7 @@ object MethodProcessing {
                 val rExpression = psi.rExpression ?: throw ExpressionIncompleteException()
                 val opSign = psi.operationSign
 
-                val lhsLvalue = processPsiExpression(lExpression, context, Mode.LVALUE)
+                val lhsLvalue = processReference(lExpression, context)
 
                 return when (opSign.tokenType) {
                     JavaTokenType.EQ -> {
@@ -436,6 +396,36 @@ object MethodProcessing {
             }
         }
         return null
+    }
+
+    private fun processReference(psi: PsiExpression, context: ContextWrapper): LValueExpr<*> {
+        if (psi !is PsiReferenceExpression) {
+            throw IllegalArgumentException(
+                "Expected PsiReferenceExpression, but got ${psi::class} (${psi.text})"
+            )
+        }
+
+        val key = psi.resolveIfNeeded().toKey()
+
+        val qualifier = psi.qualifier?.let {
+            // If there's a qualifier, we need to resolve it first.
+            processPsiExpression(it, context)
+        }.orElse {
+            // If there's no qualifier, we want to use the 'this' object if available.
+            if (key is Context.Key.FieldKey) {
+                context.c.thisObj ?: throw ExpressionIncompleteException(
+                    "Field reference without qualifier, but no 'this' object available."
+                )
+            } else {
+                null
+            }
+        }
+
+        return LValueExpr(
+            key,
+            qualifier,
+            key.ind
+        )
     }
 
 

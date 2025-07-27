@@ -209,15 +209,9 @@ class Context private constructor(
     /**
      * Performs a cast if necessary.
      */
-    fun withVar(lExpr: Expr<*>, rExpr: Expr<*>): Context {
+    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
         assert(rExpr.iterateTree().none { it is LValueExpr<*> }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
-        }
-
-        if (lExpr !is LValueExpr) {
-            throw IllegalArgumentException(
-                "Cannot assign to a non-LValueExpr: $lExpr = $rExpr."
-            )
         }
 
         val qualifier = lExpr.qualifier
