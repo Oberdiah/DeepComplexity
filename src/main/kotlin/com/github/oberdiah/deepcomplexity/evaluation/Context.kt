@@ -232,6 +232,14 @@ class Context private constructor(
         return variables[element] ?: VariableExpression<Any>(element)
     }
 
+    fun withHeap(heap: Heap): Context {
+        return Context(variables, this.heap + heap, thisObj)
+    }
+
+    fun withThis(thisObj: Expr<*>?): Context {
+        return Context(variables, heap, thisObj)
+    }
+
     /**
      * Performs a cast if necessary.
      */
@@ -330,52 +338,5 @@ class Context private constructor(
                 if (it.key == key) castExpr else null
             }
         }, heap, thisObj)
-    }
-
-    fun withHeap(heap: Heap): Context {
-        return Context(variables, this.heap + heap, thisObj)
-    }
-
-    fun withThis(thisObj: Expr<*>?): Context {
-        return Context(variables, heap, thisObj)
-    }
-
-    /**
-     * Resolves all variables in the expression that are known of in this context.
-     */
-    fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
-        expr.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
-
-    /**
-     * Stacks the later context on top of this one.
-     *
-     * That is, prioritise the later context and fall back to this one if the key doesn't exist.
-     *
-     * Conversely, for `Method` keys, this context is prioritised over the later context.
-     */
-    fun stack(later: Context): Context {
-        val laterResolvedWithMe = later.variables.mapValues { (_, expr) -> resolveKnownVariables(expr) }
-        val meResolvedWithLater = variables.mapValues { (_, expr) -> later.resolveKnownVariables(expr) }
-
-        val newVariables = mutableMapOf<Key, Expr<*>>()
-
-        // For normal keys, later takes priority and gets to override.
-        newVariables.putAll(meResolvedWithLater.filter { !it.key.isReturnKey() })
-        newVariables.putAll(laterResolvedWithMe.filter { !it.key.isReturnKey() })
-
-        // For method keys, this context takes priority.
-        newVariables.putAll(laterResolvedWithMe.filter { it.key.isReturnKey() })
-        newVariables.putAll(meResolvedWithLater.filter { it.key.isReturnKey() })
-
-        assert(thisObj == later.thisObj) {
-            "The `this` object should be the same in both contexts, surely? " +
-                    "Got: $thisObj and ${later.thisObj}"
-        }
-
-        return Context(
-            newVariables,
-            heap = heap + later.heap,
-            thisObj = thisObj
-        )
     }
 }

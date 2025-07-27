@@ -53,10 +53,6 @@ object MethodProcessing {
             c = c.withVar(lExpr, rExpr)
         }
 
-        fun stack(newContext: Context) {
-            c = c.stack(newContext)
-        }
-
         fun resolveVar(key: Context.Key, expr: Expr<*>) {
             c = c.withResolvedVar(key, expr)
         }
@@ -127,11 +123,9 @@ object MethodProcessing {
                 val falseBranchContext = context.clone()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
-                val ifContext = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
+                context.c = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
-
-                context.stack(ifContext)
             }
 
             is PsiConditionalExpression -> {
@@ -145,11 +139,9 @@ object MethodProcessing {
                 val falseExprContext = context.clone()
                 val falseResult = processPsiExpression(falseBranch, falseExprContext)
 
-                val ifContext = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
+                context.c = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
-
-                context.stack(ifContext)
 
                 return IfExpression.new(trueResult, falseResult, condition)
             }
@@ -173,8 +165,6 @@ object MethodProcessing {
                 }
 
                 LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
-
-                context.stack(bodyContext.c)
             }
 
             is PsiReturnStatement -> {
