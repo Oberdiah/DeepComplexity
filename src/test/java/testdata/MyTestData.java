@@ -1082,6 +1082,36 @@ public class MyTestData {
 		return (short) (a.x + b.x);
 	}
 	
+	@RequiredScore(1.0)
+	public static short simpleClassTest24(short x) {
+		MyClass c = new MyClass(100);
+		
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(10);
+		
+		if (x > 0) {
+			c = new MyClass(100);
+			a = c;
+		} else {
+			c = new MyClass(1000);
+			b = c;
+		}
+		
+		return (short) (a.x + b.x);
+	}
+	
+	public static short simpleClassTest25(short x) {
+		MyClass b = new MyClass(10);
+		
+		if (x > 0) {
+			b.x *= -1;
+		}
+		
+		b.maybeAdd();
+		
+		return (short) (b.x);
+	}
+	
 	public static class MyClass {
 		public int x = 1000;
 		
@@ -1095,6 +1125,12 @@ public class MyTestData {
 		public MyClass addOne() {
 			x++;
 			return this;
+		}
+		
+		public void maybeAdd() {
+			if (x > 0) {
+				x++;
+			}
 		}
 		
 		public int getX() {

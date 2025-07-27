@@ -72,13 +72,6 @@ sealed class Expr<T : Any>() {
         })
     }
 
-    /**
-     * Resolves all LValueExprs in the expression tree to their underlying expressions using the context.
-     *
-     * LValueExprs cannot end up in the final expression tree.
-     */
-    fun resolveLValues(context: Context): Expr<T> = replaceTypeInTree<LValueExpr<*>> { it.resolve(context) }
-
     fun evaluate(scope: ExprEvaluate.Scope): Bundle<T> = ExprEvaluate.evaluate(this, scope)
     fun dStr(): String = ExprToString.toDebugString(this)
 }

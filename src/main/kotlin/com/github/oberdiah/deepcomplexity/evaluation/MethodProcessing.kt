@@ -248,7 +248,7 @@ object MethodProcessing {
 
                         context.addVar(
                             operandExpr,
-                            unaryOp.applyToExpr(operandExpr.resolveLValues(context.c))
+                            unaryOp.applyToExpr(operandExpr.resolve(context.c))
                         )
 
                         // Build the expression after the assignment for a prefix increment/decrement
@@ -270,7 +270,7 @@ object MethodProcessing {
                 val operandExpr = processReference(psi.operand, context).castToNumbers()
                 context.addVar(
                     operandExpr,
-                    unaryOp.applyToExpr(operandExpr.resolveLValues(context.c))
+                    unaryOp.applyToExpr(operandExpr.resolve(context.c))
                 )
 
                 return builtExpr.castToNumbers()
@@ -344,7 +344,7 @@ object MethodProcessing {
 
                     JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                         val rhs = processPsiExpression(rExpression, context).castToNumbers()
-                        val lhs = lhsLvalue.resolveLValues(context.c).castToNumbers()
+                        val lhs = lhsLvalue.resolve(context.c).castToNumbers()
 
                         ConversionsAndPromotion.castNumbersAToB(
                             rhs,
