@@ -1,4 +1,4 @@
-package testdata;
+package testdata.ai;
 
 import com.github.oberdiah.deepcomplexity.GoodEnough;
 import com.github.oberdiah.deepcomplexity.RequiredScore;
