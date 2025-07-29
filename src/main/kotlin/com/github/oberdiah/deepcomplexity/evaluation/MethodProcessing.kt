@@ -398,7 +398,7 @@ object MethodProcessing {
 
             else -> {
                 throw IllegalArgumentException(
-                    "As-yet unsupported PsiElement type: ${psi::class} (${psi.text})"
+                    "As-yet unsupported PsiElement type for processing PSI statements: ${psi::class}"
                 )
             }
         }
@@ -408,7 +408,7 @@ object MethodProcessing {
     private fun processReference(psi: PsiExpression, context: ContextWrapper): LValueExpr<*> {
         if (psi !is PsiReferenceExpression) {
             throw IllegalArgumentException(
-                "Expected PsiReferenceExpression, but got ${psi::class} (${psi.text})"
+                "Expected PsiReferenceExpression, but got ${psi::class}"
             )
         }
 

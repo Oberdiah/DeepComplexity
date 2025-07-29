@@ -97,7 +97,7 @@ object Utilities {
                 )
             }
 
-            else -> throw IllegalArgumentException("Unsupported PsiElement type: ${this::class} (${this.text})")
+            else -> throw IllegalArgumentException("Unsupported PsiElement type for to-key: ${this::class}")
         }
     }
 
