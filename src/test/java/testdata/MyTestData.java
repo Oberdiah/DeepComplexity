@@ -1240,4 +1240,58 @@ public class MyTestData {
 		}
 		nested.x = x;
 	}
+	
+	@RequiredScore(1.0)
+	public static short shortCircuit1(short x) {
+		int a = 0;
+		boolean result = false && a++ > 0;
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
+	public static short shortCircuit2(short x) {
+		int a = 0;
+		boolean result = true && a++ > 0;
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
+	public static short shortCircuit3(short x) {
+		int a = 0;
+		boolean result = false || a++ > 0;
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
+	public static short shortCircuit4(short x) {
+		int a = 0;
+		boolean result = true || a++ > 0;
+		return (short) a;
+	}
+	
+	public static short interfaceSideEffect(short x) {
+		ModifiableImpl impl = new ModifiableImpl(17);
+		processModifiable(impl);
+		return (short) impl.state;
+	}
+	
+	private static void processModifiable(Modifiable m) {
+		m.modify();
+	}
+	
+	private interface Modifiable {
+		void modify();
+	}
+	
+	private static class ModifiableImpl implements Modifiable {
+		int state;
+		
+		ModifiableImpl(int state) {
+			this.state = state;
+		}
+		
+		public void modify() {
+			this.state = 75;
+		}
+	}
 }

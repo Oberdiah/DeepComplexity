@@ -290,8 +290,7 @@ object MethodProcessing {
                 val tokenType = psi.operationSign.tokenType
 
                 val lhs = processPsiExpression(lhsOperand, context)
-                val rhs = processPsiExpression(rhsOperand, context)
-                return processBinaryExpr(lhs, rhs, tokenType)
+                return processBinaryExpr(context, lhs, rhsOperand, tokenType)
             }
 
             is PsiTypeCastExpression -> {
@@ -317,13 +316,11 @@ object MethodProcessing {
                     // Process it as a bunch of binary expressions in a row, left to right.
                     val tokenType = psi.operationTokenType
                     val originalLhs = processPsiExpression(operands[0], context)
-                    val originalRhs = processPsiExpression(operands[1], context)
 
-                    var currentExpr = processBinaryExpr(originalLhs, originalRhs, tokenType)
+                    var currentExpr = processBinaryExpr(context, originalLhs, operands[1], tokenType)
 
                     for (i in 2 until operands.size) {
-                        val nextRhs = processPsiExpression(operands[i], context)
-                        val newExpr = processBinaryExpr(currentExpr, nextRhs, tokenType)
+                        val newExpr = processBinaryExpr(context, currentExpr, operands[i], tokenType)
                         currentExpr = newExpr
                     }
 
@@ -483,20 +480,58 @@ object MethodProcessing {
         return methodContext.c
     }
 
+    /**
+     * The RHS is a PsiExpression because it may or may not end up being evaluated due to
+     * the potential for short-circuiting.
+     */
     private fun processBinaryExpr(
+        context: ContextWrapper,
         lhsPrecast: Expr<*>,
-        rhsPrecast: Expr<*>,
+        rhsPsi: PsiExpression,
         tokenType: IElementType
     ): Expr<*> {
         val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
         val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
         val booleanOp = BooleanOp.fromJavaTokenType(tokenType)
         if (booleanOp != null) {
+            // We need to worry about short-circuiting here.
+
             val lhs = lhsPrecast.castToBoolean()
-            val rhs = rhsPrecast.castToBoolean()
+
+            val rhsContext = context.clone()
+            val rhs = processPsiExpression(rhsPsi, rhsContext).castToBoolean()
+
+            /**
+             * Effectively operate as an if statement here, where the condition is the lhs.
+             * Then we either place the rhs in the 'then' branch or the 'else' branch
+             * depending on the boolean operation.
+             *
+             * `var foo = doFoo() && doBar()`
+             * becomes
+             * `var foo = doFoo() ? doBar() : false`
+             * and
+             * `var foo = doFoo() || doBar()`
+             * becomes
+             * `var foo = doFoo() ? true : doBar()`
+             */
+            when (booleanOp) {
+                BooleanOp.AND -> {
+                    context.c = Context.combine(rhsContext.c, context.clone().c) { a, b ->
+                        IfExpression.new(a, b, lhs)
+                    }
+                }
+
+                BooleanOp.OR -> {
+                    context.c = Context.combine(context.clone().c, rhsContext.c) { a, b ->
+                        IfExpression.new(a, b, lhs)
+                    }
+                }
+            }
 
             return BooleanExpression(lhs, rhs, booleanOp)
         } else {
+            val rhsPrecast = processPsiExpression(rhsPsi, context)
+
             return ConversionsAndPromotion.binaryNumericPromotion(
                 lhsPrecast.castToNumbers(),
                 rhsPrecast.castToNumbers()
