@@ -1136,6 +1136,14 @@ public class MyTestData {
 		return (short) (b.x);
 	}
 	
+	@RequiredScore(1.0)
+	public static short simpleClassTest28(short x) {
+		MyClass b = new MyClass(10);
+		b = new MyClass(b.addOne().getX() + 1);
+		
+		return (short) (b.x);
+	}
+	
 	public static class MyClass {
 		public int x = 1000;
 		
@@ -1293,5 +1301,85 @@ public class MyTestData {
 		public void modify() {
 			this.state = 75;
 		}
+	}
+	
+	public static short forLoops1(short x) {
+		int a = 0;
+		for (int i = 0; i < x; i++) {
+			a += 1;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops2(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			a = 5;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops3(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			a = i;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops4(short x) {
+		for (int i = 0; i < 10; i++) {
+			if (i >= 10) {
+				return 0;
+			}
+		}
+		return (short) 1;
+	}
+	
+	public static short forLoops5(short x) {
+		for (int i = 0; i < 10; i++) {
+			if (i < 0) {
+				return 0;
+			}
+		}
+		return (short) 1;
+	}
+	
+	public static short forLoops6(short x) {
+		if (x > 10 || x < 0) {
+			return -1;
+		}
+		
+		int b = 0;
+		for (int i = 0; i < x; i++) {
+			b++;
+		}
+		return (short) b;
+	}
+	
+	public static short forLoops7(short x) {
+		int b = 0;
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			b++;
+			a = b;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops8(short x) {
+		MyClass a = new MyClass(1);
+		for (int i = 0; i < 10; i++) {
+			a.addOne();
+		}
+		return (short) a.x;
+	}
+	
+	public static short forLoops9(short x) {
+		MyClass a = new MyClass(1);
+		for (int i = 0; i < 10; i++) {
+			a = new MyClass(a.x + 1);
+		}
+		return (short) a.x;
 	}
 }
