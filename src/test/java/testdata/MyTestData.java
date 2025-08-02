@@ -1369,10 +1369,12 @@ public class MyTestData {
 	
 	public static short forLoops8(short x) {
 		MyClass a = new MyClass(1);
+		int j = 0;
 		for (int i = 0; i < 10; i++) {
 			a.addOne();
+			j += 2;
 		}
-		return (short) a.x;
+		return (short) (a.x + j);
 	}
 	
 	public static short forLoops9(short x) {
@@ -1381,5 +1383,39 @@ public class MyTestData {
 			a = new MyClass(a.x + 1);
 		}
 		return (short) a.x;
+	}
+	
+	public static short forLoops10(short x) {
+		int p = 0;
+		for (int i = 0; i++ < 1; i++) {
+			p = i;
+		}
+		return (short) p;
+	}
+	
+	public static short forLoops11(short x) {
+		int p = 0;
+		for (int i = 0; i++ < 10; i++) {
+			p = i;
+			if (i > 5) {
+				return (short) p;
+			}
+		}
+		
+		return (short) p;
+	}
+	
+	public static short forLoops12(short x) {
+		MyClass p = new MyClass(1);
+		for (int i = 0; i++ < 10; i++) {
+			p.x = p.x + 1;
+			if (i < 5) {
+				p = new MyClass(p.x + 1);
+			} else if (i < 8) {
+				p.x = i;
+			}
+		}
+		
+		return (short) p.x;
 	}
 }

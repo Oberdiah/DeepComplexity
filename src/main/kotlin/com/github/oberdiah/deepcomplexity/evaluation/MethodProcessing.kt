@@ -174,17 +174,19 @@ object MethodProcessing {
                     processPsiStatement(initialization, context)
                 }
 
-                val bodyContext = ContextWrapper(Context.new(context.c.heap, context.c.thisObj))
-
-                psi.body?.let { processPsiStatement(it, bodyContext) }
-                psi.update?.let { processPsiStatement(it, bodyContext) }
+                // In this case we specifically don't want to inherit the variables, because in this case
+                // the context may be repeated many times, and we want to analyse its effects over time.
+                val bodyContext = ContextWrapper(Context.brandNew())
 
                 val conditionExpr = psi.condition?.let { condition ->
-                    // This isn't correct anymore now that context is immutable.
-                    processPsiExpression(condition, bodyContext).tryCastTo(BooleanSetIndicator)
+                    processPsiExpression(condition, bodyContext)
+                        .tryCastTo(BooleanSetIndicator)
                 }.orElse {
                     ConstantExpression.TRUE
                 }
+
+                psi.body?.let { processPsiStatement(it, bodyContext) }
+                psi.update?.let { processPsiStatement(it, bodyContext) }
 
                 LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
             }

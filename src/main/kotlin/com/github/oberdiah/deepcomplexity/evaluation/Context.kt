@@ -112,17 +112,15 @@ class Context private constructor(
     }
 
     companion object {
-        fun new(heap: Heap, thisObj: Expr<*>?): Context = Context(
-            variables = emptyMap(),
-            heap = heap,
-            thisObj = thisObj
-        )
-
         /**
          * You won't want this often, in nearly all cases it makes sense
-         * to at least inherit the heap.
+         * to inherit the existing context via cloning.
          */
-        fun brandNew(): Context = new(emptyMap(), null)
+        fun brandNew(): Context = Context(
+            emptyMap(),
+            emptyMap(),
+            null
+        )
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
