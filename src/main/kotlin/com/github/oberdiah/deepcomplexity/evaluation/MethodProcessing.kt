@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.solver.LoopSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
@@ -46,7 +47,7 @@ object MethodProcessing {
     data class ContextWrapper(var c: Context) {
         fun clone(): ContextWrapper = ContextWrapper(c.clone())
 
-        fun addVar(key: Context.Key, value: Expr<*>) {
+        fun addVar(key: Key, value: Expr<*>) {
             c = c.withVar(key, value)
         }
 
@@ -54,16 +55,12 @@ object MethodProcessing {
             c = c.withVar(lExpr, rExpr)
         }
 
-        fun resolveVar(key: Context.Key, expr: Expr<*>) {
+        fun resolveVar(key: Key, expr: Expr<*>) {
             c = c.withResolvedVar(key, expr)
         }
 
-        fun setHeap(heap: Heap) {
-            c = c.withHeap(heap)
-        }
-
-        fun setThis(thisObj: Expr<*>?) {
-            c = c.withThis(thisObj)
+        fun stack(other: Context, dropReturns: Boolean = false) {
+            c = c.stack(other, dropReturns)
         }
     }
 
@@ -215,8 +212,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                // The `this` in the context had better exist if we're using `this`.
-                return context.c.thisObj!!
+                return VariableExpression<Any>(Key.ThisKey.Me)
             }
 
             is PsiMethodCallExpression -> {
@@ -227,7 +223,11 @@ object MethodProcessing {
                     // would use.
                     processPsiExpression(it, context)
                 }
-                val methodContext = processMethod(context, psi, qualifier)
+                val methodContext = processMethod(context, psi)
+                    .resolveThis(qualifier)
+
+                context.stack(methodContext, true)
+
                 return methodContext.returnValue
             }
 
@@ -379,15 +379,15 @@ object MethodProcessing {
             }
 
             is PsiNewExpression -> {
-                val heapKey = Context.Key.HeapKey.new()
+                val heapKey = Key.HeapKey.new()
+                val newObj = context.c.getVar(heapKey)
 
-                context.setHeap(context.c.heap + (heapKey to emptyMap()))
+                val methodContext = processMethod(context, psi)
+                    .resolveThis(newObj)
 
-                val classExpr = ClassExpression(psi, heapKey)
+                context.stack(methodContext, true)
 
-                processMethod(context, psi, classExpr)
-
-                return classExpr
+                return newObj
             }
 
             is PsiWhiteSpace, is PsiComment, is PsiJavaToken -> {
@@ -419,9 +419,7 @@ object MethodProcessing {
         }.orElse {
             // If there's no qualifier, we want to use the 'this' object if available.
             if (key is Context.Key.FieldKey) {
-                context.c.thisObj ?: throw ExpressionIncompleteException(
-                    "Field reference without qualifier, but no 'this' object available."
-                )
+                context.c.getVar(Context.Key.ThisKey.Me)
             } else {
                 null
             }
@@ -440,8 +438,7 @@ object MethodProcessing {
      */
     private fun processMethod(
         context: ContextWrapper,
-        callExpr: PsiCallExpression,
-        qualifier: Expr<*>? = null
+        callExpr: PsiCallExpression
     ): Context {
         val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
             "Failed to resolve method for call: ${callExpr.text}"
@@ -458,26 +455,17 @@ object MethodProcessing {
             )
         }
 
-        // `brandNew()` is fine here because we're about to manually set the heap and the `this` object.
-        val methodContext = ContextWrapper(Context.brandNew())
+        val methodContext = context.clone()
         for ((param, arg) in parameters.zip(arguments)) {
             methodContext.addVar(
                 param.toKey(),
                 processPsiExpression(arg, context)
             )
         }
-        // The heap is global, it gets passed into methods.
-        // It must come after the parameters are set, so any objects
-        // created in the parameters are available in the method's heap.
-        methodContext.setHeap(context.c.heap)
-        methodContext.setThis(qualifier)
 
         method.body?.let { body ->
             processPsiStatement(body, methodContext)
         }
-
-        // The heap is global, so it comes out of methods.
-        context.setHeap(methodContext.c.heap)
 
         return methodContext.c
     }

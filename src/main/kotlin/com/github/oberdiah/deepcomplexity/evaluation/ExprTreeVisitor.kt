@@ -22,7 +22,6 @@ object ExprTreeVisitor {
     fun visitTree(expr: Expr<*>, visitor: (Expr<*>) -> Unit) = when (expr) {
         is ConstExpr -> {}
         is VariableExpression -> {}
-        is ClassExpression -> {}
         is ThisExpression -> {}
         is BooleanExpression -> {
             visitor(expr.lhs)

@@ -87,6 +87,8 @@ object TestUtilities {
 
             if (method.name != "go") {
                 println(context.debugKey(returnKey).prependIndent())
+            } else {
+                println("Skipping debug output for cleaner debugging.")
             }
             val bundle: Bundle<*> = context.evaluateKey(returnKey)
             val castBundle = bundle.cast(ShortSetIndicator)!!
