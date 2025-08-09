@@ -129,9 +129,11 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, key: Key.VariableKey): Expr<*> {
+fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
     return replaceTypeInLeaves<VariableExpression<*>>(key.ind) {
-        context.getVar(Key.VariableKey(key.variable, it.key))
+        context.getVar(
+            Key.FieldKey(key.variable, it.key)
+        )
     }
 }
 
@@ -272,7 +274,7 @@ data class LValueExpr<T : Any>(
 ) : Expr<T>() {
     init {
         // todo might be worth trying this as two separate classes (one with qualifier, one without)
-        assert(qualifier == null || key is Key.VariableKey) {
+        assert(qualifier == null || key is Key.FieldKey) {
             "Qualifier can only be set for field keys, got: $key"
         }
 
@@ -286,7 +288,7 @@ data class LValueExpr<T : Any>(
      * expr it represents.
      */
     fun resolve(context: Context): Expr<T> {
-        val resolved = qualifier?.getField(context, key as Key.VariableKey) ?: context.getVar(key)
+        val resolved = qualifier?.getField(context, key as Key.FieldKey) ?: context.getVar(key)
         return resolved.tryCastTo(myInd)!!
     }
 }
