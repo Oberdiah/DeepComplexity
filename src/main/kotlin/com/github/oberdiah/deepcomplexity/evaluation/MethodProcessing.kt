@@ -424,7 +424,7 @@ object MethodProcessing {
             processPsiExpression(it, context)
         }.orElse {
             // If there's no qualifier, we want to use the 'this' object if available.
-            if (key is Key.FieldKey) {
+            if (key is Key.VariableKey) {
                 context.c.getVar(Key.HeapKey.This)
             } else {
                 null
