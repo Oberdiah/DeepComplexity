@@ -25,7 +25,7 @@ class Context private constructor(
             override fun toString(): String = variable.toStringPretty()
         }
 
-        data class FieldKey(override val variable: PsiField, val qualifier: Key = ThisKey.Me) :
+        data class FieldKey(override val variable: PsiField, val qualifier: Key = HeapKey.This) :
             VariableKey<PsiField>(variable) {
 
             override fun toString(): String = "$qualifier.${variable.toStringPretty()}"
@@ -36,6 +36,8 @@ class Context private constructor(
                 fun new(): HeapKey {
                     return HeapKey(EphemeralKey.new())
                 }
+
+                val This = HeapKey(EphemeralKey.new())
             }
 
             override fun toString(): String = "$key"
@@ -47,16 +49,6 @@ class Context private constructor(
             }
 
             override fun toString(): String = "Return value"
-            override fun hashCode(): Int = 0
-            override fun equals(other: Any?): Boolean = other is ReturnKey
-        }
-
-        data class ThisKey(val type: SetIndicator<*>) : Key() {
-            companion object {
-                val Me = ThisKey(GenericSetIndicator(Any::class))
-            }
-
-            override fun toString(): String = "This"
             override fun hashCode(): Int = 0
             override fun equals(other: Any?): Boolean = other is ReturnKey
         }
@@ -75,7 +67,7 @@ class Context private constructor(
             override fun toString(): String = "#$key"
 
             companion object {
-                var KEY_INDEX = 0
+                private var KEY_INDEX = 0
                 fun new(): EphemeralKey {
                     return EphemeralKey(KEY_INDEX++)
                 }
@@ -87,7 +79,6 @@ class Context private constructor(
                 return when (this) {
                     is ExpressionKey -> this.expr.ind
                     is ReturnKey -> type
-                    is ThisKey -> type
                     is VariableKey<*> -> Utilities.psiTypeToSetIndicator(variable.type)
                     is HeapKey -> GenericSetIndicator(Any::class)
                     else -> throw IllegalArgumentException("Cannot get indicator for $this")
@@ -98,16 +89,15 @@ class Context private constructor(
         fun isEphemeral(): Boolean = this is EphemeralKey
         fun isExpr(): Boolean = this is ExpressionKey
         fun canBeResolvedWithThis(): Boolean =
-            this is ThisKey || this is FieldKey && this.qualifier.canBeResolvedWithThis()
+            this == HeapKey.This || this is FieldKey && this.qualifier.canBeResolvedWithThis()
 
         /**
          * When multiplying, we need to decide which one gets to live on.
          */
         fun importance(): Int {
             return when (this) {
-                is VariableKey<*> -> 5
-                is HeapKey -> 4
-                is ThisKey -> 3
+                is VariableKey<*> -> 4
+                is HeapKey -> 3
                 is ReturnKey -> 2
                 is ExpressionKey -> 1
                 is EphemeralKey -> 0
@@ -123,7 +113,6 @@ class Context private constructor(
                 is VariableKey<*> -> variable
                 is HeapKey -> throw IllegalArgumentException("Cannot get element of heap key")
                 is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
-                is ThisKey -> throw IllegalArgumentException("Cannot get element of 'this' key")
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
                 is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")
             }
@@ -214,7 +203,7 @@ class Context private constructor(
         val qualifier = lExpr.qualifier
         val fKey = lExpr.key
 
-        if (qualifier == null || (qualifier is VariableExpression<*> && qualifier.key is Key.ThisKey)) {
+        if (qualifier == null || (qualifier is VariableExpression<*> && qualifier.key == Key.HeapKey.This)) {
             return withVar(lExpr.key, rExpr)
         }
 
@@ -256,7 +245,7 @@ class Context private constructor(
             qualifier.iterateTree()
                 .filterIsInstance<VariableExpression<*>>()
                 .map { it.key }
-                .filter { it is Key.HeapKey }
+                .filterIsInstance<Key.HeapKey>()
                 .toSet()
 
         val newVariables = variables + varKeysInvolved.map {
@@ -329,7 +318,7 @@ class Context private constructor(
         // Now we need to update the 'Variable Expression' values.
         val newVariables = newContext.variables.mapValues {
             it.value.replaceTypeInTree<VariableExpression<*>> { varExpr ->
-                if (varExpr.key is Key.ThisKey) {
+                if (varExpr.key == Key.HeapKey.This) {
                     // This variable is literally 'this', so we can just return the `thisObj`.
                     thisObj
                 } else if (varExpr.key.canBeResolvedWithThis()) {

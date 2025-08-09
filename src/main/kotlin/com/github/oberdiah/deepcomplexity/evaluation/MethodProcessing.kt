@@ -216,7 +216,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return VariableExpression<Any>(Key.ThisKey.Me)
+                return VariableExpression<Any>(Key.HeapKey.This)
             }
 
             is PsiMethodCallExpression -> {
@@ -424,8 +424,8 @@ object MethodProcessing {
             processPsiExpression(it, context)
         }.orElse {
             // If there's no qualifier, we want to use the 'this' object if available.
-            if (key is Context.Key.FieldKey) {
-                context.c.getVar(Context.Key.ThisKey.Me)
+            if (key is Key.FieldKey) {
+                context.c.getVar(Key.HeapKey.This)
             } else {
                 null
             }
