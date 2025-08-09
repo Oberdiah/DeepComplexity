@@ -9,7 +9,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
-import com.intellij.psi.PsiNewExpression
 import com.intellij.psi.PsiThisExpression
 
 sealed class Expr<T : Any>() {
@@ -131,13 +130,9 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 }
 
 fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
-    return replaceTypeInLeaves<ClassExpression>(key.ind) {
-        val heap = context.heap[it.heapKey] ?: throw IllegalArgumentException(
-            "Heap for ${it.heapKey} not found in context"
-        )
-
-        heap[key] ?: throw IllegalArgumentException(
-            "Qualifier for $key (getField) not found in context"
+    return replaceTypeInLeaves<VariableExpression<*>>(key.ind) {
+        context.getVar(
+            Key.FieldKey(key.variable, it.key)
         )
     }
 }
@@ -167,7 +162,7 @@ inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
                 }
 
                 newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
-                    "(${newExpr.ind} != $newInd) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                    "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
                 )
             })
         }
@@ -262,11 +257,6 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
     }
 }
 
-/**
- * Represents an object.
- */
-data class ClassExpression(val psi: PsiNewExpression, val heapKey: Key.HeapKey) : Expr<Any>()
-
 data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
 
 /**
@@ -279,6 +269,7 @@ data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
 data class LValueExpr<T : Any>(
     val key: Key,
     val qualifier: Expr<*>?,
+    // You can safely pass key.ind in here, this is just here for type safety.
     val myInd: SetIndicator<T>
 ) : Expr<T>() {
     init {
@@ -286,6 +277,8 @@ data class LValueExpr<T : Any>(
         assert(qualifier == null || key is Key.FieldKey) {
             "Qualifier can only be set for field keys, got: $key"
         }
+
+        assert(myInd == key.ind)
     }
 
     fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>

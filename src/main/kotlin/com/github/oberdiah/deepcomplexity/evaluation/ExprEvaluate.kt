@@ -154,7 +154,7 @@ object ExprEvaluate {
 
             // In practice `ClassExpression`s and `ThisExpressions` should never be evaluated, but we handle them
             // here anyway in case they come up in debugging.
-            is ClassExpression, is ThisExpression -> {
+            is ThisExpression -> {
                 println("Warning: Evaluating ${expr}. This should not happen in normal operation.")
                 Bundle.empty(expr.ind)
             }

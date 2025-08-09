@@ -54,7 +54,6 @@ object ExprTreeRebuilder {
 
             is ConstExpr<*> -> replacer.replacer(expr)
             is VariableExpression<*> -> replacer.replacer(expr)
-            is ClassExpression -> replacer.replacer(expr)
             is ThisExpression -> replacer.replacer(expr)
 
             else -> {
@@ -172,7 +171,6 @@ object ExprTreeRebuilder {
 
             is ConstExpr<*> -> expr
             is VariableExpression<*> -> expr
-            is ClassExpression -> expr
             is ThisExpression -> expr
             is LValueExpr<*> -> LValueExpr(
                 expr.key,
