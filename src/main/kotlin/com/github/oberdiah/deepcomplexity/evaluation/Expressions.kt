@@ -162,7 +162,7 @@ inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
                 }
 
                 newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
-                    "(${newExpr.ind} != $newInd) ${newExpr.dStr()} does not match ${expr.dStr()}"
+                    "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
                 )
             })
         }

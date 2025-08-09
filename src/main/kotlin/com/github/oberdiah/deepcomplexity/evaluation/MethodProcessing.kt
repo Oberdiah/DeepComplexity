@@ -59,8 +59,12 @@ object MethodProcessing {
             c = c.withResolvedVar(key, expr)
         }
 
-        fun stack(other: Context, dropReturns: Boolean = false) {
-            c = c.stack(other, dropReturns)
+        fun stack(other: Context) {
+            c = c.stack(other)
+        }
+
+        fun dropReturn() {
+            c = c.withoutReturns()
         }
     }
 
@@ -226,9 +230,11 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
                     .resolveThis(qualifier)
 
-                context.stack(methodContext, true)
+                context.stack(methodContext)
 
-                return methodContext.returnValue
+                val returnValue = context.c.returnValue
+                context.dropReturn()
+                return returnValue
             }
 
             is PsiLiteralExpression -> {
@@ -385,7 +391,7 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
                     .resolveThis(newObj)
 
-                context.stack(methodContext, true)
+                context.stack(methodContext)
 
                 return newObj
             }

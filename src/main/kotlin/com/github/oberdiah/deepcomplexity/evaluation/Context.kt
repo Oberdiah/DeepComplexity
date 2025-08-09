@@ -10,7 +10,6 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
 typealias Vars = Map<Key, Expr<*>>
-typealias Heap = Map<Key.HeapKey, Vars>
 
 class Context private constructor(
     val variables: Vars,
@@ -228,7 +227,7 @@ class Context private constructor(
 
         /**
          * This does look a bit scary, so I'll try to walk you through it:
-         * Essentially, a qualifier may not just be a simple ClassExpression.
+         * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
          * In the simplest case it is, and this all becomes a lot easier, but in the general case
          * it may be any complicated expression.
          * Let's go with the following example:
@@ -238,63 +237,39 @@ class Context private constructor(
          * ((x > 0) ? a : b).x = 5
          * ```
          * Now, the only objects we should be touching with our operation are `a` and `b`, so we gather
-         * them first into [heapKeysInvolved]. That part's simple enough.
+         * them first into [varKeysInvolved]. That part's simple enough.
          *
-         * Then, for the heaps we want to modify, we take our qualifier as specified above, and replace
+         * Then, for the variables we want to modify, we take our qualifier as specified above, and replace
          * `a` and `b` with either:
          *      a) The value already at that object, effectively turning `b` into `b.x`
          *      b) The value that we're setting this field to
-         *  depending on whether the object we're modifying on the heap is the object being replaced in the
-         *  expression.
+         *  depending on whether the object we're modifying is the object being replaced in the expression.
          *
-         *  The result of this is that for something like `((x > 0) ? a : b).x = 5`, the heap ends up
+         *  The result of this is that for something like `((x > 0) ? a : b).x = 5`, the variables end up
          *  like so:
-         *      `a = { x: (x > 0) ? 5 : 3 }`
-         *      `b = { x: (x > 0) ? 2 : 5 }`
+         *      `a.x = { (x > 0) ? 5 : 3 }`
+         *      `b.x = { (x > 0) ? 2 : 5 }`
          *  which is exactly as desired.
          */
 
-        // New idea: Keep things as they were, but remove ClassExpressions.
-        // They are instead just variable expressions with wildcard keys.
-        // And also get rid of the heap, instead just store that stuff in the variables under dotted keys.
+        val varKeysInvolved =
+            qualifier.iterateTree()
+                .filterIsInstance<VariableExpression<*>>()
+                .map { it.key }
+                .filter { it is Key.HeapKey }
+                .toSet()
 
-        val newVariables = variables + if (qualifier is VariableExpression<*>) {
-            assert(fieldKey.qualifier is Key.ThisKey) {
-                "Need to think more about this. We'll need to combine the two keys. (qualifier.key and fieldKey.qualifier). " +
-                        "This isn't a problem, I just didn't have an easy example to debug when I wrote it."
+        val newVariables = variables + varKeysInvolved.map {
+            val thisVarKey = Key.FieldKey(fieldKey.variable, it)
+            val newValue = qualifier.replaceTypeInLeaves<VariableExpression<*>>(fieldKey.ind) { expr ->
+                if (expr.key == it) {
+                    rExpr
+                } else {
+                    getVar(thisVarKey)
+                }
             }
-            Key.FieldKey(fieldKey.variable, qualifier.key) to rExpr
 
-//            val heapContext = heap[qualifier.heapKey]
-//                ?: throw IllegalArgumentException("No heap context found for class expression: $qualifier")
-//            val newHeapContext = heapContext + (lExpr.key to rExpr)
-//            heap + (qualifier.heapKey to newHeapContext)
-        } else {
-//            val heapKeysInvolved =
-//                qualifier.iterateTree()
-//                    .filterIsInstance<ClassExpression>()
-//                    .map { it.heapKey }
-//                    .toSet()
-//
-//            heap.mapValues { (heapKey, obj) ->
-//                if (heapKey !in heapKeysInvolved) {
-//                    // Don't touch objects on the heap that are not involved in this assignment.
-//                    obj
-//                } else {
-//                    val newValue = qualifier.replaceTypeInLeaves<ClassExpression>(fieldKey.ind) { expr ->
-//                        if (expr.heapKey == heapKey) {
-//                            rExpr
-//                        } else {
-//                            obj[fieldKey] ?: throw IllegalArgumentException(
-//                                "Qualifier for $fieldKey not found in context"
-//                            )
-//                        }
-//                    }
-//
-//                    obj + (fieldKey to newValue)
-//                }
-//            }
-            TODO()
+            (thisVarKey to newValue)
         }
 
         return Context(newVariables)
@@ -375,7 +350,7 @@ class Context private constructor(
      *
      * Conversely, for `Method` keys, this context is prioritised over the later context.
      */
-    fun stack(later: Context, dropReturns: Boolean = false): Context {
+    fun stack(later: Context): Context {
         val laterResolvedWithMe = later.variables.mapValues { (_, expr) -> resolveKnownVariables(expr) }
         val meResolvedWithLater = variables.mapValues { (_, expr) -> later.resolveKnownVariables(expr) }
 
@@ -388,11 +363,11 @@ class Context private constructor(
         newVariables.putAll(laterResolvedWithMe.filter { it.key is Key.ReturnKey })
         newVariables.putAll(meResolvedWithLater.filter { it.key is Key.ReturnKey })
 
-        if (dropReturns) {
-            // If we don't want to keep the return values, we can just drop them.
-            newVariables.remove(Key.ReturnKey.Me)
-        }
-
         return Context(newVariables)
+    }
+
+    fun withoutReturns(): Context {
+        // This is a convenience method to drop all return values from the context.
+        return Context(variables.filterKeys { it !is Key.ReturnKey })
     }
 }
