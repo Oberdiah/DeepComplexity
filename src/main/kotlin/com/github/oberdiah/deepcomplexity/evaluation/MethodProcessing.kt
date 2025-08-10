@@ -22,12 +22,12 @@ object MethodProcessing {
         // we parameterize over.
 
         method.body?.let { body ->
-            println(processPsiStatement(body, ContextWrapper(Context.brandNew())).toString())
+            println(processPsiStatement(body, newContext()).toString())
         }
     }
 
     fun getMethodContext(method: PsiMethod): Context {
-        val wrapper = ContextWrapper(Context.brandNew())
+        val wrapper = newContext()
 
         method.body?.let { body ->
             processPsiStatement(body, wrapper)
@@ -35,6 +35,8 @@ object MethodProcessing {
 
         return wrapper.c
     }
+
+    fun newContext(): ContextWrapper = ContextWrapper(Context.brandNew())
 
     /**
      * This feels a bit silly, but in some ways it's nice to keep all of our mutability
@@ -173,7 +175,7 @@ object MethodProcessing {
 
                 // In this case we specifically don't want to inherit the variables, because in this case
                 // the context may be repeated many times, and we want to analyse its effects over time.
-                val bodyContext = ContextWrapper(Context.brandNew())
+                val bodyContext = newContext()
 
                 val conditionExpr = psi.condition?.let { condition ->
                     processPsiExpression(condition, bodyContext)
@@ -457,7 +459,7 @@ object MethodProcessing {
             )
         }
 
-        val methodContext = context.clone()
+        val methodContext = newContext()
         for ((param, arg) in parameters.zip(arguments)) {
             methodContext.addVar(
                 LValueKeyExpr<Any>(param.toKey()),
