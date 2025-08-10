@@ -52,9 +52,9 @@ object ExprTreeRebuilder {
                 extra(expr) as Expr<T>
             }
 
-            is ConstExpr<*> -> replacer.replacer(expr)
-            is VariableExpression<*> -> replacer.replacer(expr)
-            is ThisExpression -> replacer.replacer(expr)
+            is ConstExpr -> replacer.replacer(expr)
+            is VariableExpression -> replacer.replacer(expr)
+            is ObjectExpression -> replacer.replacer(expr)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
@@ -174,10 +174,10 @@ object ExprTreeRebuilder {
                 rebuildTree(expr.qualifier, replacer),
             )
 
-            is ConstExpr<*> -> expr
-            is VariableExpression<*> -> expr
-            is ThisExpression -> expr
-            is LValueExpr<*> -> expr
+            is ConstExpr -> expr
+            is VariableExpression -> expr
+            is ObjectExpression -> expr
+            is LValueExpr -> expr
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

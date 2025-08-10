@@ -9,7 +9,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
-import com.intellij.psi.PsiThisExpression
 
 sealed class Expr<T : Any>() {
     /**
@@ -130,9 +129,8 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 }
 
 fun Expr<*>.getField(context: Context, field: Context.Field): Expr<*> {
-    return replaceTypeInLeaves<VariableExpression<*>>(field.ind) {
-        // If we're calling getField on ourselves, casting our key to a HeapKey should be guaranteed.
-        context.getVar(Key.QualifiedKey(field, it.key as Key.HeapKey))
+    return replaceTypeInLeaves<ObjectExpression>(field.ind) {
+        context.getVar(Key.QualifiedKey(field, it.key))
     }
 }
 
@@ -192,9 +190,14 @@ data class ComparisonExpression<T : Number>(
     }
 }
 
-// Element is either PsiLocalVariable, PsiParameter, or PsiField
-// This represents a variable which we do not know the value of yet.
+/**
+ * This represents a standard primitive which we do not know the value of yet.
+ *
+ * One day we'll be able to resolve it by stacking this context onto another.
+ */
 data class VariableExpression<T : Any>(val key: Key) : Expr<T>()
+
+data class ObjectExpression(val key: Context.Heap) : Expr<Any>()
 
 /**
  * Tries to cast the expression to the given set indicator.
@@ -255,8 +258,6 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
         fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(Bundle.unconstrained(bundle))
     }
 }
-
-data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
 
 sealed class LValueExpr<T : Any> : Expr<T>() {
     fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>

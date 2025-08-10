@@ -21,7 +21,6 @@ object ExprToString {
             is NegateExpression -> "-${expr.expr}"
             is UnionExpression -> "(${expr.lhs} ∪ ${expr.rhs})"
             is BooleanExpression -> booleanExprToString(expr)
-            is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
             is TypeCastExpression<*, *> -> {
                 if (expr.explicit) {
@@ -31,9 +30,10 @@ object ExprToString {
                 }
             }
 
-            is ThisExpression -> "this"
-            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
-            is LValueSimpleExpr<*> -> "${expr.key}"
+            is VariableExpression -> expr.key.toString()
+            is ObjectExpression -> expr.key.toString()
+            is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
+            is LValueSimpleExpr -> "${expr.key}"
         }
     }
 
@@ -50,7 +50,7 @@ object ExprToString {
             is VariableExpression -> expr.key.toString()
             is NumIterationTimesExpression -> "'for'"
             is TypeCastExpression<*, *> -> toExprKeyString(expr.expr)
-            is ThisExpression -> "this"
+            is ObjectExpression -> expr.key.toString()
             is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
             is LValueSimpleExpr<*> -> "${expr.key}"
         }
@@ -123,9 +123,9 @@ object ExprToString {
                 }
             }
 
-            is ThisExpression -> "this"
-            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
-            is LValueSimpleExpr<*> -> "${expr.key}"
+            is ObjectExpression -> expr.key.toString()
+            is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
+            is LValueSimpleExpr -> "${expr.key}"
         }
     }
 }

@@ -54,7 +54,7 @@ object ExprTreeVisitor {
 
         is ConstExpr -> {}
         is VariableExpression -> {}
-        is ThisExpression -> {}
+        is ObjectExpression -> {}
         is LValueExpr<*> -> {}
     }
 }
