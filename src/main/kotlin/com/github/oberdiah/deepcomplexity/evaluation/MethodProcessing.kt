@@ -41,10 +41,6 @@ object MethodProcessing {
     /**
      * This feels a bit silly, but in some ways it's nice to keep all of our mutability
      * contained to this single location.
-     *
-     * If you want to move this mutability into the context itself, first consider
-     * the fact that the context contains a heap, which itself is a map of keys to contexts.
-     * What happens when those contexts get modified? Scary stuff.
      */
     data class ContextWrapper(var c: Context) {
         fun clone(): ContextWrapper = ContextWrapper(c.clone())
@@ -226,11 +222,9 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
                     .resolveThis(qualifier)
 
-                context.stack(methodContext)
+                context.stack(methodContext.withoutReturns())
 
-                val returnValue = context.c.returnValue
-                context.dropReturn()
-                return returnValue
+                return methodContext.returnValue?.let { context.c.resolveKnownVariables(it) }
             }
 
             is PsiLiteralExpression -> {
@@ -386,7 +380,7 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
                     .resolveThis(newObj)
 
-                context.stack(methodContext)
+                context.stack(methodContext.withoutReturns())
 
                 return newObj
             }

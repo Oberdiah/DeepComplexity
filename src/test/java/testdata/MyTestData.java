@@ -6,14 +6,6 @@ import com.github.oberdiah.deepcomplexity.RequiredScore;
 import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.*;
 
 public class MyTestData {
-	public static short throwawayTest(short x) {
-		int multiplier1 = 200;
-		int multiplier2 = 300;
-		
-		int result2 = x * (multiplier1 + multiplier2);
-		return (short) (result2);
-	}
-	
 	@RequiredScore(1.0)
 	public static short test1(short x) {
 		if (x < 3) {
@@ -868,6 +860,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleMethodTest2(short x) {
 		if (x == 5) {
 			return 0;
@@ -899,6 +892,7 @@ public class MyTestData {
 		return simpleMethod2(x);
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleMethodTest4(short x) {
 		if (x == 5) {
 			return -6;
@@ -907,6 +901,7 @@ public class MyTestData {
 		return (short) simplePrivateMethod(x, 5);
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleMethodTest5(short x) {
 		if (x == 5) {
 			return -6;

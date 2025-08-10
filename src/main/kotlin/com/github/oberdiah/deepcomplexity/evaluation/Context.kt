@@ -372,7 +372,7 @@ class Context private constructor(
      *
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      *
-     * Conversely, for `Method` keys, this context is prioritised over the later context.
+     * Conversely, for [Key.ReturnKey] keys, this context is prioritised over the later context.
      */
     fun stack(later: Context): Context {
         val laterResolvedWithMe = later.variables.mapValues { (_, expr) -> resolveKnownVariables(expr) }
@@ -391,7 +391,6 @@ class Context private constructor(
     }
 
     fun withoutReturns(): Context {
-        // This is a convenience method to drop all return values from the context.
         return Context(variables.filterKeys { it !is Key.ReturnKey })
     }
 }
