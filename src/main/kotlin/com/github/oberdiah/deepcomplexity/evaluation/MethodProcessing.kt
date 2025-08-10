@@ -417,19 +417,27 @@ object MethodProcessing {
             )
         }
 
-        val key = psi.resolveIfNeeded().toKey()
+        return when (val resolved = psi.resolveIfNeeded()) {
+            is PsiField -> {
+                LValueFieldExpr<Any>(
+                    Context.Field(resolved),
+                    psi.qualifier?.let {
+                        processPsiExpression(it, context)
+                    }.orElse {
+                        VariableExpression<Any>(Key.HeapKey.This)
+                    }
+                )
+            }
 
-        return if (key is Key.FieldKey) {
-            LValueFieldExpr<Any>(
-                key,
-                psi.qualifier?.let {
-                    processPsiExpression(it, context)
-                }.orElse {
-                    VariableExpression<Any>(Key.HeapKey.This)
-                }
-            )
-        } else {
-            LValueSimpleExpr<Any>(key)
+            is PsiLocalVariable -> LValueSimpleExpr<Any>(resolved.toKey())
+            is PsiReturnStatement -> LValueSimpleExpr<Any>(resolved.toKey())
+            is PsiParameter -> LValueSimpleExpr<Any>(resolved.toKey())
+
+            else -> {
+                throw IllegalArgumentException(
+                    "As-yet unsupported PsiReferenceExpression type for processing references: ${resolved::class}"
+                )
+            }
         }
     }
 

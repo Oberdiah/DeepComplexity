@@ -21,6 +21,12 @@ class Context private constructor(
         }
     }
 
+    data class Field(val variable: PsiField) {
+        override fun toString(): String = variable.toStringPretty()
+        fun getElement(): PsiElement = variable
+        val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
+    }
+
     sealed class Key {
         abstract class VariableKey() : Key() {
             abstract val variable: PsiVariable
@@ -34,16 +40,12 @@ class Context private constructor(
             override fun toString(): String = variable.toStringPretty()
         }
 
-        data class FieldKey(override val variable: PsiField) : VariableKey() {
-            override fun toString(): String = variable.toStringPretty()
-        }
-
         /**
          * Current thinking: Going to come back and tidy this up later.
          * This [QualifiedKey] is only for indexing into [variables], the [FieldKey] is for
          * general day-to-day stuff.
          */
-        data class QualifiedKey(val field: FieldKey, val qualifier: Key = HeapKey.This) : Key() {
+        data class QualifiedKey(val field: Field, val qualifier: Key = HeapKey.This) : Key() {
             override fun toString(): String = "$qualifier.$field"
         }
 

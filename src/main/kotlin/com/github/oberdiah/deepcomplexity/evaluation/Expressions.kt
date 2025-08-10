@@ -129,9 +129,9 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
-    return replaceTypeInLeaves<VariableExpression<*>>(key.ind) {
-        context.getVar(Key.QualifiedKey(key, it.key))
+fun Expr<*>.getField(context: Context, field: Context.Field): Expr<*> {
+    return replaceTypeInLeaves<VariableExpression<*>>(field.ind) {
+        context.getVar(Key.QualifiedKey(field, it.key))
     }
 }
 
@@ -283,7 +283,7 @@ data class LValueSimpleExpr<T : Any>(
 }
 
 data class LValueFieldExpr<T : Any>(
-    val field: Key.FieldKey,
+    val field: Context.Field,
     val qualifier: Expr<*>,
 ) : LValueExpr<T>() {
     override fun resolve(context: Context): Expr<T> {

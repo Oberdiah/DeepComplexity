@@ -83,22 +83,16 @@ object Utilities {
         }
     }
 
-    fun PsiElement.toKey(): Context.Key {
-        return when (this) {
-            is PsiField -> Context.Key.FieldKey(this)
-            is PsiLocalVariable -> Context.Key.LocalVariableKey(this)
-            is PsiParameter -> Context.Key.ParameterKey(this)
-            is PsiReturnStatement -> {
-                val returnMethod = findContainingMethodOrLambda(this)
-                    ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
+    fun PsiLocalVariable.toKey(): Context.Key.LocalVariableKey = Context.Key.LocalVariableKey(this)
+    fun PsiParameter.toKey(): Context.Key.ParameterKey = Context.Key.ParameterKey(this)
 
-                Context.Key.ReturnKey(
-                    psiTypeToSetIndicator(((returnMethod as? PsiMethod)?.returnType)!!)
-                )
-            }
+    fun PsiReturnStatement.toKey(): Context.Key.ReturnKey {
+        val returnMethod = findContainingMethodOrLambda(this)
+            ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
 
-            else -> throw IllegalArgumentException("Unsupported PsiElement type for to-key: ${this::class}")
-        }
+        return Context.Key.ReturnKey(
+            psiTypeToSetIndicator(((returnMethod as? PsiMethod)?.returnType)!!)
+        )
     }
 
     fun findContainingMethodOrLambda(returnStatement: PsiReturnStatement): PsiElement? {

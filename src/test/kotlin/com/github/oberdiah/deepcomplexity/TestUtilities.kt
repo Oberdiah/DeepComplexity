@@ -93,7 +93,7 @@ object TestUtilities {
             }
 
             val unknownFields = context.getVar(returnKey).iterateTree()
-                .filter { it is VariableExpression<*> && it.key is Context.Key.FieldKey }
+                .filter { it is VariableExpression<*> && it.key is Context.Key.QualifiedKey }
                 .toList()
 
             // For every test we have, there is no reason for unknown fields to be present by the time we return.
