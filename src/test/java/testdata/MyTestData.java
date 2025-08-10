@@ -1005,8 +1005,8 @@ public class MyTestData {
 	public static short simpleClassTest17(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
-		((x > 0) ? a : b).x = 5;
-		return (short) a.x;
+		((x > 2) ? a : b).x = 5;
+		return (short) ((x > 0) ? a : b).x;
 	}
 	
 	@RequiredScore(1.0)

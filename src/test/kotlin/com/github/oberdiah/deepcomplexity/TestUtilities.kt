@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
+import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
@@ -85,11 +86,21 @@ object TestUtilities {
         val range = try {
             val returnKey = Context.Key.ReturnKey(Utilities.psiTypeToSetIndicator(psiMethod.returnType!!))
 
-            if (method.name != "go") {
+            if (System.getenv("DEBUG") != "false") {
                 println(context.debugKey(returnKey).prependIndent())
             } else {
-                println("Skipping debug output for cleaner debugging.")
+                println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
             }
+
+            val unknownFields = context.getVar(returnKey).iterateTree()
+                .filter { it is VariableExpression<*> && it.key is Context.Key.FieldKey }
+                .toList()
+
+            // For every test we have, there is no reason for unknown fields to be present by the time we return.
+            assert(unknownFields.none()) {
+                "Method '${method.name}' has unknown fields in return value: ${unknownFields.joinToString(", ")}"
+            }
+
             val bundle: Bundle<*> = context.evaluateKey(returnKey)
             val castBundle = bundle.cast(ShortSetIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
