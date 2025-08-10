@@ -169,14 +169,15 @@ object ExprTreeRebuilder {
                 extra(expr) as Expr<T>
             }
 
+            is LValueFieldExpr<*> -> LValueFieldExpr(
+                expr.key,
+                rebuildTree(expr.qualifier, replacer),
+            )
+
             is ConstExpr<*> -> expr
             is VariableExpression<*> -> expr
             is ThisExpression -> expr
-            is LValueExpr<*> -> LValueExpr(
-                expr.key,
-                expr.qualifier?.let { rebuildTree(it, replacer) },
-                expr.ind,
-            )
+            is LValueExpr<*> -> expr
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

@@ -15,19 +15,19 @@ class Context private constructor(
     val variables: Vars,
 ) {
     sealed class Key {
-        abstract class VariableKey<T : PsiVariable>(open val variable: T) : Key()
+        abstract class VariableKey() : Key() {
+            abstract val variable: PsiVariable
+        }
 
-        data class LocalVariableKey(override val variable: PsiLocalVariable) : VariableKey<PsiLocalVariable>(variable) {
+        data class LocalVariableKey(override val variable: PsiLocalVariable) : VariableKey() {
             override fun toString(): String = variable.toStringPretty()
         }
 
-        data class ParameterKey(override val variable: PsiParameter) : VariableKey<PsiParameter>(variable) {
+        data class ParameterKey(override val variable: PsiParameter) : VariableKey() {
             override fun toString(): String = variable.toStringPretty()
         }
 
-        data class FieldKey(override val variable: PsiField, val qualifier: Key = HeapKey.This) :
-            VariableKey<PsiField>(variable) {
-
+        data class FieldKey(override val variable: PsiField, val qualifier: Key = HeapKey.This) : VariableKey() {
             override fun toString(): String = "$qualifier.${variable.toStringPretty()}"
         }
 
@@ -79,7 +79,7 @@ class Context private constructor(
                 return when (this) {
                     is ExpressionKey -> this.expr.ind
                     is ReturnKey -> type
-                    is VariableKey<*> -> Utilities.psiTypeToSetIndicator(variable.type)
+                    is VariableKey -> Utilities.psiTypeToSetIndicator(variable.type)
                     is HeapKey -> GenericSetIndicator(Any::class)
                     else -> throw IllegalArgumentException("Cannot get indicator for $this")
                 }
@@ -96,7 +96,7 @@ class Context private constructor(
          */
         fun importance(): Int {
             return when (this) {
-                is VariableKey<*> -> 4
+                is VariableKey -> 4
                 is HeapKey -> 3
                 is ReturnKey -> 2
                 is ExpressionKey -> 1
@@ -110,7 +110,7 @@ class Context private constructor(
          */
         fun getElement(): PsiElement {
             return when (this) {
-                is VariableKey<*> -> variable
+                is VariableKey -> variable
                 is HeapKey -> throw IllegalArgumentException("Cannot get element of heap key")
                 is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
@@ -200,19 +200,9 @@ class Context private constructor(
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
         }
 
-        val qualifier = lExpr.qualifier
-        val fKey = lExpr.key
-
-        if (qualifier == null || (qualifier is VariableExpression<*> && qualifier.key == Key.HeapKey.This)) {
+        if (lExpr !is LValueFieldExpr) {
             return withVar(lExpr.key, rExpr)
         }
-
-        assert(fKey is Key.FieldKey) {
-            // Might be nice to statically assert this by splitting LValueExpr into two classes, one with qualifier
-            // and one without.
-            "Field key must be a FieldKey, but was: $fKey"
-        }
-        val fieldKey = fKey as Key.FieldKey
 
         /**
          * This does look a bit scary, so I'll try to walk you through it:
@@ -240,6 +230,9 @@ class Context private constructor(
          *      `b.x = { (x > 0) ? 2 : 5 }`
          *  which is exactly as desired.
          */
+
+        val qualifier = lExpr.qualifier
+        val fieldKey = lExpr.key
 
         val varKeysInvolved =
             qualifier.iterateTree()
@@ -304,13 +297,13 @@ class Context private constructor(
             return this
         }
 
-        val keysToUpdate = variables.filterKeys { it.canBeResolvedWithThis() }
+        val keysToUpdate = variables.filterKeys { it is Key.FieldKey && it.qualifier.canBeResolvedWithThis() }
 
         var newContext = Context(variables.filterKeys { it !in keysToUpdate })
 
         for ((key, value) in keysToUpdate) {
             newContext = newContext.withVar(
-                LValueExpr(key, thisObj, key.ind), value
+                LValueFieldExpr<Any>(key as Key.FieldKey, thisObj), value
             )
         }
 

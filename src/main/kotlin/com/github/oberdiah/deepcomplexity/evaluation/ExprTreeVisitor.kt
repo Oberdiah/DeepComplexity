@@ -20,9 +20,6 @@ object ExprTreeVisitor {
     }
 
     fun visitTree(expr: Expr<*>, visitor: (Expr<*>) -> Unit) = when (expr) {
-        is ConstExpr -> {}
-        is VariableExpression -> {}
-        is ThisExpression -> {}
         is BooleanExpression -> {
             visitor(expr.lhs)
             visitor(expr.rhs)
@@ -53,8 +50,11 @@ object ExprTreeVisitor {
 
         is NumIterationTimesExpression -> visitor(expr.variable)
         is TypeCastExpression<*, *> -> visitor(expr.expr)
-        is LValueExpr<*> -> {
-            expr.qualifier?.let { visitor(it) }
-        }
+        is LValueFieldExpr<*> -> visitor(expr.qualifier)
+
+        is ConstExpr -> {}
+        is VariableExpression -> {}
+        is ThisExpression -> {}
+        is LValueExpr<*> -> {}
     }
 }

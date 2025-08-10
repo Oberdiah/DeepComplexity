@@ -266,30 +266,29 @@ data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
  *
  * The `qualifier` is optional.
  */
-data class LValueExpr<T : Any>(
-    val key: Key,
-    val qualifier: Expr<*>?,
-    // You can safely pass key.ind in here, this is just here for type safety.
-    val myInd: SetIndicator<T>
+open class LValueExpr<T : Any>(
+    open val key: Key,
 ) : Expr<T>() {
-    init {
-        // todo might be worth trying this as two separate classes (one with qualifier, one without)
-        assert(qualifier == null || key is Key.FieldKey) {
-            "Qualifier can only be set for field keys, got: $key"
-        }
-
-        assert(myInd == key.ind)
-    }
+    val myInd: SetIndicator<*>
+        get() = key.ind
 
     fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>
 
     /**
-     * Resolves the expression in the given context, converting it from an LValueExpr to whatever underlying
-     * expr it represents.
+     * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
+     * into whatever underlying expr it represents.
      */
-    fun resolve(context: Context): Expr<T> {
-        val resolved = qualifier?.getField(context, key as Key.FieldKey) ?: context.getVar(key)
-        return resolved.tryCastTo(myInd)!!
+    open fun resolve(context: Context): Expr<T> {
+        return context.getVar(key).tryCastTo(ind)!!
+    }
+}
+
+data class LValueFieldExpr<T : Any>(
+    override val key: Key.FieldKey,
+    val qualifier: Expr<*>,
+) : LValueExpr<T>(key) {
+    override fun resolve(context: Context): Expr<T> {
+        return qualifier.getField(context, key).tryCastTo(ind)!!
     }
 }
 

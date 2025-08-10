@@ -419,23 +419,18 @@ object MethodProcessing {
 
         val key = psi.resolveIfNeeded().toKey()
 
-        val qualifier = psi.qualifier?.let {
-            // If there's a qualifier, we need to resolve it first.
-            processPsiExpression(it, context)
-        }.orElse {
-            // If there's no qualifier, we want to use the 'this' object if available.
-            if (key is Key.FieldKey) {
-                context.c.getVar(Key.HeapKey.This)
-            } else {
-                null
-            }
+        return if (key is Key.FieldKey) {
+            LValueFieldExpr<Any>(
+                key,
+                psi.qualifier?.let {
+                    processPsiExpression(it, context)
+                }.orElse {
+                    VariableExpression<Any>(Key.HeapKey.This)
+                }
+            )
+        } else {
+            LValueExpr<Any>(key)
         }
-
-        return LValueExpr(
-            key,
-            qualifier,
-            key.ind
-        )
     }
 
 
