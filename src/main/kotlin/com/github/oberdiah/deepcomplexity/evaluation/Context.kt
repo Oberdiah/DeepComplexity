@@ -40,7 +40,7 @@ class Context private constructor(
                 val This = HeapKey(EphemeralKey.new())
             }
 
-            override fun toString(): String = "$key"
+            override fun toString(): String = if (this == This) "this" else "$key"
         }
 
         data class ReturnKey(val type: SetIndicator<*>) : Key() {
