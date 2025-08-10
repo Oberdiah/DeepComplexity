@@ -14,6 +14,13 @@ typealias Vars = Map<Key, Expr<*>>
 class Context private constructor(
     val variables: Vars,
 ) {
+    init {
+        assert(variables.keys.none { it == Key.HeapKey.This }) {
+            "`Key.HeapKey.This` should never be a variable key. " +
+                    "If you want to provide a `this` reference to a context, use resolveThis(..)"
+        }
+    }
+
     sealed class Key {
         abstract class VariableKey() : Key() {
             abstract val variable: PsiVariable
@@ -138,11 +145,11 @@ class Context private constructor(
          * You must define how to resolve conflicts.
          */
         fun combine(a: Context, b: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
-            fun mergeMaps(a: Vars, b: Vars, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Vars =
-                (a.keys + b.keys)
+            return Context(
+                (a.variables.keys + b.variables.keys)
                     .associateWith { key ->
-                        val aVal = a[key] ?: VariableExpression<Any>(key)
-                        val bVal = b[key] ?: VariableExpression<Any>(key)
+                        val aVal = a.getVar(key)
+                        val bVal = b.getVar(key)
                         // This equality is probably not very cheap.
                         // I'm sure that can be improved in the future.
                         if (aVal == bVal) {
@@ -151,11 +158,7 @@ class Context private constructor(
                             how(aVal, bVal)
                         }
                     }
-
-            // Merge the variables.
-            val newVariables = mergeMaps(a.variables, b.variables, how)
-
-            return Context(newVariables)
+            )
         }
     }
 
@@ -297,32 +300,30 @@ class Context private constructor(
             return this
         }
 
-        val keysToUpdate = variables.filterKeys { it is Key.FieldKey && it.qualifier.canBeResolvedWithThis() }
+        var newContext = brandNew()
 
-        var newContext = Context(variables.filterKeys { it !in keysToUpdate })
+        for ((key, expr) in variables) {
+            val lValue = if (key.canBeResolvedWithThis()) {
+                LValueFieldExpr<Any>(key as Key.FieldKey, thisObj)
+            } else {
+                LValueExpr(key)
+            }
 
-        for ((key, value) in keysToUpdate) {
-            newContext = newContext.withVar(
-                LValueFieldExpr<Any>(key as Key.FieldKey, thisObj), value
-            )
-        }
-
-        // Step 1 complete: We've updated the keys.
-        // Now we need to update the 'Variable Expression' values.
-        val newVariables = newContext.variables.mapValues {
-            it.value.replaceTypeInTree<VariableExpression<*>> { varExpr ->
+            val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
                 if (varExpr.key == Key.HeapKey.This) {
                     // This variable is literally 'this', so we can just return the `thisObj`.
                     thisObj
                 } else if (varExpr.key.canBeResolvedWithThis()) {
-                    thisObj.getField(brandNew(), varExpr.key as Key.FieldKey)
+                    thisObj.getField(newContext, varExpr.key as Key.FieldKey)
                 } else {
                     null
                 }
             }
+
+            newContext = newContext.withVar(lValue, rValue)
         }
 
-        return Context(newVariables)
+        return newContext
     }
 
     /**
