@@ -19,6 +19,12 @@ class Context private constructor(
             "`Key.HeapKey.This` should never be a variable key. " +
                     "If you want to provide a `this` reference to a context, use resolveThis(..)"
         }
+
+        assert(variables.filterKeys { it is Key.HeapKey }.none())
+
+        assert(variables.keys.none { it is Key.EphemeralKey }) {
+            "Ephemeral keys shouldn't be used as variable keys."
+        }
     }
 
     data class Field(val variable: PsiField) {
@@ -40,12 +46,7 @@ class Context private constructor(
             override fun toString(): String = variable.toStringPretty()
         }
 
-        /**
-         * Current thinking: Going to come back and tidy this up later.
-         * This [QualifiedKey] is only for indexing into [variables], the [FieldKey] is for
-         * general day-to-day stuff.
-         */
-        data class QualifiedKey(val field: Field, val qualifier: Key = HeapKey.This) : Key() {
+        data class QualifiedKey(val field: Field, val qualifier: HeapKey = HeapKey.This) : Key() {
             override fun toString(): String = "$qualifier.$field"
         }
 

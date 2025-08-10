@@ -131,7 +131,8 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 
 fun Expr<*>.getField(context: Context, field: Context.Field): Expr<*> {
     return replaceTypeInLeaves<VariableExpression<*>>(field.ind) {
-        context.getVar(Key.QualifiedKey(field, it.key))
+        // If we're calling getField on ourselves, casting our key to a HeapKey should be guaranteed.
+        context.getVar(Key.QualifiedKey(field, it.key as Key.HeapKey))
     }
 }
 
@@ -268,11 +269,9 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
 }
 
 /**
- * Represents any expression that can be used as a left-hand value in an assignment.
+ * Represents a simple expression that can be used as a left-hand value in an assignment.
  *
- * For example, `x` in `x = 5`, or `this.x` in `this.x = 5`.
- *
- * The `qualifier` is optional.
+ * For example, `x` in `x = 5`
  */
 data class LValueSimpleExpr<T : Any>(
     val key: Key,
@@ -282,6 +281,11 @@ data class LValueSimpleExpr<T : Any>(
     }
 }
 
+/**
+ * Represents a field expression that can be used as a left-hand value in an assignment.
+ *
+ * For example, `this.x` in `this.x = 5`, or `((x > 2) ? a : b).y` in `((x > 2) ? a : b).y = 10`
+ */
 data class LValueFieldExpr<T : Any>(
     val field: Context.Field,
     val qualifier: Expr<*>,
