@@ -170,7 +170,7 @@ object ExprTreeRebuilder {
             }
 
             is LValueFieldExpr<*> -> LValueFieldExpr(
-                expr.key,
+                expr.field,
                 rebuildTree(expr.qualifier, replacer),
             )
 

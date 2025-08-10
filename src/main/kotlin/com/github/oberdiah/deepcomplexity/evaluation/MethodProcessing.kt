@@ -429,7 +429,7 @@ object MethodProcessing {
                 }
             )
         } else {
-            LValueExpr<Any>(key)
+            LValueSimpleExpr<Any>(key)
         }
     }
 

@@ -32,8 +32,8 @@ object ExprToString {
             }
 
             is ThisExpression -> "this"
-            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.key}"
-            is LValueExpr<*> -> "${expr.key}"
+            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
+            is LValueSimpleExpr<*> -> "${expr.key}"
         }
     }
 
@@ -51,8 +51,8 @@ object ExprToString {
             is NumIterationTimesExpression -> "'for'"
             is TypeCastExpression<*, *> -> toExprKeyString(expr.expr)
             is ThisExpression -> "this"
-            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.key}"
-            is LValueExpr<*> -> "${expr.key}"
+            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
+            is LValueSimpleExpr<*> -> "${expr.key}"
         }
     }
 
@@ -124,8 +124,8 @@ object ExprToString {
             }
 
             is ThisExpression -> "this"
-            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.key}"
-            is LValueExpr<*> -> "${expr.key}"
+            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
+            is LValueSimpleExpr<*> -> "${expr.key}"
         }
     }
 }

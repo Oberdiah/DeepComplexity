@@ -257,6 +257,16 @@ data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
 
 data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
 
+sealed class LValueExpr<T : Any> : Expr<T>() {
+    fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>
+
+    /**
+     * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
+     * into whatever underlying expr it represents.
+     */
+    abstract fun resolve(context: Context): Expr<T>
+}
+
 /**
  * Represents any expression that can be used as a left-hand value in an assignment.
  *
@@ -264,29 +274,20 @@ data class ThisExpression(val psi: PsiThisExpression) : Expr<Any>()
  *
  * The `qualifier` is optional.
  */
-open class LValueExpr<T : Any>(
-    open val key: Key,
-) : Expr<T>() {
-    val myInd: SetIndicator<*>
-        get() = key.ind
-
-    fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>
-
-    /**
-     * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
-     * into whatever underlying expr it represents.
-     */
-    open fun resolve(context: Context): Expr<T> {
+data class LValueSimpleExpr<T : Any>(
+    val key: Key,
+) : LValueExpr<T>() {
+    override fun resolve(context: Context): Expr<T> {
         return context.getVar(key).tryCastTo(ind)!!
     }
 }
 
 data class LValueFieldExpr<T : Any>(
-    override val key: Key.FieldKey,
+    val field: Key.FieldKey,
     val qualifier: Expr<*>,
-) : LValueExpr<T>(key) {
+) : LValueExpr<T>() {
     override fun resolve(context: Context): Expr<T> {
-        return qualifier.getField(context, key).tryCastTo(ind)!!
+        return qualifier.getField(context, field).tryCastTo(ind)!!
     }
 }
 

@@ -215,8 +215,10 @@ class Context private constructor(
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
         }
 
-        if (lExpr !is LValueFieldExpr) {
+        if (lExpr is LValueSimpleExpr<*>) {
             return withVar(lExpr.key, rExpr)
+        } else if (lExpr !is LValueFieldExpr<*>) {
+            throw IllegalArgumentException("This cannot happen")
         }
 
         /**
@@ -247,7 +249,7 @@ class Context private constructor(
          */
 
         val qualifier = lExpr.qualifier
-        val fieldKey = lExpr.key
+        val fieldKey = lExpr.field
 
         val varKeysInvolved =
             qualifier.iterateTree()
@@ -318,7 +320,7 @@ class Context private constructor(
             val lValue = if (key.canBeResolvedWithThis()) {
                 LValueFieldExpr<Any>((key as Key.QualifiedKey).field, thisObj)
             } else {
-                LValueExpr(key)
+                LValueSimpleExpr(key)
             }
 
             val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
