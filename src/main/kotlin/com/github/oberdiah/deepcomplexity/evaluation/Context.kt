@@ -372,25 +372,13 @@ class Context private constructor(
      *
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      *
-     * Conversely, for [Key.ReturnKey] keys, this context is prioritised over the later context.
+     * To be used only when calling methods — return values are not transferred.
      */
     fun stack(later: Context): Context {
-        val laterResolvedWithMe = later.variables.mapValues { (_, expr) -> resolveKnownVariables(expr) }
-        val meResolvedWithLater = variables.mapValues { (_, expr) -> later.resolveKnownVariables(expr) }
-
-        val newVariables = mutableMapOf<Key, Expr<*>>()
-        // For normal keys, later takes priority and gets to override.
-        newVariables.putAll(meResolvedWithLater.filter { it.key !is Key.ReturnKey })
-        newVariables.putAll(laterResolvedWithMe.filter { it.key !is Key.ReturnKey })
-
-        // For method keys, this context takes priority.
-        newVariables.putAll(laterResolvedWithMe.filter { it.key is Key.ReturnKey })
-        newVariables.putAll(meResolvedWithLater.filter { it.key is Key.ReturnKey })
-
-        return Context(newVariables)
-    }
-
-    fun withoutReturns(): Context {
-        return Context(variables.filterKeys { it !is Key.ReturnKey })
+        return Context(
+            variables + later.variables
+                .filterKeys { it !is Key.ReturnKey }
+                .mapValues { (_, expr) -> resolveKnownVariables(expr) }
+        )
     }
 }

@@ -56,10 +56,6 @@ object MethodProcessing {
         fun stack(other: Context) {
             c = c.stack(other)
         }
-
-        fun dropReturn() {
-            c = c.withoutReturns()
-        }
     }
 
     private fun processPsiExpression(
@@ -222,7 +218,7 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
                     .resolveThis(qualifier)
 
-                context.stack(methodContext.withoutReturns())
+                context.stack(methodContext)
 
                 return methodContext.returnValue?.let { context.c.resolveKnownVariables(it) }
             }
@@ -380,7 +376,7 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
                     .resolveThis(newObj)
 
-                context.stack(methodContext.withoutReturns())
+                context.stack(methodContext)
 
                 return newObj
             }
