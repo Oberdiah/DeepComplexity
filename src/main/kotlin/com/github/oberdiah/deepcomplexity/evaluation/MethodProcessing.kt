@@ -47,10 +47,6 @@ object MethodProcessing {
     data class ContextWrapper(var c: Context) {
         fun clone(): ContextWrapper = ContextWrapper(c.clone())
 
-        fun addVar(key: Key, value: Expr<*>) {
-            c = c.withVar(key, value)
-        }
-
         fun addVar(lExpr: LValueExpr<*>, rExpr: Expr<*>) {
             c = c.withVar(lExpr, rExpr)
         }
@@ -98,7 +94,7 @@ object MethodProcessing {
                         val rExpression = element.initializer
                         if (rExpression != null) {
                             context.addVar(
-                                element.toKey(),
+                                LValueKeyExpr<Any>(element.toKey()),
                                 processPsiExpression(rExpression, context)
                             )
                         } else {
@@ -200,7 +196,7 @@ object MethodProcessing {
 
                     if (context.c.returnValue == null) {
                         // If we don't have a return value yet, we create one.
-                        context.addVar(returnKey, returnExpr)
+                        context.addVar(LValueKeyExpr<Any>(returnKey), returnExpr)
                     } else {
                         // If we do, the existing return value will have unresolved return variables
                         // in it (by necessity, as this return we're processing here wasn't part of it), so
@@ -215,7 +211,7 @@ object MethodProcessing {
                 return processPsiStatement(psi.expression, context)
             }
 
-            is PsiThisExpression -> return ObjectExpression(Context.Heap.This)
+            is PsiThisExpression -> return ObjectExpression(Context.HeapRef.This)
 
             is PsiMethodCallExpression -> {
                 // Can discard the return value if we're calling it as a statement.
@@ -383,7 +379,7 @@ object MethodProcessing {
             }
 
             is PsiNewExpression -> {
-                val newObj = ObjectExpression(Context.Heap.new())
+                val newObj = ObjectExpression(Context.HeapRef.new())
 
                 val methodContext = processMethod(context, psi)
                     .resolveThis(newObj)
@@ -417,18 +413,18 @@ object MethodProcessing {
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {
                 LValueFieldExpr<Any>(
-                    Context.Field(resolved),
+                    Context.FieldRef(resolved),
                     psi.qualifier?.let {
                         processPsiExpression(it, context)
                     }.orElse {
-                        ObjectExpression(Context.Heap.This)
+                        ObjectExpression(Context.HeapRef.This)
                     }
                 )
             }
 
-            is PsiLocalVariable -> LValueSimpleExpr<Any>(resolved.toKey())
-            is PsiReturnStatement -> LValueSimpleExpr<Any>(resolved.toKey())
-            is PsiParameter -> LValueSimpleExpr<Any>(resolved.toKey())
+            is PsiLocalVariable -> LValueKeyExpr<Any>(resolved.toKey())
+            is PsiReturnStatement -> LValueKeyExpr<Any>(resolved.toKey())
+            is PsiParameter -> LValueKeyExpr<Any>(resolved.toKey())
 
             else -> {
                 throw IllegalArgumentException(
@@ -464,7 +460,7 @@ object MethodProcessing {
         val methodContext = context.clone()
         for ((param, arg) in parameters.zip(arguments)) {
             methodContext.addVar(
-                param.toKey(),
+                LValueKeyExpr<Any>(param.toKey()),
                 processPsiExpression(arg, context)
             )
         }

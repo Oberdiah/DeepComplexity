@@ -128,7 +128,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, field: Context.Field): Expr<*> {
+fun Expr<*>.getField(context: Context, field: Context.FieldRef): Expr<*> {
     return replaceTypeInLeaves<ObjectExpression>(field.ind) {
         context.getVar(Key.QualifiedKey(field, it.key))
     }
@@ -205,7 +205,7 @@ data class VariableExpression<T : Any>(val key: Key) : Expr<T>()
  * by using the `getField` method to access a field of the object, or by setting a value
  * in one of their fields.
  */
-data class ObjectExpression(val key: Context.Heap) : Expr<Any>()
+data class ObjectExpression(val key: Context.HeapRef) : Expr<Any>()
 
 /**
  * Tries to cast the expression to the given set indicator.
@@ -278,27 +278,23 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
 }
 
 /**
- * Represents a simple expression that can be used as a left-hand value in an assignment.
+ * Represents an expression on the left-hand side in an assignment.
  *
- * For example, `x` in `x = 5`
+ * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
+ * a QualifiedKey or not.
  */
-data class LValueSimpleExpr<T : Any>(
-    val key: Key,
-) : LValueExpr<T>() {
+data class LValueKeyExpr<T : Any>(val key: Key) : LValueExpr<T>() {
     override fun resolve(context: Context): Expr<T> {
         return context.getVar(key).tryCastTo(ind)!!
     }
 }
 
 /**
- * Represents a field expression that can be used as a left-hand value in an assignment.
+ * For situations in which a simple key just isn't sufficient to describe the LValue.
  *
- * For example, `this.x` in `this.x = 5`, or `((x > 2) ? a : b).y` in `((x > 2) ? a : b).y = 10`
+ * For example, the LValue `((x > 2) ? a : b).y`
  */
-data class LValueFieldExpr<T : Any>(
-    val field: Context.Field,
-    val qualifier: Expr<*>,
-) : LValueExpr<T>() {
+data class LValueFieldExpr<T : Any>(val field: Context.FieldRef, val qualifier: Expr<*>) : LValueExpr<T>() {
     override fun resolve(context: Context): Expr<T> {
         return qualifier.getField(context, field).tryCastTo(ind)!!
     }

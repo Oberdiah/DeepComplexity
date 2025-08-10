@@ -21,22 +21,25 @@ class Context private constructor(
         }
     }
 
-    data class Field(val variable: PsiField) {
+    /**
+     * This isn't a full key by itself, you'll need a [HeapRef] as well and then will want to make a [QualifiedKey].
+     */
+    data class FieldRef(private val variable: PsiField) {
         override fun toString(): String = variable.toStringPretty()
         fun getElement(): PsiElement = variable
         val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
     }
 
-    data class Heap(val key: EphemeralKey) {
+    data class HeapRef(private val idx: Int) {
         companion object {
-            fun new(): Heap {
-                return Heap(EphemeralKey.new())
-            }
-
-            val This = Heap(EphemeralKey.new())
+            private var KEY_INDEX = 0
+            val This = new()
+            fun new(): HeapRef = HeapRef(KEY_INDEX++)
         }
 
-        override fun toString(): String = if (this == This) "this" else "$key"
+        fun isThis(): Boolean = this == This
+
+        override fun toString(): String = if (this == This) "this" else "#${idx}"
     }
 
     sealed class Key {
@@ -52,7 +55,7 @@ class Context private constructor(
             override fun toString(): String = variable.toStringPretty()
         }
 
-        data class QualifiedKey(val field: Field, val qualifier: Heap = Heap.This) : Key() {
+        data class QualifiedKey(val field: FieldRef, val qualifier: HeapRef = HeapRef.This) : Key() {
             override fun toString(): String = "$qualifier.$field"
         }
 
@@ -199,16 +202,14 @@ class Context private constructor(
         return variables[element] ?: VariableExpression<Any>(element)
     }
 
-    /**
-     * Performs a cast if necessary.
-     */
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
         assert(rExpr.iterateTree().none { it is LValueExpr }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
         }
 
-        if (lExpr is LValueSimpleExpr) {
-            return withVar(lExpr.key, rExpr)
+        if (lExpr is LValueKeyExpr) {
+            val castVar = rExpr.castToUsingTypeCast(lExpr.key.ind, false)
+            return Context(variables + (lExpr.key to castVar))
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
@@ -243,14 +244,14 @@ class Context private constructor(
         val qualifier = lExpr.qualifier
         val fieldKey = lExpr.field
 
-        val varKeysInvolved =
+        val objectsMentionedInQualifier =
             qualifier.iterateTree()
                 .filterIsInstance<ObjectExpression>()
                 .map { it.key }
                 .toSet()
 
-        val newVariables = variables + varKeysInvolved.map {
-            val thisVarKey = Key.QualifiedKey(fieldKey, it)
+        val newVariables = variables + objectsMentionedInQualifier.map {
+            val thisVarKey = QualifiedKey(fieldKey, it)
             val newValue = qualifier.replaceTypeInLeaves<ObjectExpression>(fieldKey.ind) { expr ->
                 if (expr.key == it) {
                     rExpr
@@ -263,17 +264,6 @@ class Context private constructor(
         }
 
         return Context(newVariables)
-    }
-
-    /**
-     * This should only be used externally in special circumstances — most of the time
-     * you should be using `withVar(lExpr, rExpr)` instead.
-     *
-     * This will be useful sometimes, though, e.g. setting up return values, declarations, or parameters.
-     */
-    fun withVar(key: Key, expr: Expr<*>): Context {
-        val castVar = expr.castToUsingTypeCast(key.ind, false)
-        return Context(variables + (key to castVar))
     }
 
     /**
@@ -307,21 +297,27 @@ class Context private constructor(
 
         var newContext = brandNew()
 
+        // All we're doing here is replacing all instances of `this` with the passed in object.
+        // The complexity comes from the fact `this` could be in three different places:
+        //     1. As a qualifier in a [QualifiedKey], e.g. `this.x = 5`
+        //     2. Literally as an [ObjectExpression], e.g. `a = this`
+        //     3. As a key in a [VariableExpression], e.g. `a = this.x`
         for ((key, expr) in variables) {
-            val lValue = if (key is QualifiedKey && key.qualifier == Heap.This) {
+            val lValue = if (key is QualifiedKey && key.qualifier.isThis()) {
                 LValueFieldExpr<Any>(key.field, thisObj)
             } else {
-                LValueSimpleExpr(key)
+                // Do nothing, just assign as normal.
+                LValueKeyExpr(key)
             }
 
             val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
-                if (varExpr.key is QualifiedKey && varExpr.key.qualifier == Heap.This) {
+                if (varExpr.key is QualifiedKey && varExpr.key.qualifier.isThis()) {
                     thisObj.getField(newContext, varExpr.key.field)
                 } else {
                     null
                 }
             }.replaceTypeInTree<ObjectExpression> { objExpr ->
-                if (objExpr.key == Heap.This) thisObj else null
+                if (objExpr.key.isThis()) thisObj else null
             }
 
             newContext = newContext.withVar(lValue, rValue)

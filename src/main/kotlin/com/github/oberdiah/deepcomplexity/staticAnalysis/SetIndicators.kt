@@ -49,8 +49,8 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
                 is ConstExpr -> expr.constSet.ind
                 is VariableExpression -> expr.key.ind
                 is TypeCastExpression<*, *> -> expr.setInd
-                is LValueFieldExpr<*> -> expr.field.ind
-                is LValueSimpleExpr<*> -> expr.key.ind
+                is LValueFieldExpr -> expr.field.ind
+                is LValueKeyExpr -> expr.key.ind
                 is ObjectExpression -> GenericSetIndicator(Any::class)
             } as SetIndicator<T>
         }
