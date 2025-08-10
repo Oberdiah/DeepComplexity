@@ -1245,6 +1245,14 @@ public class MyTestData {
 			}
 		}
 		
+		public int addAndGet(int amount) {
+			return x += amount;
+		}
+		
+		public int increment() {
+			return x++;
+		}
+		
 		public int getX() {
 			return x;
 		}
@@ -1497,5 +1505,20 @@ public class MyTestData {
 		}
 		
 		return (short) p.x;
+	}
+	
+	public static short sharedState1(short x) {
+		MyClass state = new MyClass(0);
+		return (short) state.addAndGet(1);
+	}
+	
+	public static short sharedState2(short x) {
+		MyClass state = new MyClass(0);
+		return (short) (state.addAndGet(1) + state.addAndGet(2));
+	}
+	
+	public static short sharedState3(short x) {
+		MyClass state = new MyClass(0);
+		return (short) state.increment();
 	}
 }
