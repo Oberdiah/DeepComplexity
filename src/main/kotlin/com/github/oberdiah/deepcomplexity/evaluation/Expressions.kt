@@ -197,6 +197,14 @@ data class ComparisonExpression<T : Number>(
  */
 data class VariableExpression<T : Any>(val key: Key) : Expr<T>()
 
+/**
+ * This represents an object in the expression tree. Its purpose is to act as a placeholder
+ * for further operations upon it. It is not resolved by stacking contexts.
+ *
+ * ObjectExpressions are resolved either by resolving `this` on a context they belong to,
+ * by using the `getField` method to access a field of the object, or by setting a value
+ * in one of their fields.
+ */
 data class ObjectExpression(val key: Context.Heap) : Expr<Any>()
 
 /**
