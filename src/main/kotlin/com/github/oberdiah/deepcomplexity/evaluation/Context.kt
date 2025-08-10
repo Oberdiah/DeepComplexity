@@ -34,8 +34,17 @@ class Context private constructor(
             override fun toString(): String = variable.toStringPretty()
         }
 
-        data class FieldKey(override val variable: PsiField, val qualifier: Key = HeapKey.This) : VariableKey() {
-            override fun toString(): String = "$qualifier.${variable.toStringPretty()}"
+        data class FieldKey(override val variable: PsiField) : VariableKey() {
+            override fun toString(): String = variable.toStringPretty()
+        }
+
+        /**
+         * Current thinking: Going to come back and tidy this up later.
+         * This [QualifiedKey] is only for indexing into [variables], the [FieldKey] is for
+         * general day-to-day stuff.
+         */
+        data class QualifiedKey(val field: FieldKey, val qualifier: Key = HeapKey.This) : Key() {
+            override fun toString(): String = "$qualifier.$field"
         }
 
         data class HeapKey(val key: EphemeralKey) : Key() {
@@ -87,6 +96,7 @@ class Context private constructor(
                     is ExpressionKey -> this.expr.ind
                     is ReturnKey -> type
                     is VariableKey -> Utilities.psiTypeToSetIndicator(variable.type)
+                    is QualifiedKey -> this.field.ind
                     is HeapKey -> GenericSetIndicator(Any::class)
                     else -> throw IllegalArgumentException("Cannot get indicator for $this")
                 }
@@ -96,14 +106,15 @@ class Context private constructor(
         fun isEphemeral(): Boolean = this is EphemeralKey
         fun isExpr(): Boolean = this is ExpressionKey
         fun canBeResolvedWithThis(): Boolean =
-            this == HeapKey.This || this is FieldKey && this.qualifier.canBeResolvedWithThis()
+            this == HeapKey.This || this is QualifiedKey && this.qualifier.canBeResolvedWithThis()
 
         /**
          * When multiplying, we need to decide which one gets to live on.
          */
         fun importance(): Int {
             return when (this) {
-                is VariableKey -> 4
+                is VariableKey -> 5
+                is QualifiedKey -> 4
                 is HeapKey -> 3
                 is ReturnKey -> 2
                 is ExpressionKey -> 1
@@ -118,6 +129,7 @@ class Context private constructor(
         fun getElement(): PsiElement {
             return when (this) {
                 is VariableKey -> variable
+                is QualifiedKey -> field.getElement()
                 is HeapKey -> throw IllegalArgumentException("Cannot get element of heap key")
                 is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
@@ -245,7 +257,7 @@ class Context private constructor(
                 .toSet()
 
         val newVariables = variables + varKeysInvolved.map {
-            val thisVarKey = Key.FieldKey(fieldKey.variable, it)
+            val thisVarKey = Key.QualifiedKey(fieldKey, it)
             val newValue = qualifier.replaceTypeInLeaves<VariableExpression<*>>(fieldKey.ind) { expr ->
                 if (expr.key == it) {
                     rExpr
@@ -304,7 +316,7 @@ class Context private constructor(
 
         for ((key, expr) in variables) {
             val lValue = if (key.canBeResolvedWithThis()) {
-                LValueFieldExpr<Any>(key as Key.FieldKey, thisObj)
+                LValueFieldExpr<Any>((key as Key.QualifiedKey).field, thisObj)
             } else {
                 LValueExpr(key)
             }
@@ -314,7 +326,7 @@ class Context private constructor(
                     // This variable is literally 'this', so we can just return the `thisObj`.
                     thisObj
                 } else if (varExpr.key.canBeResolvedWithThis()) {
-                    thisObj.getField(newContext, varExpr.key as Key.FieldKey)
+                    thisObj.getField(newContext, (varExpr.key as Key.QualifiedKey).field)
                 } else {
                     null
                 }

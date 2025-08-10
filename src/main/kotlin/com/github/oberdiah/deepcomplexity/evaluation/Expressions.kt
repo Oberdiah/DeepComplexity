@@ -131,9 +131,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 
 fun Expr<*>.getField(context: Context, key: Key.FieldKey): Expr<*> {
     return replaceTypeInLeaves<VariableExpression<*>>(key.ind) {
-        context.getVar(
-            Key.FieldKey(key.variable, it.key)
-        )
+        context.getVar(Key.QualifiedKey(key, it.key))
     }
 }
 
