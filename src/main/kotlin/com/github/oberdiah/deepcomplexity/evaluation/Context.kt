@@ -30,15 +30,19 @@ class Context private constructor(
         val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
     }
 
-    data class HeapRef(private val idx: Int) {
+    data class HeapRef(
+        private val idx: Int,
+        val brandNew: Boolean
+    ) {
         companion object {
             private var KEY_INDEX = 0
-            val This = new()
-            fun new(): HeapRef = HeapRef(KEY_INDEX++)
+            val This = new(false)
+            fun new(brandNew: Boolean = true): HeapRef = HeapRef(KEY_INDEX++, brandNew)
         }
 
         fun isThis(): Boolean = this == This
-
+        override fun equals(other: Any?): Boolean = other is HeapRef && this.idx == other.idx
+        override fun hashCode(): Int = idx.hashCode()
         override fun toString(): String = if (this == This) "this" else "#${idx}"
     }
 
@@ -155,14 +159,43 @@ class Context private constructor(
             return Context(
                 (a.variables.keys + b.variables.keys)
                     .associateWith { key ->
-                        val aVal = a.getVar(key)
-                        val bVal = b.getVar(key)
-                        // This equality is probably not very cheap.
-                        // I'm sure that can be improved in the future.
-                        if (aVal == bVal) {
-                            aVal
+                        /**
+                         * An annoying blot on an otherwise fairly nice function.
+                         * We need to know whether the object has been created within this context or not.
+                         * In theory, not doing this is not technically wrong, but it results in unresolved
+                         * expressions sitting around and generally being a nuisance.
+                         *
+                         * To give an example,
+                         * ```
+                         * var a = new C(2);
+                         * if (x > 0) {
+                         *     a = new C(3);
+                         * }
+                         * ```
+                         * If we didn't do this then when resolving the if statement you'd get `#2.x = (x > 0) ? 3 : #2.x`,
+                         * as `#2.x` would have never been seen before. With this check, we know for certain
+                         * that `#2` is a brand-new object, so we can safely resolve it to `#2.x = 3`.
+                         */
+                        if (key is QualifiedKey && key.qualifier.brandNew) {
+                            val aVal = a.variables[key]
+                            val bVal = b.variables[key]
+
+                            assert(aVal == null || bVal == null) {
+                                "Something's suspicious, it's likely the `brandNew` tracking is off. " +
+                                        "This should be unable to happen, as a brand new object should have a unique key."
+                            }
+
+                            aVal ?: bVal!!
                         } else {
-                            how(aVal, bVal)
+                            val aVal = a.getVar(key)
+                            val bVal = b.getVar(key)
+                            // This equality is probably not very cheap.
+                            // I'm sure that can be improved in the future.
+                            if (aVal == bVal) {
+                                aVal
+                            } else {
+                                how(aVal, bVal)
+                            }
                         }
                     }
             )
@@ -183,7 +216,15 @@ class Context private constructor(
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun clone(): Context = Context(variables)
+    fun clone(): Context = Context(
+        variables.mapKeys {
+            val key = it.key
+            if (key is QualifiedKey) {
+                key.copy(qualifier = key.qualifier.copy(brandNew = false))
+            } else {
+                key
+            }
+        })
 
     fun debugKey(key: Key): String {
         return variables[key]?.dStr() ?: "Key not found"

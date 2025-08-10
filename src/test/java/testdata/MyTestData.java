@@ -1023,7 +1023,7 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	public static short simpleClassTest19(short x) {
 		MyClass a = new MyClass(1);
-		MyClass b = new MyClass(2);
+		MyClass b = makeNewClass(2);
 		if (x <= 0) {
 			b = a;
 		}
@@ -1042,7 +1042,7 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	public static short simpleClassTest21(short x) {
 		MyClass a = new MyClass(1);
-		MyClass b = new MyClass(2);
+		MyClass b = makeNewClass(2);
 		if (x <= 0) {
 			b = a;
 		}
@@ -1068,7 +1068,7 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	public static short simpleClassTest23(short x) {
 		MyClass a = new MyClass(1);
-		MyClass b = new MyClass(2);
+		MyClass b = makeNewClass(2);
 		
 		MyClass c = new MyClass(100);
 		
@@ -1085,10 +1085,10 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	public static short simpleClassTest24(short x) {
-		MyClass c = new MyClass(100);
+		MyClass c = makeNewClass(100);
 		
 		MyClass a = new MyClass(1);
-		MyClass b = new MyClass(10);
+		MyClass b = makeNewClass(10);
 		
 		if (x > 0) {
 			c = new MyClass(100);
@@ -1103,7 +1103,7 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	public static short simpleClassTest25(short x) {
-		MyClass b = new MyClass(10);
+		MyClass b = makeNewClass(10);
 		
 		if (x > 0) {
 			b.x = 0;
@@ -1129,6 +1129,7 @@ public class MyTestData {
 		
 		if (x > 0) {
 			b.x *= -1;
+			b.maybeAdd();
 		}
 		
 		b.maybeAdd();
@@ -1139,9 +1140,44 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	public static short simpleClassTest28(short x) {
 		MyClass b = new MyClass(10);
-		b = new MyClass(b.addOne().getX() + 1);
+		b = makeNewClass(b.addOne().getX() + 1);
 		
 		return (short) (b.x);
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest29(short x) {
+		MyClass nested = new MyClass(50);
+		if (x == 100) {
+			nested = makeNewClass(100);
+		}
+		nested.x = 5;
+		return (short) nested.getX();
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest30(short x) {
+		MyClass c = makeNewClass(100);
+		
+		MyClass a = new MyClass(1);
+		MyClass b = makeNewClass(10);
+		b.maybeAdd();
+		
+		if (x > 0) {
+			c = new MyClass(100);
+			a = c;
+			a.maybeAdd();
+		} else {
+			c = new MyClass(1000);
+			b = c;
+		}
+		
+		b.maybeAdd();
+		return (short) (a.x + b.x);
+	}
+	
+	private static MyClass makeNewClass(int xVal) {
+		return new MyClass(xVal);
 	}
 	
 	public static class MyClass {

@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
+import com.github.oberdiah.deepcomplexity.evaluation.ObjectExpression
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -92,15 +93,15 @@ object TestUtilities {
                 println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
             }
 
-            val unknownFields = context.getVar(returnKey).iterateTree()
-                .filter { it is VariableExpression<*> && it.key is Context.Key.QualifiedKey }
-                .toList()
+            val unknownsInReturn = context.getVar(returnKey).iterateTree()
+                .filter { (it is VariableExpression<*>) || it is ObjectExpression }
+                .toSet()
 
-            // For every test we have, there is no reason for unknown fields to be present by the time we return.
-            // todo uncomment this check.
-//            assert(unknownFields.none()) {
-//                "Method '${method.name}' has unknown fields in return value: ${unknownFields.joinToString(", ")}"
-//            }
+            // For every test we have, there is no reason for unknowns to be present by the time we return.
+            // (Aside from `x`, of course, hence the `size <= 1` check.)
+            assert(unknownsInReturn.size <= 1) {
+                "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
+            }
 
             val bundle: Bundle<*> = context.evaluateKey(returnKey)
             val castBundle = bundle.cast(ShortSetIndicator)!!
