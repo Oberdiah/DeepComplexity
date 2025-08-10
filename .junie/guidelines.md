@@ -2,6 +2,8 @@
 
 Short, practical notes to get productive quickly.
 
+Most important point: You can run all the tests using `./gradlew test`.
+
 ## 1) Tech stack snapshot
 
 - Languages: Kotlin (primary), Java
