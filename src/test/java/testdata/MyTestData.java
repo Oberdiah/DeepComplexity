@@ -868,6 +868,55 @@ public class MyTestData {
 		}
 	}
 	
+	public static short simpleMethodTest2(short x) {
+		if (x == 5) {
+			return 0;
+		}
+		
+		short q = simpleMethod2(x);
+		
+		if (q == 5) {
+			return 1;
+		}
+		
+		return (short) (q + 2);
+	}
+	
+	private static short simpleMethod2(short p) {
+		if (p > 0) {
+			return 5;
+		} else {
+			return 4;
+		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleMethodTest3(short x) {
+		if (x == 5) {
+			return -6;
+		}
+		
+		return simpleMethod2(x);
+	}
+	
+	public static short simpleMethodTest4(short x) {
+		if (x == 5) {
+			return -6;
+		}
+		
+		return (short) simplePrivateMethod(x, 5);
+	}
+	
+	public static short simpleMethodTest5(short x) {
+		if (x == 5) {
+			return -6;
+		}
+		
+		short unused = simpleMethod2(x);
+		
+		return 9;
+	}
+	
 	public static short simpleClassTest0(short x) {
 		MyClass nested = new MyClass();
 		return (short) nested.x;
