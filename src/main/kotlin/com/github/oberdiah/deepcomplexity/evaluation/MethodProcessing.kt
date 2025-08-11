@@ -218,9 +218,11 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
                     .resolveThis(qualifier)
 
+                val returnValue = methodContext.returnValue?.let { context.c.resolveKnownVariables(it) }
+
                 context.stack(methodContext)
 
-                return methodContext.returnValue?.let { context.c.resolveKnownVariables(it) }
+                return returnValue
             }
 
             is PsiLiteralExpression -> {

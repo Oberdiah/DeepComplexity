@@ -12,9 +12,13 @@ import com.intellij.psi.*
 
 typealias Vars = Map<Key, Expr<*>>
 
-class Context private constructor(
-    val variables: Vars,
-) {
+/**
+ * A potentially subtle but important point is that an unknown variable in a context never
+ * refers to another variable within that same context.
+ *
+ * For example, in a context `{ x: y + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
+ */
+class Context private constructor(val variables: Vars) {
     init {
         assert(variables.keys.none { it is EphemeralKey }) {
             "Ephemeral keys shouldn't be used as variable keys."
@@ -353,7 +357,7 @@ class Context private constructor(
 
             val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
                 if (varExpr.key is QualifiedKey && varExpr.key.qualifier.isThis()) {
-                    thisObj.getField(newContext, varExpr.key.field)
+                    thisObj.getField(brandNew(), varExpr.key.field)
                 } else {
                     null
                 }

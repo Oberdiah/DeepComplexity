@@ -1249,8 +1249,12 @@ public class MyTestData {
 			return x += amount;
 		}
 		
-		public int increment() {
+		public int postIncrement() {
 			return x++;
+		}
+		
+		public int preIncrement() {
+			return ++x;
 		}
 		
 		public int getX() {
@@ -1507,18 +1511,27 @@ public class MyTestData {
 		return (short) p.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short sharedState1(short x) {
 		MyClass state = new MyClass(0);
 		return (short) state.addAndGet(1);
 	}
 	
+	@RequiredScore(1.0)
 	public static short sharedState2(short x) {
 		MyClass state = new MyClass(0);
 		return (short) (state.addAndGet(1) + state.addAndGet(2));
 	}
 	
+	@RequiredScore(1.0)
 	public static short sharedState3(short x) {
 		MyClass state = new MyClass(0);
-		return (short) state.increment();
+		return (short) state.preIncrement();
+	}
+	
+	@RequiredScore(1.0)
+	public static short sharedState4(short x) {
+		MyClass state = new MyClass(0);
+		return (short) state.postIncrement();
 	}
 }
