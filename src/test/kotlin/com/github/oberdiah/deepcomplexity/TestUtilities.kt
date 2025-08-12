@@ -93,7 +93,7 @@ object TestUtilities {
                 println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
             }
 
-            val unknownsInReturn = context.getVar(returnKey).iterateTree()
+            val unknownsInReturn = context.getVar(returnKey).iterateTree(true)
                 .filter { (it is VariableExpression<*>) || it is ObjectExpression }
                 .toSet()
 

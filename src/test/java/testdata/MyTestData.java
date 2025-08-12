@@ -69,6 +69,17 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	public static short test7(short x) {
+		int i = 0;
+		if (x > 5) {
+			int k = x % 8;
+			i = k % 4;
+		}
+		
+		return (short) i;
+	}
+	
+	@RequiredScore(1.0)
 	public static short negateTest(short x) {
 		return (short) (-x);
 	}

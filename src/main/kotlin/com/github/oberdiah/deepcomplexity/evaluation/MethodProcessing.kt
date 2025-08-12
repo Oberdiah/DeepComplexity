@@ -14,18 +14,6 @@ import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 
 object MethodProcessing {
-    fun printMethod(method: PsiMethod, evaluate: Boolean) {
-        // The key about this parsing operation is we want to be able to do it in O(n) time
-        // where n is the size of the project.
-        // What makes method processing nice is we don't need to think about
-        // anything outside this method. Things coming in from outside are just unknowns
-        // we parameterize over.
-
-        method.body?.let { body ->
-            println(processPsiStatement(body, newContext()).toString())
-        }
-    }
-
     fun getMethodContext(method: PsiMethod): Context {
         val wrapper = newContext()
 

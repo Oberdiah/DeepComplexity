@@ -36,12 +36,14 @@ class Context private constructor(val variables: Vars) {
 
     data class HeapRef(
         private val idx: Int,
-        val brandNew: Boolean
+        // Whether this reference is pointing to an object we watched get created during expression parsing.
+        // (We never watch `this` get created, nor unknown objects outside our scope.)
+        val newlyCreated: Boolean
     ) {
         companion object {
             private var KEY_INDEX = 0
             val This = new(false)
-            fun new(brandNew: Boolean = true): HeapRef = HeapRef(KEY_INDEX++, brandNew)
+            fun new(newlyCreated: Boolean = true): HeapRef = HeapRef(KEY_INDEX++, newlyCreated)
         }
 
         fun isThis(): Boolean = this == This
@@ -163,43 +165,20 @@ class Context private constructor(val variables: Vars) {
             return Context(
                 (a.variables.keys + b.variables.keys)
                     .associateWith { key ->
-                        /**
-                         * An annoying blot on an otherwise fairly nice function.
-                         * We need to know whether the object has been created within this context or not.
-                         * In theory, not doing this is not technically wrong, but it results in unresolved
-                         * expressions sitting around and generally being a nuisance.
-                         *
-                         * To give an example,
-                         * ```
-                         * var a = new C(2);
-                         * if (x > 0) {
-                         *     a = new C(3);
-                         * }
-                         * ```
-                         * If we didn't do this then when resolving the if statement you'd get `#2.x = (x > 0) ? 3 : #2.x`,
-                         * as `#2.x` would have never been seen before. With this check, we know for certain
-                         * that `#2` is a brand-new object, so we can safely resolve it to `#2.x = 3`.
-                         */
-                        if (key is QualifiedKey && key.qualifier.brandNew) {
-                            val aVal = a.variables[key]
-                            val bVal = b.variables[key]
+                        val aVal = a.variables[key]
+                        val bVal = b.variables[key]
 
-                            assert(aVal == null || bVal == null) {
-                                "Something's suspicious, it's likely the `brandNew` tracking is off. " +
-                                        "This should be unable to happen, as a brand new object should have a unique key."
-                            }
-
+                        // This equality is probably not very cheap.
+                        // I'm sure that can be improved in the future.
+                        if (aVal == bVal) {
+                            // Safety: We know that at least one is not null, so both must be non-null in here.
+                            aVal!!
+                        } else if (aVal != null && bVal != null) {
+                            how(aVal, bVal)
+                        } else if (key is QualifiedKey && key.qualifier.newlyCreated) {
                             aVal ?: bVal!!
                         } else {
-                            val aVal = a.getVar(key)
-                            val bVal = b.getVar(key)
-                            // This equality is probably not very cheap.
-                            // I'm sure that can be improved in the future.
-                            if (aVal == bVal) {
-                                aVal
-                            } else {
-                                how(aVal, bVal)
-                            }
+                            how(aVal ?: VariableExpression<Any>(key), bVal ?: VariableExpression<Any>(key))
                         }
                     }
             )
@@ -220,15 +199,7 @@ class Context private constructor(val variables: Vars) {
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun clone(): Context = Context(
-        variables.mapKeys {
-            val key = it.key
-            if (key is QualifiedKey) {
-                key.copy(qualifier = key.qualifier.copy(brandNew = false))
-            } else {
-                key
-            }
-        })
+    fun clone(): Context = Context(variables)
 
     fun debugKey(key: Key): String {
         return variables[key]?.dStr() ?: "Key not found"

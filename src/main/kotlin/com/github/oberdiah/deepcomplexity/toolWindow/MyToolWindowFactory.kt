@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.toolWindow
 
 import com.github.oberdiah.deepcomplexity.MyBundle
-import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.github.oberdiah.deepcomplexity.services.MyProjectService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -60,7 +59,7 @@ class MyToolWindowFactory : ToolWindowFactory {
                 val element = psiFile?.findElementAt(offset)
 
                 if (element != null && element.parent is PsiMethod) {
-                    MethodProcessing.printMethod(element.parent as PsiMethod, evaluateResults)
+//                    MethodProcessing.printMethod(element.parent as PsiMethod, evaluateResults)
                 }
             }
         }

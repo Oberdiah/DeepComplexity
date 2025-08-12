@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 object ExprTreeVisitor {
-    fun iterateTree(expr: Expr<*>): Sequence<Expr<*>> {
+    fun iterateTree(expr: Expr<*>, includeIfCondition: Boolean = true): Sequence<Expr<*>> {
         return object : Iterator<Expr<*>> {
             private val stack = mutableListOf(expr)
 
@@ -11,7 +11,7 @@ object ExprTreeVisitor {
 
             override fun next(): Expr<*> {
                 val current = stack.removeAt(stack.size - 1)
-                visitTree(current) {
+                visitTree(current, includeIfCondition) {
                     stack.add(it)
                 }
                 return current
@@ -19,7 +19,7 @@ object ExprTreeVisitor {
         }.asSequence()
     }
 
-    fun visitTree(expr: Expr<*>, visitor: (Expr<*>) -> Unit) = when (expr) {
+    fun visitTree(expr: Expr<*>, includeIfCondition: Boolean = true, visitor: (Expr<*>) -> Unit) = when (expr) {
         is BooleanExpression -> {
             visitor(expr.lhs)
             visitor(expr.rhs)
@@ -38,9 +38,12 @@ object ExprTreeVisitor {
         }
 
         is IfExpression -> {
+            if (includeIfCondition) {
+                visitor(expr.thisCondition)
+            }
+
             visitor(expr.trueExpr)
             visitor(expr.falseExpr)
-            visitor(expr.thisCondition)
         }
 
         is UnionExpression -> {

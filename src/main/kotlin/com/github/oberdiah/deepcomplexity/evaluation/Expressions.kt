@@ -40,7 +40,9 @@ sealed class Expr<T : Any>() {
     fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
         ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
 
-    fun iterateTree(): Sequence<Expr<*>> = ExprTreeVisitor.iterateTree(this)
+    fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
+        ExprTreeVisitor.iterateTree(this, includeIfCondition)
+
     fun getVariables(): Set<VariableExpression<*>> = iterateTree()
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
@@ -136,6 +138,7 @@ fun Expr<*>.getField(context: Context, field: Context.FieldRef): Expr<*> {
 
 /**
  * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
+ * An ergonomic and slightly constrained version of [replaceLeaves].
  *
  * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
  * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
@@ -295,6 +298,14 @@ data class LValueKeyExpr<T : Any>(val key: Key) : LValueExpr<T>() {
  * For example, the LValue `((x > 2) ? a : b).y`
  */
 data class LValueFieldExpr<T : Any>(val field: Context.FieldRef, val qualifier: Expr<*>) : LValueExpr<T>() {
+    init {
+        assert(qualifier.iterateTree(includeIfCondition = false).none { it is VariableExpression<*> }) {
+            "We don't know how to handle this yet. You're probably trying to access the field of an unknown " +
+                    "object such as a static class or something else we've not tracked. When you do, make " +
+                    "sure the heap keys you create for that purpose do not have 'new' enabled on them. $qualifier"
+        }
+    }
+
     override fun resolve(context: Context): Expr<T> {
         return qualifier.getField(context, field).tryCastTo(ind)!!
     }
