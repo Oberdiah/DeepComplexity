@@ -21,8 +21,8 @@ typealias Vars = Map<Key, Expr<*>>
  */
 class Context private constructor(val variables: Vars) {
     init {
-        assert(variables.keys.none { it is EphemeralKey }) {
-            "Ephemeral keys shouldn't be used as variable keys."
+        assert(variables.keys.none { it is EphemeralKey || it is Key.HeapKey }) {
+            "Ephemeral keys and heap keys shouldn't be used as variable keys."
         }
     }
 
