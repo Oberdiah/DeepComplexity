@@ -137,7 +137,7 @@ fun Expr<*>.getField(context: Context, field: Context.FieldRef): Expr<*> {
 }
 
 /**
- * Swaps out the leaves of the expression. Only replaces leaves of the expression that have type [Q].
+ * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
  * An ergonomic and slightly constrained version of [replaceLeaves].
  *
  * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
@@ -156,7 +156,9 @@ inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
                 val newExpr = if (expr is Q) {
                     replacement(expr)
                 } else {
-                    expr
+                    throw IllegalArgumentException(
+                        "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
+                    )
                 }
 
                 newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
