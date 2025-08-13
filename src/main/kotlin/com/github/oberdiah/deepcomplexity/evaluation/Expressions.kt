@@ -131,7 +131,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 }
 
 fun Expr<*>.getField(context: Context, field: Context.FieldRef): Expr<*> {
-    return replaceTypeInLeaves<ObjectExpression>(field.ind) {
+    return replaceTypeInLeaves<VariableExpression<*>>(field.ind) {
         context.getVar(Key.QualifiedKey(field, it.key))
     }
 }
@@ -199,16 +199,6 @@ data class ComparisonExpression<T : Number>(
  * One day we'll be able to resolve it by stacking this context onto another.
  */
 data class VariableExpression<T : Any>(val key: Key) : Expr<T>()
-
-/**
- * This represents an object in the expression tree. Its purpose is to act as a placeholder
- * for further operations upon it. It is not resolved by stacking contexts.
- *
- * ObjectExpressions are resolved either by resolving `this` on a context they belong to,
- * by using the `getField` method to access a field of the object, or by setting a value
- * in one of their fields.
- */
-data class ObjectExpression(val key: Context.HeapRef) : Expr<Any>()
 
 /**
  * Tries to cast the expression to the given set indicator.
@@ -298,14 +288,6 @@ data class LValueKeyExpr<T : Any>(val key: Key) : LValueExpr<T>() {
  * For example, the LValue `((x > 2) ? a : b).y`
  */
 data class LValueFieldExpr<T : Any>(val field: Context.FieldRef, val qualifier: Expr<*>) : LValueExpr<T>() {
-    init {
-        assert(qualifier.iterateTree(includeIfCondition = false).none { it is VariableExpression<*> }) {
-            "We don't know how to handle this yet. You're probably trying to access the field of an unknown " +
-                    "object such as a static class or something else we've not tracked. When you do, make " +
-                    "sure the heap keys you create for that purpose do not have 'new' enabled on them. $qualifier"
-        }
-    }
-
     override fun resolve(context: Context): Expr<T> {
         return qualifier.getField(context, field).tryCastTo(ind)!!
     }

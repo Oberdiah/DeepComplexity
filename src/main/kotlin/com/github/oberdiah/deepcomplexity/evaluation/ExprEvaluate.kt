@@ -152,13 +152,6 @@ object ExprEvaluate {
                 Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
                     .constrainWith(scope)
 
-            // In practice `ObjectExpression`s should never be evaluated, but we handle them
-            // here anyway in case they come up in debugging.
-            is ObjectExpression -> {
-                println("Warning: Evaluating ${expr}. This should not happen in normal operation.")
-                Bundle.empty(expr.ind)
-            }
-
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }

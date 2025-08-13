@@ -54,7 +54,6 @@ object ExprTreeRebuilder {
 
             is ConstExpr -> replacer.replacer(expr)
             is VariableExpression -> replacer.replacer(expr)
-            is ObjectExpression -> replacer.replacer(expr)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
@@ -176,7 +175,6 @@ object ExprTreeRebuilder {
 
             is ConstExpr -> expr
             is VariableExpression -> expr
-            is ObjectExpression -> expr
             is LValueExpr -> expr
 
             else -> {

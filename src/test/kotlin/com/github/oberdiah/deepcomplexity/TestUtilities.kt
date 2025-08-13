@@ -2,7 +2,6 @@ package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
-import com.github.oberdiah.deepcomplexity.evaluation.ObjectExpression
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -94,7 +93,7 @@ object TestUtilities {
             }
 
             val unknownsInReturn = context.getVar(returnKey).iterateTree(true)
-                .filter { (it is VariableExpression<*>) || it is ObjectExpression }
+                .filter { it is VariableExpression<*> }
                 .toSet()
 
             // For every test we have, there is no reason for unknowns to be present by the time we return.

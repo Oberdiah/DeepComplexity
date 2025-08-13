@@ -193,7 +193,7 @@ object MethodProcessing {
                 return processPsiStatement(psi.expression, context)
             }
 
-            is PsiThisExpression -> return ObjectExpression(Context.HeapRef.This)
+            is PsiThisExpression -> return VariableExpression<Any>(Key.HeapKey.This)
 
             is PsiMethodCallExpression -> {
                 // Can discard the return value if we're calling it as a statement.
@@ -361,7 +361,7 @@ object MethodProcessing {
             }
 
             is PsiNewExpression -> {
-                val newObj = ObjectExpression(Context.HeapRef.new())
+                val newObj = VariableExpression<Any>(Key.HeapKey.new())
 
                 val methodContext = processMethod(context, psi)
                     .resolveThis(newObj)
@@ -399,7 +399,7 @@ object MethodProcessing {
                     psi.qualifier?.let {
                         processPsiExpression(it, context)
                     }.orElse {
-                        ObjectExpression(Context.HeapRef.This)
+                        VariableExpression<Any>(Key.HeapKey.This)
                     }
                 )
             }
