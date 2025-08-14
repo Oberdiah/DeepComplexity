@@ -97,15 +97,17 @@ object MethodProcessing {
                 ).castToBoolean()
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                val trueBranchContext = context.clone()
+                val trueBranchContext = newContext()
                 processPsiStatement(trueBranch, trueBranchContext)
 
-                val falseBranchContext = context.clone()
+                val falseBranchContext = newContext()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
-                context.c = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
+                val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
+
+                context.stack(combined)
             }
 
             is PsiConditionalExpression -> {
@@ -208,7 +210,7 @@ object MethodProcessing {
 
                 val returnValue = methodContext.returnValue?.let { context.c.resolveKnownVariables(it) }
 
-                context.stack(methodContext)
+                context.stack(methodContext.withoutReturnValue())
 
                 return returnValue
             }

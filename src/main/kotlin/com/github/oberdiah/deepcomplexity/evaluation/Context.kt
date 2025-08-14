@@ -21,7 +21,9 @@ typealias Vars = Map<Key, Expr<*>>
  */
 class Context private constructor(val variables: Vars) {
     init {
-        assert(variables.keys.none { it is EphemeralKey || it is Key.HeapKey }) {
+        // We have to allow `This` here to allow us to create a context with 'this' defined
+        // to stack on top of and resolve.
+        assert(variables.keys.none { it is EphemeralKey || (it is Key.HeapKey && it != Key.HeapKey.This) }) {
             "Ephemeral keys and heap keys shouldn't be used as variable keys."
         }
     }
@@ -183,6 +185,7 @@ class Context private constructor(val variables: Vars) {
                         } else if (aVal != null && bVal != null) {
                             how(aVal, bVal)
                         } else if (key.isNewlyCreated()) {
+                            // Safety: We know at least one is not null.
                             aVal ?: bVal!!
                         } else {
                             how(aVal ?: VariableExpression<Any>(key), bVal ?: VariableExpression<Any>(key))
@@ -306,47 +309,20 @@ class Context private constructor(val variables: Vars) {
      * Resolves all variables in the expression that are known of in this context.
      */
     fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
-        expr.replaceTypeInTree<VariableExpression<*>> { variables[it.key] }
+        expr.replaceTypeInTree<VariableExpression<*>> {
+            variables[it.key]
+        }
 
     /**
-     * Qualify all fields without existing paths in the expression with `thisObj`, effectively
-     * defining a 'this' for them.
+     * Define a 'this' for all objects in this context.
      */
     fun resolveThis(thisObj: Expr<*>?): Context {
-        if (thisObj == null) {
-            // If we don't have a 'this' object, we can't resolve anything.
-            return this
+        return if (thisObj == null) {
+            this
+        } else {
+            // This is super pretty
+            Context(mapOf(Key.HeapKey.This to thisObj)).stack(this)
         }
-
-        var newContext = brandNew()
-
-        // All we're doing here is replacing all instances of `this` with the passed in object.
-        // The complexity comes from the fact `this` could be in three different places:
-        //     1. As a qualifier in a [QualifiedKey], e.g. `this.x = 5`
-        //     2. Literally as an [ObjectExpression], e.g. `a = this`
-        //     3. As a key in a [VariableExpression], e.g. `a = this.x`
-        for ((key, expr) in variables) {
-            val lValue = if (key is QualifiedKey && key.qualifier.isThis()) {
-                LValueFieldExpr<Any>(key.field, thisObj)
-            } else {
-                // Do nothing, just assign as normal.
-                LValueKeyExpr(key)
-            }
-
-            val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
-                if (varExpr.key is QualifiedKey && varExpr.key.qualifier.isThis()) {
-                    thisObj.getField(brandNew(), varExpr.key.field)
-                } else if (varExpr.key.isThis()) {
-                    thisObj
-                } else {
-                    null
-                }
-            }
-
-            newContext = newContext.withVar(lValue, rValue)
-        }
-
-        return newContext
     }
 
     /**
@@ -357,10 +333,37 @@ class Context private constructor(val variables: Vars) {
      * To be used only when calling methods — return values are not transferred.
      */
     fun stack(later: Context): Context {
+        var newContext = this
+
+        for ((key, expr) in later.variables) {
+            val lValue = if (key is QualifiedKey) {
+                // The qualifier is a key itself, so it also needs to try and get resolved.
+                LValueFieldExpr<Any>(key.field, getVar(key.qualifier))
+            } else {
+                // Do nothing, just assign as normal.
+                LValueKeyExpr(key)
+            }
+
+            val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
+                if (varExpr.key is QualifiedKey) {
+                    getVar(varExpr.key.qualifier).getField(this, varExpr.key.field)
+                } else {
+                    getVar(varExpr.key)
+                }
+            }
+
+            newContext = newContext.withVar(lValue, rValue)
+        }
+
+        val meResolvedWithLater = variables.mapValues { (_, expr) -> later.resolveKnownVariables(expr) }
+
         return Context(
-            variables + later.variables
-                .filterKeys { it !is Key.ReturnKey }
-                .mapValues { (_, expr) -> resolveKnownVariables(expr) }
+            newContext.variables +
+                    meResolvedWithLater.filter { it.key is Key.ReturnKey }
         )
+    }
+
+    fun withoutReturnValue(): Context {
+        return Context(variables - Key.ReturnKey.Me)
     }
 }
