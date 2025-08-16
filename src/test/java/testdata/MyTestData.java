@@ -1113,19 +1113,20 @@ public class MyTestData {
 		return (short) a.getX();
 	}
 	
-	// Aliasing is really hard, so we're not going to require that this passes for a little bit while
-	// we figure out how to do it.
 	public static short simpleClassTest22(short x) {
-		MyClass a = new MyClass(1);
-		aliasingMethod(a, a);
-		return (short) a.getX();
-	}
-	
-	private static void aliasingMethod(MyClass a, MyClass b) {
-		a.x = 0;
-		if (b.x == 0) {
-			a.x = 5;
+		MyClass a = new MyClass(-10);
+		
+		int p = 0;
+		
+		if (x == 0) {
+			x++;
+			
+			int q = (x >= 2 ? new MyClass(p++) : a).getX();
+			
+			return (short) (q + p);
 		}
+		
+		return -5;
 	}
 	
 	@RequiredScore(1.0)
@@ -1287,6 +1288,21 @@ public class MyTestData {
 		public MyNestingClass(MyClass nested) {
 			nested.x++;
 			this.nested = nested;
+		}
+	}
+	
+	// Aliasing is really hard, so we're not going to require that this passes for a little bit while
+	// we figure out how to do it.
+	public static short aliasingTest(short x) {
+		MyClass a = new MyClass(1);
+		aliasingMethod(a, a);
+		return (short) a.getX();
+	}
+	
+	private static void aliasingMethod(MyClass a, MyClass b) {
+		a.x = 0;
+		if (b.x == 0) {
+			a.x = 5;
 		}
 	}
 	
