@@ -355,12 +355,9 @@ class Context private constructor(val variables: Vars) {
             newContext = newContext.withVar(lValue, rValue)
         }
 
-        val meResolvedWithLater = variables.mapValues { (_, expr) -> later.resolveKnownVariables(expr) }
+        val retVal = returnValue?.let { mapOf(Key.ReturnKey.Me to later.resolveKnownVariables(it)) } ?: mapOf()
 
-        return Context(
-            newContext.variables +
-                    meResolvedWithLater.filter { it.key is Key.ReturnKey }
-        )
+        return Context(newContext.variables + retVal)
     }
 
     fun withoutReturnValue(): Context {
