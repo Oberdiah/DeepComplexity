@@ -55,7 +55,16 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                         psiClass.methods
                             .filter { it.hasModifierProperty("public") }
                             .map { psiMethod ->
-                                TestInfo(psiMethod, psiMethod.name, file.name)
+                                val relativeFile = file.virtualFile.path
+                                    .replace("/src/", "")
+                                    .replace(".java", "")
+                                    .replace("/", ".")
+
+                                TestInfo(
+                                    psiMethod,
+                                    psiMethod.name,
+                                    relativeFile
+                                )
                             }
                     })
                 }
@@ -74,7 +83,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val tests = mutableListOf<DynamicTest>()
 
         for (method in methodsToRun) {
-            val file = method.file.replace(".java", "")
+            val file = method.file
             val testSourceUri = URI.create("method:testdata.${file}#${method.name}")
 
             tests.add(DynamicTest.dynamicTest(method.name, testSourceUri) {
