@@ -6,7 +6,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.QualifiedKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
@@ -19,12 +18,35 @@ typealias Vars = Map<Key, Expr<*>>
  *
  * For example, in a context `{ x: y + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
  */
-class Context private constructor(val variables: Vars) {
+class Context(variables: Vars, private val idx: ContextId) {
+    /**
+     * All of the variables in this context.
+     *
+     * We map all the expressions to our own context id as now that they're here, they must
+     * never be resolved with us either, alongside anything they were previously forbidden to resolve.
+     */
+    val variables: Vars = variables.mapValues { expr ->
+        expr.value.replaceTypeInTree<VariableExpression<*>> {
+            VariableExpression<Any>(it.key, it.contextId + idx)
+        }
+    }
+
     init {
         // We have to allow `This` here to allow us to create a context with 'this' defined
         // to stack on top of and resolve.
         assert(variables.keys.none { it is EphemeralKey || (it is Key.HeapKey && it != Key.HeapKey.This) }) {
             "Ephemeral keys and heap keys shouldn't be used as variable keys."
+        }
+    }
+
+    @JvmInline
+    value class ContextId(val ids: Set<Int>) {
+        operator fun plus(other: ContextId): ContextId = ContextId(this.ids + other.ids)
+        fun collidesWith(other: ContextId): Boolean = this.ids.any { it in other.ids }
+
+        companion object {
+            var ID_INDEX = 0
+            fun new(): ContextId = ContextId(setOf(ID_INDEX++))
         }
     }
 
@@ -120,8 +142,6 @@ class Context private constructor(val variables: Vars) {
         fun isNewlyCreated(): Boolean =
             this is HeapKey && this.newlyCreated || this is QualifiedKey && this.qualifier.isNewlyCreated()
 
-        fun isThis(): Boolean = this == HeapKey.This
-
         /**
          * When multiplying, we need to decide which one gets to live on.
          */
@@ -161,7 +181,7 @@ class Context private constructor(val variables: Vars) {
          * You won't want this often, in nearly all cases it makes sense
          * to inherit the existing context via cloning.
          */
-        fun brandNew(): Context = Context(emptyMap())
+        fun brandNew(): Context = Context(emptyMap(), ContextId.new())
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
@@ -188,9 +208,13 @@ class Context private constructor(val variables: Vars) {
                             // Safety: We know at least one is not null.
                             aVal ?: bVal!!
                         } else {
-                            how(aVal ?: VariableExpression<Any>(key), bVal ?: VariableExpression<Any>(key))
+                            how(
+                                aVal ?: VariableExpression<Any>(key, a.idx),
+                                bVal ?: VariableExpression<Any>(key, b.idx)
+                            )
                         }
-                    }
+                    },
+                a.idx + b.idx
             )
         }
     }
@@ -209,21 +233,8 @@ class Context private constructor(val variables: Vars) {
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun debugKey(key: Key): String {
-        return variables[key]?.dStr() ?: "Key not found"
-    }
-
-    fun canResolve(variable: VariableExpression<*>): Boolean {
-        return variables.containsKey(variable.key)
-    }
-
-    fun evaluateKey(key: Key): Bundle<*> {
-        val expr = variables[key] ?: throw IllegalArgumentException("Key $key not found in context")
-        return expr.evaluate(ExprEvaluate.Scope())
-    }
-
     fun getVar(element: Key): Expr<*> {
-        return variables[element] ?: VariableExpression<Any>(element)
+        return variables[element] ?: VariableExpression<Any>(element, idx)
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
@@ -233,7 +244,7 @@ class Context private constructor(val variables: Vars) {
 
         if (lExpr is LValueKeyExpr) {
             val castVar = rExpr.castToUsingTypeCast(lExpr.key.ind, false)
-            return Context(variables + (lExpr.key to castVar))
+            return Context(variables + (lExpr.key to castVar), idx)
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
@@ -287,7 +298,7 @@ class Context private constructor(val variables: Vars) {
             (thisVarKey to newValue)
         }
 
-        return Context(newVariables)
+        return Context(newVariables, idx)
     }
 
     /**
@@ -300,15 +311,18 @@ class Context private constructor(val variables: Vars) {
             oldExpr.replaceTypeInTree<VariableExpression<*>> {
                 if (it.key == key) castExpr else null
             }
-        })
+        }, idx)
     }
 
     /**
      * Resolves all variables in the expression that are known of in this context.
      */
     fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
-        expr.replaceTypeInTree<VariableExpression<*>> {
-            variables[it.key]
+        expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
+//            assert(varExpr.contextId.ids.none { idx.ids.contains(it) }) {
+//                "Cannot resolve variables from the same context that created them."
+//            }
+            variables[varExpr.key]
         }
 
     /**
@@ -319,7 +333,7 @@ class Context private constructor(val variables: Vars) {
             this
         } else {
             // This is super pretty
-            Context(mapOf(Key.HeapKey.This to thisObj)).stack(this)
+            Context(mapOf(Key.HeapKey.This to thisObj), ContextId.new()).stack(this)
         }
     }
 
@@ -327,8 +341,6 @@ class Context private constructor(val variables: Vars) {
      * Stacks the later context on top of this one.
      *
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
-     *
-     * To be used only when calling methods — return values are not transferred.
      */
     fun stack(later: Context): Context {
         var newContext = this
@@ -355,10 +367,10 @@ class Context private constructor(val variables: Vars) {
 
         val retVal = returnValue?.let { mapOf(Key.ReturnKey.Me to later.resolveKnownVariables(it)) } ?: mapOf()
 
-        return Context(newContext.variables + retVal)
+        return Context(newContext.variables + retVal, idx)
     }
 
     fun withoutReturnValue(): Context {
-        return Context(variables - Key.ReturnKey.Me)
+        return Context(variables - Key.ReturnKey.Me, idx)
     }
 }

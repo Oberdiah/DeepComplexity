@@ -196,9 +196,10 @@ data class ComparisonExpression<T : Number>(
 /**
  * This represents a standard primitive which we do not know the value of yet.
  *
- * One day we'll be able to resolve it by stacking this context onto another.
+ * Related to a specific context (The context that created it).
+ * This context is only used for ensuring proper usage, it's never used within the logic.
  */
-data class VariableExpression<T : Any>(val key: Key) : Expr<T>()
+data class VariableExpression<T : Any>(val key: Key, val contextId: Context.ContextId) : Expr<T>()
 
 /**
  * Tries to cast the expression to the given set indicator.

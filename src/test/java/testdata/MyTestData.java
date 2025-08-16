@@ -923,6 +923,13 @@ public class MyTestData {
 		return 9;
 	}
 	
+	@RequiredScore(1.0)
+	public static short simpleMethodTest6(short x) {
+		int b = x;
+		b++;
+		return (short) simplePrivateMethod(b, x);
+	}
+	
 	public static short simpleClassTest0(short x) {
 		MyClass nested = new MyClass();
 		return (short) nested.x;

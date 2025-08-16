@@ -36,11 +36,11 @@ object LoopSolver {
         for ((key, expr) in context.variables) {
             // Unresolved expressions not able to be resolved by this context are of no interest to
             // us as they can't affect this loop.
-            val allUnresolved = expr.getVariables().filter { context.canResolve(it) }
-            if (allUnresolved.isEmpty()) continue
-
-            val numExpr = expr.castToNumbers()
-            val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
+//            val allUnresolved = expr.getVariables().filter { context.canResolve(it) }
+//            if (allUnresolved.isEmpty()) continue
+//
+//            val numExpr = expr.castToNumbers()
+//            val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
 //            context.putVar(key, newExpr)
         }
     }
