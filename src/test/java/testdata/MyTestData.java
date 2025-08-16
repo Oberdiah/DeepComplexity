@@ -1380,6 +1380,13 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@RequiredScore(1.0)
+	public static short shortCircuit5(short x) {
+		boolean p = false;
+		boolean result = p || p;
+		return (result ? (short) 1 : (short) 0);
+	}
+	
 	public static short interfaceSideEffect(short x) {
 		ModifiableImpl impl = new ModifiableImpl(17);
 		processModifiable(impl);

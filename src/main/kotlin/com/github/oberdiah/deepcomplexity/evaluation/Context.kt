@@ -209,8 +209,6 @@ class Context private constructor(val variables: Vars) {
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun clone(): Context = Context(variables)
-
     fun debugKey(key: Key): String {
         return variables[key]?.dStr() ?: "Key not found"
     }

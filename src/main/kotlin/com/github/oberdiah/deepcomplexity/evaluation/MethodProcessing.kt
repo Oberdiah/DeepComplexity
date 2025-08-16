@@ -31,8 +31,6 @@ object MethodProcessing {
      * contained to this single location.
      */
     data class ContextWrapper(var c: Context) {
-        fun clone(): ContextWrapper = ContextWrapper(c.clone())
-
         fun addVar(lExpr: LValueExpr<*>, rExpr: Expr<*>) {
             c = c.withVar(lExpr, rExpr)
         }
@@ -114,16 +112,22 @@ object MethodProcessing {
                 val condition = processPsiExpression(psi.condition, context).castToBoolean()
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
-                val trueExprContext = context.clone()
-                val trueResult = processPsiExpression(trueBranch, trueExprContext)
+                val trueExprContext = newContext()
+                val trueResult = context.c.resolveKnownVariables(
+                    processPsiExpression(trueBranch, trueExprContext)
+                )
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
-                val falseExprContext = context.clone()
-                val falseResult = processPsiExpression(falseBranch, falseExprContext)
+                val falseExprContext = newContext()
+                val falseResult = context.c.resolveKnownVariables(
+                    processPsiExpression(falseBranch, falseExprContext)
+                )
 
-                context.c = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
+                val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
+
+                context.stack(combined)
 
                 if (trueResult.ind == falseResult.ind) {
                     // This is the easy case, we can always handle this.
@@ -474,8 +478,10 @@ object MethodProcessing {
 
             val lhs = lhsPrecast.castToBoolean()
 
-            val rhsContext = context.clone()
-            val rhs = processPsiExpression(rhsPsi, rhsContext).castToBoolean()
+            val rhsContext = newContext()
+            val rhs = context.c.resolveKnownVariables(
+                processPsiExpression(rhsPsi, rhsContext)
+            ).castToBoolean()
 
             /**
              * Effectively operate as an if statement here, where the condition is the lhs.
@@ -490,19 +496,21 @@ object MethodProcessing {
              * becomes
              * `var foo = doFoo() ? true : doBar()`
              */
-            when (booleanOp) {
+            val combined = when (booleanOp) {
                 BooleanOp.AND -> {
-                    context.c = Context.combine(rhsContext.c, context.clone().c) { a, b ->
+                    Context.combine(rhsContext.c, Context.brandNew()) { a, b ->
                         IfExpression.new(a, b, lhs)
                     }
                 }
 
                 BooleanOp.OR -> {
-                    context.c = Context.combine(context.clone().c, rhsContext.c) { a, b ->
+                    Context.combine(Context.brandNew(), rhsContext.c) { a, b ->
                         IfExpression.new(a, b, lhs)
                     }
                 }
             }
+
+            context.stack(combined)
 
             return BooleanExpression(lhs, rhs, booleanOp)
         } else {
