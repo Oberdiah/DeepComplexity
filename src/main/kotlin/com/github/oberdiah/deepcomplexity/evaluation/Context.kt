@@ -20,7 +20,7 @@ typealias Vars = Map<Key, Expr<*>>
  */
 class Context(variables: Vars, private val idx: ContextId) {
     /**
-     * All of the variables in this context.
+     * All the variables in this context.
      *
      * We map all the expressions to our own context id as now that they're here, they must
      * never be resolved with us either, alongside anything they were previously forbidden to resolve.

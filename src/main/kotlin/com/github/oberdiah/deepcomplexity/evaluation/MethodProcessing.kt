@@ -445,18 +445,17 @@ object MethodProcessing {
             )
         }
 
-        val methodContext = newContext()
         for ((param, arg) in parameters.zip(arguments)) {
-            methodContext.addVar(
+            context.addVar(
                 LValueKeyExpr<Any>(param.toKey()),
                 processPsiExpression(arg, context)
             )
         }
 
+        val methodContext = newContext()
         method.body?.let { body ->
             processPsiStatement(body, methodContext)
         }
-
         return methodContext.c
     }
 
