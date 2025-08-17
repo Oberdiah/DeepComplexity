@@ -210,13 +210,23 @@ object MethodProcessing {
                     processPsiExpression(it, context)
                 }
                 val methodContext = processMethod(context, psi)
-                    .resolveThis(qualifier)
 
-                val returnValue = methodContext.returnValue?.let { context.c.resolveKnownVariables(it) }
+                qualifier?.let {
+                    context.addVar(LValueKeyExpr<Any>(Key.HeapKey.This), it)
+                }
+                val currentReturn = context.c.returnValue
+                val returnKey = context.c.variables.filterKeys { it is Key.ReturnKey }.keys.firstOrNull()
 
-                context.stack(methodContext.withoutReturnValue())
+                context.c = context.c.withoutReturnValue().stack(methodContext)
 
-                return returnValue
+                val methodReturn = context.c.returnValue
+
+                context.c = context.c.withoutReturnValue()
+                if (currentReturn != null) {
+                    context.addVar(LValueKeyExpr<Any>(returnKey!!), currentReturn)
+                }
+
+                return methodReturn
             }
 
             is PsiLiteralExpression -> {

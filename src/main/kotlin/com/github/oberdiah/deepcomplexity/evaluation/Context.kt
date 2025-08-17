@@ -319,9 +319,9 @@ class Context(variables: Vars, private val idx: ContextId) {
      */
     fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
         expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
-//            assert(varExpr.contextId.ids.none { idx.ids.contains(it) }) {
-//                "Cannot resolve variables from the same context that created them."
-//            }
+            assert(varExpr.contextId.ids.none { idx.ids.contains(it) }) {
+                "Cannot resolve variables from the same context that created them."
+            }
             variables[varExpr.key]
         }
 
