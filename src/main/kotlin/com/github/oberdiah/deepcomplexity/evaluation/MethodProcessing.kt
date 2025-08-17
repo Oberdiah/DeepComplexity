@@ -89,10 +89,12 @@ object MethodProcessing {
             }
 
             is PsiIfStatement -> {
+                val conditionContext = newContext()
                 val condition = processPsiExpression(
                     psi.condition ?: throw ExpressionIncompleteException(),
-                    context
+                    conditionContext
                 ).castToBoolean()
+                context.stack(conditionContext.c)
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 val trueBranchContext = newContext()
@@ -389,8 +391,8 @@ object MethodProcessing {
                 val newObj = context.c.getVar(Key.HeapKey.new())
 
                 val methodContext = processMethod(context, psi)
-                    .resolveThis(newObj)
 
+                context.addVar(LValueKeyExpr<Any>(Key.HeapKey.This), newObj)
                 context.stack(methodContext)
 
                 return newObj

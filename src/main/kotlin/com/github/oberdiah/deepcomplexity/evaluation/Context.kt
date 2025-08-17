@@ -7,6 +7,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
@@ -326,23 +327,21 @@ class Context(variables: Vars, private val idx: ContextId) {
         }
 
     /**
-     * Define a 'this' for all objects in this context.
-     */
-    fun resolveThis(thisObj: Expr<*>?): Context {
-        return if (thisObj == null) {
-            this
-        } else {
-            // This is super pretty
-            Context(mapOf(Key.HeapKey.This to thisObj), ContextId.new()).stack(this)
-        }
-    }
-
-    /**
      * Stacks the later context on top of this one.
      *
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(later: Context): Context {
+        val later2 = later.returnValue?.let {
+            Context(later.variables + (Key.ReturnKey.Me to resolveKnownVariables(it)), later.idx)
+        }.orElse {
+            later
+        }
+
+        val retVal = returnValue?.let {
+            mapOf(Key.ReturnKey.Me to later2.resolveKnownVariables(it))
+        } ?: mapOf()
+
         var newContext = this
 
         for ((key, expr) in later.variables) {
@@ -356,9 +355,9 @@ class Context(variables: Vars, private val idx: ContextId) {
 
             val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
                 // todo combine this with resolveKnownVariables
-//                assert(!varExpr.contextId.collidesWith(idx)) {
-//                    "Cannot resolve variables from the same context that created them."
-//                }
+                assert(!varExpr.contextId.collidesWith(idx)) {
+                    "Cannot resolve variables from the same context that created them."
+                }
                 if (varExpr.key is QualifiedKey) {
                     getVar(varExpr.key.qualifier).getField(this, varExpr.key.field)
                 } else {
@@ -368,8 +367,6 @@ class Context(variables: Vars, private val idx: ContextId) {
 
             newContext = newContext.withVar(lValue, rValue)
         }
-
-        val retVal = returnValue?.let { mapOf(Key.ReturnKey.Me to later.resolveKnownVariables(it)) } ?: mapOf()
 
         return Context(newContext.variables + retVal, idx)
     }
