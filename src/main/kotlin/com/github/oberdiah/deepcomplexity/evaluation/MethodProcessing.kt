@@ -109,48 +109,56 @@ object MethodProcessing {
             }
 
             is PsiConditionalExpression -> {
-                val condition = processPsiExpression(psi.condition, context).castToBoolean()
+                val conditionContext = newContext()
+                val condition = processPsiExpression(psi.condition, conditionContext).castToBoolean()
+                // The side effects of the condition need to happen immediately. However,
+                // we still need a separate context so that we don't resolve anything into
+                // the condition from the main context, as the condition is going to be stacked
+                // later on anyway.
+                context.stack(conditionContext.c)
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
                 val trueExprContext = newContext()
-                val trueResult = context.c.resolveKnownVariables(
-                    processPsiExpression(trueBranch, trueExprContext)
-                )
+                val trueResult = processPsiExpression(trueBranch, trueExprContext)
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
                 val falseExprContext = newContext()
-                val falseResult = context.c.resolveKnownVariables(
-                    processPsiExpression(falseBranch, falseExprContext)
-                )
+                val falseResult = processPsiExpression(falseBranch, falseExprContext)
 
                 val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
                     IfExpression.new(a, b, condition)
                 }
 
+                // We need to resolve the variables in [evaluatesTo] before it can see its own
+                // side effects.
+                val evaluatesTo = context.c.resolveKnownVariables(
+                    if (trueResult.ind == falseResult.ind) {
+                        // This is the easy case, we can always handle this.
+                        IfExpression.new(trueResult, falseResult, condition)
+                    } else {
+                        if (trueResult.ind !is NumberSetIndicator<*> || falseResult.ind !is NumberSetIndicator<*>) {
+                            TODO(
+                                "As-yet unsupported conditional expression with non-numeric types: " +
+                                        "${trueResult.ind}, ${falseResult.ind}"
+                            )
+                        }
+
+                        // Loosely based on Java Spec 15.25.
+                        // Just doing bnp in all cases isn't strictly correct. For example,
+                        // Java will re-interpret int constants down to smaller types if they fit in those smaller types
+                        // and the other type is that smaller type.
+                        ConversionsAndPromotion.binaryNumericPromotion(
+                            trueResult.castToNumbers(),
+                            falseResult.castToNumbers()
+                        ).map { lhs, rhs ->
+                            IfExpression.new(lhs, rhs, condition)
+                        }
+                    }
+                )
+
                 context.stack(combined)
 
-                if (trueResult.ind == falseResult.ind) {
-                    // This is the easy case, we can always handle this.
-                    return IfExpression.new(trueResult, falseResult, condition)
-                }
-
-                if (trueResult.ind !is NumberSetIndicator<*> || falseResult.ind !is NumberSetIndicator<*>) {
-                    TODO(
-                        "As-yet unsupported conditional expression with non-numeric types: " +
-                                "${trueResult.ind}, ${falseResult.ind}"
-                    )
-                }
-
-                // Loosely based on Java Spec 15.25.
-                // Just doing bnp in all cases isn't strictly correct. For example,
-                // Java will re-interpret int constants down to smaller types if they fit in those smaller types
-                // and the other type is that smaller type.
-                return ConversionsAndPromotion.binaryNumericPromotion(
-                    trueResult.castToNumbers(),
-                    falseResult.castToNumbers()
-                ).map { lhs, rhs ->
-                    IfExpression.new(lhs, rhs, condition)
-                }
+                return evaluatesTo
             }
 
             is PsiForStatement -> {
@@ -214,6 +222,7 @@ object MethodProcessing {
                 qualifier?.let {
                     context.addVar(LValueKeyExpr<Any>(Key.HeapKey.This), it)
                 }
+
                 val currentReturn = context.c.returnValue
                 val returnKey = context.c.variables.filterKeys { it is Key.ReturnKey }.keys.firstOrNull()
 

@@ -1114,16 +1114,14 @@ public class MyTestData {
 	}
 	
 	public static short simpleClassTest22(short x) {
-		MyClass a = new MyClass(-10);
-		
 		int p = 0;
 		
 		if (x == 0) {
 			x++;
 			
-			int q = (x >= 2 ? new MyClass(p++) : a).getX();
+			int q = (x == 2 ? new MyClass(p++) : new MyClass(-10)).x;
 			
-			return (short) (q + p);
+			return (short) p;
 		}
 		
 		return -5;
@@ -1359,6 +1357,15 @@ public class MyTestData {
 		} else {
 			return 0;
 		}
+	}
+	
+	@RequiredScore(1.0)
+	public static short ternaryTest6(short x) {
+		if (x == 0) {
+			return (x++ == 0) ? x : x;
+		}
+		
+		return -10;
 	}
 	
 	public static short earlyReturnTest1(short x) {

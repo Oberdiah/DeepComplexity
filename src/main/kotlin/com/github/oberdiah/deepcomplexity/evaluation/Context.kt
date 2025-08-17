@@ -319,7 +319,7 @@ class Context(variables: Vars, private val idx: ContextId) {
      */
     fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
         expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
-            assert(varExpr.contextId.ids.none { idx.ids.contains(it) }) {
+            assert(!varExpr.contextId.collidesWith(idx)) {
                 "Cannot resolve variables from the same context that created them."
             }
             variables[varExpr.key]
@@ -355,6 +355,10 @@ class Context(variables: Vars, private val idx: ContextId) {
             }
 
             val rValue = expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
+                // todo combine this with resolveKnownVariables
+//                assert(!varExpr.contextId.collidesWith(idx)) {
+//                    "Cannot resolve variables from the same context that created them."
+//                }
                 if (varExpr.key is QualifiedKey) {
                     getVar(varExpr.key.qualifier).getField(this, varExpr.key.field)
                 } else {
