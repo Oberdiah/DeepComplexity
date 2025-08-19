@@ -1238,6 +1238,23 @@ public class MyTestData {
 		return (short) (a.x + b.x);
 	}
 	
+	@RequiredScore(1.0)
+	public static short simpleClassTest31(short x) {
+		MyClass c = new MyClass(100);
+		
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(10);
+		
+		if (x > 0) {
+			a = c;
+		} else {
+			b = c;
+		}
+		
+		b.maybeAdd();
+		return (short) a.x;
+	}
+	
 	private static MyClass makeNewClass(int xVal) {
 		return new MyClass(xVal);
 	}
