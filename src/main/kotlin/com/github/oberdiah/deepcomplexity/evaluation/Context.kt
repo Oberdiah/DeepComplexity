@@ -330,12 +330,7 @@ class Context(variables: Vars, private val idx: ContextId) {
             }
         }
 
-    /**
-     * Stacks the later context on top of this one.
-     *
-     * That is, prioritise the later context and fall back to this one if the key doesn't exist.
-     */
-    fun stack(later: Context): Context {
+    fun stackWithReturn(later: Context): Context {
         val later2 = later.returnValue?.let {
             Context(later.variables + (Key.ReturnKey.Me to resolveKnownVariables(it)), later.idx)
         }.orElse {
@@ -346,6 +341,15 @@ class Context(variables: Vars, private val idx: ContextId) {
             mapOf(Key.ReturnKey.Me to later2.resolveKnownVariables(it))
         } ?: mapOf()
 
+        return Context(stack(later).variables + retVal, idx)
+    }
+
+    /**
+     * Stacks the later context on top of this one.
+     *
+     * That is, prioritise the later context and fall back to this one if the key doesn't exist.
+     */
+    fun stack(later: Context): Context {
         var newContext = this
 
         for ((key, expr) in later.variables) {
@@ -360,7 +364,7 @@ class Context(variables: Vars, private val idx: ContextId) {
             newContext = newContext.withVar(lValue, resolveKnownVariables(expr))
         }
 
-        return Context(newContext.variables + retVal, idx)
+        return Context(newContext.variables, idx)
     }
 
     fun withoutReturnValue(): Context {
