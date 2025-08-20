@@ -212,7 +212,6 @@ object MethodProcessing {
             is PsiThisExpression -> return context.c.getVar(Key.HeapKey.This)
 
             is PsiMethodCallExpression -> {
-                // Can discard the return value if we're calling it as a statement.
                 val qualifier = psi.methodExpression.qualifier?.let {
                     // This has to come before the method call is processed,
                     // because this may create an object on the heap that the method call
@@ -225,19 +224,13 @@ object MethodProcessing {
                     context.addVar(LValueKeyExpr<Any>(Key.HeapKey.This), it)
                 }
 
-                val currentReturn = context.c.returnValue
-                val returnKey = context.c.variables.filterKeys { it is Key.ReturnKey }.keys.firstOrNull()
-
-                context.c = context.c.withoutReturnValue().stack(methodContext)
-
-                val methodReturn = context.c.returnValue
-
-                context.c = context.c.withoutReturnValue()
-                if (currentReturn != null) {
-                    context.addVar(LValueKeyExpr<Any>(returnKey!!), currentReturn)
+                val methodReturnValue = methodContext.returnValue?.let {
+                    context.c.resolveKnownVariables(it)
                 }
 
-                return methodReturn
+                context.stack(methodContext.withoutReturnValue())
+
+                return methodReturnValue
             }
 
             is PsiLiteralExpression -> {
