@@ -7,7 +7,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
@@ -331,17 +330,13 @@ class Context(variables: Vars, private val idx: ContextId) {
         }
 
     fun stackWithReturn(later: Context): Context {
-        val later2 = later.returnValue?.let {
-            Context(later.variables + (Key.ReturnKey.Me to resolveKnownVariables(it)), later.idx)
-        }.orElse {
-            later
-        }
+        val resolvedLaterRet = later.returnValue?.resolveUnknowns(this)
 
-        val retVal = returnValue?.let {
-            mapOf(Key.ReturnKey.Me to later2.resolveKnownVariables(it))
-        } ?: mapOf()
+        val later2 = later.withReturnValue(resolvedLaterRet)
 
-        return Context(stack(later).variables + retVal, idx)
+        val retVal = returnValue?.resolveUnknowns(later2)
+
+        return stack(later).withReturnValue(retVal ?: resolvedLaterRet)
     }
 
     /**
@@ -369,5 +364,13 @@ class Context(variables: Vars, private val idx: ContextId) {
 
     fun withoutReturnValue(): Context {
         return Context(variables - Key.ReturnKey.Me, idx)
+    }
+
+    fun withReturnValue(expr: Expr<*>?): Context {
+        return if (expr == null) {
+            withoutReturnValue()
+        } else {
+            Context(variables + (Key.ReturnKey.Me to expr), idx)
+        }
     }
 }

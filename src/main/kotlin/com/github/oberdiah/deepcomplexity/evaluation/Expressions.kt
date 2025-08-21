@@ -47,6 +47,9 @@ sealed class Expr<T : Any>() {
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
 
+    fun resolveUnknowns(context: Context): Expr<*> =
+        context.resolveKnownVariables(this)
+
     /**
      * Rebuilds every expression in the tree.
      * As it's doing that, whenever it encounters an expression of type [Q],
@@ -199,7 +202,12 @@ data class ComparisonExpression<T : Number>(
  * Related to a specific context (The context that created it).
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
-data class VariableExpression<T : Any>(val key: Key, val contextId: Context.ContextId) : Expr<T>()
+data class VariableExpression<T : Any>(val key: Key, val contextId: Context.ContextId) : Expr<T>() {
+//    init {
+//         The return key `Me` should never be used in a variable, only as a key in the Vars map.
+//        assert(key != Key.ReturnKey.Me)
+//    }
+}
 
 /**
  * Tries to cast the expression to the given set indicator.
