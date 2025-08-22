@@ -47,8 +47,18 @@ sealed class Expr<T : Any>() {
         .filterIsInstance<VariableExpression<*>>()
         .toSet()
 
-    fun resolveUnknowns(context: Context): Expr<*> =
+    fun resolveUnknowns(context: Context): Expr<T> =
         context.resolveKnownVariables(this)
+
+    fun resolveKey(key: Key, newExpr: Expr<*>?): Expr<T> {
+        if (newExpr == null) {
+            return this
+        } else {
+            return replaceTypeInTree<VariableExpression<*>> {
+                if (it.key == key) newExpr else null
+            }
+        }
+    }
 
     /**
      * Rebuilds every expression in the tree.

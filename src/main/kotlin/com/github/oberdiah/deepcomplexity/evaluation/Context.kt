@@ -308,36 +308,33 @@ class Context(variables: Vars, private val idx: ContextId) {
         val castExpr = expr.castToUsingTypeCast(key.ind, false)
 
         return Context(variables.mapValues { (_, oldExpr) ->
-            oldExpr.replaceTypeInTree<VariableExpression<*>> {
-                if (it.key == key) castExpr else null
-            }
+            oldExpr.resolveKey(key, castExpr)
         }, idx)
+    }
+
+    private fun resolveAllKnownVariables(toResolve: Context): Context {
+        return Context(
+            toResolve.variables.mapValues { (_, expr) ->
+                expr.resolveUnknowns(this)
+            },
+            toResolve.idx
+        )
     }
 
     /**
      * Resolves all variables in the expression that are known of in this context.
      */
-    fun resolveKnownVariables(expr: Expr<*>): Expr<*> =
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
             assert(!varExpr.contextId.collidesWith(idx)) {
                 "Cannot resolve variables from the same context that created them."
             }
-            if (varExpr.key is QualifiedKey) {
-                getVar(varExpr.key.qualifier).getField(this, varExpr.key.field)
-            } else {
-                getVar(varExpr.key)
+            when (varExpr.key) {
+                is Key.ReturnKey -> varExpr
+                is QualifiedKey -> getVar(varExpr.key.qualifier).getField(this, varExpr.key.field)
+                else -> getVar(varExpr.key)
             }
         }
-
-    fun stackWithReturn(later: Context): Context {
-        val resolvedLaterRet = later.returnValue?.resolveUnknowns(this)
-
-        val later2 = later.withReturnValue(resolvedLaterRet)
-
-        val retVal = returnValue?.resolveUnknowns(later2)
-
-        return stack(later).withReturnValue(retVal ?: resolvedLaterRet)
-    }
 
     /**
      * Stacks the later context on top of this one.
@@ -345,9 +342,11 @@ class Context(variables: Vars, private val idx: ContextId) {
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(later: Context): Context {
+        val resolvedLater = resolveAllKnownVariables(later)
+
         var newContext = this
 
-        for ((key, expr) in later.variables) {
+        for ((key, expr) in resolvedLater.variables) {
             val lValue = if (key is QualifiedKey) {
                 // The qualifier is a key itself, so it also needs to try and get resolved.
                 LValueFieldExpr<Any>(key.field, getVar(key.qualifier))
@@ -356,10 +355,16 @@ class Context(variables: Vars, private val idx: ContextId) {
                 LValueKeyExpr(key)
             }
 
-            newContext = newContext.withVar(lValue, resolveKnownVariables(expr))
+            newContext = newContext.withVar(lValue, expr)
         }
 
-        return Context(newContext.variables, idx)
+        val retVal = returnValue?.resolveKey(Key.ReturnKey.Me, resolvedLater.returnValue) ?: resolvedLater.returnValue
+
+        return Context(newContext.variables, idx).withReturnValue(retVal)
+    }
+
+    fun onlyWithReturnValue(): Context {
+        return Context(variables.filterKeys { it is Key.ReturnKey }, idx)
     }
 
     fun withoutReturnValue(): Context {

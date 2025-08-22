@@ -39,10 +39,6 @@ object MethodProcessing {
             c = c.withResolvedVar(key, expr)
         }
 
-        fun stackWithReturn(other: Context) {
-            c = c.stackWithReturn(other)
-        }
-
         fun stack(other: Context) {
             c = c.stack(other)
         }
@@ -98,7 +94,7 @@ object MethodProcessing {
                     psi.condition ?: throw ExpressionIncompleteException(),
                     conditionContext
                 ).castToBoolean()
-                context.stackWithReturn(conditionContext.c)
+                context.stack(conditionContext.c)
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 val trueBranchContext = newContext()
@@ -111,7 +107,7 @@ object MethodProcessing {
                     IfExpression.new(a, b, condition)
                 }
 
-                context.stackWithReturn(combined)
+                context.stack(combined)
             }
 
             is PsiConditionalExpression -> {
@@ -121,7 +117,7 @@ object MethodProcessing {
                 // we still need a separate context so that we don't resolve anything into
                 // the condition from the main context, as the condition is going to be stacked
                 // later on anyway.
-                context.stackWithReturn(conditionContext.c)
+                context.stack(conditionContext.c)
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
                 val trueExprContext = newContext()
@@ -162,7 +158,7 @@ object MethodProcessing {
                     }
                 )
 
-                context.stackWithReturn(combined)
+                context.stack(combined)
 
                 return evaluatesTo
             }
@@ -527,7 +523,7 @@ object MethodProcessing {
                 }
             }
 
-            context.stackWithReturn(combined)
+            context.stack(combined)
 
             return BooleanExpression(lhs, rhs, booleanOp)
         } else {
