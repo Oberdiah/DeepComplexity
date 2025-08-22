@@ -50,7 +50,7 @@ sealed class Expr<T : Any>() {
     fun resolveUnknowns(context: Context): Expr<T> =
         context.resolveKnownVariables(this)
 
-    fun resolveKey(key: Key, newExpr: Expr<*>?): Expr<T> {
+    fun resolveKeyInVarExpressions(key: Key, newExpr: Expr<*>?): Expr<T> {
         if (newExpr == null) {
             return this
         } else {

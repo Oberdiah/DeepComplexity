@@ -308,16 +308,16 @@ class Context(variables: Vars, private val idx: ContextId) {
         val castExpr = expr.castToUsingTypeCast(key.ind, false)
 
         return Context(variables.mapValues { (_, oldExpr) ->
-            oldExpr.resolveKey(key, castExpr)
+            oldExpr.resolveKeyInVarExpressions(key, castExpr)
         }, idx)
     }
 
-    private fun resolveAllKnownVariables(toResolve: Context): Context {
+    private fun withVariablesResolvedBy(resolver: Context): Context {
         return Context(
-            toResolve.variables.mapValues { (_, expr) ->
-                expr.resolveUnknowns(this)
+            variables.mapValues { (_, expr) ->
+                resolver.resolveKnownVariables(expr)
             },
-            toResolve.idx
+            idx
         )
     }
 
@@ -330,7 +330,6 @@ class Context(variables: Vars, private val idx: ContextId) {
                 "Cannot resolve variables from the same context that created them."
             }
             when (varExpr.key) {
-                is Key.ReturnKey -> varExpr
                 is QualifiedKey -> getVar(varExpr.key.qualifier).getField(this, varExpr.key.field)
                 else -> getVar(varExpr.key)
             }
@@ -342,7 +341,7 @@ class Context(variables: Vars, private val idx: ContextId) {
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(later: Context): Context {
-        val resolvedLater = resolveAllKnownVariables(later)
+        val resolvedLater = later.withVariablesResolvedBy(withoutReturnValue())
 
         var newContext = this
 
@@ -358,12 +357,13 @@ class Context(variables: Vars, private val idx: ContextId) {
             newContext = newContext.withVar(lValue, expr)
         }
 
-        val retVal = returnValue?.resolveKey(Key.ReturnKey.Me, resolvedLater.returnValue) ?: resolvedLater.returnValue
+        val retVal = returnValue?.resolveKeyInVarExpressions(Key.ReturnKey.Me, resolvedLater.returnValue)
+            ?: resolvedLater.returnValue
 
         return Context(newContext.variables, idx).withReturnValue(retVal)
     }
 
-    fun onlyWithReturnValue(): Context {
+    fun withOnlyReturnValue(): Context {
         return Context(variables.filterKeys { it is Key.ReturnKey }, idx)
     }
 

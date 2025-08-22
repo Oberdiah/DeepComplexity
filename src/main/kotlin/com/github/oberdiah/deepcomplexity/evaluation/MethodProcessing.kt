@@ -131,32 +131,33 @@ object MethodProcessing {
                     IfExpression.new(a, b, condition)
                 }
 
-                // We need to resolve the variables in [evaluatesTo] before it can see its own
-                // side effects.
-                val evaluatesTo = context.c.resolveKnownVariables(
-                    if (trueResult.ind == falseResult.ind) {
-                        // This is the easy case, we can always handle this.
-                        IfExpression.new(trueResult, falseResult, condition)
-                    } else {
-                        if (trueResult.ind !is NumberSetIndicator<*> || falseResult.ind !is NumberSetIndicator<*>) {
-                            TODO(
-                                "As-yet unsupported conditional expression with non-numeric types: " +
-                                        "${trueResult.ind}, ${falseResult.ind}"
-                            )
-                        }
+                val evaluatesTo = (
+                        if (trueResult.ind == falseResult.ind) {
+                            // This is the easy case, we can always handle this.
+                            IfExpression.new(trueResult, falseResult, condition)
+                        } else {
+                            if (trueResult.ind !is NumberSetIndicator<*> || falseResult.ind !is NumberSetIndicator<*>) {
+                                TODO(
+                                    "As-yet unsupported conditional expression with non-numeric types: " +
+                                            "${trueResult.ind}, ${falseResult.ind}"
+                                )
+                            }
 
-                        // Loosely based on Java Spec 15.25.
-                        // Just doing bnp in all cases isn't strictly correct. For example,
-                        // Java will re-interpret int constants down to smaller types if they fit in those smaller types
-                        // and the other type is that smaller type.
-                        ConversionsAndPromotion.binaryNumericPromotion(
-                            trueResult.castToNumbers(),
-                            falseResult.castToNumbers()
-                        ).map { lhs, rhs ->
-                            IfExpression.new(lhs, rhs, condition)
+                            // Loosely based on Java Spec 15.25.
+                            // Just doing bnp in all cases isn't strictly correct. For example,
+                            // Java will re-interpret int constants down to smaller types if they fit in those smaller types
+                            // and the other type is that smaller type.
+                            ConversionsAndPromotion.binaryNumericPromotion(
+                                trueResult.castToNumbers(),
+                                falseResult.castToNumbers()
+                            ).map { lhs, rhs ->
+                                IfExpression.new(lhs, rhs, condition)
+                            }
                         }
-                    }
-                )
+                        // We need to resolve the variables in [evaluatesTo] before it can see its own
+                        // side effects.
+                        ).resolveUnknowns(context.c)
+
 
                 context.stack(combined)
 
@@ -224,9 +225,7 @@ object MethodProcessing {
                     context.addVar(LValueKeyExpr<Any>(Key.HeapKey.This), it)
                 }
 
-                val methodReturnValue = methodContext.returnValue?.let {
-                    context.c.resolveKnownVariables(it)
-                }
+                val methodReturnValue = methodContext.returnValue?.resolveUnknowns(context.c)
 
                 context.stack(methodContext.withoutReturnValue())
 
@@ -492,9 +491,9 @@ object MethodProcessing {
             val lhs = lhsPrecast.castToBoolean()
 
             val rhsContext = newContext()
-            val rhs = context.c.resolveKnownVariables(
-                processPsiExpression(rhsPsi, rhsContext)
-            ).castToBoolean()
+            val rhs = processPsiExpression(rhsPsi, rhsContext)
+                .resolveUnknowns(context.c)
+                .castToBoolean()
 
             /**
              * Effectively operate as an if statement here, where the condition is the lhs.
