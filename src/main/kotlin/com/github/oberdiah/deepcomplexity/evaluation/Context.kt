@@ -357,10 +357,11 @@ class Context(variables: Vars, private val idx: ContextId) {
             newContext = newContext.withVar(lValue, expr)
         }
 
-        val retVal = returnValue?.resolveKeyInVarExpressions(Key.ReturnKey.Me, resolvedLater.returnValue)
-            ?: resolvedLater.returnValue
+        returnValue?.resolveUnknowns(resolvedLater.withOnlyReturnValue())?.let {
+            newContext = newContext.withReturnValue(it)
+        }
 
-        return Context(newContext.variables, idx).withReturnValue(retVal)
+        return newContext
     }
 
     fun withOnlyReturnValue(): Context {
