@@ -1255,7 +1255,7 @@ public class MyTestData {
 		return (short) a.x;
 	}
 	
-	public static short simpleClassTest32(short x) {
+	public static short go(short x) {
 		MyClass nested = new MyClass(50);
 		MyNestingClass nesting = new MyNestingClass(nested);
 		updateNesting(nesting, 5);

@@ -460,7 +460,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             context.addVar(
-                LValueKeyExpr<Any>(param.toKey()),
+                LValueKeyExpr<Any>(Key.ParameterKey(param, true)),
                 processPsiExpression(arg, context)
             )
         }

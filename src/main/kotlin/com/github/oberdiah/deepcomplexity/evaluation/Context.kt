@@ -59,7 +59,12 @@ class Context(variables: Vars, private val idx: ContextId) {
         val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
     }
 
-    sealed class Key {
+    /**
+     * If [temporary] is true this key will be removed from the context
+     * after stacking. This is useful for tidying up keys that are only
+     * added to aid resolution, such as parameters and `this`.
+     */
+    sealed class Key(open val temporary: Boolean = false) {
         abstract class VariableKey() : Key() {
             abstract val variable: PsiVariable
         }
@@ -68,8 +73,13 @@ class Context(variables: Vars, private val idx: ContextId) {
             override fun toString(): String = variable.toStringPretty()
         }
 
-        data class ParameterKey(override val variable: PsiParameter) : VariableKey() {
+        data class ParameterKey(
+            override val variable: PsiParameter,
+            override val temporary: Boolean = false
+        ) : VariableKey() {
             override fun toString(): String = variable.toStringPretty()
+            override fun equals(other: Any?): Boolean = other is ParameterKey && this.variable == other.variable
+            override fun hashCode(): Int = variable.hashCode()
         }
 
         data class QualifiedKey(val field: FieldRef, val qualifier: Key = HeapKey.This) : Key() {
@@ -80,12 +90,14 @@ class Context(variables: Vars, private val idx: ContextId) {
             private val idx: Int,
             // Whether this reference is pointing to an object we watched get created during expression parsing.
             // (We never watch `this` get created, nor unknown objects outside our scope.)
-            val newlyCreated: Boolean
+            val newlyCreated: Boolean,
+            override val temporary: Boolean = false
         ) : Key() {
             companion object {
                 private var KEY_INDEX = 0
-                val This = new(false)
-                fun new(newlyCreated: Boolean = true): HeapKey = HeapKey(KEY_INDEX++, newlyCreated)
+                val This = new(newlyCreated = false, temporary = true)
+                fun new(newlyCreated: Boolean = true, temporary: Boolean = false): HeapKey =
+                    HeapKey(KEY_INDEX++, newlyCreated, temporary)
             }
 
             override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
@@ -341,7 +353,7 @@ class Context(variables: Vars, private val idx: ContextId) {
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(later: Context): Context {
-        val resolvedLater = later.withVariablesResolvedBy(withoutReturnValue())
+        val resolvedLater = later.withVariablesResolvedBy(withoutReturnValue()).stripTemporaryKeys()
 
         var newContext = this
 
@@ -362,6 +374,10 @@ class Context(variables: Vars, private val idx: ContextId) {
         }
 
         return newContext
+    }
+
+    private fun stripTemporaryKeys(): Context {
+        return Context(variables.filterKeys { !it.temporary }, idx)
     }
 
     fun withOnlyReturnValue(): Context {
