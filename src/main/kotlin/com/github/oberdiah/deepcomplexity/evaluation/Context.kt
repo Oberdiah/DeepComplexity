@@ -130,9 +130,7 @@ class Context(variables: Vars, private val idx: ContextId) {
 
             companion object {
                 private var KEY_INDEX = 0
-                fun new(): EphemeralKey {
-                    return EphemeralKey(KEY_INDEX++)
-                }
+                fun new(): EphemeralKey = EphemeralKey(KEY_INDEX++)
             }
         }
 
@@ -234,6 +232,9 @@ class Context(variables: Vars, private val idx: ContextId) {
     val returnValue: Expr<*>?
         get() = variables[Key.ReturnKey.Me]
 
+    val returnKey: Key.ReturnKey?
+        get() = variables.keys.filterIsInstance<Key.ReturnKey>().firstOrNull()
+
     override fun toString(): String {
         val variablesString =
             variables.entries.joinToString("\n") { entry ->
@@ -322,17 +323,6 @@ class Context(variables: Vars, private val idx: ContextId) {
         return Context(newVariables, idx)
     }
 
-    /**
-     * Performs a cast if necessary.
-     */
-    fun withResolvedVar(key: Key, expr: Expr<*>): Context {
-        val castExpr = expr.castToUsingTypeCast(key.ind, false)
-
-        return Context(variables.mapValues { (_, oldExpr) ->
-            oldExpr.resolveKeyInVarExpressions(key, castExpr)
-        }, idx)
-    }
-
     private fun withVariablesResolvedBy(resolver: Context): Context {
         return Context(
             variables.mapValues { (_, expr) ->
@@ -362,11 +352,15 @@ class Context(variables: Vars, private val idx: ContextId) {
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(later: Context): Context {
+        // Gotta not resolve returns here, as that wouldn't be the backward resolve that returns are supposed to be.
+        // Returns still need to have other variables in their expressions resolved, though.
         val resolvedLater = later.withVariablesResolvedBy(withoutReturnValue())
 
-        var newContext = this
+        // ...then we add that newly resolved return value to the new context,
+        var newContext = withAdditionalReturn(resolvedLater.returnKey, resolvedLater.returnValue)
 
-        for ((key, expr) in resolvedLater.variables) {
+        // finally, we avoid stomping over said return value.
+        for ((key, expr) in resolvedLater.withoutReturnValue().variables) {
             val lValue = if (key is QualifiedKey) {
                 // The qualifier is a key itself, so it also needs to try and get resolved.
                 LValueFieldExpr<Any>(key.field, getVar(key.qualifier))
@@ -378,32 +372,28 @@ class Context(variables: Vars, private val idx: ContextId) {
             newContext = newContext.withVar(lValue, expr)
         }
 
-        returnValue?.resolveUnknowns(resolvedLater.withOnlyReturnValue())?.let {
-            newContext = newContext.withReturnValue(it)
-        }
-
         newContext = newContext.stripTemporaryKeys()
 
         return newContext
+    }
+
+    fun withAdditionalReturn(key: Key.ReturnKey?, expr: Expr<*>?): Context {
+        val retKey = this.returnKey
+            ?: key
+            ?: return this
+
+        val newRetExpr = returnValue?.resolveKeyAs(retKey, expr)
+            ?: expr
+            ?: return this
+
+        return Context(variables + (retKey to newRetExpr), idx)
     }
 
     private fun stripTemporaryKeys(): Context {
         return Context(variables.filterKeys { !it.temporary }, idx)
     }
 
-    fun withOnlyReturnValue(): Context {
-        return Context(variables.filterKeys { it is Key.ReturnKey }, idx)
-    }
-
     fun withoutReturnValue(): Context {
         return Context(variables - Key.ReturnKey.Me, idx)
-    }
-
-    fun withReturnValue(expr: Expr<*>?): Context {
-        return if (expr == null) {
-            withoutReturnValue()
-        } else {
-            Context(variables + (Key.ReturnKey.Me to expr), idx)
-        }
     }
 }

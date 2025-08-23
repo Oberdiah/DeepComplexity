@@ -35,10 +35,6 @@ object MethodProcessing {
             c = c.withVar(lExpr, rExpr)
         }
 
-        fun resolveVar(key: Key, expr: Expr<*>) {
-            c = c.withResolvedVar(key, expr)
-        }
-
         fun stack(other: Context) {
             c = c.stack(other)
         }
@@ -190,19 +186,12 @@ object MethodProcessing {
             is PsiReturnStatement -> {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
-                    val returnExpr = processPsiExpression(returnExpression, context)
                     val returnKey = psi.toKey()
 
-                    if (context.c.returnValue == null) {
-                        // If we don't have a return value yet, we create one.
-                        context.addVar(LValueKeyExpr<Any>(returnKey), returnExpr)
-                    } else {
-                        // If we do, the existing return value will have unresolved return variables
-                        // in it (by necessity, as this return we're processing here wasn't part of it), so
-                        // we resolve those. I don't think we need to resolve the return across the entire context,
-                        // just the return value, but this method is convenient.
-                        context.resolveVar(returnKey, returnExpr)
-                    }
+                    val returnExpr = processPsiExpression(returnExpression, context)
+                        .castToUsingTypeCast(returnKey.ind, false)
+
+                    context.c = context.c.withAdditionalReturn(returnKey, returnExpr)
                 }
             }
 
