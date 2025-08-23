@@ -1255,6 +1255,17 @@ public class MyTestData {
 		return (short) a.x;
 	}
 	
+	public static short simpleClassTest32(short x) {
+		MyClass nested = new MyClass(50);
+		MyNestingClass nesting = new MyNestingClass(nested);
+		updateNesting(nesting, 5);
+		return (short) nesting.nested.getX();
+	}
+	
+	private static void updateNesting(MyNestingClass nesting, int val) {
+		nesting.nested.x = val;
+	}
+	
 	private static MyClass makeNewClass(int xVal) {
 		return new MyClass(xVal);
 	}
