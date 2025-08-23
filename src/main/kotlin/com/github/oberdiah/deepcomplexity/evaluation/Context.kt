@@ -245,8 +245,17 @@ class Context(variables: Vars, private val idx: ContextId) {
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun getVar(element: Key): Expr<*> {
-        return variables[element] ?: VariableExpression<Any>(element, idx)
+    fun getVar(key: Key): Expr<*> {
+        val simpleResolve = variables[key]
+
+        // This could all be inlined, but it's far easier to debug like this.
+        val qualifiedResolve = if (key is QualifiedKey) {
+            variables[key.qualifier]?.getField(this, key.field)
+        } else {
+            null
+        }
+
+        return simpleResolve ?: qualifiedResolve ?: VariableExpression<Any>(key, idx)
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
@@ -353,7 +362,7 @@ class Context(variables: Vars, private val idx: ContextId) {
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(later: Context): Context {
-        val resolvedLater = later.withVariablesResolvedBy(withoutReturnValue()).stripTemporaryKeys()
+        val resolvedLater = later.withVariablesResolvedBy(withoutReturnValue())
 
         var newContext = this
 
@@ -372,6 +381,8 @@ class Context(variables: Vars, private val idx: ContextId) {
         returnValue?.resolveUnknowns(resolvedLater.withOnlyReturnValue())?.let {
             newContext = newContext.withReturnValue(it)
         }
+
+        newContext = newContext.stripTemporaryKeys()
 
         return newContext
     }

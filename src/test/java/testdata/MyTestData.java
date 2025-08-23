@@ -1255,9 +1255,10 @@ public class MyTestData {
 		return (short) a.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest32(short x) {
-		MyClass nested = new MyClass(50);
-		MyNestingClass nesting = new MyNestingClass(nested);
+		MyClass myClass = new MyClass(50);
+		MyNestingClass nesting = new MyNestingClass(myClass);
 		updateNesting(nesting, 5);
 		return (short) nesting.nested.getX();
 	}
@@ -1311,9 +1312,9 @@ public class MyTestData {
 	public static class MyNestingClass {
 		public MyClass nested;
 		
-		public MyNestingClass(MyClass nested) {
-			nested.x++;
-			this.nested = nested;
+		public MyNestingClass(MyClass nestedArg) {
+			nestedArg.x++;
+			this.nested = nestedArg;
 		}
 	}
 	
