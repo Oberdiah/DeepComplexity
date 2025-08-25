@@ -89,7 +89,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
             tests.add(DynamicTest.dynamicTest(method.name, testSourceUri) {
                 app.runReadAction {
                     val (msg, passed) = TestUtilities.testMethod(method)
-                    summaryDescription.add("${method.name.padEnd(25)}: $msg")
+                    summaryDescription.add("${method.name.padEnd(32)}: $msg")
                     if (!passed) {
                         throw AssertionError("Test ${method.name} failed.")
                     }

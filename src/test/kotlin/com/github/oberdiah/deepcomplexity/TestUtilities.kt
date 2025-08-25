@@ -50,7 +50,7 @@ object TestUtilities {
         }
 
         val (columns, passed) = getSummaryTableRow(msg, methodScore, annotation, reflectMethod)
-        val columnSpacing = listOf(27, 11, 7, 1, 1)
+        val columnSpacing = listOf(17, 11, 7, 1, 1)
         val summary = columns.mapIndexed { i, s -> s.padEnd(columnSpacing[i]) }.joinToString(" | ")
         return summary to passed
     }
