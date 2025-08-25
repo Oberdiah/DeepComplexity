@@ -31,6 +31,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val allFiles = java.io.File(testDirectory).walk()
             .filter { it.isFile && it.extension == "java" }
             .map { it.path.replace("src\\test\\java\\testdata\\", "") }
+            .map { it.replace("src/test/java/testdata/", "") }
 
         // Run on all files in the ai directory, plus MyTestData.java
         val outputFilesPreFilter: List<PsiFile?> = fixture.configureByFiles(
