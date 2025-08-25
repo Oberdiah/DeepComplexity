@@ -377,6 +377,10 @@ class Context(variables: Vars, private val idx: ContextId) {
         return newContext
     }
 
+    /**
+     * Adds the return onto this context in the manner that returns should be added;
+     * that is, if this context already has a return, this new one is substituted into the old.
+     */
     fun withAdditionalReturn(key: Key.ReturnKey?, expr: Expr<*>?): Context {
         val retKey = this.returnKey
             ?: key
