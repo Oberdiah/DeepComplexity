@@ -53,6 +53,7 @@ object AITestDataGenerator {
 
         val descriptionsList = listOf(
             ""
+//            "Object aliasing behaviour in methods, ensuring that methods can handle multiple references to the same object",
 //            "Variable tracking through arithmetic, ensuring that x - x = 0, 2x - x = x, etc.",
 //            "Short arithmetic specifically on wrapping behaviour",
 //            "Long chained if statements with complex conditions and nested logic",
@@ -66,6 +67,8 @@ object AITestDataGenerator {
         )
 
         for (testDescription in descriptionsList) {
+            if (testDescription.isBlank()) continue
+
             val instruction = "20 Tests focused on: $testDescription"
 
             val testName = doRequest(
