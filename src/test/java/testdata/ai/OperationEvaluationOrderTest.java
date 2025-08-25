@@ -1,8 +1,11 @@
 
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class OperationEvaluationOrderTest {
     	// Testing short-circuit AND with side effects on left operand
+	@RequiredScore(1.0)
 	public static short shortCircuitAndLeft(short x) {
 	    int a = 0;
 	    boolean result = ++a > 0 && ++a > 1;
@@ -10,6 +13,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing short-circuit AND with side effects on right operand
+	@RequiredScore(1.0)
 	public static short shortCircuitAndRight(short x) {
 	    int a = 0;
 	    boolean result = false && ++a > 0;
@@ -17,6 +21,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing short-circuit OR with side effects on left operand
+	@RequiredScore(1.0)
 	public static short shortCircuitOrLeft(short x) {
 	    int a = 0;
 	    boolean result = ++a > 0 || ++a > 1;
@@ -24,6 +29,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing short-circuit OR with side effects on right operand
+	@RequiredScore(1.0)
 	public static short shortCircuitOrRight(short x) {
 	    int a = 0;
 	    boolean result = true || ++a > 0;
@@ -31,6 +37,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing nested short-circuit evaluation order
+	@RequiredScore(1.0)
 	public static short nestedShortCircuit(short x) {
 	    int a = 0;
 	    boolean result = (++a > 0 && false) || ++a > 1;
@@ -38,6 +45,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing ternary operator evaluation order
+	@RequiredScore(1.0)
 	public static short ternaryEvalOrder(short x) {
 	    int a = 0;
 	    int result = true ? ++a : ++a + 10;
@@ -45,6 +53,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing ternary with side effects in condition
+	@RequiredScore(1.0)
 	public static short ternaryConditionSideEffect(short x) {
 	    int a = 0;
 	    int result = ++a > 0 ? ++a : 99;
@@ -59,6 +68,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing assignment in condition with short-circuit
+	@RequiredScore(1.0)
 	public static short assignmentInCondition(short x) {
 	    int a = 0;
 	    int b = 0;
@@ -69,6 +79,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing post-increment in short-circuit context
+	@RequiredScore(1.0)
 	public static short postIncrementShortCircuit(short x) {
 	    int a = 0;
 	    boolean result = false && a++ > 0;
@@ -76,6 +87,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing pre-increment vs post-increment order
+	@RequiredScore(1.0)
 	public static short prePostIncrementOrder(short x) {
 	    int a = 1;
 	    int result = ++a + a++;
@@ -91,6 +103,7 @@ public class OperationEvaluationOrderTest {
 	}
 	
 	// Testing complex expression with multiple operators
+	@RequiredScore(1.0)
 	public static short complexExpressionOrder(short x) {
 	    int a = 1;
 	    int result = a++ + ++a * a++ - --a;

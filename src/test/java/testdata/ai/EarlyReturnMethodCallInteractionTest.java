@@ -1,7 +1,10 @@
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class EarlyReturnMethodCallInteractionTest {
 	// Testing early return with no method calls
+	@RequiredScore(1.0)
 	public static short earlyReturnNoCalls(short x) {
 		if (x > 0) {
 			return 1;
@@ -15,6 +18,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return bypassing method call with side effects
+	@RequiredScore(1.0)
 	public static short earlyReturnBypassCall(short x) {
 		int result = 5;
 		if (x < 0) {
@@ -29,6 +33,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing multiple early returns with different method calls
+	@RequiredScore(1.0)
 	public static short multipleEarlyReturns(short x) {
 		if (x == 0) {
 			return (short) getValue(1);
@@ -58,6 +63,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with recursive method call
+	@RequiredScore(1.0)
 	public static short earlyReturnRecursive(short x) {
 		if (x <= 0) {
 			return 0;
@@ -74,6 +80,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with method that modifies global state
+	@RequiredScore(1.0)
 	public static short earlyReturnGlobalState(short x) {
 		counter = 1;
 		if (x == 0) {
@@ -107,6 +114,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with method call in condition
+	@RequiredScore(1.0)
 	public static short earlyReturnMethodInCondition(short x) {
 		if (isPositive(x)) {
 			return 100;
@@ -159,6 +167,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with method modifying parameter object
+	@RequiredScore(1.0)
 	public static short earlyReturnModifyObject(short x) {
 		TestObject obj = new TestObject(1);
 		if (x < 0) {
@@ -181,6 +190,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with method call returning different types
+	@RequiredScore(1.0)
 	public static short earlyReturnDifferentTypes(short x) {
 		if (x > 0) {
 			return (short) (getBoolean() ? 1 : 0);
@@ -215,6 +225,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with method call that has early return
+	@RequiredScore(1.0)
 	public static short earlyReturnNested(short x) {
 		if (x == 0) {
 			return (short) methodWithEarlyReturn(1);
@@ -228,6 +239,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with constructor call
+	@RequiredScore(1.0)
 	public static short earlyReturnConstructor(short x) {
 		if (x < 0) {
 			return (short) new ValueClass(5).getValue();
@@ -248,6 +260,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with method call inside ternary
+	@RequiredScore(1.0)
 	public static short earlyReturnTernary(short x) {
 		if (x == 0) {
 			return 1;
@@ -264,6 +277,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with void method call affecting return value
+	@RequiredScore(1.0)
 	public static short earlyReturnVoidMethod(short x) {
 		state = 0;
 		if (x > 0) {
@@ -296,6 +310,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with overloaded method calls
+	@RequiredScore(1.0)
 	public static short earlyReturnOverload(short x) {
 		if (x == 0) {
 			return (short) overloadedMethod(5);

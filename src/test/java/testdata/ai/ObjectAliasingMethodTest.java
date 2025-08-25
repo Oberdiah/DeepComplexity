@@ -1,7 +1,10 @@
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class ObjectAliasingMethodTest {
 	// Testing basic aliasing with field modification
+	@RequiredScore(1.0)
 	public static short basicAliasing(short x) {
 		AliasClass obj = new AliasClass(5);
 		modifyBothRefs(obj, obj);
@@ -52,6 +55,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with nested object references
+	@RequiredScore(1.0)
 	public static short nestedAliasing(short x) {
 		Container c1 = new Container(new AliasClass(0));
 		Container c2 = new Container(c1.inner);
@@ -77,6 +81,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with multiple field updates
+	@RequiredScore(1.0)
 	public static short multiFieldAliasing(short x) {
 		MultiField obj = new MultiField(1, 2);
 		multiFieldModify(obj, obj);
@@ -103,6 +108,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with object swapping attempt
+	@RequiredScore(1.0)
 	public static short swapAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		attemptSwap(obj, obj);
@@ -150,6 +156,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with method overloading
+	@RequiredScore(1.0)
 	public static short overloadAliasing(short x) {
 		AliasClass obj = new AliasClass(10);
 		overloadedModify(obj, obj, 20);
@@ -180,6 +187,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with synchronized methods
+	@RequiredScore(1.0)
 	public static short synchronizedAliasing(short x) {
 		AliasClass obj = new AliasClass(44);
 		synchronizedModify(obj, obj);
@@ -192,6 +200,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with generic type parameters
+	@RequiredScore(1.0)
 	public static short genericAliasing(short x) {
 		AliasClass obj = new AliasClass(100);
 		genericModify(obj, obj);
@@ -262,6 +271,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with constructor chaining
+	@RequiredScore(1.0)
 	public static short constructorAliasing(short x) {
 		ChainedClass obj = new ChainedClass(0);
 		constructorModify(obj.inner, obj.inner);

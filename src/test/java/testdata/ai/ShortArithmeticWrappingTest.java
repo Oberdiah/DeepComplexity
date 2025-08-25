@@ -1,25 +1,31 @@
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class ShortArithmeticWrappingTest {
 	// Testing short addition wrapping at maximum value
+	@RequiredScore(1.0)
 	public static short additionWrap(short x) {
 		short max = 32767;
 		return (short) (max + 1);
 	}
 	
 	// Testing short subtraction wrapping at minimum value
+	@RequiredScore(1.0)
 	public static short subtractionWrap(short x) {
 		short min = -32768;
 		return (short) (min - 1);
 	}
 	
 	// Testing short multiplication causing overflow wrap
+	@RequiredScore(1.0)
 	public static short multiplicationWrap(short x) {
 		short val = 16384;
 		return (short) (val * 2);
 	}
 	
 	// Testing short increment at boundary
+	@RequiredScore(1.0)
 	public static short incrementWrap(short x) {
 		short val = 32767;
 		val++;
@@ -27,6 +33,7 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing short decrement at boundary
+	@RequiredScore(1.0)
 	public static short decrementWrap(short x) {
 		short val = -32768;
 		val--;
@@ -34,6 +41,7 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing compound assignment addition wrap
+	@RequiredScore(1.0)
 	public static short compoundAddWrap(short x) {
 		short val = 32767;
 		val += 2;
@@ -41,6 +49,7 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing compound assignment subtraction wrap
+	@RequiredScore(1.0)
 	public static short compoundSubWrap(short x) {
 		short val = -32768;
 		val -= 2;
@@ -48,18 +57,21 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing double overflow wrap
+	@RequiredScore(1.0)
 	public static short doubleOverflow(short x) {
 		short val = 32767;
 		return (short) (val + val + 2);
 	}
 	
 	// Testing negative multiplication wrap
+	@RequiredScore(1.0)
 	public static short negativeMultiplyWrap(short x) {
 		short val = -16384;
 		return (short) (val * 2);
 	}
 	
 	// Testing chain of operations causing wrap
+	@RequiredScore(1.0)
 	public static short chainOperationWrap(short x) {
 		short val = 32765;
 		val++;
@@ -77,6 +89,7 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing division by negative causing sign wrap
+	@RequiredScore(1.0)
 	public static short divisionSignWrap(short x) {
 		short val = -32768;
 		return (short) (val / -2);
@@ -105,6 +118,7 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing wrap in conditional expression
+	@RequiredScore(1.0)
 	public static short conditionalWrap(short x) {
 		short val = 32767;
 		short result = (short) (val + 1);
@@ -112,6 +126,7 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing unary minus on minimum value
+	@RequiredScore(1.0)
 	public static short unaryMinusWrap(short x) {
 		short min = -32768;
 		return (short) (-min);
@@ -124,12 +139,14 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing cast from int with wrap
+	@RequiredScore(1.0)
 	public static short castWrap(short x) {
 		int val = 65535;
 		return (short) val;
 	}
 	
 	// Testing method parameter wrap propagation
+	@RequiredScore(1.0)
 	public static short parameterWrap(short x) {
 		return wrapHelper((short) 32767);
 	}

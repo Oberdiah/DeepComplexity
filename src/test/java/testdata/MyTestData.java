@@ -1113,6 +1113,7 @@ public class MyTestData {
 		return (short) a.getX();
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest22(short x) {
 		int p = 0;
 		

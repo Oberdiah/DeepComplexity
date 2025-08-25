@@ -120,8 +120,6 @@ object TestUtilities {
                             val indent = content[idx].takeWhile { it.isWhitespace() }
                             content.add(idx, indent + "@RequiredScore(1.0)")
                             println("Added @RequiredScore(1.0) to $filePath#$methodName")
-                        } else {
-                            println("Skipped (already annotated): $filePath#$methodName")
                         }
                     } else {
                         println("Warning: Could not locate method declaration for $filePath#$methodName")

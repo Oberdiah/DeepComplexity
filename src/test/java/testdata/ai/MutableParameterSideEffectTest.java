@@ -1,5 +1,7 @@
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class MutableParameterSideEffectTest {
 	// Testing method with side effect on array parameter
 	public static short arraySideEffect(short x) {
@@ -13,6 +15,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing method with side effect on object field
+	@RequiredScore(1.0)
 	public static short objectFieldSideEffect(short x) {
 		Counter c = new Counter(3);
 		incrementCounter(c);
@@ -32,6 +35,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing multiple side effects on same object
+	@RequiredScore(1.0)
 	public static short multipleSideEffects(short x) {
 		Holder h = new Holder(5);
 		addFive(h);
@@ -52,6 +56,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect through aliased parameters
+	@RequiredScore(1.0)
 	public static short aliasedParameterSideEffect(short x) {
 		Box box = new Box(10);
 		doubleValue(box, box);
@@ -71,6 +76,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing conditional side effect
+	@RequiredScore(1.0)
 	public static short conditionalSideEffect(short x) {
 		Value v = new Value(2);
 		conditionalModify(v, true);
@@ -92,6 +98,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect in nested method calls
+	@RequiredScore(1.0)
 	public static short nestedSideEffect(short x) {
 		Item item = new Item(4);
 		outerMethod(item);
@@ -115,6 +122,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect with return value ignored
+	@RequiredScore(1.0)
 	public static short ignoredReturnSideEffect(short x) {
 		Data data = new Data(5);
 		modifyAndReturn(data);
@@ -146,6 +154,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect through multiple object references
+	@RequiredScore(1.0)
 	public static short multipleReferenceSideEffect(short x) {
 		Node node = new Node(6);
 		Node alias = node;
@@ -211,6 +220,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect with method chaining pattern
+	@RequiredScore(1.0)
 	public static short methodChainingSideEffect(short x) {
 		Builder builder = new Builder(10);
 		process(builder);
@@ -234,6 +244,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect on shared mutable state
+	@RequiredScore(1.0)
 	public static short sharedStateSideEffect(short x) {
 		Shared shared = new Shared(11);
 		modifyShared1(shared);
@@ -292,6 +303,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect with parameter reassignment not affecting original
+	@RequiredScore(1.0)
 	public static short parameterReassignment(short x) {
 		Reference ref = new Reference(9);
 		tryReassign(ref);
@@ -311,6 +323,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing side effect through getter method modification
+	@RequiredScore(1.0)
 	public static short getterSideEffect(short x) {
 		LazyValue lazy = new LazyValue(13);
 		lazy.getValue();
@@ -331,6 +344,7 @@ public class MutableParameterSideEffectTest {
 	}
 	
 	// Testing complex side effect with multiple parameters
+	@RequiredScore(1.0)
 	public static short complexSideEffect(short x) {
 		Pair pair = new Pair(14, 15);
 		swapAndSum(pair);

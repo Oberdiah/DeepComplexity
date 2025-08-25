@@ -1,7 +1,10 @@
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class VariableDeclarationTrackingTest {
 	// Testing sequential variable assignments with same value
+	@RequiredScore(1.0)
 	public static short sequentialAssignment(short x) {
 		int a = 10;
 		int b = a;
@@ -12,6 +15,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable swapping without temporary
+	@RequiredScore(1.0)
 	public static short variableSwap(short x) {
 		int a = 3;
 		int b = 5;
@@ -22,12 +26,14 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing multiple variable declarations in one line
+	@RequiredScore(1.0)
 	public static short multipleDeclaration(short x) {
 		int a = 5, b = 10, c = a + b;
 		return (short) c;
 	}
 	
 	// Testing variable shadowing in nested scopes
+	@RequiredScore(1.0)
 	public static short variableShadowing(short x) {
 		int a = 10;
 		{
@@ -37,6 +43,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable reassignment chain
+	@RequiredScore(1.0)
 	public static short reassignmentChain(short x) {
 		int a = 1;
 		int b = 2;
@@ -48,6 +55,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable dependency tracking
+	@RequiredScore(1.0)
 	public static short dependencyTracking(short x) {
 		int a = 10;
 		int b = a;
@@ -57,6 +65,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing circular variable references
+	@RequiredScore(1.0)
 	public static short circularReference(short x) {
 		int a = 3;
 		int b = 4;
@@ -67,6 +76,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable initialization order
+	@RequiredScore(1.0)
 	public static short initializationOrder(short x) {
 		int a = getTwo() + getThree();
 		int b = a;
@@ -82,6 +92,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable modification through operations
+	@RequiredScore(1.0)
 	public static short variableModification(short x) {
 		int a = 5;
 		int b = a;
@@ -91,6 +102,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable state after conditional assignment
+	@RequiredScore(1.0)
 	public static short conditionalAssignment(short x) {
 		int a = 50;
 		int b = 100;
@@ -122,6 +134,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable interference between similar names
+	@RequiredScore(1.0)
 	public static short similarNames(short x) {
 		int var1 = 10;
 		int var11 = 15;
@@ -144,6 +157,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable state with method calls
+	@RequiredScore(1.0)
 	public static short methodCall(short x) {
 		int a = 10;
 		int b = a;
@@ -168,6 +182,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable state with increment operations
+	@RequiredScore(1.0)
 	public static short incrementOperation(short x) {
 		int a = 5;
 		int b = a;
@@ -176,6 +191,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable state with compound assignments
+	@RequiredScore(1.0)
 	public static short compoundAssignment(short x) {
 		int a = 5;
 		int b = 10;
@@ -185,6 +201,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable state in nested method calls
+	@RequiredScore(1.0)
 	public static short nestedMethodCall(short x) {
 		int a = 8;
 		int b = doubleValue(a);
@@ -196,6 +213,7 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable state with ternary operator
+	@RequiredScore(1.0)
 	public static short ternaryOperator(short x) {
 		int a = 100;
 		int b = 200;

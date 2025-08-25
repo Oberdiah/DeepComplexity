@@ -1,68 +1,83 @@
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class VariableArithmeticSimplificationTest {
 	// Testing simple subtraction x - x should equal 0
+	@RequiredScore(1.0)
 	public static short selfSubtraction(short x) {
 		return (short) (x - x);
 	}
 	
 	// Testing 2x - x should equal x
+	@RequiredScore(1.0)
 	public static short doubleMinusX(short x) {
 		return (short) (2 * x - x);
 	}
 	
 	// Testing x + x - x should equal x
+	@RequiredScore(1.0)
 	public static short addSubSame(short x) {
 		return (short) (x + x - x);
 	}
 	
 	// Testing x - x + x should equal x
+	@RequiredScore(1.0)
 	public static short subAddSame(short x) {
 		return (short) (x - x + x);
 	}
 	
 	// Testing 3x - 2x should equal x
+	@RequiredScore(1.0)
 	public static short threeMinusTwoX(short x) {
 		return (short) (3 * x - 2 * x);
 	}
 	
 	// Testing x * 2 / 2 should equal x (for non-zero x)
+	@RequiredScore(1.0)
 	public static short multiplyDivide(short x) {
 		if (x == 0) return 0;
 		return (short) (x * 2 / 2);
 	}
 	
 	// Testing (x + 5) - 5 should equal x
+	@RequiredScore(1.0)
 	public static short addSubConstant(short x) {
 		return (short) ((x + 5) - 5);
 	}
 	
 	// Testing x + 0 should equal x
+	@RequiredScore(1.0)
 	public static short addZero(short x) {
 		return (short) (x + 0);
 	}
 	
 	// Testing x * 1 should equal x
+	@RequiredScore(1.0)
 	public static short multiplyOne(short x) {
 		return (short) (x * 1);
 	}
 	
 	// Testing x / 1 should equal x
+	@RequiredScore(1.0)
 	public static short divideOne(short x) {
 		return (short) (x / 1);
 	}
 	
 	// Testing -(-x) should equal x
+	@RequiredScore(1.0)
 	public static short doubleNegation(short x) {
 		return (short) (-(-x));
 	}
 	
 	// Testing x + x - 2*x should equal 0
+	@RequiredScore(1.0)
 	public static short complexZero(short x) {
 		return (short) (x + x - 2 * x);
 	}
 	
 	// Testing variable aliasing with arithmetic
+	@RequiredScore(1.0)
 	public static short aliasingArithmetic(short x) {
 		int a = x;
 		int b = a;
@@ -70,16 +85,19 @@ public class VariableArithmeticSimplificationTest {
 	}
 	
 	// Testing x * 0 should equal 0
+	@RequiredScore(1.0)
 	public static short multiplyZero(short x) {
 		return (short) (x * 0);
 	}
 	
 	// Testing 0 - x + x should equal 0
+	@RequiredScore(1.0)
 	public static short zeroMinusAdd(short x) {
 		return (short) (0 - x + x);
 	}
 	
 	// Testing (x - 1) + 1 should equal x
+	@RequiredScore(1.0)
 	public static short subAddConstant(short x) {
 		return (short) ((x - 1) + 1);
 	}
@@ -100,6 +118,7 @@ public class VariableArithmeticSimplificationTest {
 	}
 	
 	// Testing complex expression that should simplify to x
+	@RequiredScore(1.0)
 	public static short complexSimplification(short x) {
 		return (short) (x + x + x - x - x);
 	}

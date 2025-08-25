@@ -1,5 +1,7 @@
 package testdata.ai;
 
+import com.github.oberdiah.deepcomplexity.RequiredScore;
+
 public class ParameterOrderEvaluationTest {
 	// Testing parameter evaluation order with side effects
 	public static short parameterOrder(short x) {
@@ -16,6 +18,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing field modification in parameter evaluation
+	@RequiredScore(1.0)
 	public static short fieldParamOrder(short x) {
 		FieldClass obj = new FieldClass(5);
 		multiParamMethod(obj.field, obj.field = 10, obj.field + 5);
@@ -68,6 +71,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter evaluation with volatile fields
+	@RequiredScore(1.0)
 	public static short volatileParam(short x) {
 		VolatileClass obj = new VolatileClass(3);
 		multiParamMethod(obj.volatileField, obj.volatileField = 7, obj.volatileField + 4);
@@ -82,6 +86,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter evaluation with inheritance
+	@RequiredScore(1.0)
 	public static short inheritanceParam(short x) {
 		ChildClass child = new ChildClass(4);
 		multiParamMethod(child.getValue(), child.doubleValue(), child.getValue());
@@ -132,6 +137,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with multiple assignment
+	@RequiredScore(1.0)
 	public static short multipleAssignmentParam(short x) {
 		int a = 10, b = 20;
 		multiParamMethod(a, a = b, b = 30);
