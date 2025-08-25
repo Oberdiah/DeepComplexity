@@ -30,8 +30,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val testDirectory = "src/test/java/testdata/"
         val allFiles = java.io.File(testDirectory).walk()
             .filter { it.isFile && it.extension == "java" }
-            .map { it.path.replace("src\\test\\java\\testdata\\", "") }
-            .map { it.replace("src/test/java/testdata/", "") }
+            .map { it.invariantSeparatorsPath.replace(testDirectory, "") }
 
         // Run on all files in the ai directory, plus MyTestData.java
         val outputFilesPreFilter: List<PsiFile?> = fixture.configureByFiles(
@@ -111,5 +110,11 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         println("Number of tests run: ${summaryDescription.size}")
         println()
         summaryDescription.forEach { println(it) }
+
+        if (System.getenv("UPDATE_ANNOTATIONS") == "True") {
+            TestUtilities.applyRequiredScoreAnnotationsIfRequested()
+        } else {
+            println("UPDATE_ANNOTATIONS is not 'True'. Skipping annotation updates.")
+        }
     }
 }
