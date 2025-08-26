@@ -12,6 +12,7 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
+import kotlin.test.assertIs
 
 object MethodProcessing {
     fun getMethodContext(method: PsiMethod): Context {
@@ -394,11 +395,7 @@ object MethodProcessing {
     }
 
     private fun processReference(psi: PsiExpression, context: ContextWrapper): LValueExpr<*> {
-        if (psi !is PsiReferenceExpression) {
-            throw IllegalArgumentException(
-                "Expected PsiReferenceExpression, but got ${psi::class}"
-            )
-        }
+        assertIs<PsiReferenceExpression>(psi, "Expected PsiReferenceExpression, but got ${psi::class}")
 
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {

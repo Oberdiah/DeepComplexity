@@ -9,6 +9,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import kotlin.test.assertIs
 
 object ConstraintSolver {
     data class CollectedTerms<T : Number>(
@@ -109,9 +110,10 @@ object ConstraintSolver {
 
         val variables = expr.getVariables()
         for (variable in variables) {
-            assert(variable.ind is NumberSetIndicator<*>) {
+            assertIs<NumberSetIndicator<*>>(
+                variable.ind,
                 "All variables must be number sets. This requires more thought if we've hit this."
-            }
+            )
 
             // Safety: We know the variable is a number set.
             @Suppress("UNCHECKED_CAST")

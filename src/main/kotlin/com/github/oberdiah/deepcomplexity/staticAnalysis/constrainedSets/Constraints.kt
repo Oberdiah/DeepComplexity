@@ -7,6 +7,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.utilities.Functional
+import kotlin.test.assertIsNot
 
 /**
  * All constraints in the map must be true, it in-effect acts as an AND.
@@ -74,14 +75,15 @@ data class Constraints private constructor(
         return constraints[key]?.cast(ind) ?: ind.newFullSet()
     }
 
-    fun withConstraint(key: Context.Key, ISet: ISet<*>): Constraints {
-        assert(key !is Context.Key.EphemeralKey) {
+    fun withConstraint(key: Context.Key, iSet: ISet<*>): Constraints {
+        assertIsNot<Context.Key.EphemeralKey>(
+            key,
             "Ephemeral keys shouldn't really be allowed to be added to constraints."
+        )
+        assert(key.ind == iSet.ind) {
+            "Key and bundle must have the same type. (${key.ind} != ${iSet.ind})"
         }
-        assert(key.ind == ISet.ind) {
-            "Key and bundle must have the same type. (${key.ind} != ${ISet.ind})"
-        }
-        return and(constrainedBy(mapOf(key to ISet)))
+        return and(constrainedBy(mapOf(key to iSet)))
     }
 
     fun invert(): Constraints {
