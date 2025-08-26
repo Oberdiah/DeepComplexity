@@ -9,6 +9,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVarian
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.intellij.psi.PsiType
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
@@ -64,18 +65,8 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
                 Byte::class -> ByteSetIndicator
                 Char::class -> TODO()
                 Boolean::class -> BooleanSetIndicator
-                else -> GenericSetIndicator(clazz)
+                else -> TODO()
             }
-        }
-
-        fun <T : Any> fromValue(value: T): SetIndicator<T> {
-            @Suppress("UNCHECKED_CAST")
-            return when (value) {
-                is Number -> fromValue(value)
-                is Boolean -> BooleanSetIndicator
-                is String -> GenericSetIndicator(String::class)
-                else -> GenericSetIndicator(value::class)
-            } as SetIndicator<T>
         }
 
         fun <T : Number> fromValue(value: T): NumberSetIndicator<T> {
@@ -187,15 +178,15 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
         BooleanSet.fromBoolean(constant)
 }
 
-class GenericSetIndicator<T : Any>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
-    override fun newVariance(key: Context.Key): Variances<T> = TODO()
-    override fun newConstantSet(constant: T): ISet<T> = GenericSet(setOf(constant))
-    override fun newEmptySet(): ISet<T> = GenericSet(emptySet())
-    override fun newFullSet(): ISet<T> = TODO()
+class GenericSetIndicator(val type: PsiType) : SetIndicator<Any>(Any::class) {
+    override fun newVariance(key: Context.Key): Variances<Any> = TODO()
+    override fun newConstantSet(constant: Any): ISet<Any> = GenericSet(setOf(constant))
+    override fun newEmptySet(): ISet<Any> = GenericSet(emptySet())
+    override fun newFullSet(): ISet<Any> = TODO()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is GenericSetIndicator<*>) return false
+        if (other !is GenericSetIndicator) return false
 
         if (clazz != other.clazz) return false
 

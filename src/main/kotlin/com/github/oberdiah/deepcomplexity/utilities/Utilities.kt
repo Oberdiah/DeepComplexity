@@ -69,8 +69,17 @@ object Utilities {
     }
 
     fun psiTypeToSetIndicator(type: PsiType): SetIndicator<*> {
-        val clazz = psiTypeToKClass(type) ?: return GenericSetIndicator(Any::class)
+        val clazz = psiTypeToKClass(type) ?: return GenericSetIndicator(type)
         return SetIndicator.fromClass(clazz)
+    }
+
+    fun PsiMethod.getThisType(): PsiType? {
+        val containingClass = this.containingClass
+        return if (containingClass != null) {
+            JavaPsiFacade.getInstance(containingClass.project).elementFactory.createType(containingClass)
+        } else {
+            null
+        }
     }
 
     fun PsiElement.toStringPretty(): String {

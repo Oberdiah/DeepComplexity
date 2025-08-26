@@ -4,19 +4,23 @@ import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.solver.LoopSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.getThisType
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+
 
 object MethodProcessing {
     fun getMethodContext(method: PsiMethod): Context {
-        val wrapper = newContext()
+        val wrapper = newContext(method.getThisType())
 
         method.body?.let { body ->
             processPsiStatement(body, wrapper)
@@ -25,7 +29,7 @@ object MethodProcessing {
         return wrapper.c
     }
 
-    fun newContext(): ContextWrapper = ContextWrapper(Context.brandNew())
+    fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(Context.brandNew(thisType))
 
     /**
      * This feels a bit silly, but in some ways it's nice to keep all of our mutability
@@ -86,7 +90,7 @@ object MethodProcessing {
             }
 
             is PsiIfStatement -> {
-                val conditionContext = newContext()
+                val conditionContext = newContext(context.c.thisType)
                 val condition = processPsiExpression(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     conditionContext
@@ -94,10 +98,10 @@ object MethodProcessing {
                 context.stack(conditionContext.c)
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                val trueBranchContext = newContext()
+                val trueBranchContext = newContext(context.c.thisType)
                 processPsiStatement(trueBranch, trueBranchContext)
 
-                val falseBranchContext = newContext()
+                val falseBranchContext = newContext(context.c.thisType)
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
                 val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
@@ -108,7 +112,7 @@ object MethodProcessing {
             }
 
             is PsiConditionalExpression -> {
-                val conditionContext = newContext()
+                val conditionContext = newContext(context.c.thisType)
                 val condition = processPsiExpression(psi.condition, conditionContext).castToBoolean()
                 // The side effects of the condition need to happen immediately. However,
                 // we still need a separate context so that we don't resolve anything into
@@ -117,11 +121,11 @@ object MethodProcessing {
                 context.stack(conditionContext.c)
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
-                val trueExprContext = newContext()
+                val trueExprContext = newContext(context.c.thisType)
                 val trueResult = processPsiExpression(trueBranch, trueExprContext)
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
-                val falseExprContext = newContext()
+                val falseExprContext = newContext(context.c.thisType)
                 val falseResult = processPsiExpression(falseBranch, falseExprContext)
 
                 val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
@@ -169,7 +173,7 @@ object MethodProcessing {
 
                 // In this case we specifically don't want to inherit the variables, because in this case
                 // the context may be repeated many times, and we want to analyse its effects over time.
-                val bodyContext = newContext()
+                val bodyContext = newContext(context.c.thisType)
 
                 val conditionExpr = psi.condition?.let { condition ->
                     processPsiExpression(condition, bodyContext)
@@ -200,7 +204,9 @@ object MethodProcessing {
                 return processPsiStatement(psi.expression, context)
             }
 
-            is PsiThisExpression -> return context.c.getVar(Key.HeapKey.This)
+            is PsiThisExpression -> {
+                return context.c.getVar(Key.HeapKey.newThis(psi.type!!))
+            }
 
             is PsiMethodCallExpression -> {
                 val qualifier = psi.methodExpression.qualifier?.let {
@@ -212,7 +218,9 @@ object MethodProcessing {
                 val methodContext = processMethod(context, psi)
 
                 qualifier?.let {
-                    context.addVar(LValueKeyExpr<Any>(Key.HeapKey.This), it)
+                    val ind = it.ind
+                    assertIs<GenericSetIndicator>(ind)
+                    context.addVar(LValueKeyExpr<Any>(Key.HeapKey.newThis(ind.type)), it)
                 }
 
                 val methodReturnValue = methodContext.returnValue?.resolveUnknowns(context.c)
@@ -370,11 +378,12 @@ object MethodProcessing {
             }
 
             is PsiNewExpression -> {
-                val newObj = context.c.getVar(Key.HeapKey.new())
+                val objType = psi.type!!
+                val newObj = context.c.getVar(Key.HeapKey.new(objType))
 
                 val methodContext = processMethod(context, psi)
 
-                context.addVar(LValueKeyExpr<Any>(Key.HeapKey.This), newObj)
+                context.addVar(LValueKeyExpr<Any>(Key.HeapKey.newThis(objType)), newObj)
                 context.stack(methodContext)
 
                 return newObj
@@ -404,7 +413,12 @@ object MethodProcessing {
                     psi.qualifier?.let {
                         processPsiExpression(it, context)
                     }.orElse {
-                        context.c.getVar(Key.HeapKey.This)
+                        val thisType = context.c.thisType
+                        assertNotNull(
+                            thisType,
+                            "No qualifier on field ${resolved.name}, but also no `this` type in context?"
+                        )
+                        context.c.getVar(Key.HeapKey.newThis(thisType))
                     }
                 )
             }
@@ -451,7 +465,7 @@ object MethodProcessing {
             )
         }
 
-        val methodContext = newContext()
+        val methodContext = newContext(method.getThisType())
         method.body?.let { body ->
             processPsiStatement(body, methodContext)
         }
@@ -476,7 +490,7 @@ object MethodProcessing {
 
             val lhs = lhsPrecast.castToBoolean()
 
-            val rhsContext = newContext()
+            val rhsContext = newContext(context.c.thisType)
             val rhs = processPsiExpression(rhsPsi, rhsContext)
                 .resolveUnknowns(context.c)
                 .castToBoolean()
@@ -496,13 +510,13 @@ object MethodProcessing {
              */
             val combined = when (booleanOp) {
                 BooleanOp.AND -> {
-                    Context.combine(rhsContext.c, Context.brandNew()) { a, b ->
+                    Context.combine(rhsContext.c, Context.brandNew(context.c.thisType)) { a, b ->
                         IfExpression.new(a, b, lhs)
                     }
                 }
 
                 BooleanOp.OR -> {
-                    Context.combine(Context.brandNew(), rhsContext.c) { a, b ->
+                    Context.combine(Context.brandNew(context.c.thisType), rhsContext.c) { a, b ->
                         IfExpression.new(a, b, lhs)
                     }
                 }

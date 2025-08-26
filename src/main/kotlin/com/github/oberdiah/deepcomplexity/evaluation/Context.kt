@@ -9,6 +9,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
+import kotlin.test.assertEquals
 
 typealias Vars = Map<Key, Expr<*>>
 
@@ -18,7 +19,22 @@ typealias Vars = Map<Key, Expr<*>>
  *
  * For example, in a context `{ x: y + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
  */
-class Context(variables: Vars, private val idx: ContextId) {
+class Context(
+    variables: Vars,
+    /**
+     * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
+     * it in the key of the `this` object? What would we do when we don't know that expression yet, though?)
+     *
+     * The reason this is needed is when we're doing aliasing resolution inside a method with no
+     * additional context, we need to know if `this` has the same type as any of the parameters, in case
+     * they alias.
+     *
+     * Imagine a case where we're evaluating an expression like `int t = this.q`. `this`'s type needs to be known
+     * to at least some degree to perform alias protection, and the only place to store that is in the context.
+     */
+    val thisType: PsiType?,
+    private val idx: ContextId
+) {
     /**
      * All the variables in this context.
      *
@@ -34,7 +50,7 @@ class Context(variables: Vars, private val idx: ContextId) {
     init {
         // We have to allow `This` here to allow us to create a context with 'this' defined
         // to stack on top of and resolve.
-        assert(variables.keys.none { it is EphemeralKey || (it is Key.HeapKey && it != Key.HeapKey.This) }) {
+        assert(variables.keys.none { it is EphemeralKey || (it is Key.HeapKey && !it.isThis) }) {
             "Ephemeral keys and heap keys shouldn't be used as variable keys."
         }
     }
@@ -82,27 +98,31 @@ class Context(variables: Vars, private val idx: ContextId) {
             override fun hashCode(): Int = variable.hashCode()
         }
 
-        data class QualifiedKey(val field: FieldRef, val qualifier: Key = HeapKey.This) : Key() {
+        data class QualifiedKey(val field: FieldRef, val qualifier: Key) : Key() {
             override fun toString(): String = "$qualifier.$field"
         }
 
         data class HeapKey(
             private val idx: Int,
+            val type: PsiType,
+            val isThis: Boolean,
             // Whether this reference is pointing to an object we watched get created during expression parsing.
             // (We never watch `this` get created, nor unknown objects outside our scope.)
             val newlyCreated: Boolean,
             override val temporary: Boolean = false
         ) : Key() {
             companion object {
-                private var KEY_INDEX = 0
-                val This = new(newlyCreated = false, temporary = true)
-                fun new(newlyCreated: Boolean = true, temporary: Boolean = false): HeapKey =
-                    HeapKey(KEY_INDEX++, newlyCreated, temporary)
+                private var KEY_INDEX = 1
+                fun newThis(type: PsiType): HeapKey =
+                    HeapKey(0, type, isThis = true, newlyCreated = false, temporary = true)
+
+                fun new(type: PsiType, newlyCreated: Boolean = true, temporary: Boolean = false): HeapKey =
+                    HeapKey(KEY_INDEX++, type, false, newlyCreated, temporary)
             }
 
             override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
             override fun hashCode(): Int = idx.hashCode()
-            override fun toString(): String = if (this == This) "this" else "#${idx}"
+            override fun toString(): String = if (isThis) "this" else "#${idx}"
         }
 
         data class ReturnKey(val type: SetIndicator<*>) : Key() {
@@ -141,7 +161,7 @@ class Context(variables: Vars, private val idx: ContextId) {
                     is ReturnKey -> type
                     is VariableKey -> Utilities.psiTypeToSetIndicator(variable.type)
                     is QualifiedKey -> this.field.ind
-                    is HeapKey -> GenericSetIndicator(Any::class)
+                    is HeapKey -> GenericSetIndicator(this.type)
                     else -> throw IllegalArgumentException("Cannot get indicator for $this")
                 }
             }
@@ -191,7 +211,7 @@ class Context(variables: Vars, private val idx: ContextId) {
          * You won't want this often, in nearly all cases it makes sense
          * to inherit the existing context via cloning.
          */
-        fun brandNew(): Context = Context(emptyMap(), ContextId.new())
+        fun brandNew(thisType: PsiType?): Context = Context(emptyMap(), thisType, ContextId.new())
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
@@ -201,6 +221,11 @@ class Context(variables: Vars, private val idx: ContextId) {
          * You must define how to resolve conflicts.
          */
         fun combine(a: Context, b: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
+            assertEquals(
+                a.thisType,
+                b.thisType,
+                "Cannot combine contexts with different 'this' types."
+            )
             return Context(
                 (a.variables.keys + b.variables.keys)
                     .associateWith { key ->
@@ -224,6 +249,7 @@ class Context(variables: Vars, private val idx: ContextId) {
                             )
                         }
                     },
+                a.thisType,
                 a.idx + b.idx
             )
         }
@@ -266,7 +292,7 @@ class Context(variables: Vars, private val idx: ContextId) {
 
         if (lExpr is LValueKeyExpr) {
             val castVar = rExpr.castToUsingTypeCast(lExpr.key.ind, false)
-            return Context(variables + (lExpr.key to castVar), idx)
+            return Context(variables + (lExpr.key to castVar), thisType, idx)
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
@@ -320,7 +346,7 @@ class Context(variables: Vars, private val idx: ContextId) {
             (thisVarKey to newValue)
         }
 
-        return Context(newVariables, idx)
+        return Context(newVariables, thisType, idx)
     }
 
     private fun withVariablesResolvedBy(resolver: Context): Context {
@@ -328,6 +354,7 @@ class Context(variables: Vars, private val idx: ContextId) {
             variables.mapValues { (_, expr) ->
                 resolver.resolveKnownVariables(expr)
             },
+            thisType,
             idx
         )
     }
@@ -390,14 +417,14 @@ class Context(variables: Vars, private val idx: ContextId) {
             ?: expr
             ?: return this
 
-        return Context(variables + (retKey to newRetExpr), idx)
+        return Context(variables + (retKey to newRetExpr), thisType, idx)
     }
 
     private fun stripTemporaryKeys(): Context {
-        return Context(variables.filterKeys { !it.temporary }, idx)
+        return Context(variables.filterKeys { !it.temporary }, thisType, idx)
     }
 
     fun withoutReturnValue(): Context {
-        return Context(variables - Key.ReturnKey.Me, idx)
+        return Context(variables - Key.ReturnKey.Me, thisType, idx)
     }
 }
