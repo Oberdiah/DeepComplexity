@@ -80,37 +80,32 @@ class Context(
      * after stacking. This is useful for tidying up keys that are only
      * added to aid resolution, such as parameters and `this`.
      */
-    sealed class Key(open val temporary: Boolean = false) {
-        abstract class VariableKey() : Key() {
-            abstract val variable: PsiVariable
-        }
-
-        data class LocalVariableKey(override val variable: PsiLocalVariable) : VariableKey() {
+    sealed class Key(val temporary: Boolean = false) {
+        abstract class VariableKey(val variable: PsiVariable, temporary: Boolean = false) : Key(temporary) {
             override fun toString(): String = variable.toStringPretty()
-        }
-
-        data class ParameterKey(
-            override val variable: PsiParameter,
-            override val temporary: Boolean = false
-        ) : VariableKey() {
-            override fun toString(): String = variable.toStringPretty()
-            override fun equals(other: Any?): Boolean = other is ParameterKey && this.variable == other.variable
+            override fun equals(other: Any?): Boolean = other is VariableKey && this.variable == other.variable
             override fun hashCode(): Int = variable.hashCode()
         }
+
+        class LocalVariableKey(variable: PsiLocalVariable) : VariableKey(variable)
+        class ParameterKey(
+            variable: PsiParameter,
+            temporary: Boolean = false
+        ) : VariableKey(variable, temporary)
 
         data class QualifiedKey(val field: FieldRef, val qualifier: Key) : Key() {
             override fun toString(): String = "$qualifier.$field"
         }
 
-        data class HeapKey(
+        class HeapKey(
             private val idx: Int,
             val type: PsiType,
             val isThis: Boolean,
             // Whether this reference is pointing to an object we watched get created during expression parsing.
             // (We never watch `this` get created, nor unknown objects outside our scope.)
             val newlyCreated: Boolean,
-            override val temporary: Boolean = false
-        ) : Key() {
+            temporary: Boolean = false
+        ) : Key(temporary) {
             companion object {
                 private var KEY_INDEX = 1
                 fun newThis(type: PsiType): HeapKey =
