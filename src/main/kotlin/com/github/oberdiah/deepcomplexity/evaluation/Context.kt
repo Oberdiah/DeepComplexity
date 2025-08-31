@@ -167,6 +167,17 @@ class Context(
             this is HeapKey && this.newlyCreated || this is QualifiedKey && this.qualifier.isNewlyCreated()
 
         /**
+         * Whether the key is still in some way 'unresolved', i.e. will it get substituted into something
+         * else eventually.
+         */
+        fun containsUnknowns(): Boolean =
+            when (this) {
+                is QualifiedKey -> qualifier.containsUnknowns()
+                is HeapKey -> false
+                else -> true
+            }
+
+        /**
          * When multiplying, we need to decide which one gets to live on.
          */
         fun importance(): Int {
@@ -267,16 +278,44 @@ class Context(
     }
 
     fun getVar(key: Key): Expr<*> {
-        val simpleResolve = variables[key]
+        // If we can do a simple resolve, we can just do that and
+        // be done with it.
+        val simpleResolve = variables[key] ?: VariableExpression<Any>(key, idx)
 
-        // This could all be inlined, but it's far easier to debug like this.
         val qualifiedResolve = if (key is QualifiedKey) {
-            variables[key.qualifier]?.getField(this, key.field)
+            val q = variables[key.qualifier]
+
+            val candidates = variables.filterKeys {
+                it is QualifiedKey && it.containsUnknowns()
+            }
+
+            if (!candidates.isEmpty()) {
+                fun <T : Any> inner(ind: SetIndicator<T>): Expr<T> {
+                    val p = q?.getField(this, key.field) ?: simpleResolve
+                    var finalExpr: Expr<T> = p.tryCastTo(ind)!!
+
+                    for ((_, expr) in candidates) {
+                        finalExpr = IfExpression(
+                            expr.tryCastTo(ind)!!,
+                            finalExpr,
+                            ConstantExpression.FALSE
+                        )
+                    }
+
+                    return finalExpr
+                }
+
+                val r = inner(key.ind)
+
+                r
+            } else {
+                q?.getField(this, key.field)
+            }
         } else {
             null
         }
 
-        return simpleResolve ?: qualifiedResolve ?: VariableExpression<Any>(key, idx)
+        return qualifiedResolve ?: simpleResolve
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
