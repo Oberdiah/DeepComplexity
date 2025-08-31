@@ -19,6 +19,12 @@ import kotlin.test.assertNotNull
 
 
 object MethodProcessing {
+    /**
+     * Only used for debugging; a nice fast way to get context on what we're doing.
+     * Should pin it to your watches in the debugger.
+     */
+    var CURRENT_LINE: PsiElement? = null
+
     fun getMethodContext(method: PsiMethod): Context {
         val wrapper = newContext(method.getThisType())
 
@@ -64,6 +70,7 @@ object MethodProcessing {
 
             is PsiCodeBlock -> {
                 for (line in psi.children) {
+                    CURRENT_LINE = line
                     processPsiStatement(line, context)
                 }
             }
