@@ -120,7 +120,7 @@ object ExprTreeRebuilder {
             )
 
             is ComparisonExpression<*> -> {
-                fun <T : Number> extra(expr: ComparisonExpression<T>): ComparisonExpression<T> = ComparisonExpression(
+                fun <T : Any> extra(expr: ComparisonExpression<T>): ComparisonExpression<T> = ComparisonExpression(
                     rebuildTree(expr.lhs, replacer),
                     rebuildTree(expr.rhs, replacer),
                     expr.comp,

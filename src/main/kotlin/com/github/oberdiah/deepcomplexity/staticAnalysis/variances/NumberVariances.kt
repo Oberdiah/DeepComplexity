@@ -293,19 +293,22 @@ data class NumberVariances<T : Number> private constructor(
         }
     }
 
-    fun comparisonOperation(
-        other: NumberVariances<T>,
-        operation: ComparisonOp,
+    override fun comparisonOperation(
+        other: Variances<T>,
+        comparisonOp: ComparisonOp,
         constraints: Constraints
-    ): BooleanVariances =
+    ): BooleanVariances {
         // We could maybe do something smarter here long-term, but this'll do for now.
-        collapse(constraints).comparisonOperation(other.collapse(constraints), operation).toConstVariance().into()
+        return collapse(constraints).comparisonOperation(other.into().collapse(constraints), comparisonOp)
+            .toConstVariance().into()
+    }
 
-    fun generateConstraintsFrom(
-        other: NumberVariances<T>,
-        comp: ComparisonOp,
+    override fun generateConstraintsFrom(
+        other: Variances<T>,
+        comparisonOp: ComparisonOp,
         incomingConstraints: Constraints
     ): Constraints {
+        val other = other.into()
         val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isEphemeral() }
 
         var constraints = Constraints.completelyUnconstrained()
@@ -332,7 +335,7 @@ data class NumberVariances<T : Number> private constructor(
                 // either the constraint is met, or it isn't.
                 // The equation at this point looks like `0x blah constant`
                 // So we can just check the constant against zero.
-                val meetsConstraint = ind.onlyZeroSet().comparisonOperation(constant, comp)
+                val meetsConstraint = ind.onlyZeroSet().comparisonOperation(constant, comparisonOp)
                 constraints = when (meetsConstraint) {
                     BooleanSet.BOTH, BooleanSet.TRUE -> constraints.withConstraint(key, key.ind.newFullSet())
                     BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, key.ind.newEmptySet())
@@ -341,10 +344,10 @@ data class NumberVariances<T : Number> private constructor(
                 val shouldFlip = coefficient.comparisonOperation(ind.onlyZeroSet(), ComparisonOp.LESS_THAN)
                 val rhs = constant.divide(coefficient)
                 val constraint = when (shouldFlip) {
-                    BooleanSet.TRUE -> rhs.getSetSatisfying(comp.flip())
-                    BooleanSet.FALSE -> rhs.getSetSatisfying(comp)
-                    BooleanSet.BOTH -> rhs.getSetSatisfying(comp)
-                        .union(rhs.getSetSatisfying(comp.flip()))
+                    BooleanSet.TRUE -> rhs.getSetSatisfying(comparisonOp.flip())
+                    BooleanSet.FALSE -> rhs.getSetSatisfying(comparisonOp)
+                    BooleanSet.BOTH -> rhs.getSetSatisfying(comparisonOp)
+                        .union(rhs.getSetSatisfying(comparisonOp.flip()))
 
                     BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }

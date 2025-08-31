@@ -194,7 +194,7 @@ data class ArithmeticExpression<T : Number>(
     }
 }
 
-data class ComparisonExpression<T : Number>(
+data class ComparisonExpression<T : Any>(
     val lhs: Expr<T>,
     val rhs: Expr<T>,
     val comp: ComparisonOp,

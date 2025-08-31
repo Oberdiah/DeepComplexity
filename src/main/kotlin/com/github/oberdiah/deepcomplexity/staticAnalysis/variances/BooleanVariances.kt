@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
@@ -24,6 +25,22 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
 
     override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<Boolean> {
         return this
+    }
+
+    override fun comparisonOperation(
+        other: Variances<Boolean>,
+        comparisonOp: ComparisonOp,
+        constraints: Constraints
+    ): BooleanVariances {
+        TODO("Not yet implemented")
+    }
+
+    override fun generateConstraintsFrom(
+        other: Variances<Boolean>,
+        comparisonOp: ComparisonOp,
+        incomingConstraints: Constraints
+    ): Constraints {
+        TODO("Not yet implemented")
     }
 
     override fun toDebugString(constraints: Constraints): String = value.toString()

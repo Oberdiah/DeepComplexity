@@ -37,7 +37,7 @@ object ExprConstrain {
             }
 
             is ComparisonExpression<*> -> {
-                fun <Q : Number> extra(me: ComparisonExpression<Q>): Expr<Boolean> =
+                fun <Q : Any> extra(me: ComparisonExpression<Q>): Expr<Boolean> =
                     ComparisonExpression(me.lhs, me.rhs, me.comp.invert())
                 extra(expr)
             }
@@ -87,7 +87,7 @@ object ExprConstrain {
             }
 
             is ComparisonExpression<*> -> {
-                fun <Q : Number> extra(me: ComparisonExpression<Q>): Set<Constraints> {
+                fun <Q : Any> extra(me: ComparisonExpression<Q>): Set<Constraints> {
                     val lhsBundleSet = me.lhs.evaluate(scope)
                     val rhsBundleSet = me.rhs.evaluate(scope)
 

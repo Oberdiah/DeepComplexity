@@ -89,7 +89,7 @@ object ExprEvaluate {
             }
 
             is ComparisonExpression<*> -> {
-                fun <T : Number> evalC(expr: ComparisonExpression<T>, scope: Scope): Bundle<Boolean> {
+                fun <T : Any> evalC(expr: ComparisonExpression<T>, scope: Scope): Bundle<Boolean> {
                     val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
                     val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
 
