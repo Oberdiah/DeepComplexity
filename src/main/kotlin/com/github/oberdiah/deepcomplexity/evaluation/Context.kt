@@ -361,10 +361,7 @@ class Context(
             assert(!varExpr.contextId.collidesWith(idx)) {
                 "Cannot resolve variables from the same context that created them."
             }
-            when (varExpr.key) {
-                is QualifiedKey -> getVar(varExpr.key.qualifier).getField(this, varExpr.key.field)
-                else -> getVar(varExpr.key)
-            }
+            getVar(varExpr.key)
         }
 
     /**
