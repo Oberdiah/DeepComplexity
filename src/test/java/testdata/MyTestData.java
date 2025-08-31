@@ -1613,4 +1613,54 @@ public class MyTestData {
 		MyClass state = new MyClass(0);
 		return (short) state.postIncrement();
 	}
+	
+	public static short aliasingAllDifferent(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		MyClass c = new MyClass(3);
+		return (short) aliasingStresser(a, b, c);
+	}
+	
+	public static short aliasingAeqB(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = a;
+		MyClass c = new MyClass(3);
+		return (short) aliasingStresser(a, b, c);
+	}
+	
+	public static short aliasingAeqC(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		MyClass c = a;
+		return (short) aliasingStresser(a, b, c);
+	}
+	
+	public static short aliasingBeqC(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		MyClass c = b;
+		return (short) aliasingStresser(a, b, c);
+	}
+	
+	public static short aliasingAllSame(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = a;
+		MyClass c = a;
+		return (short) aliasingStresser(a, b, c);
+	}
+	
+	private static int aliasingStresser(MyClass a, MyClass b, MyClass c) {
+		a.x = 1;
+		b.x = 2;
+		c.x = 3;
+		
+		if (a.x == 1 && b.x == 2) return 1; // all different
+		if (a.x == 2 && b.x == 2) return 2; // a == b
+		if (a.x == 3 && b.x == 2) return 3; // a == c
+		if (a.x == 1 && b.x == 3) return 4; // b == c
+		if (a.x == 3 && b.x == 3) return 5; // all same
+		
+		return -1; // shouldn't happen
+	}
+	
 }
