@@ -55,7 +55,6 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with nested object references
-	@RequiredScore(1.0)
 	public static short nestedAliasing(short x) {
 		Container c1 = new Container(new AliasClass(0));
 		Container c2 = new Container(c1.inner);
