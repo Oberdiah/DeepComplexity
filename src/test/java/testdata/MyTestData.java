@@ -1187,7 +1187,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	public static short go(short x) {
+	public static short simpleClassTest27(short x) {
 		MyClass b = new MyClass(10);
 		
 		if (x > 0) {
