@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.utilities
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.*
 import org.apache.commons.numbers.core.DD
@@ -69,7 +69,7 @@ object Utilities {
     }
 
     fun psiTypeToSetIndicator(type: PsiType): SetIndicator<*> {
-        val clazz = psiTypeToKClass(type) ?: return GenericSetIndicator(type)
+        val clazz = psiTypeToKClass(type) ?: return ObjectSetIndicator(type)
         return SetIndicator.fromClass(clazz)
     }
 

@@ -2,11 +2,12 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.GenericSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
+import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.intellij.psi.PsiType
@@ -178,15 +179,15 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
         BooleanSet.fromBoolean(constant)
 }
 
-class GenericSetIndicator(val type: PsiType) : SetIndicator<Any>(Any::class) {
-    override fun newVariance(key: Context.Key): Variances<Any> = TODO()
-    override fun newConstantSet(constant: Any): ISet<Any> = GenericSet(setOf(constant))
-    override fun newEmptySet(): ISet<Any> = GenericSet(emptySet())
-    override fun newFullSet(): ISet<Any> = TODO()
+class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapIdent>(HeapIdent::class) {
+    override fun newVariance(key: Context.Key): Variances<HeapIdent> = ObjectVariances(ObjectSet(emptySet()), this)
+    override fun newConstantSet(constant: HeapIdent): ISet<HeapIdent> = ObjectSet(setOf(constant))
+    override fun newEmptySet(): ISet<HeapIdent> = ObjectSet(emptySet())
+    override fun newFullSet(): ISet<HeapIdent> = TODO()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is GenericSetIndicator) return false
+        if (other !is ObjectSetIndicator) return false
 
         if (clazz != other.clazz) return false
 

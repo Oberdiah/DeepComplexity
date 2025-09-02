@@ -4,8 +4,8 @@ import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.solver.LoopSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.getThisType
@@ -226,7 +226,7 @@ object MethodProcessing {
 
                 qualifier?.let {
                     val ind = it.ind
-                    assertIs<GenericSetIndicator>(ind)
+                    assertIs<ObjectSetIndicator>(ind)
                     context.addVar(LValueKeyExpr<Any>(Key.HeapKey.newThis(ind.type)), it)
                 }
 

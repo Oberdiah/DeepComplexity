@@ -2,8 +2,8 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.solver.CastSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
@@ -47,7 +47,7 @@ object ExprEvaluate {
         @Suppress("UNCHECKED_CAST")
         val evaluatedBundle = when (expr.ind) {
             is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), scope)
-            is GenericSetIndicator -> evaluateGenerics(expr as Expr<*>, scope)
+            is ObjectSetIndicator -> evaluateGenerics(expr as Expr<*>, scope)
             BooleanSetIndicator -> evaluateBools(expr.castToBoolean(), scope)
         } as Bundle<T>
 

@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 
 object ExprTreeRebuilder {
@@ -73,7 +73,7 @@ object ExprTreeRebuilder {
             @Suppress("UNCHECKED_CAST")
             when (expr.ind) {
                 is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as Expr<T>
-                is GenericSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer) as Expr<T>
+                is ObjectSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer) as Expr<T>
                 BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer) as Expr<T>
             }
         )

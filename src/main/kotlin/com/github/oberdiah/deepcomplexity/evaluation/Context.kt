@@ -4,7 +4,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.EphemeralKey
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.QualifiedKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.GenericSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
@@ -119,7 +119,7 @@ class Context(
                     HeapKey(KEY_INDEX++, type, false, newlyCreated, temporary)
             }
 
-            override val ind: SetIndicator<*> = GenericSetIndicator(type)
+            override val ind: SetIndicator<*> = ObjectSetIndicator(type)
             override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
             override fun hashCode(): Int = idx.hashCode()
             override fun toString(): String = if (isThis) "this" else "#${idx}"
