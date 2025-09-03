@@ -180,10 +180,14 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
 }
 
 class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapIdent>(HeapIdent::class) {
-    override fun newVariance(key: Context.Key): Variances<HeapIdent> = ObjectVariances(ObjectSet(emptySet()), this)
-    override fun newConstantSet(constant: HeapIdent): ISet<HeapIdent> = ObjectSet(setOf(constant))
-    override fun newEmptySet(): ISet<HeapIdent> = ObjectSet(emptySet())
-    override fun newFullSet(): ISet<HeapIdent> = TODO()
+    override fun newVariance(key: Context.Key): Variances<HeapIdent> =
+        ObjectVariances(ObjectSet.newEmptySet(this), this)
+
+    override fun newConstantSet(constant: HeapIdent): ISet<HeapIdent> =
+        ObjectSet.fromConstant(this, constant)
+
+    override fun newEmptySet(): ISet<HeapIdent> = ObjectSet.newEmptySet(this)
+    override fun newFullSet(): ISet<HeapIdent> = ObjectSet.newFullSet(this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

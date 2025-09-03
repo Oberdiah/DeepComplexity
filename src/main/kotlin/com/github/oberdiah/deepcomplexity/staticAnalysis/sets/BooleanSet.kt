@@ -9,7 +9,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 enum class BooleanSet : ISet<Boolean> {
     TRUE {
-        override fun size(): Long? = 1L
+        override fun size(): Long = 1L
 
         override fun contains(element: Boolean): Boolean {
             return element
@@ -24,7 +24,7 @@ enum class BooleanSet : ISet<Boolean> {
         }
     },
     FALSE {
-        override fun size(): Long? = 1L
+        override fun size(): Long = 1L
 
         override fun contains(element: Boolean): Boolean {
             return !element
@@ -39,7 +39,7 @@ enum class BooleanSet : ISet<Boolean> {
         }
     },
     BOTH {
-        override fun size(): Long? = 2L
+        override fun size(): Long = 2L
 
         override fun contains(element: Boolean): Boolean {
             return true
@@ -54,7 +54,7 @@ enum class BooleanSet : ISet<Boolean> {
         }
     },
     NEITHER {
-        override fun size(): Long? = 0L
+        override fun size(): Long = 0L
 
         override fun contains(element: Boolean): Boolean {
             return false
