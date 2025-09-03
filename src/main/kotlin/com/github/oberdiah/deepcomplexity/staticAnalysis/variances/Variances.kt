@@ -6,6 +6,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 /**
  * A set of possible values of type T, alongside optional variance data that can be used to
@@ -26,17 +27,25 @@ interface Variances<T : Any> {
 
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,
-     * and can throw if they receive one.
+     * all other types can throw if they receive one.
+     *
+     * At the very least, there are improvements to this that could be made for numbers.
+     * I wrote the above down in a previous comment, but there was no further information
+     * so I couldn't tell you specifically what those improvements might be.
      */
     fun comparisonOperation(
         other: Variances<T>,
         comparisonOp: ComparisonOp,
         constraints: Constraints
-    ): BooleanVariances
+    ): BooleanVariances =
+        collapse(constraints)
+            .comparisonOperation(other.collapse(constraints), comparisonOp)
+            .toConstVariance()
+            .into()
 
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,
-     * and can throw if they receive one.
+     * all other types can throw if they receive one.
      */
     fun generateConstraintsFrom(
         other: Variances<T>,

@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
@@ -80,6 +81,10 @@ enum class BooleanSet : ISet<Boolean> {
 
     override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
+    }
+
+    override fun comparisonOperation(other: ISet<Boolean>, operation: ComparisonOp): BooleanSet {
+        TODO("Not yet implemented")
     }
 
     override val ind = BooleanSetIndicator

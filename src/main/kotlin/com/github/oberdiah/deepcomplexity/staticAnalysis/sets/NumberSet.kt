@@ -177,13 +177,14 @@ data class NumberSet<T : Number> private constructor(
         }
     }
 
-    fun comparisonOperation(
-        other: NumberSet<T>,
+    override fun comparisonOperation(
+        other: ISet<T>,
         operation: ComparisonOp
     ): BooleanSet {
         if (isEmpty() || other.isEmpty()) {
             return BooleanSet.NEITHER
         }
+        val other = other.into()
 
         assert(ind == other.ind)
         val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
@@ -339,11 +340,12 @@ data class NumberSet<T : Number> private constructor(
 
     override fun intersect(other: ISet<T>): NumberSet<T> {
         assert(ind == other.ind)
+        val other = other.into()
 
         val newList: MutableList<NumberRange<T>> = mutableListOf()
         // For each range in this set, find overlapping ranges in other set
         for (range in ranges) {
-            for (otherRange in other.into().ranges) {
+            for (otherRange in other.ranges) {
                 // Find overlap
                 val start = range.start.max(otherRange.start)
                 val end = range.end.min(otherRange.end)
@@ -355,7 +357,7 @@ data class NumberSet<T : Number> private constructor(
             }
         }
 
-        return binaryMakeNew(other.into(), newList)
+        return binaryMakeNew(other, newList)
     }
 
     override fun invert(): NumberSet<T> {

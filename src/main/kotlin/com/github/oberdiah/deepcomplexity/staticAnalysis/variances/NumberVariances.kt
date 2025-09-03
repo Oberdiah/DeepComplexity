@@ -293,16 +293,6 @@ data class NumberVariances<T : Number> private constructor(
         }
     }
 
-    override fun comparisonOperation(
-        other: Variances<T>,
-        comparisonOp: ComparisonOp,
-        constraints: Constraints
-    ): BooleanVariances {
-        // We could maybe do something smarter here long-term, but this'll do for now.
-        return collapse(constraints).comparisonOperation(other.into().collapse(constraints), comparisonOp)
-            .toConstVariance().into()
-    }
-
     override fun generateConstraintsFrom(
         other: Variances<T>,
         comparisonOp: ComparisonOp,

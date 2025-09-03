@@ -27,13 +27,6 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
         return this
     }
 
-    override fun comparisonOperation(
-        other: Variances<HeapIdent>,
-        comparisonOp: ComparisonOp,
-        constraints: Constraints
-    ): BooleanVariances {
-        TODO("Not yet implemented")
-    }
 
     override fun generateConstraintsFrom(
         other: Variances<HeapIdent>,

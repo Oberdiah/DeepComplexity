@@ -27,14 +27,6 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
         return this
     }
 
-    override fun comparisonOperation(
-        other: Variances<Boolean>,
-        comparisonOp: ComparisonOp,
-        constraints: Constraints
-    ): BooleanVariances {
-        TODO("Not yet implemented")
-    }
-
     override fun generateConstraintsFrom(
         other: Variances<Boolean>,
         comparisonOp: ComparisonOp,
