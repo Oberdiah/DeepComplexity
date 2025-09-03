@@ -360,6 +360,19 @@ data class NumberSet<T : Number> private constructor(
         return binaryMakeNew(other, newList)
     }
 
+    override fun size(): Long? {
+        var total: Long = 0
+        for (range in ranges) {
+            val rangeSize = range.size() ?: return null
+            total += rangeSize
+            if (total < 0) {
+                // Overflow, just return null
+                return null
+            }
+        }
+        return total
+    }
+
     override fun invert(): NumberSet<T> {
         val newList: MutableList<NumberRange<T>> = mutableListOf()
 

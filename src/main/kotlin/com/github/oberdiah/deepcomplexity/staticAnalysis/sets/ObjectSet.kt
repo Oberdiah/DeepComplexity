@@ -1,6 +1,5 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.staticAnalysis.HeapIdent
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -13,6 +12,8 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 class ObjectSet(val values: Set<HeapIdent>) : ISet<HeapIdent> {
     override val ind: SetIndicator<HeapIdent>
         get() = TODO("Not yet implemented")
+
+    override fun size(): Long? = values.size.toLong()
 
     override fun invert(): ISet<HeapIdent> {
         TODO("Not yet implemented")
@@ -35,21 +36,14 @@ class ObjectSet(val values: Set<HeapIdent>) : ISet<HeapIdent> {
     }
 
     override fun intersect(other: ISet<HeapIdent>): ISet<HeapIdent> {
-        TODO("Not yet implemented")
+        return ObjectSet(values.intersect(other.into().values))
     }
 
     override fun union(other: ISet<HeapIdent>): ISet<HeapIdent> {
-        TODO("Not yet implemented")
+        return ObjectSet(values.union(other.into().values))
     }
 
     override fun toConstVariance(): Variances<HeapIdent> {
-        TODO("Not yet implemented")
-    }
-
-    override fun comparisonOperation(
-        other: ISet<HeapIdent>,
-        operation: ComparisonOp
-    ): BooleanSet {
         TODO("Not yet implemented")
     }
 }

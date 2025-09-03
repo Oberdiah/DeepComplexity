@@ -9,8 +9,10 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 enum class BooleanSet : ISet<Boolean> {
     TRUE {
-        override fun contains(other: Boolean): Boolean {
-            return other
+        override fun size(): Long? = 1L
+
+        override fun contains(element: Boolean): Boolean {
+            return element
         }
 
         override fun addToSet(other: Boolean): BooleanSet {
@@ -22,8 +24,10 @@ enum class BooleanSet : ISet<Boolean> {
         }
     },
     FALSE {
-        override fun contains(other: Boolean): Boolean {
-            return !other
+        override fun size(): Long? = 1L
+
+        override fun contains(element: Boolean): Boolean {
+            return !element
         }
 
         override fun addToSet(other: Boolean): BooleanSet {
@@ -35,7 +39,9 @@ enum class BooleanSet : ISet<Boolean> {
         }
     },
     BOTH {
-        override fun contains(other: Boolean): Boolean {
+        override fun size(): Long? = 2L
+
+        override fun contains(element: Boolean): Boolean {
             return true
         }
 
@@ -48,7 +54,9 @@ enum class BooleanSet : ISet<Boolean> {
         }
     },
     NEITHER {
-        override fun contains(other: Boolean): Boolean {
+        override fun size(): Long? = 0L
+
+        override fun contains(element: Boolean): Boolean {
             return false
         }
 
@@ -96,6 +104,20 @@ enum class BooleanSet : ISet<Boolean> {
             FALSE -> TRUE
             BOTH -> NEITHER
             NEITHER -> BOTH
+        }
+    }
+
+    /**
+     * Inverts the boolean meaning of the set, rather than the set itself.
+     *
+     * (TRUE becomes FALSE, FALSE becomes TRUE, and BOTH and NEITHER remain the same.)
+     */
+    fun booleanInvert(): BooleanSet {
+        return when (this) {
+            TRUE -> FALSE
+            FALSE -> TRUE
+            BOTH -> BOTH
+            NEITHER -> NEITHER
         }
     }
 

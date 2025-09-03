@@ -44,6 +44,20 @@ data class NumberRange<T : Number> private constructor(
         return NumberRange(ind, start, end)
     }
 
+    /**
+     * Returns the size of this range, in terms of how many discrete values it contains.
+     */
+    fun size(): Long {
+        if (clazz.isFloatingPoint()) {
+            if (start == end) {
+                return 1L
+            }
+            TODO("Not implemented full FP size yet, not sure if we'll ever need it")
+        } else {
+            return end.toLong() - start.toLong() + 1
+        }
+    }
+
     fun <Q : Number> castTo(newInd: NumberSetIndicator<Q>): Iterable<NumberRange<Q>> {
         if (newInd.clazz.isFloatingPoint() || ind.clazz.isFloatingPoint()) {
             TODO("Not implemented FP casting yet.")
