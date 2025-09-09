@@ -15,8 +15,8 @@ import com.github.oberdiah.deepcomplexity.utilities.MathematicalSet
 class ObjectSet private constructor(val values: MathematicalSet<HeapIdent>, override val ind: ObjectSetIndicator) :
     ISet<HeapIdent> {
     companion object {
-        fun fromConstant(ind: ObjectSetIndicator, constant: HeapIdent): ObjectSet =
-            ObjectSet(MathematicalSet.of(constant), ind)
+        fun fromConstant(constant: HeapIdent): ObjectSet =
+            ObjectSet(MathematicalSet.of(constant), constant.ind)
 
         fun newEmptySet(ind: ObjectSetIndicator): ObjectSet = ObjectSet(MathematicalSet.empty(), ind)
         fun newFullSet(ind: ObjectSetIndicator): ObjectSet = ObjectSet(MathematicalSet.full(), ind)

@@ -1321,7 +1321,7 @@ public class MyTestData {
 	
 	// Aliasing is really hard, so we're not going to require that this passes for a little bit while
 	// we figure out how to do it.
-	public static short go(short x) {
+	public static short aliasingTest(short x) {
 		MyClass a = new MyClass(1);
 		aliasingMethod(a, a);
 		return (short) a.getX();

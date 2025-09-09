@@ -1,8 +1,10 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.HeapIdent
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
 
 object ConstantExpression {
     val TRUE = ConstExpr.new(BooleanSet.TRUE.toConstVariance())
@@ -28,6 +30,7 @@ object ConstantExpression {
             when (value) {
                 is Boolean -> BooleanSet.fromBoolean(value)
                 is Number -> NumberSet.newFromConstant(value)
+                is HeapIdent -> ObjectSet.fromConstant(value)
                 is String -> TODO()
                 else -> TODO()
             }.toConstVariance()

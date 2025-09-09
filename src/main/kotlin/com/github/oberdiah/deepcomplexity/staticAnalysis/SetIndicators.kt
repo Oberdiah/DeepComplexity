@@ -166,7 +166,7 @@ class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapIdent>(HeapIdent:
         ObjectVariances(ObjectSet.newEmptySet(this), this)
 
     override fun newConstantSet(constant: HeapIdent): ISet<HeapIdent> =
-        ObjectSet.fromConstant(this, constant)
+        ObjectSet.fromConstant(constant)
 
     override fun newEmptySet(): ISet<HeapIdent> = ObjectSet.newEmptySet(this)
     override fun newFullSet(): ISet<HeapIdent> = ObjectSet.newFullSet(this)
