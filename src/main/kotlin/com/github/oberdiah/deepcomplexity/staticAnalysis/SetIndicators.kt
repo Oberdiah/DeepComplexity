@@ -1,6 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -33,29 +34,6 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     abstract fun newVariance(key: Context.Key): Variances<T>
 
     companion object {
-        fun <T : Any> getSetIndicator(expr: Expr<T>): SetIndicator<T> {
-            // Safety:
-            //   This one requires some scrutiny, and each expression needs to be inspected individually.
-            //   It should be the only one that we need to do this for, as it's the one that's actually
-            //   calculating the set indicator (effectively the type verifier) in the first place.
-            @Suppress("UNCHECKED_CAST")
-            return when (expr) {
-                is IfExpression -> expr.trueExpr.ind
-                is UnionExpression -> expr.lhs.ind
-                is ArithmeticExpression -> expr.lhs.ind
-                is NegateExpression -> expr.expr.ind
-                is NumIterationTimesExpression -> expr.ind
-                is BooleanExpression -> BooleanSetIndicator
-                is BooleanInvertExpression -> BooleanSetIndicator
-                is ComparisonExpression<*> -> BooleanSetIndicator
-                is ConstExpr -> expr.constSet.ind
-                is VariableExpression -> expr.key.ind
-                is TypeCastExpression<*, *> -> expr.setInd
-                is LValueFieldExpr -> expr.field.ind
-                is LValueKeyExpr -> expr.key.ind
-            } as SetIndicator<T>
-        }
-
         fun fromClass(clazz: KClass<*>): SetIndicator<*> {
             return when (clazz) {
                 Double::class -> DoubleSetIndicator

@@ -82,7 +82,7 @@ object MethodProcessing {
                         val rExpression = element.initializer
                         if (rExpression != null) {
                             context.addVar(
-                                LValueKeyExpr<Any>(element.toKey()),
+                                LValueKeyExpr.new(element.toKey()),
                                 processPsiExpression(rExpression, context)
                             )
                         } else {
@@ -227,7 +227,7 @@ object MethodProcessing {
                 qualifier?.let {
                     val ind = it.ind
                     assertIs<ObjectSetIndicator>(ind)
-                    context.addVar(LValueKeyExpr<Any>(Key.HeapKey.newThis(ind.type)), it)
+                    context.addVar(LValueKeyExpr.new(Key.HeapKey.newThis(ind.type)), it)
                 }
 
                 val methodReturnValue = methodContext.returnValue?.resolveUnknowns(context.c)
@@ -390,7 +390,7 @@ object MethodProcessing {
 
                 val methodContext = processMethod(context, psi)
 
-                context.addVar(LValueKeyExpr<Any>(Key.HeapKey.newThis(objType)), newObj)
+                context.addVar(LValueKeyExpr.new(Key.HeapKey.newThis(objType)), newObj)
                 context.stack(methodContext)
 
                 return newObj
@@ -415,7 +415,7 @@ object MethodProcessing {
 
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {
-                LValueFieldExpr<Any>(
+                LValueFieldExpr.new(
                     Context.FieldRef(resolved),
                     psi.qualifier?.let {
                         processPsiExpression(it, context)
@@ -430,9 +430,9 @@ object MethodProcessing {
                 )
             }
 
-            is PsiLocalVariable -> LValueKeyExpr<Any>(resolved.toKey())
-            is PsiReturnStatement -> LValueKeyExpr<Any>(resolved.toKey())
-            is PsiParameter -> LValueKeyExpr<Any>(resolved.toKey())
+            is PsiLocalVariable -> LValueKeyExpr.new(resolved.toKey())
+            is PsiReturnStatement -> LValueKeyExpr.new(resolved.toKey())
+            is PsiParameter -> LValueKeyExpr.new(resolved.toKey())
 
             else -> {
                 throw IllegalArgumentException(
@@ -467,7 +467,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             context.addVar(
-                LValueKeyExpr<Any>(Key.ParameterKey(param, true)),
+                LValueKeyExpr.new(Key.ParameterKey(param, true)),
                 processPsiExpression(arg, context)
             )
         }

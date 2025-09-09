@@ -23,8 +23,7 @@ sealed class Expr<T : Any>() {
     /**
      * The indicator represents what the expression will be once evaluated.
      */
-    val ind: SetIndicator<T>
-        get() = SetIndicator.getSetIndicator(this)
+    abstract val ind: SetIndicator<T>
 
     final override fun toString(): String {
         return ExprToString.toString(this)
@@ -192,6 +191,9 @@ data class ArithmeticExpression<T : Number>(
             "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
+
+    override val ind: SetIndicator<T>
+        get() = lhs.ind
 }
 
 data class ComparisonExpression<T : Any>(
@@ -204,6 +206,9 @@ data class ComparisonExpression<T : Any>(
             "Comparing expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
+
+    override val ind: SetIndicator<Boolean>
+        get() = BooleanSetIndicator
 }
 
 /**
@@ -212,11 +217,20 @@ data class ComparisonExpression<T : Any>(
  * Related to a specific context (The context that created it).
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
-data class VariableExpression<T : Any>(val key: Key, val contextId: Context.ContextId) : Expr<T>() {
+data class VariableExpression<T : Any>(
+    val key: Key,
+    val contextId: Context.ContextId,
+    override val ind: SetIndicator<T>
+) : Expr<T>() {
 //    init {
 //         The return key `Me` should never be used in a variable, only as a key in the Vars map.
 //        assert(key != Key.ReturnKey.Me)
 //    }
+
+    companion object {
+        fun new(key: Key, contextId: Context.ContextId): VariableExpression<*> =
+            VariableExpression(key, contextId, key.ind)
+    }
 }
 
 /**
@@ -228,7 +242,7 @@ data class VariableExpression<T : Any>(val key: Key, val contextId: Context.Cont
  */
 data class TypeCastExpression<T : Any, Q : Any>(
     val expr: Expr<Q>,
-    val setInd: SetIndicator<T>,
+    override val ind: SetIndicator<T>,
     val explicit: Boolean,
 ) : Expr<T>()
 
@@ -242,6 +256,9 @@ data class IfExpression<T : Any>(
             "Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}"
         }
     }
+
+    override val ind: SetIndicator<T>
+        get() = trueExpr.ind
 
     companion object {
         fun <A : Any, B : Any> new(
@@ -263,6 +280,9 @@ data class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
+
+    override val ind: SetIndicator<T>
+        get() = lhs.ind
 }
 
 data class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) : Expr<Boolean>() {
@@ -271,9 +291,15 @@ data class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
+
+    override val ind: SetIndicator<Boolean>
+        get() = BooleanSetIndicator
 }
 
 data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
+    override val ind: SetIndicator<T>
+        get() = constSet.ind
+
     companion object {
         fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(Bundle.unconstrained(bundle))
     }
@@ -295,7 +321,11 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
  * a QualifiedKey or not.
  */
-data class LValueKeyExpr<T : Any>(val key: Key) : LValueExpr<T>() {
+data class LValueKeyExpr<T : Any>(val key: Key, override val ind: SetIndicator<T>) : LValueExpr<T>() {
+    companion object {
+        fun new(key: Key): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
+    }
+
     override fun resolve(context: Context): Expr<T> {
         return context.getVar(key).tryCastTo(ind)!!
     }
@@ -306,14 +336,30 @@ data class LValueKeyExpr<T : Any>(val key: Key) : LValueExpr<T>() {
  *
  * For example, the LValue `((x > 2) ? a : b).y`
  */
-data class LValueFieldExpr<T : Any>(val field: Context.FieldRef, val qualifier: Expr<*>) : LValueExpr<T>() {
+data class LValueFieldExpr<T : Any>(
+    val field: Context.FieldRef,
+    val qualifier: Expr<*>,
+    override val ind: SetIndicator<T>
+) : LValueExpr<T>() {
+    companion object {
+        fun new(field: Context.FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
+            LValueFieldExpr(field, qualifier, field.ind)
+    }
+
     override fun resolve(context: Context): Expr<T> {
         return qualifier.getField(context, field).tryCastTo(ind)!!
     }
 }
 
-data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>()
-data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>()
+data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>() {
+    override val ind: SetIndicator<Boolean>
+        get() = BooleanSetIndicator
+}
+
+data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>() {
+    override val ind: SetIndicator<T>
+        get() = expr.ind
+}
 
 data class NumIterationTimesExpression<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,
@@ -324,6 +370,9 @@ data class NumIterationTimesExpression<T : Number>(
     // How the variable is changing each iteration.
     val terms: ConstraintSolver.CollectedTerms<T>,
 ) : Expr<T>() {
+    override val ind: SetIndicator<T>
+        get() = TODO("Not yet implemented")
+
     companion object {
         fun <T : Number> new(
             constraint: NumberSet<T>,

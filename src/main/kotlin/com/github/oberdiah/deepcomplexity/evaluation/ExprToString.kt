@@ -24,7 +24,7 @@ object ExprToString {
             is NumIterationTimesExpression -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
             is TypeCastExpression<*, *> -> {
                 if (expr.explicit) {
-                    "(${expr.setInd}) ${expr.expr}"
+                    "(${expr.ind}) ${expr.expr}"
                 } else {
                     "${expr.expr}"
                 }
@@ -115,7 +115,7 @@ object ExprToString {
             is NumIterationTimesExpression -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"
             is TypeCastExpression<*, *> -> {
                 return if (expr.explicit) {
-                    "(${expr.setInd}) ${expr.expr.dStr()}"
+                    "(${expr.ind}) ${expr.expr.dStr()}"
                 } else {
                     expr.expr.dStr()
                 }

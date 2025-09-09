@@ -43,7 +43,7 @@ object ExprTreeRebuilder {
                 ): TypeCastExpression<T, *> {
                     return TypeCastExpression(
                         replaceTreeLeaves(expr.expr, replacer),
-                        expr.setInd,
+                        expr.ind,
                         expr.explicit,
                     )
                 }
@@ -160,18 +160,24 @@ object ExprTreeRebuilder {
                     expr: TypeCastExpression<T, Q>
                 ): TypeCastExpression<T, Q> = TypeCastExpression(
                     rebuildTree(expr.expr, replacer),
-                    expr.setInd,
+                    expr.ind,
                     expr.explicit,
                 )
 
-                @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
+                // Safety: RebuildTree doesn't change types.
+                @Suppress("UNCHECKED_CAST")
                 extra(expr) as Expr<T>
             }
 
-            is LValueFieldExpr<*> -> LValueFieldExpr(
-                expr.field,
-                rebuildTree(expr.qualifier, replacer),
-            )
+            is LValueFieldExpr<*> -> {
+                val newFieldExpr = LValueFieldExpr.new(
+                    expr.field,
+                    rebuildTree(expr.qualifier, replacer),
+                )
+                // Safety: RebuildTree doesn't change types.
+                @Suppress("UNCHECKED_CAST")
+                newFieldExpr as Expr<T>
+            }
 
             is ConstExpr -> expr
             is VariableExpression -> expr

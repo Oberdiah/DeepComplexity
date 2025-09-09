@@ -43,7 +43,7 @@ class Context(
      */
     val variables: Vars = variables.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpression<*>> {
-            VariableExpression<Any>(it.key, it.contextId + idx)
+            VariableExpression.new(it.key, it.contextId + idx)
         }
     }
 
@@ -249,8 +249,8 @@ class Context(
                             aVal ?: bVal!!
                         } else {
                             how(
-                                aVal ?: VariableExpression<Any>(key, a.idx),
-                                bVal ?: VariableExpression<Any>(key, b.idx)
+                                aVal ?: VariableExpression.new(key, a.idx),
+                                bVal ?: VariableExpression.new(key, b.idx)
                             )
                         }
                     },
@@ -280,7 +280,7 @@ class Context(
     fun getVar(key: Key): Expr<*> {
         // If we can do a simple resolve, we can just do that and
         // be done with it.
-        val simpleResolve = variables[key] ?: VariableExpression<Any>(key, idx)
+        val simpleResolve = variables[key] ?: VariableExpression.new(key, idx)
 
         val qualifiedResolve = if (key is QualifiedKey) {
             val q = variables[key.qualifier]
@@ -428,10 +428,10 @@ class Context(
         for ((key, expr) in resolvedLater.withoutReturnValue().variables) {
             val lValue = if (key is QualifiedKey) {
                 // The qualifier is a key itself, so it also needs to try and get resolved.
-                LValueFieldExpr<Any>(key.field, getVar(key.qualifier))
+                LValueFieldExpr.new(key.field, getVar(key.qualifier))
             } else {
                 // Do nothing, just assign as normal.
-                LValueKeyExpr(key)
+                LValueKeyExpr.new(key)
             }
 
             newContext = newContext.withVar(lValue, expr)
