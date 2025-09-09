@@ -22,6 +22,8 @@ class ObjectSet private constructor(val values: MathematicalSet<HeapIdent>, over
         fun newFullSet(ind: ObjectSetIndicator): ObjectSet = ObjectSet(MathematicalSet.full(), ind)
     }
 
+    override fun toString(): String = values.toString()
+
     override fun size(): Long = values.size.toLong()
     override fun invert(): ISet<HeapIdent> = ObjectSet(values.invert(), ind)
     override fun contains(element: HeapIdent): Boolean = values.contains(element)

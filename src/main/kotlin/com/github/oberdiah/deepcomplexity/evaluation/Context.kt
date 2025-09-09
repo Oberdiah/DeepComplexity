@@ -287,19 +287,27 @@ class Context(
 
             val candidates = variables.filterKeys {
                 it is QualifiedKey && it.containsUnknowns()
-            }
+            }.mapKeys { it.key as QualifiedKey }
 
             if (!candidates.isEmpty()) {
                 fun <T : Any> inner(ind: SetIndicator<T>): Expr<T> {
                     val p = q?.getField(this, key.field) ?: simpleResolve
                     var finalExpr: Expr<T> = p.tryCastTo(ind)!!
 
-                    for ((_, expr) in candidates) {
-                        finalExpr = IfExpression(
-                            expr.tryCastTo(ind)!!,
-                            finalExpr,
-                            ConstantExpression.FALSE
-                        )
+                    for ((k, expr) in candidates) {
+                        fun <Q : Any> inner2(ind2: SetIndicator<Q>) {
+                            finalExpr = IfExpression(
+                                expr.tryCastTo(ind)!!,
+                                finalExpr,
+                                ComparisonExpression(
+                                    getVar(k.qualifier).tryCastTo(ind2)!!,
+                                    getVar(key.qualifier).tryCastTo(ind2)!!,
+                                    ComparisonOp.EQUAL
+                                )
+                            )
+                        }
+
+                        inner2(key.qualifier.ind)
                     }
 
                     return finalExpr

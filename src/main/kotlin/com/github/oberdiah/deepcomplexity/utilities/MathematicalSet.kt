@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.utilities
 class MathematicalSet<T> private constructor(
     private val impl: Impl<T>
 ) : Set<T> by impl {
+    override fun toString(): String = impl.toString()
     fun invert(): MathematicalSet<T> = MathematicalSet(impl.invert())
     fun isFull(): Boolean = impl.isFull()
     fun add(element: T): MathematicalSet<T> = MathematicalSet(impl.add(element))
@@ -53,9 +54,30 @@ class MathematicalSet<T> private constructor(
             is Normal -> Normal(elements intersect other.elements)
             is Inverted -> Normal(elements - other.excluded)
         }
+
+        override fun toString(): String {
+            if (elements.isEmpty()) return "∅"
+
+            return if (elements.size <= 10) {
+                elements.toString()
+            } else {
+                elements.take(10).toString().dropLast(1) + ", ...}"
+            }
+        }
     }
 
     private data class Inverted<T>(val excluded: Set<T>) : Impl<T> {
+        override fun toString(): String {
+            // Full set symbol
+            if (excluded.isEmpty()) return "{ Everything }"
+
+            return if (excluded.size <= 10) {
+                "All except $excluded"
+            } else {
+                "All except ${excluded.take(10).toString().dropLast(1)}, ...}"
+            }
+        }
+
         override val size: Int get() = throw UnsupportedOperationException("Infinite set, no size")
         override fun isEmpty(): Boolean = false
         override fun contains(element: T): Boolean = !excluded.contains(element)

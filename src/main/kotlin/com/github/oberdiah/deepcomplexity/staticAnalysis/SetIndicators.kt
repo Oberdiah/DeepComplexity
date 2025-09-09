@@ -180,6 +180,10 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
 }
 
 class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapIdent>(HeapIdent::class) {
+    override fun toString(): String {
+        return "ObjectSetIndicator($type)"
+    }
+
     override fun newVariance(key: Context.Key): Variances<HeapIdent> =
         ObjectVariances(ObjectSet.newEmptySet(this), this)
 

@@ -16,7 +16,7 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
 
     fun invert(): ObjectVariances = ObjectVariances(value.invert().into(), ind)
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>? =
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q> =
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
     override fun collapse(constraints: Constraints): ISet<HeapIdent> = value
@@ -27,13 +27,13 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
         return this
     }
 
-
     override fun generateConstraintsFrom(
         other: Variances<HeapIdent>,
         comparisonOp: ComparisonOp,
         incomingConstraints: Constraints
     ): Constraints {
-        TODO("Not yet implemented")
+        // We might want to do something more interesting later.
+        return Constraints.completelyUnconstrained()
     }
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
