@@ -155,19 +155,11 @@ object ExprTreeRebuilder {
                 rebuildTree(expr.thisCondition, replacer),
             )
 
-            is TypeCastExpression<*, *> -> {
-                fun <T : Any, Q : Any> extra(
-                    expr: TypeCastExpression<T, Q>
-                ): TypeCastExpression<T, Q> = TypeCastExpression(
-                    rebuildTree(expr.expr, replacer),
-                    expr.ind,
-                    expr.explicit,
-                )
-
-                // Safety: RebuildTree doesn't change types.
-                @Suppress("UNCHECKED_CAST")
-                extra(expr) as Expr<T>
-            }
+            is TypeCastExpression<*, *> -> TypeCastExpression(
+                rebuildTree(expr.expr, replacer),
+                expr.ind,
+                expr.explicit,
+            )
 
             is LValueFieldExpr<*> -> {
                 val newFieldExpr = LValueFieldExpr.new(
