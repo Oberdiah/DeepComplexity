@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
@@ -32,11 +31,11 @@ data class NumberRange<T : Number> private constructor(
 
     companion object {
         fun <T : Number> fromConstant(constant: T): NumberRange<T> {
-            return NumberRange(SetIndicator.fromValue(constant), constant, constant)
+            return NumberRange(NumberSetIndicator.fromValue(constant), constant, constant)
         }
 
         fun <T : Number> new(lower: T, upper: T): NumberRange<T> {
-            return NumberRange(SetIndicator.fromValue(lower), lower, upper)
+            return NumberRange(NumberSetIndicator.fromValue(lower), lower, upper)
         }
     }
 

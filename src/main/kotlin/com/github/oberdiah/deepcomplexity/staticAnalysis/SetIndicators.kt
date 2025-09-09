@@ -17,17 +17,17 @@ import kotlin.reflect.KClass
 
 sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     /**
-     * Instantiate a bundle with no valid values.
+     * Instantiate a set with no valid values.
      */
     abstract fun newEmptySet(): ISet<T>
 
     /**
-     * Instantiate a bundle that says 'my value is always equal to this constant'
+     * Instantiate a set that says 'my value is always equal to this constant'
      */
     abstract fun newConstantSet(constant: T): ISet<T>
 
     /**
-     * Instantiate a bundle representing a full set of values.
+     * Instantiate a set representing a full set of values.
      */
     abstract fun newFullSet(): ISet<T>
 
@@ -48,7 +48,23 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
             }
         }
 
+        fun <T : Any> fromValue(value: T): SetIndicator<T> {
+            // Safety: This one needs to be checked manually and scrutinised.
+            @Suppress("UNCHECKED_CAST")
+            return when (value) {
+                is Number -> NumberSetIndicator.fromValue(value)
+                is Boolean -> BooleanSetIndicator
+                is HeapIdent -> ObjectSetIndicator(value.psiType)
+                else -> TODO()
+            } as SetIndicator<T>
+        }
+    }
+}
+
+sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
+    companion object {
         fun <T : Number> fromValue(value: T): NumberSetIndicator<T> {
+            // Safety: This one needs to be checked manually and scrutinised.
             @Suppress("UNCHECKED_CAST")
             return when (value) {
                 is Double -> DoubleSetIndicator
@@ -57,13 +73,11 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
                 is Long -> LongSetIndicator
                 is Short -> ShortSetIndicator
                 is Byte -> ByteSetIndicator
-                else -> TODO()
+                else -> TODO("No NumberSetIndicator for ${value::class}")
             } as NumberSetIndicator<T>
         }
     }
-}
 
-sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     override fun newFullSet(): NumberSet<T> = NumberSet.newFull(this)
     override fun newEmptySet(): NumberSet<T> = NumberSet.newEmpty(this)
     override fun newConstantSet(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)

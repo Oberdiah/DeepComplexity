@@ -261,7 +261,7 @@ data class NumberSet<T : Number> private constructor(
         TODO("Not yet implemented")
     }
 
-    override fun toConstVariance(): Variances<T> = NumberVariances.Companion.newFromConstant(this)
+    override fun toConstVariance(): Variances<T> = NumberVariances.newFromConstant(this)
 
     /**
      * Returns a new set containing everything that could satisfy the comparison operation.
@@ -425,7 +425,7 @@ data class NumberSet<T : Number> private constructor(
         fun <T : Number> newFromConstant(
             constant: T
         ): NumberSet<T> {
-            val ind = SetIndicator.fromValue(constant)
+            val ind = NumberSetIndicator.fromValue(constant)
             return NumberSet(
                 ind,
                 false,

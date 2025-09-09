@@ -8,7 +8,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 sealed class Expr<T : Any>() {
     /**
@@ -296,14 +295,7 @@ data class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val
         get() = BooleanSetIndicator
 }
 
-data class ConstExpr<T : Any>(val constSet: Bundle<T>) : Expr<T>() {
-    override val ind: SetIndicator<T>
-        get() = constSet.ind
-
-    companion object {
-        fun <T : Any> new(bundle: Variances<T>): ConstExpr<T> = ConstExpr(Bundle.unconstrained(bundle))
-    }
-}
+data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) : Expr<T>()
 
 sealed class LValueExpr<T : Any> : Expr<T>() {
     fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>

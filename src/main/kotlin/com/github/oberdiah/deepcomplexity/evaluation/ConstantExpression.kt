@@ -1,39 +1,26 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.HeapIdent
+import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 
 object ConstantExpression {
-    val TRUE = ConstExpr.new(BooleanSet.TRUE.toConstVariance())
-    val FALSE = ConstExpr.new(BooleanSet.FALSE.toConstVariance())
+    val TRUE = ConstExpr(true, BooleanSetIndicator)
+    val FALSE = ConstExpr(false, BooleanSetIndicator)
 
-    fun <T : Number> zero(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
-        ConstExpr.new(NumberSet.zero(setIndicator).toConstVariance())
+    fun <T : Number> zero(ind: NumberSetIndicator<T>): ConstExpr<T> =
+        ConstExpr(ind.getZero(), ind)
 
     fun <T : Number> zero(expr: Expr<T>): ConstExpr<T> =
         zero(expr.getNumberSetIndicator())
 
-    fun <T : Number> one(setIndicator: NumberSetIndicator<T>): ConstExpr<T> =
-        ConstExpr.new(NumberSet.one(setIndicator).toConstVariance())
+    fun <T : Number> one(ind: NumberSetIndicator<T>): ConstExpr<T> =
+        ConstExpr(ind.getOne(), ind)
 
     fun <T : Number> one(expr: Expr<T>): ConstExpr<T> =
         zero(expr.getNumberSetIndicator())
 
-    fun <T : Any> fullExprFromExprAndKey(expr: Expr<T>, key: Context.Key): Expr<T> =
-        ConstExpr.new(expr.ind.newVariance(key))
-
-    fun fromAny(value: Any): Expr<*> {
-        return ConstExpr.new(
-            when (value) {
-                is Boolean -> BooleanSet.fromBoolean(value)
-                is Number -> NumberSet.newFromConstant(value)
-                is HeapIdent -> ObjectSet.fromConstant(value)
-                is String -> TODO()
-                else -> TODO()
-            }.toConstVariance()
-        )
+    fun <T : Any> fromAny(value: T): ConstExpr<T> {
+        return ConstExpr(value, SetIndicator.fromValue(value))
     }
 }

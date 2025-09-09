@@ -147,7 +147,11 @@ object ExprEvaluate {
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 
-            is ConstExpr -> expr.constSet.constrainWith(scope)
+            is ConstExpr -> Bundle.constrained(
+                expr.ind.newConstantSet(expr.value).toConstVariance(),
+                Constraints.completelyUnconstrained()
+            ).constrainWith(scope)
+
             is VariableExpression ->
                 Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
                     .constrainWith(scope)

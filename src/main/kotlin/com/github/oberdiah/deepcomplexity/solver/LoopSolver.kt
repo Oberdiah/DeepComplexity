@@ -51,7 +51,9 @@ object LoopSolver {
         psiElement: PsiElement,
         allUnresolved: List<VariableExpression<*>>
     ): Expr<T> {
-        val gaveUp = ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.EphemeralKey.new())
+        val gaveUp =
+            // Put this zero here just to compile, not supposed to be .zero()
+            ConstantExpression.zero(expr) // ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.EphemeralKey.new())
 
         if (numLoops == null) {
             // If we don't know the number of loops, we've got absolutely no chance.

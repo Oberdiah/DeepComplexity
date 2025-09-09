@@ -2,8 +2,6 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ExprConstrain {
     fun combineConstraints(a: Set<Constraints>, b: Set<Constraints>): Set<Constraints> {
@@ -42,7 +40,7 @@ object ExprConstrain {
                 extra(expr)
             }
 
-            is ConstExpr -> ConstExpr(expr.constSet.invert())
+            is ConstExpr -> ConstExpr(!expr.value, expr.ind)
             is IfExpression -> {
                 IfExpression(
                     expr.thisCondition,
@@ -101,13 +99,15 @@ object ExprConstrain {
             }
 
             is ConstExpr -> {
-                return condition.constSet.variances.map {
-                    when (it.variances.collapse(it.constraints).into()) {
-                        // Unsure if this is correct
-                        BooleanSet.TRUE, BooleanSet.BOTH -> Constraints.completelyUnconstrained()
-                        BooleanSet.FALSE, BooleanSet.NEITHER -> Constraints.unreachable()
+                setOf(
+                    if (condition.value) {
+                        // If the boolean is true, we constrain nothing; anything goes.
+                        Constraints.completelyUnconstrained()
+                    } else {
+                        // If the boolean is false, nothing can pass.
+                        Constraints.unreachable()
                     }
-                }.toSet()
+                )
             }
 
             is BooleanInvertExpression -> getConstraints(condition.expr.inverted(), scope)

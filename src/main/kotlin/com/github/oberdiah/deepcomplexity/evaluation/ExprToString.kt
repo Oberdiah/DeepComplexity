@@ -8,7 +8,7 @@ object ExprToString {
         return when (expr) {
             is ArithmeticExpression -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is ComparisonExpression<*> -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
-            is ConstExpr<*> -> expr.constSet.toString()
+            is ConstExpr<*> -> expr.value.toString()
             is IfExpression -> {
                 return "if ${expr.thisCondition} {\n${
                     expr.trueExpr.toString().prependIndent()
@@ -40,7 +40,7 @@ object ExprToString {
         return when (expr) {
             is ArithmeticExpression -> "'${expr.op}'"
             is ComparisonExpression<*> -> "'${expr.comp}'"
-            is ConstExpr<*> -> expr.constSet.toString()
+            is ConstExpr<*> -> expr.value.toString()
             is IfExpression -> "'if'"
             is BooleanInvertExpression -> "'!'"
             is NegateExpression -> "'-'"
@@ -98,7 +98,7 @@ object ExprToString {
             }
 
             is ComparisonExpression<*> -> "(${expr.lhs.dStr()} ${expr.comp} ${expr.rhs.dStr()}) = $myResult"
-            is ConstExpr<*> -> expr.constSet.toString()
+            is ConstExpr<*> -> expr.value.toString()
             is IfExpression -> {
                 "if ${expr.thisCondition} {\n${
                     expr.trueExpr.dStr().prependIndent()
