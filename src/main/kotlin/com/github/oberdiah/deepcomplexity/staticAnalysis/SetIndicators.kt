@@ -49,14 +49,19 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
         }
 
         fun <T : Any> fromValue(value: T): SetIndicator<T> {
-            // Safety: This one needs to be checked manually and scrutinised.
-            @Suppress("UNCHECKED_CAST")
-            return when (value) {
+            val ind = when (value) {
                 is Number -> NumberSetIndicator.fromValue(value)
                 is Boolean -> BooleanSetIndicator
                 is HeapIdent -> ObjectSetIndicator(value.psiType)
                 else -> TODO()
-            } as SetIndicator<T>
+            }
+
+            assert(ind.clazz == value::class) {
+                "Mismatched class: ${ind.clazz} != ${value::class}"
+            }
+            // Safety: We checked the class matches.
+            @Suppress("UNCHECKED_CAST")
+            return ind as SetIndicator<T>
         }
     }
 }
@@ -64,9 +69,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
 sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     companion object {
         fun <T : Number> fromValue(value: T): NumberSetIndicator<T> {
-            // Safety: This one needs to be checked manually and scrutinised.
-            @Suppress("UNCHECKED_CAST")
-            return when (value) {
+            val ind = when (value) {
                 is Double -> DoubleSetIndicator
                 is Float -> FloatSetIndicator
                 is Int -> IntSetIndicator
@@ -74,7 +77,14 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
                 is Short -> ShortSetIndicator
                 is Byte -> ByteSetIndicator
                 else -> TODO("No NumberSetIndicator for ${value::class}")
-            } as NumberSetIndicator<T>
+            }
+
+            assert(ind.clazz == value::class) {
+                "Mismatched class: ${ind.clazz} != ${value::class}"
+            }
+            // Safety: We checked the class matches.
+            @Suppress("UNCHECKED_CAST")
+            return ind as NumberSetIndicator<T>
         }
     }
 
