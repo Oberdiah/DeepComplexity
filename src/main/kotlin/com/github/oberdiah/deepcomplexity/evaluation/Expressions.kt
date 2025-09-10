@@ -295,8 +295,6 @@ data class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val
         get() = BooleanSetIndicator
 }
 
-data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) : Expr<T>()
-
 sealed class LValueExpr<T : Any> : Expr<T>() {
     fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>
 
@@ -386,6 +384,29 @@ data class NumIterationTimesExpression<T : Number>(
                 variable as VariableExpression<T>,
                 terms as ConstraintSolver.CollectedTerms<T>
             )
+        }
+    }
+}
+
+data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) : Expr<T>() {
+    companion object {
+        val TRUE = ConstExpr(true, BooleanSetIndicator)
+        val FALSE = ConstExpr(false, BooleanSetIndicator)
+
+        fun <T : Number> zero(ind: NumberSetIndicator<T>): ConstExpr<T> =
+            ConstExpr(ind.getZero(), ind)
+
+        fun <T : Number> zero(expr: Expr<T>): ConstExpr<T> =
+            zero(expr.getNumberSetIndicator())
+
+        fun <T : Number> one(ind: NumberSetIndicator<T>): ConstExpr<T> =
+            ConstExpr(ind.getOne(), ind)
+
+        fun <T : Number> one(expr: Expr<T>): ConstExpr<T> =
+            zero(expr.getNumberSetIndicator())
+
+        fun <T : Any> fromAny(value: T): ConstExpr<T> {
+            return ConstExpr(value, SetIndicator.fromValue(value))
         }
     }
 }

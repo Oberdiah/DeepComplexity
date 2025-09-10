@@ -55,22 +55,22 @@ object ExprToString {
     }
 
     private fun booleanExprToString(expr: BooleanExpression): String {
-        if (expr.lhs == ConstantExpression.TRUE) {
+        if (expr.lhs == ConstExpr.TRUE) {
             return when (expr.op) {
                 AND -> expr.rhs.toString()
                 OR -> "TRUE"
             }
-        } else if (expr.lhs == ConstantExpression.FALSE) {
+        } else if (expr.lhs == ConstExpr.FALSE) {
             return when (expr.op) {
                 AND -> "FALSE"
                 OR -> expr.rhs.toString()
             }
-        } else if (expr.rhs == ConstantExpression.TRUE) {
+        } else if (expr.rhs == ConstExpr.TRUE) {
             return when (expr.op) {
                 AND -> expr.lhs.toString()
                 OR -> "TRUE"
             }
-        } else if (expr.rhs == ConstantExpression.FALSE) {
+        } else if (expr.rhs == ConstExpr.FALSE) {
             return when (expr.op) {
                 AND -> "FALSE"
                 OR -> expr.lhs.toString()

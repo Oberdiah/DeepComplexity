@@ -119,7 +119,7 @@ object ConstraintSolver {
             @Suppress("UNCHECKED_CAST")
             val castVariable = variable as VariableExpression<out Number>
 
-            val variableConstraints = getVariableConstraints(expr, castVariable, ConstantExpression.TRUE) ?: continue
+            val variableConstraints = getVariableConstraints(expr, castVariable, ConstExpr.TRUE) ?: continue
             constraints = constraints.withConstraint(variable.key, variableConstraints)
         }
 

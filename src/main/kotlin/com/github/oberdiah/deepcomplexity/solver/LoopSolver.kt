@@ -53,7 +53,7 @@ object LoopSolver {
     ): Expr<T> {
         val gaveUp =
             // Put this zero here just to compile, not supposed to be .zero()
-            ConstantExpression.zero(expr) // ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.EphemeralKey.new())
+            ConstExpr.zero(expr) // ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.EphemeralKey.new())
 
         if (numLoops == null) {
             // If we don't know the number of loops, we've got absolutely no chance.
@@ -100,7 +100,7 @@ object LoopSolver {
         // I'm not going to bother for now.
         if (!unresolved.key.matchesElement(psiElement)) return null
 
-        val terms = ConstraintSolver.expandTerms(expr, unresolved, ConstantExpression.TRUE)
+        val terms = ConstraintSolver.expandTerms(expr, unresolved, ConstExpr.TRUE)
         if (terms == null) return null
         return terms to unresolved
     }

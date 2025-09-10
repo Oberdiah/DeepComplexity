@@ -186,7 +186,7 @@ object MethodProcessing {
                     processPsiExpression(condition, bodyContext)
                         .tryCastTo(BooleanSetIndicator)
                 }.orElse {
-                    ConstantExpression.TRUE
+                    ConstExpr.TRUE
                 }
 
                 psi.body?.let { processPsiStatement(it, bodyContext) }
@@ -239,7 +239,7 @@ object MethodProcessing {
 
             is PsiLiteralExpression -> {
                 val value = psi.value ?: throw ExpressionIncompleteException()
-                return ConstantExpression.fromAny(value)
+                return ConstExpr.fromAny(value)
             }
 
             is PsiPrefixExpression -> {

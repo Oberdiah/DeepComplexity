@@ -25,7 +25,7 @@ enum class UnaryNumberOp {
             INCREMENT, DECREMENT -> {
                 ArithmeticExpression(
                     expr,
-                    ConstantExpression.one(expr.getNumberSetIndicator()),
+                    ConstExpr.one(expr.getNumberSetIndicator()),
                     if (this == INCREMENT) BinaryNumberOp.ADDITION else BinaryNumberOp.SUBTRACTION
                 )
             }
