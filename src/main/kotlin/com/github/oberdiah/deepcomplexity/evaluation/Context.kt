@@ -110,8 +110,8 @@ class Context(
         data class ThisKey(val type: PsiType) : UncertainKey(temporary = true) {
             override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(type)
             override fun toString(): String = "this"
-            override fun hashCode(): Int = type.hashCode()
-            override fun equals(other: Any?): Boolean = other is ThisKey && this.type == other.type
+            override fun hashCode(): Int = 0
+            override fun equals(other: Any?): Boolean = other is ThisKey
         }
 
         class ReturnKey(override val ind: SetIndicator<*>) : UncertainKey() {
