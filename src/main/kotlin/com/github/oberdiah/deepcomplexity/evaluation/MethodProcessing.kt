@@ -212,7 +212,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return context.c.getVar(Key.HeapKey.newThis(psi.type!!))
+                return context.c.getVar(Key.ThisKey(psi.type!!))
             }
 
             is PsiMethodCallExpression -> {
@@ -227,7 +227,7 @@ object MethodProcessing {
                 qualifier?.let {
                     val ind = it.ind
                     assertIs<ObjectSetIndicator>(ind)
-                    context.addVar(LValueKeyExpr.new(Key.HeapKey.newThis(ind.type)), it)
+                    context.addVar(LValueKeyExpr.new(Key.ThisKey(ind.type)), it)
                 }
 
                 val methodReturnValue = methodContext.returnValue?.resolveUnknowns(context.c)
@@ -390,7 +390,7 @@ object MethodProcessing {
 
                 val methodContext = processMethod(context, psi)
 
-                context.addVar(LValueKeyExpr.new(Key.HeapKey.newThis(objType)), newObj)
+                context.addVar(LValueKeyExpr.new(Key.ThisKey(objType)), newObj)
                 context.stack(methodContext)
 
                 return newObj
@@ -425,7 +425,7 @@ object MethodProcessing {
                             thisType,
                             "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                         )
-                        context.c.getVar(Key.HeapKey.newThis(thisType))
+                        context.c.getVar(Key.ThisKey(thisType))
                     }
                 )
             }

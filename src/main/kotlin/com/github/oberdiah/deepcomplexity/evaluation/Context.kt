@@ -50,7 +50,7 @@ class Context(
     init {
         // We have to allow `This` here to allow us to create a context with 'this' defined
         // to stack on top of and resolve.
-        assert(variables.keys.none { it is EphemeralKey || (it is Key.HeapKey && !it.isThis) }) {
+        assert(variables.keys.none { it is EphemeralKey || it is Key.HeapKey }) {
             "Ephemeral keys and heap keys shouldn't be used as variable keys."
         }
     }
@@ -83,7 +83,13 @@ class Context(
     sealed class Key(val temporary: Boolean = false) {
         abstract val ind: SetIndicator<*>
 
-        abstract class VariableKey(val variable: PsiVariable, temporary: Boolean = false) : Key(temporary) {
+        /**
+         * Uncertain Keys are keys that can be used as placeholders in `VariableExpressions`.
+         * Not all keys fall into this category, for example `HeapKey`s and `ExpressionKey`s do not.
+         */
+        sealed class UncertainKey(temporary: Boolean = false) : Key(temporary)
+
+        sealed class VariableKey(val variable: PsiVariable, temporary: Boolean = false) : UncertainKey(temporary) {
             override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
             override fun toString(): String = variable.toStringPretty()
             override fun equals(other: Any?): Boolean = other is VariableKey && this.variable == other.variable
@@ -96,36 +102,19 @@ class Context(
             temporary: Boolean = false
         ) : VariableKey(variable, temporary)
 
-        data class QualifiedKey(val field: FieldRef, val qualifier: Key) : Key() {
+        data class QualifiedKey(val field: FieldRef, val qualifier: Key) : UncertainKey() {
             override val ind: SetIndicator<*> = this.field.ind
             override fun toString(): String = "$qualifier.$field"
         }
 
-        class HeapKey(
-            private val idx: Int,
-            val type: PsiType,
-            val isThis: Boolean,
-            // Whether this reference is pointing to an object we watched get created during expression parsing.
-            // (We never watch `this` get created, nor unknown objects outside our scope.)
-            val newlyCreated: Boolean,
-            temporary: Boolean = false
-        ) : Key(temporary) {
-            companion object {
-                private var KEY_INDEX = 1
-                fun newThis(type: PsiType): HeapKey =
-                    HeapKey(0, type, isThis = true, newlyCreated = false, temporary = true)
-
-                fun new(type: PsiType, newlyCreated: Boolean = true, temporary: Boolean = false): HeapKey =
-                    HeapKey(KEY_INDEX++, type, false, newlyCreated, temporary)
-            }
-
-            override val ind: SetIndicator<*> = ObjectSetIndicator(type)
-            override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
-            override fun hashCode(): Int = idx.hashCode()
-            override fun toString(): String = if (isThis) "this" else "#${idx}"
+        data class ThisKey(val type: PsiType) : UncertainKey(temporary = true) {
+            override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(type)
+            override fun toString(): String = "this"
+            override fun hashCode(): Int = type.hashCode()
+            override fun equals(other: Any?): Boolean = other is ThisKey && this.type == other.type
         }
 
-        class ReturnKey(override val ind: SetIndicator<*>) : Key() {
+        class ReturnKey(override val ind: SetIndicator<*>) : UncertainKey() {
             companion object {
                 val Me = ReturnKey(DoubleSetIndicator)
             }
@@ -133,6 +122,20 @@ class Context(
             override fun toString(): String = "Return value"
             override fun hashCode(): Int = 0
             override fun equals(other: Any?): Boolean = other is ReturnKey
+        }
+
+        class HeapKey(
+            private val idx: Int,
+            val type: PsiType,
+        ) : Key(false) {
+            companion object {
+                private var KEY_INDEX = 1
+                fun new(type: PsiType): HeapKey = HeapKey(KEY_INDEX++, type)
+            }
+
+            override val ind: SetIndicator<*> = ObjectSetIndicator(type)
+            override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
+            override fun hashCode(): Int = idx.hashCode()
         }
 
         /**
@@ -164,7 +167,7 @@ class Context(
         fun isEphemeral(): Boolean = this is EphemeralKey
         fun isExpr(): Boolean = this is ExpressionKey
         fun isNewlyCreated(): Boolean =
-            this is HeapKey && this.newlyCreated || this is QualifiedKey && this.qualifier.isNewlyCreated()
+            this is HeapKey || this is QualifiedKey && this.qualifier.isNewlyCreated()
 
         /**
          * Whether the key is still in some way 'unresolved', i.e. will it get substituted into something
@@ -182,8 +185,9 @@ class Context(
          */
         fun importance(): Int {
             return when (this) {
-                is VariableKey -> 5
-                is QualifiedKey -> 4
+                is VariableKey -> 6
+                is QualifiedKey -> 5
+                is ThisKey -> 4
                 is HeapKey -> 3
                 is ReturnKey -> 2
                 is ExpressionKey -> 1
@@ -199,6 +203,7 @@ class Context(
             return when (this) {
                 is VariableKey -> variable
                 is QualifiedKey -> field.getElement()
+                is ThisKey -> throw IllegalArgumentException("Cannot get element of this key")
                 is HeapKey -> throw IllegalArgumentException("Cannot get element of heap key")
                 is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
