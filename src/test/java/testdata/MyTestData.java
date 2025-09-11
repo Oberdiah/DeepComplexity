@@ -3,7 +3,8 @@ package testdata;
 import com.github.oberdiah.deepcomplexity.GoodEnough;
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
-import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.*;
+import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
+import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
 
 public class MyTestData {
 	@RequiredScore(1.0)
@@ -738,11 +739,10 @@ public class MyTestData {
 		}
 	}
 	
-	@RequiredScore(0.0051)
-	@GoodEnough(REQUIRES_IDENTIFYING_IDENTICAL_EXPRESSIONS)
+	@RequiredScore(1.0)
 	public static short twoVars2(short x) {
 		int b = x % 100;
-		int a = x % 100;
+		int a = x % 99;
 		
 		if (a > b) {
 			return (short) a;
@@ -754,7 +754,7 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	public static short twoVars3(short x) {
 		int b = x % 100;
-		int a = x % 100;
+		int a = x % 99;
 		
 		if (a > 10 && a < 20 && b == a) {
 			return (short) b;
@@ -777,7 +777,7 @@ public class MyTestData {
 	}
 	
 	public static short twoVars5(short x) {
-		int b = x % 100;
+		int b = x % 99;
 		int a = x % 100;
 		
 		if (b == a && a > 10 && a < 20) {
@@ -797,6 +797,18 @@ public class MyTestData {
 			}
 		}
 		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	public static short twoVars7(short x) {
+		int b = x % 100;
+		int a = x % 100;
+		
+		if (a > b) {
+			return (short) a;
+		} else {
+			return 0;
+		}
 	}
 	
 	public static short wrappingComparison(short x) {

@@ -62,18 +62,23 @@ object ExprConstrain {
         val startTime = System.currentTimeMillis()
         val constraints = when (condition) {
             is BooleanExpression -> {
-                val lhsConstrained = getConstraints(condition.lhs, scope)
-                val constrainedScope = scope.constrainWith(lhsConstrained)
-                val rhsConstrained = getConstraints(condition.rhs, constrainedScope)
-
                 val outputConstraints: MutableSet<Constraints> = mutableSetOf()
                 when (condition.op) {
                     BooleanOp.OR -> {
+                        val lhsConstrained = getConstraints(condition.lhs, scope)
+                        // In the OR case the two clauses don't constrain each other.
+                        val rhsConstrained = getConstraints(condition.rhs, scope)
+
                         outputConstraints.addAll(lhsConstrained)
                         outputConstraints.addAll(rhsConstrained)
                     }
 
                     BooleanOp.AND -> {
+                        // In the AND case, they do.
+                        val lhsConstrained = getConstraints(condition.lhs, scope)
+                        val constrainedScope = scope.constrainWith(lhsConstrained)
+                        val rhsConstrained = getConstraints(condition.rhs, constrainedScope)
+
                         for (lhs in lhsConstrained) {
                             for (rhs in rhsConstrained) {
                                 outputConstraints.add(lhs.and(rhs))
@@ -95,7 +100,7 @@ object ExprConstrain {
                     )
                 }
 
-                return extra(condition)
+                extra(condition)
             }
 
             is ConstExpr -> {

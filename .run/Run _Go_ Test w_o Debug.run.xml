@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run &quot;Go&quot; Test" type="JUnit" factoryName="JUnit">
+  <configuration default="false" name="Run &quot;Go&quot; Test w/o Debug" type="JUnit" factoryName="JUnit">
     <module name="DeepComplexity.test" />
     <extension name="coverage">
       <pattern>
