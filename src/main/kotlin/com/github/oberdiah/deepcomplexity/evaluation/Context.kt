@@ -133,7 +133,7 @@ class Context(
                 fun new(type: PsiType): HeapKey = HeapKey(KEY_INDEX++, type)
             }
 
-            override val ind: SetIndicator<*> = ObjectSetIndicator(type)
+            override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
             override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
             override fun hashCode(): Int = idx.hashCode()
         }

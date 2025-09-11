@@ -1,6 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.github.oberdiah.deepcomplexity.staticAnalysis.HeapIdent
+import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
@@ -14,7 +14,7 @@ fun <T : Number> ISet<T>.into(): NumberSet<T> =
 fun ISet<Boolean>.into(): BooleanSet =
     this as BooleanSet
 
-fun ISet<HeapIdent>.into(): ObjectSet =
+fun ISet<Context.Key.HeapKey>.into(): ObjectSet =
     this as ObjectSet
 
 fun <T : Number> Variances<T>.into(): NumberVariances<T> =
@@ -23,7 +23,7 @@ fun <T : Number> Variances<T>.into(): NumberVariances<T> =
 fun Variances<Boolean>.into(): BooleanVariances =
     this as BooleanVariances
 
-fun Variances<HeapIdent>.into(): ObjectVariances =
+fun Variances<Context.Key.HeapKey>.into(): ObjectVariances =
     this as ObjectVariances
 
 fun <T : Number> SetIndicator<T>.into(): NumberSetIndicator<T> =

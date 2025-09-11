@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.evaluation.Context
+import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -31,7 +31,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
      */
     abstract fun newFullSet(): ISet<T>
 
-    abstract fun newVariance(key: Context.Key): Variances<T>
+    abstract fun newVariance(key: Key): Variances<T>
 
     companion object {
         fun fromClass(clazz: KClass<*>): SetIndicator<*> {
@@ -52,7 +52,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
             val ind = when (value) {
                 is Number -> NumberSetIndicator.fromValue(value)
                 is Boolean -> BooleanSetIndicator
-                is HeapIdent -> ObjectSetIndicator(value.psiType)
+                is Key.HeapKey -> ObjectSetIndicator(value.type)
                 else -> TODO()
             }
 
@@ -91,7 +91,7 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
     override fun newFullSet(): NumberSet<T> = NumberSet.newFull(this)
     override fun newEmptySet(): NumberSet<T> = NumberSet.newEmpty(this)
     override fun newConstantSet(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
-    override fun newVariance(key: Context.Key): Variances<T> = NumberVariances.newFromVariance(this, key)
+    override fun newVariance(key: Key): Variances<T> = NumberVariances.newFromVariance(this, key)
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
@@ -174,26 +174,26 @@ data object ByteSetIndicator : NumberSetIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
-    override fun newVariance(key: Context.Key): Variances<Boolean> = BooleanVariances(BooleanSet.BOTH)
+    override fun newVariance(key: Key): Variances<Boolean> = BooleanVariances(BooleanSet.BOTH)
     override fun newFullSet(): ISet<Boolean> = BooleanSet.BOTH
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
     override fun newConstantSet(constant: Boolean): ISet<Boolean> =
         BooleanSet.fromBoolean(constant)
 }
 
-class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapIdent>(HeapIdent::class) {
+class ObjectSetIndicator(val type: PsiType) : SetIndicator<Key.HeapKey>(Key.HeapKey::class) {
     override fun toString(): String {
         return "ObjectSetIndicator($type)"
     }
 
-    override fun newVariance(key: Context.Key): Variances<HeapIdent> =
+    override fun newVariance(key: Key): Variances<Key.HeapKey> =
         ObjectVariances(ObjectSet.newEmptySet(this), this)
 
-    override fun newConstantSet(constant: HeapIdent): ISet<HeapIdent> =
+    override fun newConstantSet(constant: Key.HeapKey): ISet<Key.HeapKey> =
         ObjectSet.fromConstant(constant)
 
-    override fun newEmptySet(): ISet<HeapIdent> = ObjectSet.newEmptySet(this)
-    override fun newFullSet(): ISet<HeapIdent> = ObjectSet.newFullSet(this)
+    override fun newEmptySet(): ISet<Key.HeapKey> = ObjectSet.newEmptySet(this)
+    override fun newFullSet(): ISet<Key.HeapKey> = ObjectSet.newFullSet(this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
