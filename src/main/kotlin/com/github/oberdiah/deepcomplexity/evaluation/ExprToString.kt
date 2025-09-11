@@ -31,6 +31,7 @@ object ExprToString {
             }
 
             is VariableExpression -> expr.key.toString()
+            is ObjectExpr -> expr.heapKey.toString()
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
         }
@@ -51,6 +52,7 @@ object ExprToString {
             is TypeCastExpression<*, *> -> toExprKeyString(expr.expr)
             is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr<*> -> "${expr.key}"
+            is ObjectExpr -> expr.heapKey.toString()
         }
     }
 
@@ -123,6 +125,7 @@ object ExprToString {
 
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
+            is ObjectExpr -> expr.heapKey.toString()
         }
     }
 }

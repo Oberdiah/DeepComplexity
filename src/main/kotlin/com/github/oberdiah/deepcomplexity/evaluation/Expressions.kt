@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -211,28 +212,6 @@ data class ComparisonExpression<T : Any>(
 }
 
 /**
- * This represents a standard primitive which we do not know the value of yet.
- *
- * Related to a specific context (The context that created it).
- * This context is only used for ensuring proper usage, it's never used within the logic.
- */
-data class VariableExpression<T : Any>(
-    val key: Key,
-    val contextId: Context.ContextId,
-    override val ind: SetIndicator<T>
-) : Expr<T>() {
-//    init {
-//         The return key `Me` should never be used in a variable, only as a key in the Vars map.
-//        assert(key != Key.ReturnKey.Me)
-//    }
-
-    companion object {
-        fun new(key: Key, contextId: Context.ContextId): VariableExpression<*> =
-            VariableExpression(key, contextId, key.ind)
-    }
-}
-
-/**
  * Tries to cast the expression to the given set indicator.
  * Does nothing if the expression is already of the given type.
  *
@@ -388,7 +367,35 @@ data class NumIterationTimesExpression<T : Number>(
     }
 }
 
-data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) : Expr<T>() {
+sealed class LeafExpr<T : Any> : Expr<T>()
+
+data class ObjectExpr(val heapKey: Key.HeapKey) : LeafExpr<Key.HeapKey>() {
+    override val ind: ObjectSetIndicator = ObjectSetIndicator(heapKey.type)
+}
+
+/**
+ * This represents a standard primitive which we do not know the value of yet.
+ *
+ * Related to a specific context (The context that created it).
+ * This context is only used for ensuring proper usage, it's never used within the logic.
+ */
+data class VariableExpression<T : Any>(
+    val key: Key,
+    val contextId: Context.ContextId,
+    override val ind: SetIndicator<T>
+) : LeafExpr<T>() {
+//    init {
+//         The return key `Me` should never be used in a variable, only as a key in the Vars map.
+//        assert(key != Key.ReturnKey.Me)
+//    }
+
+    companion object {
+        fun new(key: Key, contextId: Context.ContextId): VariableExpression<*> =
+            VariableExpression(key, contextId, key.ind)
+    }
+}
+
+data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) : LeafExpr<T>() {
     companion object {
         val TRUE = ConstExpr(true, BooleanSetIndicator)
         val FALSE = ConstExpr(false, BooleanSetIndicator)
@@ -396,17 +403,9 @@ data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) :
         fun <T : Number> zero(ind: NumberSetIndicator<T>): ConstExpr<T> =
             ConstExpr(ind.getZero(), ind)
 
-        fun <T : Number> zero(expr: Expr<T>): ConstExpr<T> =
-            zero(expr.getNumberSetIndicator())
-
         fun <T : Number> one(ind: NumberSetIndicator<T>): ConstExpr<T> =
             ConstExpr(ind.getOne(), ind)
 
-        fun <T : Number> one(expr: Expr<T>): ConstExpr<T> =
-            zero(expr.getNumberSetIndicator())
-
-        fun <T : Any> fromAny(value: T): ConstExpr<T> {
-            return ConstExpr(value, SetIndicator.fromValue(value))
-        }
+        fun <T : Any> fromAny(value: T): ConstExpr<T> = ConstExpr(value, SetIndicator.fromValue(value))
     }
 }

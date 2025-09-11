@@ -54,9 +54,7 @@ object ExprTreeVisitor {
         is NumIterationTimesExpression -> visitor(expr.variable)
         is TypeCastExpression<*, *> -> visitor(expr.expr)
         is LValueFieldExpr<*> -> visitor(expr.qualifier)
-
-        is ConstExpr -> {}
-        is VariableExpression -> {}
+        is LeafExpr<*> -> {}
         is LValueExpr<*> -> {}
     }
 }
