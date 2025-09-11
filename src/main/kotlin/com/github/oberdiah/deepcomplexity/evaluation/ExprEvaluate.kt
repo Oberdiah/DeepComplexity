@@ -152,6 +152,18 @@ object ExprEvaluate {
                 Constraints.completelyUnconstrained()
             ).constrainWith(scope)
 
+            is ObjectExpr -> {
+                val q = Bundle.constrained(
+                    expr.ind.newConstantSet(expr.key).toConstVariance(),
+                    Constraints.completelyUnconstrained()
+                ).constrainWith(scope)
+
+                // Safety: We're in a branch where T is Key.HeapKey because expr is an ObjectExpr
+                // Might try to clean this up later
+                @Suppress("UNCHECKED_CAST")
+                q as Bundle<T>
+            }
+
             is VariableExpression ->
                 Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
                     .constrainWith(scope)

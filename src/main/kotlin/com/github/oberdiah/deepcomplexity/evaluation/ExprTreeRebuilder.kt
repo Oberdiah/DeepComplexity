@@ -52,9 +52,7 @@ object ExprTreeRebuilder {
                 extra(expr) as Expr<T>
             }
 
-            is ConstExpr -> replacer.replacer(expr)
-            is VariableExpression -> replacer.replacer(expr)
-
+            is LeafExpr<*> -> replacer.replacer(expr)
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
@@ -171,8 +169,7 @@ object ExprTreeRebuilder {
                 newFieldExpr as Expr<T>
             }
 
-            is ConstExpr -> expr
-            is VariableExpression -> expr
+            is LeafExpr -> expr
             is LValueExpr -> expr
 
             else -> {

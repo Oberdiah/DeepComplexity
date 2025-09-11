@@ -1319,8 +1319,7 @@ public class MyTestData {
 		}
 	}
 	
-	// Aliasing is really hard, so we're not going to require that this passes for a little bit while
-	// we figure out how to do it.
+	@RequiredScore(1.0)
 	public static short aliasingTest(short x) {
 		MyClass a = new MyClass(1);
 		aliasingMethod(a, a);
@@ -1614,6 +1613,7 @@ public class MyTestData {
 		return (short) state.postIncrement();
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAllDifferent(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1621,6 +1621,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAeqB(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = a;
@@ -1628,6 +1629,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAeqC(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1635,6 +1637,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingBeqC(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1642,6 +1645,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAllSame(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = a;

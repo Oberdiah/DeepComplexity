@@ -143,7 +143,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 }
 
 fun Expr<*>.getField(context: Context, field: Context.FieldRef): Expr<*> {
-    return replaceTypeInLeaves<VariableExpression<*>>(field.ind) {
+    return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
         context.getVar(Key.QualifiedKey(field, it.key))
     }
 }
@@ -367,10 +367,14 @@ data class NumIterationTimesExpression<T : Number>(
     }
 }
 
+interface LeafExprWithKey {
+    val key: Key
+}
+
 sealed class LeafExpr<T : Any> : Expr<T>()
 
-data class ObjectExpr(val heapKey: Key.HeapKey) : LeafExpr<Key.HeapKey>() {
-    override val ind: ObjectSetIndicator = ObjectSetIndicator(heapKey.type)
+data class ObjectExpr(override val key: Key.HeapKey) : LeafExpr<Key.HeapKey>(), LeafExprWithKey {
+    override val ind: ObjectSetIndicator = ObjectSetIndicator(key.type)
 }
 
 /**
@@ -380,10 +384,10 @@ data class ObjectExpr(val heapKey: Key.HeapKey) : LeafExpr<Key.HeapKey>() {
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
 data class VariableExpression<T : Any>(
-    val key: Key,
+    override val key: Key,
     val contextId: Context.ContextId,
     override val ind: SetIndicator<T>
-) : LeafExpr<T>() {
+) : LeafExpr<T>(), LeafExprWithKey {
 //    init {
 //         The return key `Me` should never be used in a variable, only as a key in the Vars map.
 //        assert(key != Key.ReturnKey.Me)

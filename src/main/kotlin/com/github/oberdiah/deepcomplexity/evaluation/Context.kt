@@ -136,6 +136,7 @@ class Context(
             override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
             override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
             override fun hashCode(): Int = idx.hashCode()
+            override fun toString(): String = "#$idx"
         }
 
         /**
@@ -375,13 +376,13 @@ class Context(
 
         val objectsMentionedInQualifier =
             qualifier.iterateTree()
-                .filterIsInstance<VariableExpression<*>>()
+                .filterIsInstance<LeafExprWithKey>()
                 .map { it.key }
                 .toSet()
 
         val newVariables = variables + objectsMentionedInQualifier.map {
             val thisVarKey = QualifiedKey(fieldKey, it)
-            val newValue = qualifier.replaceTypeInLeaves<VariableExpression<*>>(fieldKey.ind) { expr ->
+            val newValue = qualifier.replaceTypeInLeaves<LeafExprWithKey>(fieldKey.ind) { expr ->
                 if (expr.key == it) {
                     rExpr
                 } else {
