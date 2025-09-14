@@ -200,11 +200,14 @@ class ObjectSetIndicator(val type: PsiType) : SetIndicator<Key.HeapKey>(Key.Heap
         if (other !is ObjectSetIndicator) return false
 
         if (clazz != other.clazz) return false
+        if (type != other.type) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return clazz.hashCode()
+        var result = clazz.hashCode()
+        result = 31 * result + type.hashCode()
+        return result
     }
 }
