@@ -1679,4 +1679,29 @@ public class MyTestData {
 		return -1; // shouldn't happen
 	}
 	
+	public static short simpleModifyAliasing(short x) {
+		MyClass obj = new MyClass(5);
+		directModify(obj, obj);
+		return (short) obj.x;
+	}
+	
+	private static void directModify(MyClass a, MyClass b) {
+		a.x++;
+		b.x++;
+		a.x++;
+		a.x++;
+		a.x++;
+	}
+	
+	public static short methodCallAliasing(short x) {
+		MyClass obj = new MyClass(5);
+		methodCallModify(obj, obj);
+		return (short) obj.x;
+	}
+	
+	private static void methodCallModify(MyClass a, MyClass b) {
+		a.addOne();
+		b.addOne();
+		a.addAndGet(8);
+	}
 }

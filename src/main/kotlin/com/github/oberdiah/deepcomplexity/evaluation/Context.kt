@@ -296,32 +296,30 @@ class Context(
             }.mapKeys { it.key as QualifiedKey }
 
             if (!candidates.isEmpty()) {
-                fun <T : Any> inner(ind: SetIndicator<T>): Expr<T> {
+                fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
                     val p = q?.getField(this, key.field) ?: simpleResolve
-                    var finalExpr: Expr<T> = p.tryCastTo(ind)!!
+                    var originalExpr: Expr<T> = p.tryCastTo(exprInd)!!
 
-                    for ((k, expr) in candidates) {
-                        fun <Q : Any> inner2(ind2: SetIndicator<Q>) {
-                            finalExpr = IfExpression(
-                                expr.tryCastTo(ind)!!,
-                                finalExpr,
-                                ComparisonExpression(
-                                    getVar(k.qualifier).tryCastTo(ind2)!!,
-                                    getVar(key.qualifier).tryCastTo(ind2)!!,
-                                    ComparisonOp.EQUAL
-                                )
+                    // The fix for the aliasing issue is to just get it to do a final getVar before finishing a method off.
+                    // This is even somewhat justifiable.
+                    // The problem is that that then makes a lot of garbage.
+
+                    for ((k, substitutedExpr) in candidates) {
+                        originalExpr = IfExpression(
+                            substitutedExpr.tryCastTo(exprInd)!!,
+                            originalExpr,
+                            ComparisonExpression(
+                                getVar(k.qualifier).tryCastTo(qualifierInd)!!,
+                                getVar(key.qualifier).tryCastTo(qualifierInd)!!,
+                                ComparisonOp.EQUAL
                             )
-                        }
-
-                        inner2(key.qualifier.ind)
+                        )
                     }
 
-                    return finalExpr
+                    return originalExpr
                 }
 
-                val r = inner(key.ind)
-
-                r
+                inner(key.ind, key.qualifier.ind)
             } else {
                 q?.getField(this, key.field)
             }
