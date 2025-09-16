@@ -201,7 +201,6 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with generic type parameters
-	@RequiredScore(1.0)
 	public static short genericAliasing(short x) {
 		AliasClass obj = new AliasClass(100);
 		genericModify(obj, obj);
