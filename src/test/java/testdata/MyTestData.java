@@ -1704,4 +1704,16 @@ public class MyTestData {
 		b.addOne();
 		a.addAndGet(8);
 	}
+	
+	public static short aliasingTest3(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = a;
+		
+		if (x > 0) {
+			a.x++;
+			b.x++;
+		}
+		
+		return (short) a.x;
+	}
 }
