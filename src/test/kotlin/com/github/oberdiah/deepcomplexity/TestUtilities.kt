@@ -197,10 +197,9 @@ object TestUtilities {
 
             // For every test we have, there is no reason for unknowns to be present by the time we return.
             // (Aside from `x`, of course, hence the `size <= 1` check.)
-            // todo, this should be uncommented soon:
-//            assert(unknownsInReturn.size <= 1) {
-//                "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
-//            }
+            assert(unknownsInReturn.size <= 1) {
+                "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
+            }
 
             val bundle: Bundle<*> = context.getVar(returnKey).evaluate(ExprEvaluate.Scope())
             val castBundle = bundle.cast(ShortSetIndicator)!!
