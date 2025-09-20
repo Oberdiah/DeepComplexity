@@ -144,7 +144,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 
 fun Expr<*>.getField(context: Context, field: Context.FieldRef): Expr<*> {
     return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
-        context.getVar(Key.QualifiedKey(field, it.key))
+        context.grabVar(Key.QualifiedKey(field, it.key))
     }
 }
 
@@ -290,13 +290,13 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
  * a QualifiedKey or not.
  */
-data class LValueKeyExpr<T : Any>(val key: Key, override val ind: SetIndicator<T>) : LValueExpr<T>() {
+data class LValueKeyExpr<T : Any>(val key: Key.UncertainKey, override val ind: SetIndicator<T>) : LValueExpr<T>() {
     companion object {
-        fun new(key: Key): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
+        fun new(key: Key.UncertainKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
     }
 
     override fun resolve(context: Context): Expr<T> {
-        return context.getVar(key).tryCastTo(ind)!!
+        return context.grabVar(key).tryCastTo(ind)!!
     }
 }
 
@@ -368,7 +368,7 @@ data class NumIterationTimesExpression<T : Number>(
 }
 
 interface LeafExprWithKey {
-    val key: Key
+    val key: Context.QualifierRef
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>()
@@ -384,7 +384,7 @@ data class ObjectExpr(override val key: Key.HeapKey) : LeafExpr<Key.HeapKey>(), 
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
 data class VariableExpression<T : Any>(
-    override val key: Key,
+    override val key: Key.UncertainKey,
     val contextId: Context.ContextId,
     override val ind: SetIndicator<T>
 ) : LeafExpr<T>(), LeafExprWithKey {
@@ -394,7 +394,7 @@ data class VariableExpression<T : Any>(
 //    }
 
     companion object {
-        fun new(key: Key, contextId: Context.ContextId): VariableExpression<*> =
+        fun new(key: Key.UncertainKey, contextId: Context.ContextId): VariableExpression<*> =
             VariableExpression(key, contextId, key.ind)
     }
 }

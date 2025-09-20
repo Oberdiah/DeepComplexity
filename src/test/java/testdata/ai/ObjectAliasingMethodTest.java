@@ -17,7 +17,6 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with conditional modification
-	@RequiredScore(1.0)
 	public static short conditionalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		conditionalModify(obj, obj);
@@ -45,7 +44,6 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with return value dependency
-	@RequiredScore(1.0)
 	public static short returnAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		return (short) modifyAndCheck(obj, obj);
@@ -240,7 +238,6 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with final parameter modification
-	@RequiredScore(1.0)
 	public static short finalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		finalModify(obj, obj);

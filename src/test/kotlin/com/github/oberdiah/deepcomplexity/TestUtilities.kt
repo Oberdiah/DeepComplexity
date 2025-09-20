@@ -185,12 +185,12 @@ object TestUtilities {
             val returnKey = Context.Key.ReturnKey(Utilities.psiTypeToSetIndicator(psiMethod.returnType!!))
 
             if (System.getenv("DEBUG") != "false") {
-                println((context.getVar(returnKey).dStr()).prependIndent())
+                println((context.grabVar(returnKey).dStr()).prependIndent())
             } else {
                 println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
             }
 
-            val unknownsInReturn = context.getVar(returnKey).iterateTree(true)
+            val unknownsInReturn = context.grabVar(returnKey).iterateTree(true)
                 .filterIsInstance<VariableExpression<*>>()
                 .map { it.key }
                 .toSet()
@@ -201,7 +201,7 @@ object TestUtilities {
                 "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
             }
 
-            val bundle: Bundle<*> = context.getVar(returnKey).evaluate(ExprEvaluate.Scope())
+            val bundle: Bundle<*> = context.grabVar(returnKey).evaluate(ExprEvaluate.Scope())
             val castBundle = bundle.cast(ShortSetIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle

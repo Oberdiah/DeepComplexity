@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
-import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.EphemeralKey
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.QualifiedKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
@@ -10,14 +9,24 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
-typealias Vars = Map<Key, Expr<*>>
+typealias Vars = Map<Key.UncertainKey, Expr<*>>
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never
  * refers to another variable within that same context.
  *
  * For example, in a context `{ x: y + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
+ *
+ * Vars are the currently understood values for things that can be modified.
+ *
+ * How objects are stored:
+ *  - Every object's field will be stored as its own variable.
+ *  - An object itself (the heap reference) may also be an unknown. e.g. { x: a }
+ *  - As always, unknown variables never point to our own context.
+ *    { x: b, b.x: 2 } does not mean that you're allowed to resolve `x.x` to `2`, because `x` is not `b`, it's `b'`.
+ *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
 class Context(
     variables: Vars,
@@ -47,14 +56,6 @@ class Context(
         }
     }
 
-    init {
-        // We have to allow `This` here to allow us to create a context with 'this' defined
-        // to stack on top of and resolve.
-        assert(variables.keys.none { it is EphemeralKey || it is Key.HeapKey }) {
-            "Ephemeral keys and heap keys shouldn't be used as variable keys."
-        }
-    }
-
     @JvmInline
     value class ContextId(val ids: Set<Int>) {
         operator fun plus(other: ContextId): ContextId = ContextId(this.ids + other.ids)
@@ -75,6 +76,13 @@ class Context(
         val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
     }
 
+    sealed interface QualifierRef {
+        val ind: SetIndicator<*>
+        fun isNew(): Boolean =
+            this is Key.HeapKey
+                    || (this is QualifiedKey && this.qualifier.isNew())
+    }
+
     /**
      * If [temporary] is true this key will be removed from the context
      * after stacking. This is useful for tidying up keys that are only
@@ -87,7 +95,8 @@ class Context(
          * Uncertain Keys are keys that can be used as placeholders in `VariableExpressions`.
          * Not all keys fall into this category, for example `HeapKey`s and `ExpressionKey`s do not.
          */
-        sealed class UncertainKey(temporary: Boolean = false) : Key(temporary)
+        sealed class UncertainKey(temporary: Boolean = false) : Key(temporary),
+            QualifierRef
 
         sealed class VariableKey(val variable: PsiVariable, temporary: Boolean = false) : UncertainKey(temporary) {
             override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
@@ -102,7 +111,7 @@ class Context(
             temporary: Boolean = false
         ) : VariableKey(variable, temporary)
 
-        data class QualifiedKey(val field: FieldRef, val qualifier: Key) : UncertainKey() {
+        data class QualifiedKey(val field: FieldRef, val qualifier: QualifierRef) : UncertainKey() {
             override val ind: SetIndicator<*> = this.field.ind
             override fun toString(): String = "$qualifier.$field"
         }
@@ -127,7 +136,7 @@ class Context(
         class HeapKey(
             private val idx: Int,
             val type: PsiType,
-        ) : Key(false) {
+        ) : QualifierRef {
             companion object {
                 private var KEY_INDEX = 1
                 fun new(type: PsiType): HeapKey = HeapKey(KEY_INDEX++, type)
@@ -168,18 +177,7 @@ class Context(
         fun isEphemeral(): Boolean = this is EphemeralKey
         fun isExpr(): Boolean = this is ExpressionKey
         fun isNewlyCreated(): Boolean =
-            this is HeapKey || this is QualifiedKey && this.qualifier.isNewlyCreated()
-
-        /**
-         * Whether the key is still in some way 'unresolved', i.e. will it get substituted into something
-         * else eventually.
-         */
-        fun containsUnknowns(): Boolean =
-            when (this) {
-                is QualifiedKey -> qualifier.containsUnknowns()
-                is HeapKey -> false
-                else -> true
-            }
+            this is QualifiedKey && this.qualifier.isNew()
 
         /**
          * When multiplying, we need to decide which one gets to live on.
@@ -189,7 +187,6 @@ class Context(
                 is VariableKey -> 6
                 is QualifiedKey -> 5
                 is ThisKey -> 4
-                is HeapKey -> 3
                 is ReturnKey -> 2
                 is ExpressionKey -> 1
                 is EphemeralKey -> 0
@@ -205,7 +202,6 @@ class Context(
                 is VariableKey -> variable
                 is QualifiedKey -> field.getElement()
                 is ThisKey -> throw IllegalArgumentException("Cannot get element of this key")
-                is HeapKey -> throw IllegalArgumentException("Cannot get element of heap key")
                 is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
                 is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
                 is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")
@@ -283,46 +279,14 @@ class Context(
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun getVar(key: Key): Expr<*> {
+    fun grabVar(key: Key.UncertainKey): Expr<*> {
         // If we can do a simple resolve, we can just do that and
         // be done with it.
         val simpleResolve = variables[key] ?: VariableExpression.new(key, idx)
 
         val qualifiedResolve = if (key is QualifiedKey) {
             val q = variables[key.qualifier]
-
-            val candidates = variables.filterKeys {
-                it is QualifiedKey && it.containsUnknowns()
-            }.mapKeys { it.key as QualifiedKey }
-
-            if (!candidates.isEmpty()) {
-                fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
-                    val p = q?.getField(this, key.field) ?: simpleResolve
-                    var originalExpr: Expr<T> = p.tryCastTo(exprInd)!!
-
-                    // The fix for the aliasing issue is to just get it to do a final getVar before finishing a method off.
-                    // This is even somewhat justifiable.
-                    // The problem is that that then makes a lot of garbage.
-
-                    for ((k, substitutedExpr) in candidates) {
-                        originalExpr = IfExpression(
-                            substitutedExpr.tryCastTo(exprInd)!!,
-                            originalExpr,
-                            ComparisonExpression(
-                                getVar(k.qualifier).tryCastTo(qualifierInd)!!,
-                                getVar(key.qualifier).tryCastTo(qualifierInd)!!,
-                                ComparisonOp.EQUAL
-                            )
-                        )
-                    }
-
-                    return originalExpr
-                }
-
-                inner(key.ind, key.qualifier.ind)
-            } else {
-                q?.getField(this, key.field)
-            }
+            q?.getField(this, key.field)
         } else {
             null
         }
@@ -381,10 +345,12 @@ class Context(
         val newVariables = variables + objectsMentionedInQualifier.map {
             val thisVarKey = QualifiedKey(fieldKey, it)
             val newValue = qualifier.replaceTypeInLeaves<LeafExprWithKey>(fieldKey.ind) { expr ->
+                // Now that I look at this, this is slightly suspicious; we're checking a variable key
+                // against potentially other variables within the same context.
                 if (expr.key == it) {
                     rExpr
                 } else {
-                    getVar(thisVarKey)
+                    grabVar(thisVarKey)
                 }
             }
 
@@ -412,7 +378,7 @@ class Context(
             assert(!varExpr.contextId.collidesWith(idx)) {
                 "Cannot resolve variables from the same context that created them."
             }
-            getVar(varExpr.key)
+            grabVar(varExpr.key)
         }
 
     /**
@@ -431,8 +397,14 @@ class Context(
         // finally, we avoid stomping over said return value.
         for ((key, expr) in resolvedLater.withoutReturnValue().variables) {
             val lValue = if (key is QualifiedKey) {
-                // The qualifier is a key itself, so it also needs to try and get resolved.
-                LValueFieldExpr.new(key.field, getVar(key.qualifier))
+                if (key.qualifier is Key.HeapKey) {
+                    LValueFieldExpr.new(key.field, ObjectExpr(key.qualifier))
+                } else {
+                    assertIs<Key.UncertainKey>(key.qualifier)
+                    // The qualifier is a key itself, so it also needs to try and get resolved.
+                    // Not entirely sure this is sound. todo for tomorrow.
+                    LValueFieldExpr.new(key.field, grabVar(key.qualifier))
+                }
             } else {
                 // Do nothing, just assign as normal.
                 LValueKeyExpr.new(key)
