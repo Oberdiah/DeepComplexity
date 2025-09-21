@@ -22,9 +22,9 @@ object ExprConstrain {
      */
     fun invert(expr: Expr<Boolean>): Expr<Boolean> {
         return when (expr) {
-            is BooleanInvertExpression -> expr.expr
-            is BooleanExpression -> {
-                BooleanExpression(
+            is BooleanInvertExpr -> expr.expr
+            is BooleanExpr -> {
+                BooleanExpr(
                     expr.lhs.inverted(),
                     expr.rhs.inverted(),
                     when (expr.op) {
@@ -34,15 +34,15 @@ object ExprConstrain {
                 )
             }
 
-            is ComparisonExpression<*> -> {
-                fun <Q : Any> extra(me: ComparisonExpression<Q>): Expr<Boolean> =
-                    ComparisonExpression(me.lhs, me.rhs, me.comp.invert())
+            is ComparisonExpr<*> -> {
+                fun <Q : Any> extra(me: ComparisonExpr<Q>): Expr<Boolean> =
+                    ComparisonExpr(me.lhs, me.rhs, me.comp.invert())
                 extra(expr)
             }
 
             is ConstExpr -> ConstExpr(!expr.value, expr.ind)
-            is IfExpression -> {
-                IfExpression(
+            is IfExpr -> {
+                IfExpr(
                     expr.thisCondition,
                     expr.falseExpr.inverted(),
                     expr.trueExpr.inverted()
@@ -61,7 +61,7 @@ object ExprConstrain {
     fun getConstraints(condition: Expr<Boolean>, scope: ExprEvaluate.Scope): Set<Constraints> {
         val startTime = System.currentTimeMillis()
         val constraints = when (condition) {
-            is BooleanExpression -> {
+            is BooleanExpr -> {
                 val outputConstraints: MutableSet<Constraints> = mutableSetOf()
                 when (condition.op) {
                     BooleanOp.OR -> {
@@ -89,8 +89,8 @@ object ExprConstrain {
                 outputConstraints
             }
 
-            is ComparisonExpression<*> -> {
-                fun <Q : Any> extra(me: ComparisonExpression<Q>): Set<Constraints> {
+            is ComparisonExpr<*> -> {
+                fun <Q : Any> extra(me: ComparisonExpr<Q>): Set<Constraints> {
                     val lhsBundleSet = me.lhs.evaluate(scope)
                     val rhsBundleSet = me.rhs.evaluate(scope)
 
@@ -115,10 +115,10 @@ object ExprConstrain {
                 )
             }
 
-            is BooleanInvertExpression -> getConstraints(condition.expr.inverted(), scope)
-            is IfExpression -> {
+            is BooleanInvertExpr -> getConstraints(condition.expr.inverted(), scope)
+            is IfExpr -> {
                 val ifCondition = condition.thisCondition
-                val invertedIf = BooleanInvertExpression(ifCondition)
+                val invertedIf = BooleanInvertExpr(ifCondition)
 
                 // The true and false expressions are also conditions in this context,
                 // as this whole thing must be a condition.
@@ -126,9 +126,9 @@ object ExprConstrain {
                 val falseCondition = condition.falseExpr
 
                 val convertedToBooleanExpr =
-                    BooleanExpression(
-                        BooleanExpression(ifCondition, trueCondition, BooleanOp.AND),
-                        BooleanExpression(invertedIf, falseCondition, BooleanOp.AND),
+                    BooleanExpr(
+                        BooleanExpr(ifCondition, trueCondition, BooleanOp.AND),
+                        BooleanExpr(invertedIf, falseCondition, BooleanOp.AND),
                         BooleanOp.OR
                     )
 

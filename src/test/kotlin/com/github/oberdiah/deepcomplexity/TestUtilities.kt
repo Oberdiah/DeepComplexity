@@ -3,7 +3,7 @@ package com.github.oberdiah.deepcomplexity
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.evaluation.Key
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
+import com.github.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
@@ -191,7 +191,7 @@ object TestUtilities {
             }
 
             val unknownsInReturn = context.grabVar(returnKey).iterateTree(true)
-                .filterIsInstance<VariableExpression<*>>()
+                .filterIsInstance<VariableExpr<*>>()
                 .map { it.key }
                 .toSet()
 

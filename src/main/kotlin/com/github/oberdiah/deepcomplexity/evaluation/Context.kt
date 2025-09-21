@@ -44,8 +44,8 @@ class Context(
      * never be resolved with us either, alongside anything they were previously forbidden to resolve.
      */
     val variables: Vars = variables.mapValues { expr ->
-        expr.value.replaceTypeInTree<VariableExpression<*>> {
-            VariableExpression.new(it.key, it.contextId + idx)
+        expr.value.replaceTypeInTree<VariableExpr<*>> {
+            VariableExpr.new(it.key, it.contextId + idx)
         }
     }
 
@@ -100,8 +100,8 @@ class Context(
                             aVal ?: bVal!!
                         } else {
                             how(
-                                aVal ?: VariableExpression.new(key, a.idx),
-                                bVal ?: VariableExpression.new(key, b.idx)
+                                aVal ?: VariableExpr.new(key, a.idx),
+                                bVal ?: VariableExpr.new(key, b.idx)
                             )
                         }
                     },
@@ -131,7 +131,7 @@ class Context(
     fun grabVar(key: Key.UncertainKey): Expr<*> {
         // If we can do a simple resolve, we can just do that and
         // be done with it.
-        val simpleResolve = variables[key] ?: VariableExpression.new(key, idx)
+        val simpleResolve = variables[key] ?: VariableExpr.new(key, idx)
 
         val qualifiedResolve = if (key is QualifiedKey) {
             val q = variables[key.qualifier]
@@ -223,7 +223,7 @@ class Context(
      * Resolves all variables in the expression that are known of in this context.
      */
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        expr.replaceTypeInTree<VariableExpression<*>> { varExpr ->
+        expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
             assert(!varExpr.contextId.collidesWith(idx)) {
                 "Cannot resolve variables from the same context that created them."
             }

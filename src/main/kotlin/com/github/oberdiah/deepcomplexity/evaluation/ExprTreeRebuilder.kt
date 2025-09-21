@@ -26,22 +26,22 @@ object ExprTreeRebuilder {
         replacer: LeafReplacer<T>
     ): Expr<T> {
         return when (expr) {
-            is UnionExpression -> UnionExpression(
+            is UnionExpr -> UnionExpr(
                 replaceTreeLeaves(expr.lhs, replacer),
                 replaceTreeLeaves(expr.rhs, replacer),
             )
 
-            is IfExpression -> IfExpression(
+            is IfExpr -> IfExpr(
                 replaceTreeLeaves(expr.trueExpr, replacer),
                 replaceTreeLeaves(expr.falseExpr, replacer),
                 expr.thisCondition,
             )
 
-            is TypeCastExpression<*, *> -> {
+            is TypeCastExpr<*, *> -> {
                 fun <T : Any, Q : Any> extra(
-                    expr: TypeCastExpression<T, Q>
-                ): TypeCastExpression<T, *> {
-                    return TypeCastExpression(
+                    expr: TypeCastExpr<T, Q>
+                ): TypeCastExpr<T, *> {
+                    return TypeCastExpr(
                         replaceTreeLeaves(expr.expr, replacer),
                         expr.ind,
                         expr.explicit,
@@ -82,19 +82,19 @@ object ExprTreeRebuilder {
         replacer: Replacer
     ): Expr<T> {
         return when (expr) {
-            is ArithmeticExpression -> ArithmeticExpression(
+            is ArithmeticExpr -> ArithmeticExpr(
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
                 expr.op,
             )
 
-            is NegateExpression -> NegateExpression(
+            is NegateExpr -> NegateExpr(
                 rebuildTree(expr.expr, replacer),
             )
 
-            is NumIterationTimesExpression -> NumIterationTimesExpression(
+            is NumIterationTimesExpr -> NumIterationTimesExpr(
                 expr.constraint,
-                rebuildTree(expr.variable, replacer) as VariableExpression<T>,
+                rebuildTree(expr.variable, replacer) as VariableExpr<T>,
                 expr.terms,
             )
 
@@ -107,18 +107,18 @@ object ExprTreeRebuilder {
         replacer: Replacer
     ): Expr<Boolean> {
         return when (expr) {
-            is BooleanExpression -> BooleanExpression(
+            is BooleanExpr -> BooleanExpr(
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
                 expr.op,
             )
 
-            is BooleanInvertExpression -> BooleanInvertExpression(
+            is BooleanInvertExpr -> BooleanInvertExpr(
                 rebuildTree(expr.expr, replacer),
             )
 
-            is ComparisonExpression<*> -> {
-                fun <T : Any> extra(expr: ComparisonExpression<T>): ComparisonExpression<T> = ComparisonExpression(
+            is ComparisonExpr<*> -> {
+                fun <T : Any> extra(expr: ComparisonExpr<T>): ComparisonExpr<T> = ComparisonExpr(
                     rebuildTree(expr.lhs, replacer),
                     rebuildTree(expr.rhs, replacer),
                     expr.comp,
@@ -142,18 +142,18 @@ object ExprTreeRebuilder {
         replacer: Replacer
     ): Expr<T> {
         return when (expr) {
-            is UnionExpression -> UnionExpression(
+            is UnionExpr -> UnionExpr(
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
             )
 
-            is IfExpression -> IfExpression(
+            is IfExpr -> IfExpr(
                 rebuildTree(expr.trueExpr, replacer),
                 rebuildTree(expr.falseExpr, replacer),
                 rebuildTree(expr.thisCondition, replacer),
             )
 
-            is TypeCastExpression<*, *> -> TypeCastExpression(
+            is TypeCastExpr<*, *> -> TypeCastExpr(
                 rebuildTree(expr.expr, replacer),
                 expr.ind,
                 expr.explicit,

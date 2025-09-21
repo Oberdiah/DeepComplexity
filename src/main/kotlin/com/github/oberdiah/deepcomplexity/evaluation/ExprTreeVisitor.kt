@@ -20,24 +20,24 @@ object ExprTreeVisitor {
     }
 
     fun visitTree(expr: Expr<*>, includeIfCondition: Boolean = true, visitor: (Expr<*>) -> Unit) = when (expr) {
-        is BooleanExpression -> {
+        is BooleanExpr -> {
             visitor(expr.lhs)
             visitor(expr.rhs)
         }
 
-        is ComparisonExpression<*> -> {
+        is ComparisonExpr<*> -> {
             visitor(expr.lhs)
             visitor(expr.rhs)
         }
 
-        is BooleanInvertExpression -> visitor(expr.expr)
-        is NegateExpression -> visitor(expr.expr)
-        is ArithmeticExpression -> {
+        is BooleanInvertExpr -> visitor(expr.expr)
+        is NegateExpr -> visitor(expr.expr)
+        is ArithmeticExpr -> {
             visitor(expr.lhs)
             visitor(expr.rhs)
         }
 
-        is IfExpression -> {
+        is IfExpr -> {
             if (includeIfCondition) {
                 visitor(expr.thisCondition)
             }
@@ -46,13 +46,13 @@ object ExprTreeVisitor {
             visitor(expr.falseExpr)
         }
 
-        is UnionExpression -> {
+        is UnionExpr -> {
             visitor(expr.lhs)
             visitor(expr.rhs)
         }
 
-        is NumIterationTimesExpression -> visitor(expr.variable)
-        is TypeCastExpression<*, *> -> visitor(expr.expr)
+        is NumIterationTimesExpr -> visitor(expr.variable)
+        is TypeCastExpr<*, *> -> visitor(expr.expr)
         is LValueFieldExpr<*> -> visitor(expr.qualifier)
         is LeafExpr<*> -> {}
         is LValueExpr<*> -> {}

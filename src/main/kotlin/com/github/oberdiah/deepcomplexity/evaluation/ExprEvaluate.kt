@@ -56,15 +56,15 @@ object ExprEvaluate {
 
     private fun <T : Number> evaluateNums(expr: Expr<T>, scope: Scope): Bundle<T> {
         val toReturn = when (expr) {
-            is ArithmeticExpression -> {
+            is ArithmeticExpr -> {
                 val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
                 val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
 
                 lhs.arithmeticOperation(rhs, expr.op, expr.exprKey)
             }
 
-            is NegateExpression -> evaluate(expr.expr, scope).negate()
-            is NumIterationTimesExpression -> {
+            is NegateExpr -> evaluate(expr.expr, scope).negate()
+            is NumIterationTimesExpr -> {
                 val terms = expr.terms
                 // The plan here is to figure out, based on the set of numbers we are allowed to have,
                 // the maximum number of times this could occur.
@@ -81,15 +81,15 @@ object ExprEvaluate {
 
     private fun evaluateBools(expr: Expr<Boolean>, scope: Scope): Bundle<Boolean> {
         val toReturn = when (expr) {
-            is BooleanExpression -> {
+            is BooleanExpr -> {
                 val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
                 val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
 
                 lhs.booleanOperation(rhs, expr.op, expr.exprKey)
             }
 
-            is ComparisonExpression<*> -> {
-                fun <T : Any> evalC(expr: ComparisonExpression<T>, scope: Scope): Bundle<Boolean> {
+            is ComparisonExpr<*> -> {
+                fun <T : Any> evalC(expr: ComparisonExpr<T>, scope: Scope): Bundle<Boolean> {
                     val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
                     val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
 
@@ -98,7 +98,7 @@ object ExprEvaluate {
                 evalC(expr, scope)
             }
 
-            is BooleanInvertExpression -> evaluate(expr, scope).invert()
+            is BooleanInvertExpr -> evaluate(expr, scope).invert()
             else -> evaluateAnythings(expr, scope)
         }
         return toReturn
@@ -110,8 +110,8 @@ object ExprEvaluate {
 
     private fun <T : Any> evaluateAnythings(expr: Expr<T>, scope: Scope): Bundle<T> {
         val toReturn: Bundle<T> = when (expr) {
-            is UnionExpression -> evaluate(expr.lhs, scope).union(evaluate(expr.rhs, scope))
-            is IfExpression -> {
+            is UnionExpr -> evaluate(expr.lhs, scope).union(evaluate(expr.rhs, scope))
+            is IfExpr -> {
                 val ifCondition = expr.thisCondition
 
                 val condScope = scope.withScope(expr.trueExpr).withScope(expr.falseExpr)
@@ -124,7 +124,7 @@ object ExprEvaluate {
                     ExprConstrain.getConstraints(ifCondition, trueScope)
                 )
                 falseScope = falseScope.constrainWith(
-                    ExprConstrain.getConstraints(BooleanInvertExpression(ifCondition), falseScope)
+                    ExprConstrain.getConstraints(BooleanInvertExpr(ifCondition), falseScope)
                 )
 
                 evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
@@ -142,7 +142,7 @@ object ExprEvaluate {
                 }
             }
 
-            is TypeCastExpression<*, *> -> {
+            is TypeCastExpr<*, *> -> {
                 val toCast = evaluate(expr.expr, scope)
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
@@ -164,7 +164,7 @@ object ExprEvaluate {
                 q as Bundle<T>
             }
 
-            is VariableExpression ->
+            is VariableExpr ->
                 Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
                     .constrainWith(scope)
 

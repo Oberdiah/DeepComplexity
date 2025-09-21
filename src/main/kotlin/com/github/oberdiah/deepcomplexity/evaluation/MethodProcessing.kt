@@ -111,7 +111,7 @@ object MethodProcessing {
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
                 val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
-                    IfExpression.new(a, b, condition)
+                    IfExpr.new(a, b, condition)
                 }
 
                 context.stack(combined)
@@ -135,13 +135,13 @@ object MethodProcessing {
                 val falseResult = processPsiExpression(falseBranch, falseExprContext)
 
                 val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
-                    IfExpression.new(a, b, condition)
+                    IfExpr.new(a, b, condition)
                 }
 
                 val evaluatesTo = (
                         if (trueResult.ind == falseResult.ind) {
                             // This is the easy case, we can always handle this.
-                            IfExpression.new(trueResult, falseResult, condition)
+                            IfExpr.new(trueResult, falseResult, condition)
                         } else {
                             if (trueResult.ind !is NumberSetIndicator<*> || falseResult.ind !is NumberSetIndicator<*>) {
                                 TODO(
@@ -158,7 +158,7 @@ object MethodProcessing {
                                 trueResult.castToNumbers(),
                                 falseResult.castToNumbers()
                             ).map { lhs, rhs ->
-                                IfExpression.new(lhs, rhs, condition)
+                                IfExpr.new(lhs, rhs, condition)
                             }
                         }
                         // We need to resolve the variables in [evaluatesTo] before it can see its own
@@ -308,7 +308,7 @@ object MethodProcessing {
 
                 val psiType = psi.castType ?: throw ExpressionIncompleteException()
                 val setInd = Utilities.psiTypeToSetIndicator(psiType.type)
-                return TypeCastExpression(expr, setInd, false)
+                return TypeCastExpr(expr, setInd, false)
             }
 
             is PsiParenthesizedExpression -> {
@@ -362,7 +362,7 @@ object MethodProcessing {
                             lhs,
                             false
                         ).map { innerRhs, innerLhs ->
-                            val expr = ArithmeticExpression(
+                            val expr = ArithmeticExpr(
                                 innerLhs,
                                 innerRhs,
                                 BinaryNumberOp.fromJavaTokenType(opSign.tokenType)
@@ -517,20 +517,20 @@ object MethodProcessing {
             val combined = when (booleanOp) {
                 BooleanOp.AND -> {
                     Context.combine(rhsContext.c, Context.brandNew(context.c.thisType)) { a, b ->
-                        IfExpression.new(a, b, lhs)
+                        IfExpr.new(a, b, lhs)
                     }
                 }
 
                 BooleanOp.OR -> {
                     Context.combine(Context.brandNew(context.c.thisType), rhsContext.c) { a, b ->
-                        IfExpression.new(a, b, lhs)
+                        IfExpr.new(a, b, lhs)
                     }
                 }
             }
 
             context.stack(combined)
 
-            return BooleanExpression(lhs, rhs, booleanOp)
+            return BooleanExpr(lhs, rhs, booleanOp)
         } else {
             val rhsPrecast = processPsiExpression(rhsPsi, context)
 
@@ -540,8 +540,8 @@ object MethodProcessing {
             )
                 .map { lhs, rhs ->
                     return@map when {
-                        comparisonOp != null -> ComparisonExpression(lhs, rhs, comparisonOp)
-                        binaryNumberOp != null -> ArithmeticExpression(lhs, rhs, binaryNumberOp)
+                        comparisonOp != null -> ComparisonExpr(lhs, rhs, comparisonOp)
+                        binaryNumberOp != null -> ArithmeticExpr(lhs, rhs, binaryNumberOp)
                         else -> TODO("Unsupported binary operation: $tokenType ($lhsPrecast, $rhsPrecast)")
                     }
                 }

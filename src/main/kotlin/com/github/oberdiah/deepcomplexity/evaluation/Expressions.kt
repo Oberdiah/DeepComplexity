@@ -41,8 +41,8 @@ sealed class Expr<T : Any>() {
     fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition)
 
-    fun getVariables(): Set<VariableExpression<*>> = iterateTree()
-        .filterIsInstance<VariableExpression<*>>()
+    fun getVariables(): Set<VariableExpr<*>> = iterateTree()
+        .filterIsInstance<VariableExpr<*>>()
         .toSet()
 
     fun resolveUnknowns(context: Context): Expr<T> =
@@ -52,7 +52,7 @@ sealed class Expr<T : Any>() {
         return if (newExpr == null) {
             this
         } else {
-            replaceTypeInTree<VariableExpression<*>> {
+            replaceTypeInTree<VariableExpr<*>> {
                 if (it.key == key) newExpr else null
             }
         }
@@ -137,7 +137,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
         @Suppress("UNCHECKED_CAST")
         this as Expr<T>
     } else {
-        TypeCastExpression(this, indicator, explicit)
+        TypeCastExpr(this, indicator, explicit)
     }
 }
 
@@ -180,7 +180,7 @@ inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
     }(newInd, replacement)
 }
 
-data class ArithmeticExpression<T : Number>(
+data class ArithmeticExpr<T : Number>(
     val lhs: Expr<T>,
     val rhs: Expr<T>,
     val op: BinaryNumberOp,
@@ -195,7 +195,7 @@ data class ArithmeticExpression<T : Number>(
         get() = lhs.ind
 }
 
-data class ComparisonExpression<T : Any>(
+data class ComparisonExpr<T : Any>(
     val lhs: Expr<T>,
     val rhs: Expr<T>,
     val comp: ComparisonOp,
@@ -217,13 +217,13 @@ data class ComparisonExpression<T : Any>(
  * Given that there's an assumption baked into all of this that we're working on a compilable program,
  * explicit isn't strictly necessary, but it's nice debugging and printing purposes.
  */
-data class TypeCastExpression<T : Any, Q : Any>(
+data class TypeCastExpr<T : Any, Q : Any>(
     val expr: Expr<Q>,
     override val ind: SetIndicator<T>,
     val explicit: Boolean,
 ) : Expr<T>()
 
-data class IfExpression<T : Any>(
+data class IfExpr<T : Any>(
     val trueExpr: Expr<T>,
     val falseExpr: Expr<T>,
     val thisCondition: Expr<Boolean>,
@@ -246,12 +246,12 @@ data class IfExpression<T : Any>(
             val castB = b.tryCastTo(a.ind)
                 ?: throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
 
-            return IfExpression(a, castB, condition)
+            return IfExpr(a, castB, condition)
         }
     }
 }
 
-data class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
+data class UnionExpr<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -262,7 +262,7 @@ data class UnionExpression<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T
         get() = lhs.ind
 }
 
-data class BooleanExpression(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) : Expr<Boolean>() {
+data class BooleanExpr(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) : Expr<Boolean>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -319,22 +319,22 @@ data class LValueFieldExpr<T : Any>(
     }
 }
 
-data class BooleanInvertExpression(val expr: Expr<Boolean>) : Expr<Boolean>() {
+data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
     override val ind: SetIndicator<Boolean>
         get() = BooleanSetIndicator
 }
 
-data class NegateExpression<T : Number>(val expr: Expr<T>) : Expr<T>() {
+data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
     override val ind: SetIndicator<T>
         get() = expr.ind
 }
 
-data class NumIterationTimesExpression<T : Number>(
+data class NumIterationTimesExpr<T : Number>(
     // How the variable is constrained; if the variable changes such that this returns false,
     // the loop will end.
     val constraint: NumberSet<T>,
     // The variable that's being modified as it changes inside the loop.
-    val variable: VariableExpression<T>,
+    val variable: VariableExpr<T>,
     // How the variable is changing each iteration.
     val terms: ConstraintSolver.CollectedTerms<T>,
 ) : Expr<T>() {
@@ -344,9 +344,9 @@ data class NumIterationTimesExpression<T : Number>(
     companion object {
         fun <T : Number> new(
             constraint: NumberSet<T>,
-            variable: VariableExpression<out Number>,
+            variable: VariableExpr<out Number>,
             terms: ConstraintSolver.CollectedTerms<out Number>
-        ): NumIterationTimesExpression<T> {
+        ): NumIterationTimesExpr<T> {
             val setIndicator = constraint.ind
 
             assert(setIndicator == variable.ind) {
@@ -357,9 +357,9 @@ data class NumIterationTimesExpression<T : Number>(
             }
 
             @Suppress("UNCHECKED_CAST")
-            return NumIterationTimesExpression(
+            return NumIterationTimesExpr(
                 constraint,
-                variable as VariableExpression<T>,
+                variable as VariableExpr<T>,
                 terms as ConstraintSolver.CollectedTerms<T>
             )
         }
@@ -382,14 +382,14 @@ data class ObjectExpr(override val key: HeapMarker) : LeafExpr<HeapMarker>(), Le
  * Related to a specific context (The context that created it).
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
-data class VariableExpression<T : Any>(
+data class VariableExpr<T : Any>(
     override val key: Key.UncertainKey,
     val contextId: Context.ContextId,
     override val ind: SetIndicator<T>
 ) : LeafExpr<T>(), LeafExprWithKey {
     companion object {
-        fun new(key: Key.UncertainKey, contextId: Context.ContextId): VariableExpression<*> =
-            VariableExpression(key, contextId, key.ind)
+        fun new(key: Key.UncertainKey, contextId: Context.ContextId): VariableExpr<*> =
+            VariableExpr(key, contextId, key.ind)
     }
 }
 

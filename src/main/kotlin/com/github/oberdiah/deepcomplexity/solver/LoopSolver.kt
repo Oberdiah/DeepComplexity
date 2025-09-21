@@ -8,7 +8,7 @@ object LoopSolver {
      * Given the context for the loop body, and the condition, figure out our new context.
      */
     fun processLoopContext(context: Context, condition: Expr<Boolean>) {
-        var numLoops: NumIterationTimesExpression<*>? = null
+        var numLoops: NumIterationTimesExpr<*>? = null
 
         val conditionVariables = condition.getVariables()
         for ((key, expr) in context.variables) {
@@ -46,10 +46,10 @@ object LoopSolver {
     }
 
     private fun <T : Number> repeatExpression(
-        numLoops: NumIterationTimesExpression<out Number>?,
+        numLoops: NumIterationTimesExpr<out Number>?,
         expr: Expr<T>,
         psiElement: PsiElement,
-        allUnresolved: List<VariableExpression<*>>
+        allUnresolved: List<VariableExpr<*>>
     ): Expr<T> {
         val gaveUp =
             // Put this zero here just to compile, not supposed to be .zero()
@@ -86,14 +86,14 @@ object LoopSolver {
     private fun <T : Number> collectTerms(
         expr: Expr<T>,
         psiElement: PsiElement,
-        variables: List<VariableExpression<*>>
-    ): Pair<ConstraintSolver.CollectedTerms<T>, VariableExpression<T>>? {
+        variables: List<VariableExpr<*>>
+    ): Pair<ConstraintSolver.CollectedTerms<T>, VariableExpr<T>>? {
         // We can't deal with this in general, things start getting too complicated when
         // something in the loop relies on two other things.
         // Some edge cases might be doable in certain situations, for now I'm not going to bother.
         if (variables.size != 1) return null
 
-        val unresolved = variables.first().tryCastToReified<T, VariableExpression<T>>(expr.ind) ?: return null
+        val unresolved = variables.first().tryCastToReified<T, VariableExpr<T>>(expr.ind) ?: return null
 
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but

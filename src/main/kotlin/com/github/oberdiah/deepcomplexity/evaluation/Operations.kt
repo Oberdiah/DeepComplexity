@@ -21,9 +21,9 @@ enum class UnaryNumberOp {
     fun <T : Number> applyToExpr(expr: Expr<T>): Expr<T> {
         return when (this) {
             PLUS -> expr
-            NEGATE -> NegateExpression(expr)
+            NEGATE -> NegateExpr(expr)
             INCREMENT, DECREMENT -> {
-                ArithmeticExpression(
+                ArithmeticExpr(
                     expr,
                     ConstExpr.one(expr.getNumberSetIndicator()),
                     if (this == INCREMENT) BinaryNumberOp.ADDITION else BinaryNumberOp.SUBTRACTION
