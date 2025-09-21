@@ -388,11 +388,6 @@ data class VariableExpression<T : Any>(
     val contextId: Context.ContextId,
     override val ind: SetIndicator<T>
 ) : LeafExpr<T>(), LeafExprWithKey {
-//    init {
-//         The return key `Me` should never be used in a variable, only as a key in the Vars map.
-//        assert(key != Key.ReturnKey.Me)
-//    }
-
     companion object {
         fun new(key: Key.UncertainKey, contextId: Context.ContextId): VariableExpression<*> =
             VariableExpression(key, contextId, key.ind)

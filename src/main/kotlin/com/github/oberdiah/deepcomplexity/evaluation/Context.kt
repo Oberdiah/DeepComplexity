@@ -2,7 +2,6 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.QualifiedKey
-import com.github.oberdiah.deepcomplexity.staticAnalysis.DoubleSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
@@ -53,6 +52,12 @@ class Context(
     val variables: Vars = variables.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpression<*>> {
             VariableExpression.new(it.key, it.contextId + idx)
+        }
+    }
+
+    init {
+        assert(variables.keys.filterIsInstance<Key.ReturnKey>().size <= 1) {
+            "A context cannot have multiple return keys."
         }
     }
 
@@ -123,14 +128,8 @@ class Context(
             override fun equals(other: Any?): Boolean = other is ThisKey
         }
 
-        class ReturnKey(override val ind: SetIndicator<*>) : UncertainKey() {
-            companion object {
-                val Me = ReturnKey(DoubleSetIndicator)
-            }
-
+        data class ReturnKey(override val ind: SetIndicator<*>) : UncertainKey() {
             override fun toString(): String = "Return value"
-            override fun hashCode(): Int = 0
-            override fun equals(other: Any?): Boolean = other is ReturnKey
         }
 
         class HeapKey(
@@ -263,7 +262,7 @@ class Context(
     }
 
     val returnValue: Expr<*>?
-        get() = variables[Key.ReturnKey.Me]
+        get() = variables.filterKeys { it is Key.ReturnKey }.values.firstOrNull()
 
     val returnKey: Key.ReturnKey?
         get() = variables.keys.filterIsInstance<Key.ReturnKey>().firstOrNull()
@@ -402,7 +401,6 @@ class Context(
                 } else {
                     assertIs<Key.UncertainKey>(key.qualifier)
                     // The qualifier is a key itself, so it also needs to try and get resolved.
-                    // Not entirely sure this is sound. todo for tomorrow.
                     LValueFieldExpr.new(key.field, grabVar(key.qualifier))
                 }
             } else {
@@ -439,6 +437,6 @@ class Context(
     }
 
     fun withoutReturnValue(): Context {
-        return Context(variables - Key.ReturnKey.Me, thisType, idx)
+        return Context(variables.filterKeys { it !is Key.ReturnKey }, thisType, idx)
     }
 }
