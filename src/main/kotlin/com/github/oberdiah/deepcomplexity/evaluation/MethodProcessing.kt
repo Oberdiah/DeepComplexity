@@ -386,7 +386,7 @@ object MethodProcessing {
 
             is PsiNewExpression -> {
                 val objType = psi.type!!
-                val newObj = ObjectExpr(Key.HeapKey.new(objType))
+                val newObj = ObjectExpr(HeapMarker.new(objType))
 
                 val methodContext = processMethod(context, psi)
 

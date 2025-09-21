@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.github.oberdiah.deepcomplexity.evaluation.HeapMarker
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
@@ -11,7 +12,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 data class ObjectVariances(private val value: ObjectSet, override val ind: ObjectSetIndicator) :
-    Variances<Key.HeapKey> {
+    Variances<HeapMarker> {
     override fun toString(): String = value.toString()
 
     fun invert(): ObjectVariances = ObjectVariances(value.invert().into(), ind)
@@ -19,16 +20,16 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
     override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q> =
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
-    override fun collapse(constraints: Constraints): ISet<Key.HeapKey> = value
+    override fun collapse(constraints: Constraints): ISet<HeapMarker> = value
 
     override fun varsTracking(): Collection<Key> = emptyList()
 
-    override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<Key.HeapKey> {
+    override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<HeapMarker> {
         return this
     }
 
     override fun generateConstraintsFrom(
-        other: Variances<Key.HeapKey>,
+        other: Variances<HeapMarker>,
         comparisonOp: ComparisonOp,
         incomingConstraints: Constraints
     ): Constraints {

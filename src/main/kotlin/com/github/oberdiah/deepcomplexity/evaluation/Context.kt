@@ -2,13 +2,11 @@ package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.QualifiedKey
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 typealias Vars = Map<Key.UncertainKey, Expr<*>>
 
@@ -84,7 +82,7 @@ class Context(
     sealed interface QualifierRef {
         val ind: SetIndicator<*>
         fun isNew(): Boolean =
-            this is Key.HeapKey
+            this is HeapMarker
                     || (this is QualifiedKey && this.qualifier.isNew())
     }
 
@@ -130,21 +128,6 @@ class Context(
 
         data class ReturnKey(override val ind: SetIndicator<*>) : UncertainKey() {
             override fun toString(): String = "Return value"
-        }
-
-        class HeapKey(
-            private val idx: Int,
-            val type: PsiType,
-        ) : QualifierRef {
-            companion object {
-                private var KEY_INDEX = 1
-                fun new(type: PsiType): HeapKey = HeapKey(KEY_INDEX++, type)
-            }
-
-            override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
-            override fun equals(other: Any?): Boolean = other is HeapKey && this.idx == other.idx
-            override fun hashCode(): Int = idx.hashCode()
-            override fun toString(): String = "#$idx"
         }
 
         /**
@@ -393,15 +376,13 @@ class Context(
         // ...then we add that newly resolved return value to the new context,
         var newContext = withAdditionalReturn(resolvedLater.returnKey, resolvedLater.returnValue)
 
-        // finally, we avoid stomping over said return value.
+        // finally, we avoid stomping over that return value.
         for ((key, expr) in resolvedLater.withoutReturnValue().variables) {
             val lValue = if (key is QualifiedKey) {
-                if (key.qualifier is Key.HeapKey) {
-                    LValueFieldExpr.new(key.field, ObjectExpr(key.qualifier))
-                } else {
-                    assertIs<Key.UncertainKey>(key.qualifier)
+                when (key.qualifier) {
+                    is HeapMarker -> LValueFieldExpr.new(key.field, ObjectExpr(key.qualifier))
                     // The qualifier is a key itself, so it also needs to try and get resolved.
-                    LValueFieldExpr.new(key.field, grabVar(key.qualifier))
+                    is Key.UncertainKey -> LValueFieldExpr.new(key.field, grabVar(key.qualifier))
                 }
             } else {
                 // Do nothing, just assign as normal.

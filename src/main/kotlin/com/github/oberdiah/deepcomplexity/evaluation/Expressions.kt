@@ -373,7 +373,7 @@ interface LeafExprWithKey {
 
 sealed class LeafExpr<T : Any> : Expr<T>()
 
-data class ObjectExpr(override val key: Key.HeapKey) : LeafExpr<Key.HeapKey>(), LeafExprWithKey {
+data class ObjectExpr(override val key: HeapMarker) : LeafExpr<HeapMarker>(), LeafExprWithKey {
     override val ind: ObjectSetIndicator = ObjectSetIndicator(key.type)
 }
 

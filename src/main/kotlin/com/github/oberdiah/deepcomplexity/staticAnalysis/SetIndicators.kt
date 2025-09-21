@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis
 
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
+import com.github.oberdiah.deepcomplexity.evaluation.HeapMarker
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -52,7 +53,7 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
             val ind = when (value) {
                 is Number -> NumberSetIndicator.fromValue(value)
                 is Boolean -> BooleanSetIndicator
-                is Key.HeapKey -> ObjectSetIndicator(value.type)
+                is HeapMarker -> ObjectSetIndicator(value.type)
                 else -> TODO()
             }
 
@@ -181,19 +182,19 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
         BooleanSet.fromBoolean(constant)
 }
 
-class ObjectSetIndicator(val type: PsiType) : SetIndicator<Key.HeapKey>(Key.HeapKey::class) {
+class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarker::class) {
     override fun toString(): String {
         return "ObjectSetIndicator($type)"
     }
 
-    override fun newVariance(key: Key): Variances<Key.HeapKey> =
+    override fun newVariance(key: Key): Variances<HeapMarker> =
         ObjectVariances(ObjectSet.newEmptySet(this), this)
 
-    override fun newConstantSet(constant: Key.HeapKey): ISet<Key.HeapKey> =
+    override fun newConstantSet(constant: HeapMarker): ISet<HeapMarker> =
         ObjectSet.fromConstant(constant)
 
-    override fun newEmptySet(): ISet<Key.HeapKey> = ObjectSet.newEmptySet(this)
-    override fun newFullSet(): ISet<Key.HeapKey> = ObjectSet.newFullSet(this)
+    override fun newEmptySet(): ISet<HeapMarker> = ObjectSet.newEmptySet(this)
+    override fun newFullSet(): ISet<HeapMarker> = ObjectSet.newFullSet(this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
