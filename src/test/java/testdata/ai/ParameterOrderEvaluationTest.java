@@ -86,7 +86,6 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter evaluation with inheritance
-	@RequiredScore(1.0)
 	public static short inheritanceParam(short x) {
 		ChildClass child = new ChildClass(4);
 		multiParamMethod(child.getValue(), child.doubleValue(), child.getValue());

@@ -287,7 +287,7 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
  * Represents an expression on the left-hand side in an assignment.
  *
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
- * a QualifiedKey or not.
+ * a [Key.QualifiedKey] or not.
  */
 data class LValueKeyExpr<T : Any>(val key: Key.UncertainKey, override val ind: SetIndicator<T>) : LValueExpr<T>() {
     companion object {

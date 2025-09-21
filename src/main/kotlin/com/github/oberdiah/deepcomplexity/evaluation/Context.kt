@@ -129,18 +129,7 @@ class Context(
     }
 
     fun grabVar(key: Key.UncertainKey): Expr<*> {
-        // If we can do a simple resolve, we can just do that and
-        // be done with it.
-        val simpleResolve = variables[key] ?: VariableExpr.new(key, idx)
-
-        val qualifiedResolve = if (key is QualifiedKey) {
-            val q = variables[key.qualifier]
-            q?.getField(this, key.field)
-        } else {
-            null
-        }
-
-        return qualifiedResolve ?: simpleResolve
+        return variables[key] ?: VariableExpr.new(key, idx)
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
@@ -227,7 +216,13 @@ class Context(
             assert(!varExpr.contextId.collidesWith(idx)) {
                 "Cannot resolve variables from the same context that created them."
             }
-            grabVar(varExpr.key)
+
+            if (varExpr.key is QualifiedKey && varExpr.key.qualifier is Key.UncertainKey) {
+                val q = grabVar(varExpr.key.qualifier)
+                q.getField(this, varExpr.key.field)
+            } else {
+                grabVar(varExpr.key)
+            }
         }
 
     /**
@@ -249,7 +244,10 @@ class Context(
                 when (key.qualifier) {
                     is HeapMarker -> LValueFieldExpr.new(key.field, ObjectExpr(key.qualifier))
                     // The qualifier is a key itself, so it also needs to try and get resolved.
-                    is Key.UncertainKey -> LValueFieldExpr.new(key.field, grabVar(key.qualifier))
+                    is Key.UncertainKey -> {
+                        val expr = resolveKnownVariables(resolvedLater.grabVar(key.qualifier))
+                        LValueFieldExpr.new(key.field, expr)
+                    }
                 }
             } else {
                 // Do nothing, just assign as normal.
