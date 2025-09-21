@@ -1,7 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.Context.Key
-import com.github.oberdiah.deepcomplexity.evaluation.Context.Key.ExpressionKey
+import com.github.oberdiah.deepcomplexity.evaluation.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator

@@ -11,10 +11,10 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
 object ExprEvaluate {
     data class Scope(
         val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
-        val scopesToKeep: Set<Context.Key.ExpressionKey> = mutableSetOf(),
+        val scopesToKeep: Set<Key.ExpressionKey> = mutableSetOf(),
     ) {
         override fun toString(): String = constraints.toString()
-        fun shouldKeep(key: Context.Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
+        fun shouldKeep(key: Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
 
         fun isUnconstrained(): Boolean = constraints.all { it.isUnconstrained() }
 

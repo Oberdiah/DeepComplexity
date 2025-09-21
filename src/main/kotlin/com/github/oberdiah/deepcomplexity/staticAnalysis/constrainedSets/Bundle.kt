@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.github.oberdiah.deepcomplexity.evaluation.Key
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
@@ -166,7 +166,7 @@ class Bundle<T : Any> private constructor(
 
     fun performBinaryOperation(
         other: Bundle<T>,
-        exprKey: Context.Key,
+        exprKey: Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>
     ): Bundle<T> =
         binaryMapToVariances(ind, other, exprKey, op)
@@ -174,7 +174,7 @@ class Bundle<T : Any> private constructor(
     fun <Q : Any> binaryMapToVariances(
         newInd: SetIndicator<Q>,
         other: Bundle<T>,
-        exprKey: Context.Key,
+        exprKey: Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
     ): Bundle<Q> {
         assert(ind == other.ind)

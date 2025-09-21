@@ -3,8 +3,8 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.github.oberdiah.deepcomplexity.evaluation.Key
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
@@ -37,7 +37,7 @@ import com.jetbrains.rd.util.firstOrNull
 @ConsistentCopyVisibility
 data class NumberVariances<T : Number> private constructor(
     override val ind: NumberSetIndicator<T>,
-    private val multipliers: Map<Context.Key, NumberSet<T>> = mapOf()
+    private val multipliers: Map<Key, NumberSet<T>> = mapOf()
 ) : Variances<T> {
     init {
         assert(multipliers.keys.count { it.isEphemeral() } <= 1) {
@@ -77,15 +77,15 @@ data class NumberVariances<T : Number> private constructor(
 
     companion object {
         fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
-            newFromMultiplierMap(constant.ind, mapOf(Context.Key.EphemeralKey.new() to constant))
+            newFromMultiplierMap(constant.ind, mapOf(Key.EphemeralKey.new() to constant))
 
-        fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Context.Key): NumberVariances<T> {
+        fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Key): NumberVariances<T> {
             return newFromMultiplierMap(ind, mapOf(key to ind.onlyOneSet()))
         }
 
         private fun <T : Number> newFromMultiplierMap(
             ind: NumberSetIndicator<T>,
-            multipliers: Map<Context.Key, NumberSet<T>>
+            multipliers: Map<Key, NumberSet<T>>
         ): NumberVariances<T> {
             val ephemeralMap = multipliers.filterKeys { it.isEphemeral() }
             val notEphemeralMap = multipliers.filterKeys { !it.isEphemeral() }
@@ -105,7 +105,7 @@ data class NumberVariances<T : Number> private constructor(
 
             return NumberVariances(
                 ind,
-                notEphemeralMap + (Context.Key.EphemeralKey.new() to ephemeralMultiplier)
+                notEphemeralMap + (Key.EphemeralKey.new() to ephemeralMultiplier)
             )
         }
     }
@@ -126,7 +126,7 @@ data class NumberVariances<T : Number> private constructor(
         }
     }
 
-    override fun varsTracking(): Collection<Context.Key> {
+    override fun varsTracking(): Collection<Key> {
         return multipliers.keys.filter { !it.isEphemeral() }
     }
 
@@ -137,13 +137,13 @@ data class NumberVariances<T : Number> private constructor(
                 if (scope.shouldKeep(key)) {
                     key to v
                 } else {
-                    Context.Key.EphemeralKey.new() to v.multiply(grabConstraint(constraints, key))
+                    Key.EphemeralKey.new() to v.multiply(grabConstraint(constraints, key))
                 }
             }
         )
     }
 
-    fun grabConstraint(constraints: Constraints, key: Context.Key): NumberSet<T> {
+    fun grabConstraint(constraints: Constraints, key: Key): NumberSet<T> {
         return if (key.isEphemeral()) {
             // Constants/ephemeral keys don't have any variance or constraints,
             // so the 'variable', if you can call it that, is always constrained to exactly 1.
@@ -220,7 +220,7 @@ data class NumberVariances<T : Number> private constructor(
             }
 
             MULTIPLICATION -> {
-                val newMultipliers = mutableMapOf<Context.Key, NumberSet<T>>()
+                val newMultipliers = mutableMapOf<Key, NumberSet<T>>()
 
                 for ((key, meMultiplier) in multipliers) {
                     for ((otherKey, otherMultiplier) in other.multipliers) {
@@ -264,7 +264,7 @@ data class NumberVariances<T : Number> private constructor(
                     return this
                 }
 
-                val newMultipliers = mutableMapOf<Context.Key, NumberSet<T>>()
+                val newMultipliers = mutableMapOf<Key, NumberSet<T>>()
 
                 for ((key, meMultiplier) in multipliers) {
                     for ((otherKey, otherMultiplier) in other.multipliers) {

@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.github.oberdiah.deepcomplexity.evaluation.Context
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.github.oberdiah.deepcomplexity.evaluation.Key
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpression
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
@@ -27,7 +27,7 @@ import kotlin.test.assertIsNot
 @ConsistentCopyVisibility
 data class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    val constraints: Map<Context.Key, ISet<*>>,
+    val constraints: Map<Key, ISet<*>>,
 ) {
     /**
      * The constraints as a whole are unsatisfiable if any individual
@@ -37,7 +37,7 @@ data class Constraints private constructor(
         get() = constraints.any { it.value.isEmpty() }
 
     companion object {
-        fun constrainedBy(constraints: Map<Context.Key, ISet<*>>): Constraints {
+        fun constrainedBy(constraints: Map<Key, ISet<*>>): Constraints {
             return Constraints(constraints)
         }
 
@@ -46,7 +46,7 @@ data class Constraints private constructor(
         }
 
         fun unreachable(): Constraints {
-            return Constraints(mapOf(Context.Key.EphemeralKey.new() to BooleanSet.NEITHER))
+            return Constraints(mapOf(Key.EphemeralKey.new() to BooleanSet.NEITHER))
         }
     }
 
@@ -71,12 +71,12 @@ data class Constraints private constructor(
             ?: variable.ind.newFullSet()
     }
 
-    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Context.Key): ISet<T> {
+    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Key): ISet<T> {
         return constraints[key]?.cast(ind) ?: ind.newFullSet()
     }
 
-    fun withConstraint(key: Context.Key, iSet: ISet<*>): Constraints {
-        assertIsNot<Context.Key.EphemeralKey>(
+    fun withConstraint(key: Key, iSet: ISet<*>): Constraints {
+        assertIsNot<Key.EphemeralKey>(
             key,
             "Ephemeral keys shouldn't really be allowed to be added to constraints."
         )
