@@ -1,11 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.evaluation.Key.QualifiedKey
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiField
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
 
@@ -69,22 +64,6 @@ class Context(
             var ID_INDEX = 0
             fun new(): ContextId = ContextId(setOf(ID_INDEX++))
         }
-    }
-
-    /**
-     * This isn't a full key by itself, you'll need a [HeapRef] as well and then will want to make a [QualifiedKey].
-     */
-    data class FieldRef(private val variable: PsiField) {
-        override fun toString(): String = variable.toStringPretty()
-        fun getElement(): PsiElement = variable
-        val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
-    }
-
-    sealed interface QualifierRef {
-        val ind: SetIndicator<*>
-        fun isNew(): Boolean =
-            this is HeapMarker
-                    || (this is QualifiedKey && this.qualifier.isNew())
     }
 
     companion object {

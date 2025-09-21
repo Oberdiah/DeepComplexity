@@ -141,7 +141,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, field: Context.FieldRef): Expr<*> {
+fun Expr<*>.getField(context: Context, field: Key.FieldRef): Expr<*> {
     return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
         context.grabVar(Key.QualifiedKey(field, it.key))
     }
@@ -305,12 +305,12 @@ data class LValueKeyExpr<T : Any>(val key: Key.UncertainKey, override val ind: S
  * For example, the LValue `((x > 2) ? a : b).y`
  */
 data class LValueFieldExpr<T : Any>(
-    val field: Context.FieldRef,
+    val field: Key.FieldRef,
     val qualifier: Expr<*>,
     override val ind: SetIndicator<T>
 ) : LValueExpr<T>() {
     companion object {
-        fun new(field: Context.FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
+        fun new(field: Key.FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
             LValueFieldExpr(field, qualifier, field.ind)
     }
 
@@ -367,7 +367,7 @@ data class NumIterationTimesExpression<T : Number>(
 }
 
 interface LeafExprWithKey {
-    val key: Context.QualifierRef
+    val key: Key.QualifierRef
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>()

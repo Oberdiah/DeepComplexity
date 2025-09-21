@@ -17,8 +17,7 @@ sealed class Key(val temporary: Boolean = false) {
      * Uncertain Keys are keys that can be used as placeholders in `VariableExpressions`.
      * Not all keys fall into this category, for example `HeapKey`s and `ExpressionKey`s do not.
      */
-    sealed class UncertainKey(temporary: Boolean = false) : Key(temporary),
-        Context.QualifierRef
+    sealed class UncertainKey(temporary: Boolean = false) : Key(temporary), QualifierRef
 
     sealed class VariableKey(val variable: PsiVariable, temporary: Boolean = false) : UncertainKey(temporary) {
         override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
@@ -33,7 +32,26 @@ sealed class Key(val temporary: Boolean = false) {
         temporary: Boolean = false
     ) : VariableKey(variable, temporary)
 
-    data class QualifiedKey(val field: Context.FieldRef, val qualifier: Context.QualifierRef) : UncertainKey() {
+    /**
+     * This isn't a full key by itself, you'll need a [QualifierRef] as well and then will want to make a [QualifiedKey].
+     */
+    data class FieldRef(private val variable: PsiField) {
+        override fun toString(): String = variable.toStringPretty()
+        fun getElement(): PsiElement = variable
+        val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
+    }
+
+    /**
+     * Things that can be qualifiers in a [QualifiedKey]. This is really just [HeapMarker]s and [UncertainKey]s.
+     */
+    sealed interface QualifierRef {
+        val ind: SetIndicator<*>
+        fun isNew(): Boolean =
+            this is HeapMarker
+                    || (this is QualifiedKey && this.qualifier.isNew())
+    }
+
+    data class QualifiedKey(val field: FieldRef, val qualifier: QualifierRef) : UncertainKey() {
         override val ind: SetIndicator<*> = this.field.ind
         override fun toString(): String = "$qualifier.$field"
     }
