@@ -382,12 +382,17 @@ data class ObjectExpr(override val key: HeapMarker) : LeafExpr<HeapMarker>(), Le
  * Related to a specific context (The context that created it).
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
-data class VariableExpr<T : Any>(
+@ConsistentCopyVisibility
+data class VariableExpr<T : Any> private constructor(
     override val key: Key.UncertainKey,
     val contextId: Context.ContextId,
     override val ind: SetIndicator<T>
 ) : LeafExpr<T>(), LeafExprWithKey {
     companion object {
+        /**
+         * This should only ever be called from a [Context]. Only contexts are allowed
+         * to create [VariableExpr]s.
+         */
         fun new(key: Key.UncertainKey, contextId: Context.ContextId): VariableExpr<*> =
             VariableExpr(key, contextId, key.ind)
     }

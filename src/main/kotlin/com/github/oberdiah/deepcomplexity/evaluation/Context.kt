@@ -134,7 +134,7 @@ class Context(
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
         assert(rExpr.iterateTree().none { it is LValueExpr }) {
-            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolveLValues(context)` on it first."
+            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
 
         if (lExpr is LValueKeyExpr) {
@@ -230,25 +230,24 @@ class Context(
      *
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
-    fun stack(later: Context): Context {
+    fun stack(other: Context): Context {
         // Gotta not resolve returns here, as that wouldn't be the backward resolve that returns are supposed to be.
         // Returns still need to have other variables in their expressions resolved, though.
-        val resolvedLater = later.withVariablesResolvedBy(withoutReturnValue())
+        val resolvedOther = other.withVariablesResolvedBy(withoutReturnValue())
 
         // ...then we add that newly resolved return value to the new context,
-        var newContext = withAdditionalReturn(resolvedLater.returnKey, resolvedLater.returnValue)
+        var newContext = withAdditionalReturn(resolvedOther.returnKey, resolvedOther.returnValue)
 
         // finally, we avoid stomping over that return value.
-        for ((key, expr) in resolvedLater.withoutReturnValue().variables) {
+        for ((key, expr) in resolvedOther.withoutReturnValue().variables) {
             val lValue = if (key is QualifiedKey) {
-                when (key.qualifier) {
-                    is HeapMarker -> LValueFieldExpr.new(key.field, ObjectExpr(key.qualifier))
-                    // The qualifier is a key itself, so it also needs to try and get resolved.
-                    is Key.UncertainKey -> {
-                        val expr = resolveKnownVariables(resolvedLater.grabVar(key.qualifier))
-                        LValueFieldExpr.new(key.field, expr)
+                LValueFieldExpr.new(
+                    key.field,
+                    when (key.qualifier) {
+                        is HeapMarker -> ObjectExpr(key.qualifier)
+                        is Key.UncertainKey -> grabVar(key.qualifier)
                     }
-                }
+                )
             } else {
                 // Do nothing, just assign as normal.
                 LValueKeyExpr.new(key)
