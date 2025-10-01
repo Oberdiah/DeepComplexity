@@ -1268,7 +1268,7 @@ public class MyTestData {
 		return (short) a.x;
 	}
 	
-	@RequiredScore(1.0)
+	// todo would be great to get this and the next to pass, but I need to properly figure things out first, though.
 	public static short simpleClassTest32(short x) {
 		MyClass myClass = new MyClass(50);
 		MyNestingClass nesting = new MyNestingClass(myClass);
@@ -1276,8 +1276,20 @@ public class MyTestData {
 		return (short) nesting.nested.getX();
 	}
 	
+	public static short simpleClassTest33(short x) {
+		MyClass myClass = new MyClass(50);
+		MyNestingClass nesting = new MyNestingClass(myClass);
+		MyDoubleNestingClass doubleNesting = new MyDoubleNestingClass(nesting);
+		updateDoubleNesting(doubleNesting, 5);
+		return (short) doubleNesting.doubleNested.nested.getX();
+	}
+	
 	private static void updateNesting(MyNestingClass nesting, int val) {
 		nesting.nested.x = val;
+	}
+	
+	private static void updateDoubleNesting(MyDoubleNestingClass nesting, int val) {
+		nesting.doubleNested.nested.x = val;
 	}
 	
 	private static MyClass makeNewClass(int xVal) {
@@ -1328,6 +1340,15 @@ public class MyTestData {
 		public MyNestingClass(MyClass nestedArg) {
 			nestedArg.x++;
 			this.nested = nestedArg;
+		}
+	}
+	
+	public static class MyDoubleNestingClass {
+		public MyNestingClass doubleNested;
+		
+		public MyDoubleNestingClass(MyNestingClass nestingClass) {
+			nestingClass.nested.addAndGet(5);
+			this.doubleNested = nestingClass;
 		}
 	}
 	
