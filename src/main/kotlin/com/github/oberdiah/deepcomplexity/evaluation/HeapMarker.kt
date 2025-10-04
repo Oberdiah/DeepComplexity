@@ -10,7 +10,7 @@ import com.intellij.psi.PsiType
 data class HeapMarker(
     private val idx: Int,
     val type: PsiType,
-) : Key.QualifierRef {
+) : QualifierRef {
     companion object {
         private var KEY_INDEX = 1
         fun new(type: PsiType): HeapMarker = HeapMarker(KEY_INDEX++, type)

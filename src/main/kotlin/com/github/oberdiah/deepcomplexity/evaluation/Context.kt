@@ -1,10 +1,9 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.Key.QualifiedKey
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
 
-typealias Vars = Map<Key.UncertainKey, Expr<*>>
+typealias Vars = Map<UnknownKey, Expr<*>>
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never
@@ -52,7 +51,7 @@ class Context(
     }
 
     init {
-        assert(variables.keys.filterIsInstance<Key.ReturnKey>().size <= 1) {
+        assert(variables.keys.filterIsInstance<ReturnKey>().size <= 1) {
             "A context cannot have multiple return keys."
         }
     }
@@ -114,10 +113,10 @@ class Context(
     }
 
     val returnValue: Expr<*>?
-        get() = variables.filterKeys { it is Key.ReturnKey }.values.firstOrNull()
+        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()
 
-    val returnKey: Key.ReturnKey?
-        get() = variables.keys.filterIsInstance<Key.ReturnKey>().firstOrNull()
+    val returnKey: ReturnKey?
+        get() = variables.keys.filterIsInstance<ReturnKey>().firstOrNull()
 
     override fun toString(): String {
         val variablesString =
@@ -130,7 +129,7 @@ class Context(
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun grabVar(key: Key.UncertainKey): Expr<*> {
+    fun grabVar(key: UnknownKey): Expr<*> {
         return variables[key] ?: VariableExpr.new(key, idx)
     }
 
@@ -219,7 +218,7 @@ class Context(
                 "Cannot resolve variables from the same context that created them."
             }
 
-            if (varExpr.key is QualifiedKey && varExpr.key.qualifier is Key.UncertainKey) {
+            if (varExpr.key is QualifiedKey && varExpr.key.qualifier is UnknownKey) {
                 val q = grabVar(varExpr.key.qualifier)
                 q.getField(this, varExpr.key.field)
             } else {
@@ -247,7 +246,7 @@ class Context(
                     key.field,
                     when (key.qualifier) {
                         is HeapMarker -> ObjectExpr(key.qualifier)
-                        is Key.UncertainKey -> grabVar(key.qualifier)
+                        is UnknownKey -> grabVar(key.qualifier)
                     }
                 )
             } else {
@@ -267,7 +266,7 @@ class Context(
      * Adds the return onto this context in the manner that returns should be added;
      * that is, if this context already has a return, this new one is substituted into the old.
      */
-    fun withAdditionalReturn(key: Key.ReturnKey?, expr: Expr<*>?): Context {
+    fun withAdditionalReturn(key: ReturnKey?, expr: Expr<*>?): Context {
         val retKey = this.returnKey
             ?: key
             ?: return this
@@ -284,6 +283,6 @@ class Context(
     }
 
     fun withoutReturnValue(): Context {
-        return Context(variables.filterKeys { it !is Key.ReturnKey }, thisType, idx)
+        return Context(variables.filterKeys { it !is ReturnKey }, thisType, idx)
     }
 }

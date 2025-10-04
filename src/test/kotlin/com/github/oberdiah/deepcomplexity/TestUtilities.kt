@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.github.oberdiah.deepcomplexity.evaluation.Key
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
+import com.github.oberdiah.deepcomplexity.evaluation.ReturnKey
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -182,7 +182,7 @@ object TestUtilities {
         }
 
         val range = try {
-            val returnKey = Key.ReturnKey(Utilities.psiTypeToSetIndicator(psiMethod.returnType!!))
+            val returnKey = ReturnKey(Utilities.psiTypeToSetIndicator(psiMethod.returnType!!))
 
             if (System.getenv("DEBUG") != "false") {
                 println((context.grabVar(returnKey).dStr()).prependIndent())

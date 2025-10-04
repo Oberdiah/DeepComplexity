@@ -141,9 +141,9 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, field: Key.FieldRef): Expr<*> {
+fun Expr<*>.getField(context: Context, field: FieldRef): Expr<*> {
     return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
-        context.grabVar(Key.QualifiedKey(field, it.key))
+        context.grabVar(QualifiedKey(field, it.key))
     }
 }
 
@@ -287,11 +287,11 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
  * Represents an expression on the left-hand side in an assignment.
  *
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
- * a [Key.QualifiedKey] or not.
+ * a [QualifiedKey] or not.
  */
-data class LValueKeyExpr<T : Any>(val key: Key.UncertainKey, override val ind: SetIndicator<T>) : LValueExpr<T>() {
+data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndicator<T>) : LValueExpr<T>() {
     companion object {
-        fun new(key: Key.UncertainKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
+        fun new(key: UnknownKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
     }
 
     override fun resolve(context: Context): Expr<T> {
@@ -305,12 +305,12 @@ data class LValueKeyExpr<T : Any>(val key: Key.UncertainKey, override val ind: S
  * For example, the LValue `((x > 2) ? a : b).y`
  */
 data class LValueFieldExpr<T : Any>(
-    val field: Key.FieldRef,
+    val field: FieldRef,
     val qualifier: Expr<*>,
     override val ind: SetIndicator<T>
 ) : LValueExpr<T>() {
     companion object {
-        fun new(field: Key.FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
+        fun new(field: FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
             LValueFieldExpr(field, qualifier, field.ind)
     }
 
@@ -367,7 +367,7 @@ data class NumIterationTimesExpr<T : Number>(
 }
 
 interface LeafExprWithKey {
-    val key: Key.QualifierRef
+    val key: QualifierRef
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>()
@@ -384,7 +384,7 @@ data class ObjectExpr(override val key: HeapMarker) : LeafExpr<HeapMarker>(), Le
  */
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
-    override val key: Key.UncertainKey,
+    override val key: UnknownKey,
     val contextId: Context.ContextId,
     override val ind: SetIndicator<T>
 ) : LeafExpr<T>(), LeafExprWithKey {
@@ -393,7 +393,7 @@ data class VariableExpr<T : Any> private constructor(
          * This should only ever be called from a [Context]. Only contexts are allowed
          * to create [VariableExpr]s.
          */
-        fun new(key: Key.UncertainKey, contextId: Context.ContextId): VariableExpr<*> =
+        fun new(key: UnknownKey, contextId: Context.ContextId): VariableExpr<*> =
             VariableExpr(key, contextId, key.ind)
     }
 }

@@ -211,7 +211,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return context.c.grabVar(Key.ThisKey(psi.type!!))
+                return context.c.grabVar(ThisKey(psi.type!!))
             }
 
             is PsiMethodCallExpression -> {
@@ -226,7 +226,7 @@ object MethodProcessing {
                 qualifier?.let {
                     val ind = it.ind
                     assertIs<ObjectSetIndicator>(ind)
-                    context.addVar(LValueKeyExpr.new(Key.ThisKey(ind.type)), it)
+                    context.addVar(LValueKeyExpr.new(ThisKey(ind.type)), it)
                 }
 
                 val methodReturnValue = methodContext.returnValue?.resolveUnknowns(context.c)
@@ -389,7 +389,7 @@ object MethodProcessing {
 
                 val methodContext = processMethod(context, psi)
 
-                context.addVar(LValueKeyExpr.new(Key.ThisKey(objType)), newObj)
+                context.addVar(LValueKeyExpr.new(ThisKey(objType)), newObj)
                 context.stack(methodContext)
 
                 return newObj
@@ -415,7 +415,7 @@ object MethodProcessing {
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {
                 LValueFieldExpr.new(
-                    Key.FieldRef(resolved),
+                    FieldRef(resolved),
                     psi.qualifier?.let {
                         processPsiExpression(it, context)
                     }.orElse {
@@ -424,7 +424,7 @@ object MethodProcessing {
                             thisType,
                             "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                         )
-                        context.c.grabVar(Key.ThisKey(thisType))
+                        context.c.grabVar(ThisKey(thisType))
                     }
                 )
             }
@@ -466,7 +466,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             context.addVar(
-                LValueKeyExpr.new(Key.ParameterKey(param, true)),
+                LValueKeyExpr.new(ParameterKey(param, true)),
                 processPsiExpression(arg, context)
             )
         }
