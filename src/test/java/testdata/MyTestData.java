@@ -1284,6 +1284,29 @@ public class MyTestData {
 		return (short) doubleNesting.doubleNested.nested.getX();
 	}
 	
+	@RequiredScore(1.0)
+	public static short simpleClassTest34(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(2);
+		if (x > 0) {
+			if (x > 2) {
+				a = b;
+			}
+			return (short) a.x;
+		}
+		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	public static short simpleClassTest35(short x) {
+		MyClass q = new MyClass(2);
+		MyClass a = (x > 0) ? new MyClass(3) : q;
+		
+		a.x = 5;
+		
+		return (x > 0) ? 0 : (short) q.x;
+	}
+	
 	private static void updateNesting(MyNestingClass nesting, int val) {
 		nesting.nested.x = val;
 	}

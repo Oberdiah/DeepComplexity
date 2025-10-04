@@ -17,8 +17,10 @@ typealias Vars = Map<Key.UncertainKey, Expr<*>>
  * How objects are stored:
  *  - Every object's field will be stored as its own variable.
  *  - An object itself (the heap reference) may also be an unknown. e.g. { x: a }
- *  - As always, unknown variables never point to our own context.
- *    { x: b, b.x: 2 } does not mean that you're allowed to resolve `x.x` to `2`, because `x` is not `b`, it's `b'`.
+ *  - Critically: HeapMarkers are not unknowns. They are constants that point to a specific object, so they do
+ *    not have a previous or future state. E.g. in { #1.x: 2, x: #1 }, it is completely OK to resolve `x.x` to `2`.
+ *    Confusingly it is also OK to resolve `b.x` using { b: a, a.x: 2 } to `2` - although `b` is `a'` and not `a`,
+ *    `a.x` is also actually `a'.x`.
  *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
 class Context(
