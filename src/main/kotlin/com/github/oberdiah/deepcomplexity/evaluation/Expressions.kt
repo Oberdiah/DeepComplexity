@@ -141,7 +141,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, field: FieldRef): Expr<*> {
+fun Expr<*>.getField(context: Context, field: QualifiedKey.FieldRef): Expr<*> {
     return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
         context.grabVar(QualifiedKey(field, it.key))
     }
@@ -305,12 +305,12 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
  * For example, the LValue `((x > 2) ? a : b).y`
  */
 data class LValueFieldExpr<T : Any>(
-    val field: FieldRef,
+    val field: QualifiedKey.FieldRef,
     val qualifier: Expr<*>,
     override val ind: SetIndicator<T>
 ) : LValueExpr<T>() {
     companion object {
-        fun new(field: FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
+        fun new(field: QualifiedKey.FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
             LValueFieldExpr(field, qualifier, field.ind)
     }
 
