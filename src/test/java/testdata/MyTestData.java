@@ -1308,13 +1308,12 @@ public class MyTestData {
 		return (x > 0) ? 0 : (short) q.x;
 	}
 	
-	@RequiredScore(1.0)
 	public static short simpleClassTest36(short x) {
-		MyClass obj = new MyClass(5);
-		if (x != x) {
+		MyClass obj = new MyClass(1);
+		if (x == x) {
 			MyClass a = obj;
 			MyClass b = obj;
-			if (x != x) {
+			if (x == x) {
 				a.x++;
 				b.x++;
 				a.x++;
@@ -1327,12 +1326,12 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	public static short simpleClassTest37(short x) {
-		MyClass obj = new MyClass(5);
-		MyClass obj2 = new MyClass(5);
-		if (x != x) {
+		MyClass obj = new MyClass(1);
+		MyClass obj2 = new MyClass(2);
+		if (x == x) {
 			MyClass a = obj;
 			MyClass b = obj2;
-			if (x != x) {
+			if (x == x) {
 				a.x++;
 				b.x++;
 				a.x++;
