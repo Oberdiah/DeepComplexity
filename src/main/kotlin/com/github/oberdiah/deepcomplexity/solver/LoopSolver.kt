@@ -11,38 +11,38 @@ object LoopSolver {
         var numLoops: NumIterationTimesExpr<*>? = null
 
         val conditionVariables = condition.getVariables()
-        for ((key, expr) in context.variables) {
-            val variablesMatchingCondition = expr.getVariables()
-                .filter { vari -> conditionVariables.any { vari.key == it.key } }
-
-            fun <T : Number> ugly(numExpr: Expr<T>) {
-                if (variablesMatchingCondition.isEmpty()) return
-                // We now have an expression that is looping stuff.
-                val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: return
-
-//                val constraints = ExprConstrain.getConstraints(condition, emptySet())
-                // Temporary
-//                assert(constraints.size == 1)
-//                val constraint = constraints[0].getConstraint(variable)
-                TODO()
-                // Temporary
-//                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
-            }
-
-            val numExpr = expr.castToNumbers()
-            ugly(numExpr)
-        }
-
-        for ((key, expr) in context.variables) {
-            // Unresolved expressions not able to be resolved by this context are of no interest to
-            // us as they can't affect this loop.
-//            val allUnresolved = expr.getVariables().filter { context.canResolve(it) }
-//            if (allUnresolved.isEmpty()) continue
+//        for ((key, expr) in context.variables) {
+//            val variablesMatchingCondition = expr.getVariables()
+//                .filter { vari -> conditionVariables.any { vari.key == it.key } }
+//
+//            fun <T : Number> ugly(numExpr: Expr<T>) {
+//                if (variablesMatchingCondition.isEmpty()) return
+//                // We now have an expression that is looping stuff.
+//                val (terms, variable) = collectTerms(numExpr, key.getElement(), variablesMatchingCondition) ?: return
+//
+////                val constraints = ExprConstrain.getConstraints(condition, emptySet())
+//                // Temporary
+////                assert(constraints.size == 1)
+////                val constraint = constraints[0].getConstraint(variable)
+//                TODO()
+//                // Temporary
+////                numLoops = NumIterationTimesExpression.new(constraint, variable, terms)
+//            }
 //
 //            val numExpr = expr.castToNumbers()
-//            val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
-//            context.putVar(key, newExpr)
-        }
+//            ugly(numExpr)
+//        }
+//
+//        for ((key, expr) in context.variables) {
+//            // Unresolved expressions not able to be resolved by this context are of no interest to
+//            // us as they can't affect this loop.
+////            val allUnresolved = expr.getVariables().filter { context.canResolve(it) }
+////            if (allUnresolved.isEmpty()) continue
+////
+////            val numExpr = expr.castToNumbers()
+////            val newExpr = repeatExpression(numLoops, numExpr, key.getElement(), allUnresolved)
+////            context.putVar(key, newExpr)
+//        }
     }
 
     private fun <T : Number> repeatExpression(

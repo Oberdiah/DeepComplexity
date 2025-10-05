@@ -46,7 +46,7 @@ class Context(
      * We map all the expressions to our own context id as now that they're here, they must
      * never be resolved with us either, alongside anything they were previously forbidden to resolve.
      */
-    val variables: Vars = variables.mapValues { expr ->
+    private val variables: Vars = variables.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
             VariableExpr.new(it.key, it.contextId + idx)
         }
