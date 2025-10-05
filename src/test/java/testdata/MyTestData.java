@@ -1310,6 +1310,20 @@ public class MyTestData {
 	
 	public static short simpleClassTest36(short x) {
 		MyClass obj = new MyClass(1);
+		MyClass a = obj;
+		MyClass b = obj;
+		if (x == x) {
+			a.x++;
+			b.x++;
+			a.x++;
+			a.x++;
+			a.x++;
+		}
+		return (short) obj.x;
+	}
+	
+	public static short simpleClassTest37(short x) {
+		MyClass obj = new MyClass(1);
 		if (x == x) {
 			MyClass a = obj;
 			MyClass b = obj;
@@ -1324,19 +1338,19 @@ public class MyTestData {
 		return (short) obj.x;
 	}
 	
-	@RequiredScore(1.0)
-	public static short simpleClassTest37(short x) {
+	public static short simpleClassTest38(short x) {
 		MyClass obj = new MyClass(1);
-		MyClass obj2 = new MyClass(2);
 		if (x == x) {
 			MyClass a = obj;
-			MyClass b = obj2;
+			MyClass b = obj;
 			if (x == x) {
-				a.x++;
-				b.x++;
-				a.x++;
-				a.x++;
-				a.x++;
+				a.x = 1;
+				b.x = 2;
+				a.x = 3;
+				
+				if (b.x == 2) {
+					return 5;
+				}
 			}
 		}
 		return (short) obj.x;
