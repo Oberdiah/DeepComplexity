@@ -159,7 +159,7 @@ object TestUtilities {
                     "Exceeded expectations" else ""
 
                 val goldStar =
-                    if (method.getAnnotation(GoodEnough::class.java) != null || methodScoreStr == "100.00") "✓" else ""
+                    if (method.getAnnotation(GoodEnough::class.java) != null || methodScoreStr == "100.00") "Y" else ""
 
                 return listOf("Passed", msg, "$methodScoreStr%", goldStar, notes) to true
             }
