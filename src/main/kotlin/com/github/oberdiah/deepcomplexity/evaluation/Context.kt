@@ -85,6 +85,7 @@ class Context(
             KeyBackreference(key.addContextId(newId), contextId + newId)
 
         override fun isNew(): Boolean = key.isNewlyCreated()
+        fun isReturnExpr(): Boolean = key is ReturnKey
 
         /**
          * This shouldn't be used unless you know for certain you're in the evaluation stage;
@@ -157,6 +158,9 @@ class Context(
 
     val returnKey: ReturnKey?
         get() = variables.keys.filterIsInstance<ReturnKey>().firstOrNull()
+
+    val returnPair: Pair<ReturnKey, Expr<*>>?
+        get() = returnKey?.let { Pair(it, returnValue!!) }
 
     override fun toString(): String {
         val variablesString =
@@ -266,9 +270,9 @@ class Context(
         val resolvedOther = other.withVariablesResolvedBy(withoutReturnValue())
 
         // ...then we add that newly resolved return value to the new context,
-        var newContext = withAdditionalReturn(resolvedOther.returnKey, resolvedOther.returnValue)
+        var newContext = resolvedOther.returnPair?.let { withAdditionalReturn(it.first, it.second) } ?: this
 
-        // finally, we avoid stomping over that return value.
+        // finally, we avoid stomping over that newly created return value.
         for ((key, expr) in resolvedOther.withoutReturnValue().variables) {
             val lValue = if (key is QualifiedKey) {
                 LValueFieldExpr.new(
@@ -286,31 +290,21 @@ class Context(
             newContext = newContext.withVar(lValue, expr)
         }
 
-        newContext = newContext.stripTemporaryKeys()
-
-        return newContext
+        return newContext.stripTemporaryKeys()
     }
 
     /**
      * Adds the return onto this context in the manner that returns should be added;
      * that is, if this context already has a return, this new one is substituted into the old.
      */
-    fun withAdditionalReturn(key: ReturnKey?, expr: Expr<*>?): Context {
-        val retKey = this.returnKey
-            ?: key
-            ?: return this
-
+    fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>): Context {
         val newRetExpr = returnValue?.let { returnValue ->
-            if (expr == null) {
-                returnValue
-            } else {
-                returnValue.replaceTypeInTree<VariableExpr<*>> {
-                    if (it.key.grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage() == retKey) expr else null
-                }
+            returnValue.replaceTypeInTree<VariableExpr<*>> {
+                if (it.key.isReturnExpr()) expr else null
             }
-        } ?: expr ?: return this
+        } ?: expr
 
-        return Context(variables + (retKey to newRetExpr), thisType, idx)
+        return Context(variables + (returnKey to newRetExpr), thisType, idx)
     }
 
     private fun stripTemporaryKeys(): Context {
