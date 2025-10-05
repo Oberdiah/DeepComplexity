@@ -98,7 +98,7 @@ object LoopSolver {
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but
         // I'm not going to bother for now.
-        if (!unresolved.key.matchesElement(psiElement)) return null
+//        if (!unresolved.key.matchesElement(psiElement)) return null
 
         val terms = ConstraintSolver.expandTerms(expr, unresolved, ConstExpr.TRUE)
         if (terms == null) return null

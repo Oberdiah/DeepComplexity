@@ -165,7 +165,10 @@ object ExprEvaluate {
             }
 
             is VariableExpr ->
-                Bundle.constrained(expr.ind.newVariance(expr.key), Constraints.completelyUnconstrained())
+                Bundle.constrained(
+                    expr.ind.newVariance(expr.key.grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()),
+                    Constraints.completelyUnconstrained()
+                )
                     .constrainWith(scope)
 
             else -> {

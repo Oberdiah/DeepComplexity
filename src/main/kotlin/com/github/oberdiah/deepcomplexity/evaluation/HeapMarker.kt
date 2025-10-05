@@ -16,6 +16,8 @@ data class HeapMarker(
         fun new(type: PsiType): HeapMarker = HeapMarker(KEY_INDEX++, type)
     }
 
+    override fun addContextId(newId: Context.ContextId): QualifierRef = this
     override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
     override fun toString(): String = "#$idx"
+    override fun isNew(): Boolean = true
 }

@@ -48,16 +48,6 @@ sealed class Expr<T : Any>() {
     fun resolveUnknowns(context: Context): Expr<T> =
         context.resolveKnownVariables(this)
 
-    fun resolveKeyAs(key: Key, newExpr: Expr<*>?): Expr<T> {
-        return if (newExpr == null) {
-            this
-        } else {
-            replaceTypeInTree<VariableExpr<*>> {
-                if (it.key == key) newExpr else null
-            }
-        }
-    }
-
     /**
      * Rebuilds every expression in the tree.
      * As it's doing that, whenever it encounters an expression of type [Q],
@@ -143,7 +133,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 
 fun Expr<*>.getField(context: Context, field: QualifiedKey.FieldRef): Expr<*> {
     return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
-        context.grabVar(QualifiedKey(field, it.key))
+        context.getVar(QualifiedKey(field, it.key))
     }
 }
 
@@ -295,7 +285,7 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
     }
 
     override fun resolve(context: Context): Expr<T> {
-        return context.grabVar(key).tryCastTo(ind)!!
+        return context.getVar(key).tryCastTo(ind)!!
     }
 }
 
@@ -384,17 +374,16 @@ data class ObjectExpr(override val key: HeapMarker) : LeafExpr<HeapMarker>(), Le
  */
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
-    override val key: UnknownKey,
-    val contextId: Context.ContextId,
+    override val key: Context.KeyBackreference,
     override val ind: SetIndicator<T>
 ) : LeafExpr<T>(), LeafExprWithKey {
     companion object {
         /**
          * This should only ever be called from a [Context]. Only contexts are allowed
-         * to create [VariableExpr]s.
+         * to create [VariableExpr]s. Only contexts really can, anyway, because they've got control
+         * of the [Context.KeyBackreference]s.
          */
-        fun new(key: UnknownKey, contextId: Context.ContextId): VariableExpr<*> =
-            VariableExpr(key, contextId, key.ind)
+        fun new(key: Context.KeyBackreference): VariableExpr<*> = VariableExpr(key, key.ind)
     }
 }
 

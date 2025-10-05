@@ -2,7 +2,6 @@ package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.evaluation.Key
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
@@ -64,11 +63,6 @@ data class Constraints private constructor(
 
     fun isUnconstrained(): Boolean {
         return constraints.isEmpty()
-    }
-
-    fun <T : Any> getConstraint(variable: VariableExpr<T>): ISet<T> {
-        return constraints[variable.key]?.cast(variable.ind)
-            ?: variable.ind.newFullSet()
     }
 
     fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Key): ISet<T> {

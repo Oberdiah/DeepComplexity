@@ -19,6 +19,15 @@ source functionality.
 See https://youtrack.jetbrains.com/issue/IDEA-343883/Dynamic-jupiter-test-with-source-reference-to-resource-file for
 updates on that.
 
+If you've changed a method signature in the main project, the tests may no longer run. Their .class files don't seem
+to update correctly.
+To resolve this, delete the `.intellijPlatform` and `.build` folders, run `./gradlew stop`, clear all IntelliJ
+caches, restart IntelliJ, then run `./gradlew clean build --rerun-tasks`. After that you'll need to update all the
+launch configurations again.
+Some of those steps may be redundant, feel free to experiment.
+
+```shell
+
 ## Template ToDo list
 
 - [x] Create a new [IntelliJ Platform Plugin Template][template] project.

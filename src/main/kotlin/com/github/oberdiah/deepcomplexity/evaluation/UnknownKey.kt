@@ -6,12 +6,15 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
 /**
- * [UnknownKey]s are keys that can be used as placeholders in [VariableExpr]s, and
- * as the qualifiers in [QualifiedKey]s.
- * Not all keys fall into this category, for example `HeapKey`s and `ExpressionKey`s do not.
+ * Not all keys fall into this category, for example [ExpressionKey]s do not.
  */
-sealed class UnknownKey : Key(), QualifierRef {
+sealed class UnknownKey : Key() {
     open val temporary: Boolean = false
+
+    /**
+     * Most keys don't need to worry about this.
+     */
+    open fun addContextId(id: Context.ContextId): UnknownKey = this
 }
 
 sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {
@@ -41,13 +44,15 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
  */
 sealed interface QualifierRef {
     val ind: SetIndicator<*>
-    fun isNew(): Boolean =
-        this is HeapMarker || (this is QualifiedKey && this.qualifier.isNew())
+    fun isNew(): Boolean
+    fun addContextId(newId: Context.ContextId): QualifierRef
 }
 
 data class QualifiedKey(val field: FieldRef, val qualifier: QualifierRef) : UnknownKey() {
     override val ind: SetIndicator<*> = this.field.ind
     override fun toString(): String = "$qualifier.$field"
+    override fun addContextId(id: Context.ContextId): QualifiedKey = QualifiedKey(field, qualifier.addContextId(id))
+    override fun isNewlyCreated(): Boolean = qualifier.isNew()
 
     /**
      * This isn't a full key by itself, you'll need a [QualifierRef] as well and then will want to make a [QualifiedKey].

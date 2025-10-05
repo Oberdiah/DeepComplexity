@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
 
@@ -10,6 +11,9 @@ typealias Vars = Map<UnknownKey, Expr<*>>
  * refers to another variable within that same context.
  *
  * For example, in a context `{ x: y + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
+ *
+ * We encode this with the [KeyBackreference] class, representing an unknown that this context will never manage
+ * to resolve.
  *
  * Vars are the currently understood values for things that can be modified.
  *
@@ -46,9 +50,9 @@ class Context(
      */
     private val variables: Vars = variables.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
-            VariableExpr.new(it.key, it.contextId + idx)
+            VariableExpr.new(it.key.addContextId(idx))
         }
-    }
+    }.mapKeys { it.key.addContextId(idx) }
 
     init {
         assert(variables.keys.filterIsInstance<ReturnKey>().size <= 1) {
@@ -64,6 +68,42 @@ class Context(
         companion object {
             var ID_INDEX = 0
             fun new(): ContextId = ContextId(setOf(ID_INDEX++))
+        }
+    }
+
+    /**
+     * [KeyBackreference]s must be very carefully resolved; they cannot be resolved in any context
+     * they were created in. Only [Context]s have the ability to create and resolve them.
+     */
+    data class KeyBackreference(private val key: UnknownKey, private val contextId: ContextId) : QualifierRef {
+        override fun toString(): String = "$key'"
+        override fun equals(other: Any?): Boolean = other is KeyBackreference && this.key == other.key
+        override fun hashCode(): Int = key.hashCode()
+
+        override val ind: SetIndicator<*> = key.ind
+        override fun addContextId(newId: ContextId): KeyBackreference =
+            KeyBackreference(key.addContextId(newId), contextId + newId)
+
+        override fun isNew(): Boolean = key.isNewlyCreated()
+
+        /**
+         * This shouldn't be used unless you know for certain you're in the evaluation stage;
+         * using this in the method processing stage may lead to you resolving a key using your
+         * own context, which is a recipe for disaster.
+         */
+        fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
+
+        fun safelyResolveUsing(context: Context): Expr<*> {
+            assert(!contextId.collidesWith(context.idx)) {
+                "Cannot resolve a KeyBackreference in the context it was created in."
+            }
+
+            return if (key is QualifiedKey && key.qualifier is KeyBackreference) {
+                val q = key.qualifier.safelyResolveUsing(context)
+                q.getField(context, key.field)
+            } else {
+                context.getVar(key)
+            }
         }
     }
 
@@ -101,8 +141,8 @@ class Context(
                             aVal ?: bVal!!
                         } else {
                             how(
-                                aVal ?: VariableExpr.new(key, a.idx),
-                                bVal ?: VariableExpr.new(key, b.idx)
+                                aVal ?: VariableExpr.new(KeyBackreference(key, a.idx)),
+                                bVal ?: VariableExpr.new(KeyBackreference(key, b.idx))
                             )
                         }
                     },
@@ -129,8 +169,8 @@ class Context(
         return "Context: {\n${variablesString.prependIndent()}\n}"
     }
 
-    fun grabVar(key: UnknownKey): Expr<*> {
-        return variables[key] ?: VariableExpr.new(key, idx)
+    fun getVar(key: UnknownKey): Expr<*> {
+        return variables[key] ?: VariableExpr.new(KeyBackreference(key, idx))
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
@@ -184,12 +224,10 @@ class Context(
         val newVariables = variables + objectsMentionedInQualifier.map {
             val thisVarKey = QualifiedKey(fieldKey, it)
             val newValue = qualifier.replaceTypeInLeaves<LeafExprWithKey>(fieldKey.ind) { expr ->
-                // Now that I look at this, this is slightly suspicious; we're checking a variable key
-                // against potentially other variables within the same context.
                 if (expr.key == it) {
                     rExpr
                 } else {
-                    grabVar(thisVarKey)
+                    getVar(thisVarKey)
                 }
             }
 
@@ -214,16 +252,7 @@ class Context(
      */
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
-            assert(!varExpr.contextId.collidesWith(idx)) {
-                "Cannot resolve variables from the same context that created them."
-            }
-
-            if (varExpr.key is QualifiedKey && varExpr.key.qualifier is UnknownKey) {
-                val q = grabVar(varExpr.key.qualifier)
-                q.getField(this, varExpr.key.field)
-            } else {
-                grabVar(varExpr.key)
-            }
+            varExpr.key.safelyResolveUsing(this)
         }
 
     /**
@@ -246,7 +275,7 @@ class Context(
                     key.field,
                     when (key.qualifier) {
                         is HeapMarker -> ObjectExpr(key.qualifier)
-                        is UnknownKey -> grabVar(key.qualifier)
+                        is KeyBackreference -> key.qualifier.safelyResolveUsing(this)
                     }
                 )
             } else {
@@ -271,9 +300,15 @@ class Context(
             ?: key
             ?: return this
 
-        val newRetExpr = returnValue?.resolveKeyAs(retKey, expr)
-            ?: expr
-            ?: return this
+        val newRetExpr = returnValue?.let { returnValue ->
+            if (expr == null) {
+                returnValue
+            } else {
+                returnValue.replaceTypeInTree<VariableExpr<*>> {
+                    if (it.key.grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage() == retKey) expr else null
+                }
+            }
+        } ?: expr ?: return this
 
         return Context(variables + (retKey to newRetExpr), thisType, idx)
     }

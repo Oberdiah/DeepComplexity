@@ -211,7 +211,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return context.c.grabVar(ThisKey(psi.type!!))
+                return context.c.getVar(ThisKey(psi.type!!))
             }
 
             is PsiMethodCallExpression -> {
@@ -424,7 +424,7 @@ object MethodProcessing {
                             thisType,
                             "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                         )
-                        context.c.grabVar(ThisKey(thisType))
+                        context.c.getVar(ThisKey(thisType))
                     }
                 )
             }

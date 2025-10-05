@@ -119,8 +119,9 @@ object ConstraintSolver {
             @Suppress("UNCHECKED_CAST")
             val castVariable = variable as VariableExpr<out Number>
 
-            val variableConstraints = getVariableConstraints(expr, castVariable, ConstExpr.TRUE) ?: continue
-            constraints = constraints.withConstraint(variable.key, variableConstraints)
+            // Commented out as unused. Should be uncommented if we find we need it.
+//            val variableConstraints = getVariableConstraints(expr, castVariable, ConstExpr.TRUE) ?: continue
+//            constraints = constraints.withConstraint(variable.key, variableConstraints)
         }
 
         return constraints
