@@ -57,7 +57,7 @@ class Context(
     }
 
     @JvmInline
-    value class ContextId(val ids: Set<Int>) {
+    value class ContextId(private val ids: Set<Int>) {
         operator fun plus(other: ContextId): ContextId = ContextId(this.ids + other.ids)
         fun collidesWith(other: ContextId): Boolean = this.ids.any { it in other.ids }
 
