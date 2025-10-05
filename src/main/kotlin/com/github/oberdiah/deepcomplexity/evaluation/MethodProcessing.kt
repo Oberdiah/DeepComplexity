@@ -10,7 +10,6 @@ import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.getThisType
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 import kotlin.test.assertIs
@@ -81,7 +80,7 @@ object MethodProcessing {
                         val rExpression = element.initializer
                         if (rExpression != null) {
                             context.addVar(
-                                LValueKeyExpr.new(element.toKey()),
+                                LValueKeyExpr.new(context.c.createLocalVarKey(element)),
                                 processPsiExpression(rExpression, context)
                             )
                         } else {
@@ -197,7 +196,7 @@ object MethodProcessing {
             is PsiReturnStatement -> {
                 val returnExpression = psi.returnValue
                 if (returnExpression != null) {
-                    val returnKey = psi.toKey()
+                    val returnKey = context.c.createReturnKey(psi)
 
                     val returnExpr = processPsiExpression(returnExpression, context)
                         .castToUsingTypeCast(returnKey.ind, false)
@@ -211,7 +210,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return context.c.grabVar(ThisKey(psi.type!!))
+                return context.c.grabVar(context.c.createThisKey(psi.type!!))
             }
 
             is PsiMethodCallExpression -> {
@@ -226,7 +225,7 @@ object MethodProcessing {
                 qualifier?.let {
                     val ind = it.ind
                     assertIs<ObjectSetIndicator>(ind)
-                    context.addVar(LValueKeyExpr.new(ThisKey(ind.type)), it)
+                    context.addVar(LValueKeyExpr.new(context.c.createThisKey(ind.type)), it)
                 }
 
                 val methodReturnValue = methodContext.returnValue?.resolveUnknowns(context.c)
@@ -389,7 +388,7 @@ object MethodProcessing {
 
                 val methodContext = processMethod(context, psi)
 
-                context.addVar(LValueKeyExpr.new(ThisKey(objType)), newObj)
+                context.addVar(LValueKeyExpr.new(context.c.createThisKey(objType)), newObj)
                 context.stack(methodContext)
 
                 return newObj
@@ -424,14 +423,14 @@ object MethodProcessing {
                             thisType,
                             "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                         )
-                        context.c.grabVar(ThisKey(thisType))
+                        context.c.grabVar(context.c.createThisKey(thisType))
                     }
                 )
             }
 
-            is PsiLocalVariable -> LValueKeyExpr.new(resolved.toKey())
-            is PsiReturnStatement -> LValueKeyExpr.new(resolved.toKey())
-            is PsiParameter -> LValueKeyExpr.new(resolved.toKey())
+            is PsiLocalVariable -> LValueKeyExpr.new(context.c.createLocalVarKey(resolved))
+            is PsiReturnStatement -> LValueKeyExpr.new(context.c.createReturnKey(resolved))
+            is PsiParameter -> LValueKeyExpr.new(context.c.createParamKey(resolved, false))
 
             else -> {
                 throw IllegalArgumentException(
@@ -466,7 +465,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             context.addVar(
-                LValueKeyExpr.new(ParameterKey(param, true)),
+                LValueKeyExpr.new(context.c.createParamKey(param, true)),
                 processPsiExpression(arg, context)
             )
         }

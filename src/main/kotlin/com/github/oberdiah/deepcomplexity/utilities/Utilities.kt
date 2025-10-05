@@ -1,8 +1,5 @@
 package com.github.oberdiah.deepcomplexity.utilities
 
-import com.github.oberdiah.deepcomplexity.evaluation.LocalVariableKey
-import com.github.oberdiah.deepcomplexity.evaluation.ParameterKey
-import com.github.oberdiah.deepcomplexity.evaluation.ReturnKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.*
@@ -92,18 +89,6 @@ object Utilities {
         } else {
             name
         }
-    }
-
-    fun PsiLocalVariable.toKey(): LocalVariableKey = LocalVariableKey(this)
-    fun PsiParameter.toKey(): ParameterKey = ParameterKey(this)
-
-    fun PsiReturnStatement.toKey(): ReturnKey {
-        val returnMethod = findContainingMethodOrLambda(this)
-            ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
-
-        return ReturnKey(
-            psiTypeToSetIndicator(((returnMethod as? PsiMethod)?.returnType)!!)
-        )
     }
 
     fun findContainingMethodOrLambda(returnStatement: PsiReturnStatement): PsiElement? {

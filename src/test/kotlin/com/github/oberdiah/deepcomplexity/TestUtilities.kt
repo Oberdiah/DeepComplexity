@@ -2,12 +2,10 @@ package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
-import com.github.oberdiah.deepcomplexity.evaluation.ReturnKey
 import com.github.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
-import com.github.oberdiah.deepcomplexity.utilities.Utilities
 import com.intellij.psi.PsiMethod
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
@@ -182,15 +180,13 @@ object TestUtilities {
         }
 
         val range = try {
-            val returnKey = ReturnKey(Utilities.psiTypeToSetIndicator(psiMethod.returnType!!))
-
             if (System.getenv("DEBUG") != "false") {
-                println((context.grabVar(returnKey).dStr()).prependIndent())
+                println((context.returnValue!!.dStr()).prependIndent())
             } else {
                 println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
             }
 
-            val unknownsInReturn = context.grabVar(returnKey).iterateTree(true)
+            val unknownsInReturn = context.returnValue!!.iterateTree(true)
                 .filterIsInstance<VariableExpr<*>>()
                 .map { it.key }
                 .toSet()
@@ -201,7 +197,7 @@ object TestUtilities {
                 "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
             }
 
-            val bundle: Bundle<*> = context.grabVar(returnKey).evaluate(ExprEvaluate.Scope())
+            val bundle: Bundle<*> = context.returnValue!!.evaluate(ExprEvaluate.Scope())
             val castBundle = bundle.cast(ShortSetIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle

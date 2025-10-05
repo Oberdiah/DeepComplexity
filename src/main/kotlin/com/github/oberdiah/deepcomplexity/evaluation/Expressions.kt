@@ -143,7 +143,7 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
 
 fun Expr<*>.getField(context: Context, field: QualifiedKey.FieldRef): Expr<*> {
     return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
-        context.grabVar(QualifiedKey(field, it.key))
+        context.grabVar(context.createQualifiedKey(field, it.key))
     }
 }
 
