@@ -12,7 +12,6 @@ import com.intellij.psi.*
  */
 sealed class UnknownKey : Key(), QualifierRef {
     open val temporary: Boolean = false
-    abstract val contextId: Context.ContextId
 }
 
 sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {
@@ -22,18 +21,10 @@ sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {
     override fun hashCode(): Int = variable.hashCode()
 }
 
-class LocalVariableKey(
-    variable: PsiLocalVariable,
-    override val contextId: Context.ContextId
-) : VariableKey(variable)
+class LocalVariableKey(variable: PsiLocalVariable) : VariableKey(variable)
+class ParameterKey(variable: PsiParameter, override val temporary: Boolean = false) : VariableKey(variable)
 
-class ParameterKey(
-    variable: PsiParameter,
-    override val contextId: Context.ContextId,
-    override val temporary: Boolean = false
-) : VariableKey(variable)
-
-class ThisKey(val type: PsiType, override val contextId: Context.ContextId) : UnknownKey() {
+data class ThisKey(val type: PsiType) : UnknownKey() {
     override val temporary: Boolean = true
     override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(type)
     override fun toString(): String = "this"
@@ -41,10 +32,8 @@ class ThisKey(val type: PsiType, override val contextId: Context.ContextId) : Un
     override fun equals(other: Any?): Boolean = other is ThisKey
 }
 
-class ReturnKey(override val ind: SetIndicator<*>, override val contextId: Context.ContextId) : UnknownKey() {
+data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
     override fun toString(): String = "Return value"
-    override fun equals(other: Any?): Boolean = other is ReturnKey && this.ind == other.ind
-    override fun hashCode(): Int = ind.hashCode()
 }
 
 /**
@@ -56,18 +45,9 @@ sealed interface QualifierRef {
         this is HeapMarker || (this is QualifiedKey && this.qualifier.isNew())
 }
 
-class QualifiedKey(
-    val field: FieldRef,
-    val qualifier: QualifierRef,
-    override val contextId: Context.ContextId
-) : UnknownKey() {
+data class QualifiedKey(val field: FieldRef, val qualifier: QualifierRef) : UnknownKey() {
     override val ind: SetIndicator<*> = this.field.ind
     override fun toString(): String = "$qualifier.$field"
-
-    override fun equals(other: Any?): Boolean =
-        other is QualifiedKey && this.field == other.field && this.qualifier == other.qualifier
-
-    override fun hashCode(): Int = field.hashCode() * 31 + qualifier.hashCode()
 
     /**
      * This isn't a full key by itself, you'll need a [QualifierRef] as well and then will want to make a [QualifiedKey].

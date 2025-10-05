@@ -1,8 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.findContainingMethodOrLambda
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.psiTypeToSetIndicator
-import com.intellij.psi.*
+import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
 
 typealias Vars = Map<UnknownKey, Expr<*>>
@@ -56,22 +54,6 @@ class Context(
         assert(variables.keys.filterIsInstance<ReturnKey>().size <= 1) {
             "A context cannot have multiple return keys."
         }
-    }
-
-    fun createThisKey(type: PsiType): ThisKey = ThisKey(type, idx)
-    fun createParamKey(param: PsiParameter, temp: Boolean): ParameterKey = ParameterKey(param, idx, temp)
-    fun createLocalVarKey(varr: PsiLocalVariable): LocalVariableKey = LocalVariableKey(varr, idx)
-    fun createQualifiedKey(field: QualifiedKey.FieldRef, qualifier: QualifierRef): QualifiedKey =
-        QualifiedKey(field, qualifier, idx)
-
-    fun createReturnKey(ret: PsiReturnStatement): ReturnKey {
-        val returnMethod = findContainingMethodOrLambda(ret)
-            ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
-
-        return ReturnKey(
-            psiTypeToSetIndicator(((returnMethod as? PsiMethod)?.returnType)!!),
-            idx
-        )
     }
 
     @JvmInline
@@ -200,7 +182,7 @@ class Context(
                 .toSet()
 
         val newVariables = variables + objectsMentionedInQualifier.map {
-            val thisVarKey = QualifiedKey(fieldKey, it, this.idx)
+            val thisVarKey = QualifiedKey(fieldKey, it)
             val newValue = qualifier.replaceTypeInLeaves<LeafExprWithKey>(fieldKey.ind) { expr ->
                 // Now that I look at this, this is slightly suspicious; we're checking a variable key
                 // against potentially other variables within the same context.
