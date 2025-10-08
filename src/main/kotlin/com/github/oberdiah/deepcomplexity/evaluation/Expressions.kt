@@ -47,6 +47,8 @@ sealed class Expr<T : Any>() {
     fun resolveUnknowns(context: Context): Expr<T> =
         context.resolveKnownVariables(this)
 
+    fun containsUnknowns(): Boolean = iterateTree().any { it is VariableExpr<*> }
+
     /**
      * Rebuilds every expression in the tree.
      * As it's doing that, whenever it encounters an expression of type [Q],

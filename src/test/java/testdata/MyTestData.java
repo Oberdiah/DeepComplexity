@@ -1315,9 +1315,6 @@ public class MyTestData {
 		if (x == x) {
 			a.x++;
 			b.x++;
-			a.x++;
-			a.x++;
-			a.x++;
 		}
 		return (short) obj.x;
 	}

@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
@@ -94,7 +95,7 @@ class Context(
          */
         fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
 
-        fun safelyResolveUsing(context: Context): Expr<*> {
+        override fun safelyResolveUsing(context: Context): Expr<*> {
             assert(!contextId.collidesWith(context.idx)) {
                 "Cannot resolve a KeyBackreference in the context it was created in."
             }
@@ -104,6 +105,18 @@ class Context(
                 q.getField(context, key.field)
             } else {
                 context.getVar(key)
+            }
+        }
+
+        override fun toLeafExpr(): LeafExpr<*> = VariableExpr.new(this)
+
+        /**
+         * Is it possible that this backreference may refer to the provided indicator in any way?
+         */
+        fun aliasesAgainst(other: ObjectSetIndicator): UnknownKey? {
+            return when (key) {
+                is QualifiedKey -> key.aliasesAgainst(other)
+                else -> if (other == key.ind) key else null
             }
         }
     }
@@ -189,6 +202,50 @@ class Context(
             throw IllegalArgumentException("This cannot happen")
         }
 
+        val qualifier = lExpr.qualifier
+        val fieldKey = lExpr.field
+
+        if (qualifier is VariableExpr<*>) {
+            var toReturn = withVarField(qualifier, fieldKey, rExpr)
+
+            val candidates: Set<Qualifier> = variables.keys
+                .filterIsInstance<QualifiedKey>()
+                .map { it.qualifier }
+                .filter { qualifier != it && qualifier.ind == it.ind }
+                .toSet()
+
+            for (k in candidates) {
+                val candidateExpr = k.toLeafExpr()
+
+                fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
+                    return IfExpr(
+                        rExpr.tryCastTo(exprInd)!!,
+                        getVar(QualifiedKey(fieldKey, k)).tryCastTo(exprInd)!!,
+                        ComparisonExpr(
+                            candidateExpr.tryCastTo(qualifierInd)!!,
+                            qualifier.key.toLeafExpr().tryCastTo(qualifierInd)!!,
+                            ComparisonOp.EQUAL
+                        )
+                    )
+                }
+
+                val newRExpr = inner(rExpr.ind, qualifier.ind)
+
+                toReturn = toReturn.withVarField(candidateExpr, fieldKey, newRExpr)
+            }
+
+            return toReturn
+        } else {
+            return withVarField(qualifier, fieldKey, rExpr)
+        }
+    }
+
+    /**
+     * [withVar], but specific to the [LValueFieldExpr] situation.
+     *
+     * Essentially just a utility method for [withVar].
+     */
+    private fun withVarField(qualifierExpr: Expr<*>, field: QualifiedKey.Field, rExpr: Expr<*>): Context {
         /**
          * This does look a bit scary, so I'll try to walk you through it:
          * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
@@ -216,27 +273,31 @@ class Context(
          *  which is exactly as desired.
          */
 
-        val qualifier = lExpr.qualifier
-        val fieldKey = lExpr.field
-
-        val objectsMentionedInQualifier =
-            qualifier.iterateTree()
+        val qualifiersMentionedInQualifierExpr: Set<Qualifier> =
+            qualifierExpr.iterateTree()
                 .filterIsInstance<LeafExpr<*>>()
                 .map { it.underlying }
                 .filterIsInstance<Qualifier>()
                 .toSet()
 
-        val newVariables = variables + objectsMentionedInQualifier.map {
-            val thisVarKey = QualifiedKey(fieldKey, it)
-            val newValue = qualifier.replaceTypeInLeaves<LeafExpr<*>>(fieldKey.ind) { expr ->
-                if (expr.underlying == it) {
+        val newVariables = variables.toMutableMap()
+
+        // For every distinct qualifier we mention...
+        for (qualifier in qualifiersMentionedInQualifierExpr) {
+            val thisVarKey = QualifiedKey(field, qualifier)
+            // grab whatever it's currently set to,
+            val existingExpr = getVar(thisVarKey)
+            // and replace it with the qualifier expression itself, but with each leaf
+            // replaced with either what we used to be, or [rExpr].
+            val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
+                if (expr.underlying == qualifier) {
                     rExpr
                 } else {
-                    getVar(thisVarKey)
+                    existingExpr
                 }
             }
 
-            (thisVarKey to newValue)
+            newVariables[thisVarKey] = newValue
         }
 
         return Context(newVariables, thisType, idx)
@@ -276,13 +337,7 @@ class Context(
         // finally, we avoid stomping over that newly created return value.
         for ((key, expr) in resolvedOther.withoutReturnValue().variables) {
             val lValue = if (key is QualifiedKey) {
-                LValueFieldExpr.new(
-                    key.field,
-                    when (key.qualifier) {
-                        is HeapMarker -> ConstExpr.fromHeapMarker(key.qualifier)
-                        is KeyBackreference -> key.qualifier.safelyResolveUsing(this)
-                    }
-                )
+                LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this))
             } else {
                 // Do nothing, just assign as normal.
                 LValueKeyExpr.new(key)
