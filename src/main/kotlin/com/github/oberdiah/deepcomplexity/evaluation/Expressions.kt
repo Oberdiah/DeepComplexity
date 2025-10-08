@@ -4,7 +4,6 @@ import com.github.oberdiah.deepcomplexity.evaluation.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -131,9 +130,9 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, field: QualifiedKey.FieldRef): Expr<*> {
-    return replaceTypeInLeaves<LeafExprWithKey>(field.ind) {
-        context.getVar(QualifiedKey(field, it.key))
+fun Expr<*>.getField(context: Context, field: QualifiedKey.Field): Expr<*> {
+    return replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
+        context.getVar(QualifiedKey(field, it.underlying as Qualifier))
     }
 }
 
@@ -295,12 +294,12 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
  * For example, the LValue `((x > 2) ? a : b).y`
  */
 data class LValueFieldExpr<T : Any>(
-    val field: QualifiedKey.FieldRef,
+    val field: QualifiedKey.Field,
     val qualifier: Expr<*>,
     override val ind: SetIndicator<T>
 ) : LValueExpr<T>() {
     companion object {
-        fun new(field: QualifiedKey.FieldRef, qualifier: Expr<*>): LValueFieldExpr<*> =
+        fun new(field: QualifiedKey.Field, qualifier: Expr<*>): LValueFieldExpr<*> =
             LValueFieldExpr(field, qualifier, field.ind)
     }
 
@@ -356,14 +355,8 @@ data class NumIterationTimesExpr<T : Number>(
     }
 }
 
-interface LeafExprWithKey {
-    val key: QualifierRef
-}
-
-sealed class LeafExpr<T : Any> : Expr<T>()
-
-data class ObjectExpr(override val key: HeapMarker) : LeafExpr<HeapMarker>(), LeafExprWithKey {
-    override val ind: ObjectSetIndicator = ObjectSetIndicator(key.type)
+sealed class LeafExpr<T : Any> : Expr<T>() {
+    abstract val underlying: Any
 }
 
 /**
@@ -374,9 +367,11 @@ data class ObjectExpr(override val key: HeapMarker) : LeafExpr<HeapMarker>(), Le
  */
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
-    override val key: Context.KeyBackreference,
+    override val underlying: Context.KeyBackreference,
     override val ind: SetIndicator<T>
-) : LeafExpr<T>(), LeafExprWithKey {
+) : LeafExpr<T>() {
+    val key: Context.KeyBackreference = underlying
+
     companion object {
         /**
          * This should only ever be called from a [Context]. Only contexts are allowed
@@ -387,7 +382,12 @@ data class VariableExpr<T : Any> private constructor(
     }
 }
 
-data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) : LeafExpr<T>() {
+/**
+ * Objects are represented as a [ConstExpr] with an underlying [HeapMarker].
+ */
+data class ConstExpr<T : Any>(override val underlying: T, override val ind: SetIndicator<T>) : LeafExpr<T>() {
+    val value: T = underlying
+
     companion object {
         val TRUE = ConstExpr(true, BooleanSetIndicator)
         val FALSE = ConstExpr(false, BooleanSetIndicator)
@@ -399,5 +399,6 @@ data class ConstExpr<T : Any>(val value: T, override val ind: SetIndicator<T>) :
             ConstExpr(ind.getOne(), ind)
 
         fun <T : Any> fromAny(value: T): ConstExpr<T> = ConstExpr(value, SetIndicator.fromValue(value))
+        fun fromHeapMarker(marker: HeapMarker): ConstExpr<HeapMarker> = fromAny(marker)
     }
 }

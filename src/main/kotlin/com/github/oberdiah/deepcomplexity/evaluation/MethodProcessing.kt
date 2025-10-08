@@ -385,7 +385,7 @@ object MethodProcessing {
 
             is PsiNewExpression -> {
                 val objType = psi.type!!
-                val newObj = ObjectExpr(HeapMarker.new(objType))
+                val newObj = ConstExpr.fromHeapMarker(HeapMarker.new(objType))
 
                 val methodContext = processMethod(context, psi)
 
@@ -415,7 +415,7 @@ object MethodProcessing {
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {
                 LValueFieldExpr.new(
-                    QualifiedKey.FieldRef(resolved),
+                    QualifiedKey.Field(resolved),
                     psi.qualifier?.let {
                         processPsiExpression(it, context)
                     }.orElse {

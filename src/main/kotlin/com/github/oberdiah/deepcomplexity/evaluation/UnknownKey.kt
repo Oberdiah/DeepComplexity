@@ -40,24 +40,24 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
 }
 
 /**
- * Things that can be qualifiers in a [QualifiedKey]. This is really just [HeapMarker]s and [UnknownKey]s.
+ * Things that can be qualifiers in a [QualifiedKey]. This is really just [HeapMarker]s and [Context.KeyBackreference]s.
  */
-sealed interface QualifierRef {
+sealed interface Qualifier {
     val ind: SetIndicator<*>
     fun isNew(): Boolean
-    fun addContextId(newId: Context.ContextId): QualifierRef
+    fun addContextId(newId: Context.ContextId): Qualifier
 }
 
-data class QualifiedKey(val field: FieldRef, val qualifier: QualifierRef) : UnknownKey() {
+data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey() {
     override val ind: SetIndicator<*> = this.field.ind
     override fun toString(): String = "$qualifier.$field"
     override fun addContextId(id: Context.ContextId): QualifiedKey = QualifiedKey(field, qualifier.addContextId(id))
     override fun isNewlyCreated(): Boolean = qualifier.isNew()
 
     /**
-     * This isn't a full key by itself, you'll need a [QualifierRef] as well and then will want to make a [QualifiedKey].
+     * This isn't a full key by itself, you'll need a [Qualifier] as well and then will want to make a [QualifiedKey].
      */
-    data class FieldRef(private val field: PsiField) {
+    data class Field(private val field: PsiField) {
         override fun toString(): String = field.toStringPretty()
         fun getElement(): PsiElement = field
         val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(field.type)

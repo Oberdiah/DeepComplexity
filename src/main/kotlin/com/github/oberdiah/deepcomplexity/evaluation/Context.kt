@@ -75,7 +75,7 @@ class Context(
      * [KeyBackreference]s must be very carefully resolved; they cannot be resolved in any context
      * they were created in. Only [Context]s have the ability to create and resolve them.
      */
-    data class KeyBackreference(private val key: UnknownKey, private val contextId: ContextId) : QualifierRef {
+    data class KeyBackreference(private val key: UnknownKey, private val contextId: ContextId) : Qualifier {
         override fun toString(): String = "$key'"
         override fun equals(other: Any?): Boolean = other is KeyBackreference && this.key == other.key
         override fun hashCode(): Int = key.hashCode()
@@ -221,14 +221,15 @@ class Context(
 
         val objectsMentionedInQualifier =
             qualifier.iterateTree()
-                .filterIsInstance<LeafExprWithKey>()
-                .map { it.key }
+                .filterIsInstance<LeafExpr<*>>()
+                .map { it.underlying }
+                .filterIsInstance<Qualifier>()
                 .toSet()
 
         val newVariables = variables + objectsMentionedInQualifier.map {
             val thisVarKey = QualifiedKey(fieldKey, it)
-            val newValue = qualifier.replaceTypeInLeaves<LeafExprWithKey>(fieldKey.ind) { expr ->
-                if (expr.key == it) {
+            val newValue = qualifier.replaceTypeInLeaves<LeafExpr<*>>(fieldKey.ind) { expr ->
+                if (expr.underlying == it) {
                     rExpr
                 } else {
                     getVar(thisVarKey)
@@ -278,7 +279,7 @@ class Context(
                 LValueFieldExpr.new(
                     key.field,
                     when (key.qualifier) {
-                        is HeapMarker -> ObjectExpr(key.qualifier)
+                        is HeapMarker -> ConstExpr.fromHeapMarker(key.qualifier)
                         is KeyBackreference -> key.qualifier.safelyResolveUsing(this)
                     }
                 )

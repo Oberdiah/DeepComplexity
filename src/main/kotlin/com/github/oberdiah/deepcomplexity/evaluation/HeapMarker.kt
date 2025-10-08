@@ -10,13 +10,13 @@ import com.intellij.psi.PsiType
 data class HeapMarker(
     private val idx: Int,
     val type: PsiType,
-) : QualifierRef {
+) : Qualifier {
     companion object {
         private var KEY_INDEX = 1
         fun new(type: PsiType): HeapMarker = HeapMarker(KEY_INDEX++, type)
     }
 
-    override fun addContextId(newId: Context.ContextId): QualifierRef = this
+    override fun addContextId(newId: Context.ContextId): Qualifier = this
     override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
     override fun toString(): String = "#$idx"
     override fun isNew(): Boolean = true
