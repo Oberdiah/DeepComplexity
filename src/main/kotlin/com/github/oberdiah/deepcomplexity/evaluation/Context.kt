@@ -188,21 +188,32 @@ class Context(
         // If we have it, return it.
         variables[key]?.let { return it }
 
-//        // If we don't, before we create a new variable expression we need to check in case there's a placeholder
-//        if (key is QualifiedKey) {
-//            val placeholderVersionOfTheKey =
-//                QualifiedKey(
-//                    key.field,
-//                    KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
-//                )
-//
-//            // Try to fetch that
-//            variables[placeholderVersionOfTheKey]?.let {
-//                it.replaceTypeInTree<> {  }
-//            }
-//        }
+        // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
+        if (key is QualifiedKey) {
+            val placeholderQualifierKey =
+                KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
+            val placeholderVersionOfTheKey = QualifiedKey(key.field, placeholderQualifierKey)
+            
+            variables[placeholderVersionOfTheKey]?.let {
+                val replacementQualified = VariableExpr.new(KeyBackreference(key, this.idx))
+                val replacementRaw = key.qualifier.toLeafExpr()
+                val p = KeyBackreference(placeholderVersionOfTheKey, this.idx)
 
-        // Ok now we really do have no choice
+                val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
+                    if (expr.key == p) {
+                        replacementQualified
+                    } else if (expr.key == placeholderQualifierKey) {
+                        replacementRaw
+                    } else {
+                        null
+                    }
+                }
+
+                return replacedExpr
+            }
+        }
+
+        // OK, now we really do have no choice
         return VariableExpr.new(KeyBackreference(key, idx))
     }
 

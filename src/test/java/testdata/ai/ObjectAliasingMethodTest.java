@@ -17,6 +17,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with conditional modification
+	@RequiredScore(1.0)
 	public static short conditionalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		conditionalModify(obj, obj);
@@ -31,6 +32,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with method chaining
+	@RequiredScore(1.0)
 	public static short chainingAliasing(short x) {
 		AliasClass obj = new AliasClass(5);
 		chainedModify(obj, obj);
@@ -44,6 +46,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with return value dependency
+	@RequiredScore(1.0)
 	public static short returnAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		return (short) modifyAndCheck(obj, obj);
@@ -55,6 +58,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with nested object references
+	@RequiredScore(1.0)
 	public static short nestedAliasing(short x) {
 		Container c1 = new Container(new AliasClass(0));
 		Container c2 = new Container(c1.inner);
@@ -238,6 +242,7 @@ public class ObjectAliasingMethodTest {
 	}
 	
 	// Testing aliasing with final parameter modification
+	@RequiredScore(1.0)
 	public static short finalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		finalModify(obj, obj);

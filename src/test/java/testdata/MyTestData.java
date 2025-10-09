@@ -1308,7 +1308,8 @@ public class MyTestData {
 		return (x > 0) ? 0 : (short) q.x;
 	}
 	
-	public static short go(short x) {
+	@RequiredScore(1.0)
+	public static short simpleClassTest36(short x) {
 		MyClass obj = new MyClass(1);
 		MyClass a = obj;
 		MyClass b = obj;
@@ -1319,6 +1320,7 @@ public class MyTestData {
 		return (short) obj.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest37(short x) {
 		MyClass obj = new MyClass(1);
 		if (x == x) {
@@ -1335,6 +1337,7 @@ public class MyTestData {
 		return (short) obj.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest38(short x) {
 		MyClass obj = new MyClass(1);
 		if (x == x) {
@@ -1421,6 +1424,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingTest(short x) {
 		MyClass a = new MyClass(1);
 		aliasingMethod(a, a);
@@ -1718,6 +1722,7 @@ public class MyTestData {
 		return (short) state.postIncrement();
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAllDifferent(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1725,6 +1730,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAeqB(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = a;
@@ -1732,6 +1738,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAeqC(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1739,6 +1746,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingBeqC(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1746,6 +1754,7 @@ public class MyTestData {
 		return (short) aliasingStresser(a, b, c);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingAllSame(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = a;
@@ -1767,6 +1776,7 @@ public class MyTestData {
 		return -1; // shouldn't happen
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleModifyAliasing(short x) {
 		MyClass obj = new MyClass(5);
 		directModify(obj, obj);
@@ -1781,6 +1791,7 @@ public class MyTestData {
 		a.x++;
 	}
 	
+	@RequiredScore(1.0)
 	public static short methodCallAliasing(short x) {
 		MyClass obj = new MyClass(5);
 		methodCallModify(obj, obj);
@@ -1793,6 +1804,7 @@ public class MyTestData {
 		a.addAndGet(8);
 	}
 	
+	@RequiredScore(1.0)
 	public static short aliasingTest3(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = a;
