@@ -228,22 +228,6 @@ class Context(
             throw IllegalArgumentException("This cannot happen")
         }
 
-        val qualifier = lExpr.qualifier
-        val fieldKey = lExpr.field
-
-        if (qualifier is VariableExpr<*>) {
-            return doAliasing(QualifiedKey(fieldKey, qualifier.key), rExpr)
-        } else {
-            return withVarField(qualifier, fieldKey, rExpr)
-        }
-    }
-
-    /**
-     * [withVar], but specific to the [LValueFieldExpr] situation.
-     *
-     * Essentially just a utility method for [withVar].
-     */
-    private fun withVarField(qualifierExpr: Expr<*>, field: QualifiedKey.Field, rExpr: Expr<*>): Context {
         /**
          * This does look a bit scary, so I'll try to walk you through it:
          * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
@@ -271,6 +255,9 @@ class Context(
          *  which is exactly as desired.
          */
 
+        val qualifierExpr = lExpr.qualifier
+        val field = lExpr.field
+
         val qualifiersMentionedInQualifierExpr: Set<Qualifier> =
             qualifierExpr.iterateTree()
                 .filterIsInstance<LeafExpr<*>>()
@@ -279,7 +266,6 @@ class Context(
                 .toSet()
 
         var newContext = this
-
         // For every distinct qualifier we mention...
         for (qualifier in qualifiersMentionedInQualifierExpr) {
             val thisVarKey = QualifiedKey(field, qualifier)
@@ -295,18 +281,17 @@ class Context(
                 }
             }
 
-            newContext = newContext.doAliasing(thisVarKey, newValue)
+            newContext = newContext.assignVariable(thisVarKey, newValue)
         }
-
         return newContext
     }
 
-    private fun doAliasing(qualifiedKey: QualifiedKey, rExpr: Expr<*>): Context {
+    private fun assignVariable(qualifiedKey: QualifiedKey, rExpr: Expr<*>): Context {
         val qualifier = qualifiedKey.qualifier
         val fieldKey = qualifiedKey.field
         val qualifierInd = qualifiedKey.qualifierInd
 
-        var toReturn = setVar(qualifiedKey, rExpr)
+        val newVariables = (variables + (qualifiedKey to rExpr)).toMutableMap()
 
         val candidates: Set<Qualifier> = variables.keys
             .filterIsInstance<QualifiedKey>()
@@ -331,14 +316,10 @@ class Context(
 
             val newRExpr = inner(rExpr.ind, qualifier.ind)
 
-            toReturn = toReturn.setVar(QualifiedKey(fieldKey, k), newRExpr)
+            newVariables[QualifiedKey(fieldKey, k)] = newRExpr
         }
 
-        return toReturn
-    }
-
-    private fun setVar(key: UnknownKey, expr: Expr<*>): Context {
-        return Context(variables + (key to expr), thisType, idx)
+        return Context(newVariables, thisType, idx)
     }
 
     private fun withVariablesResolvedBy(resolver: Context): Context {
