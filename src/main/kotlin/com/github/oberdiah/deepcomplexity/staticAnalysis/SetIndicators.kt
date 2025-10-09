@@ -12,6 +12,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVarianc
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.PsiType
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -184,7 +185,7 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
 
 class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarker::class) {
     override fun toString(): String {
-        return "ObjectSetIndicator($type)"
+        return "ObjectSetIndicator(${type.toStringPretty()})"
     }
 
     override fun newVariance(key: Key): Variances<HeapMarker> =

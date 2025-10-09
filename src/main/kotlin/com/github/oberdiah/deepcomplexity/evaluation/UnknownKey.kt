@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.Context.KeyBackreference
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
@@ -41,6 +42,31 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
 }
 
 /**
+ * Solely used to store any placeholder expression a type may have picked up
+ * due to aliasing. Thrown away after stacking.
+ *
+ * This is needed to allow relatively simple cases to work correctly, e.g.
+ * ```
+ * a.x = 5;
+ * if (b.x == 5) {
+ * 	// foo
+ * }
+ * ```
+ *
+ * In that example, the context would look as follows after a.x was assigned:
+ * ```
+ * {
+ *     a.x -> 5
+ *     Placeholder(T).x -> if (a == Placeholder(T)) ? 5 : Placeholder(T).x
+ * }
+ * ```
+ */
+data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
+    override val temporary: Boolean = true
+    override fun toString(): String = "(${ind.type.toStringPretty()})"
+}
+
+/**
  * Things that can be qualifiers in a [QualifiedKey]. This is really just [HeapMarker]s and [Context.KeyBackreference]s.
  */
 sealed interface Qualifier {
@@ -65,10 +91,12 @@ data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey
     override fun addContextId(id: Context.ContextId): QualifiedKey = QualifiedKey(field, qualifier.addContextId(id))
     override fun isNewlyCreated(): Boolean = qualifier.isNew()
 
-    fun aliasesAgainst(other: ObjectSetIndicator): UnknownKey? {
+    // This is a bit ugly.
+    // This whole situation is, really, with the recursive qualified key situation being so confusing.
+    fun isPlaceholder(): Boolean {
         return when (qualifier) {
-            is Context.KeyBackreference -> qualifier.aliasesAgainst(other)
-            is HeapMarker -> TODO("We need to sort this but I couldn't be bothered at the time")// if (other == qualifier.ind) qualifier else null
+            is KeyBackreference -> qualifier.isPlaceholder()
+            is HeapMarker -> false
         }
     }
 

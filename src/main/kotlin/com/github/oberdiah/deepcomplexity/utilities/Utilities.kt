@@ -94,6 +94,16 @@ object Utilities {
         }
     }
 
+    fun PsiType.toStringPretty(): String {
+        val name = "$this"
+        // If ":" exists, we want to remove it and everything before it
+        return if (name.contains(":")) {
+            name.substring(name.indexOf(":") + 1)
+        } else {
+            name
+        }
+    }
+
     fun PsiLocalVariable.toKey(): LocalVariableKey = LocalVariableKey(this)
     fun PsiParameter.toKey(): ParameterKey = ParameterKey(this)
 

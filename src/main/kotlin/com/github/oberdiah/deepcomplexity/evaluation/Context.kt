@@ -4,6 +4,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 typealias Vars = Map<UnknownKey, Expr<*>>
 
@@ -110,13 +111,10 @@ class Context(
 
         override fun toLeafExpr(): LeafExpr<*> = VariableExpr.new(this)
 
-        /**
-         * Is it possible that this backreference may refer to the provided indicator in any way?
-         */
-        fun aliasesAgainst(other: ObjectSetIndicator): UnknownKey? {
+        fun isPlaceholder(): Boolean {
             return when (key) {
-                is QualifiedKey -> key.aliasesAgainst(other)
-                else -> if (other == key.ind) key else null
+                is QualifiedKey -> key.isPlaceholder()
+                else -> key is PlaceholderKey
             }
         }
     }
@@ -187,7 +185,25 @@ class Context(
     }
 
     fun getVar(key: UnknownKey): Expr<*> {
-        return variables[key] ?: VariableExpr.new(KeyBackreference(key, idx))
+        // If we have it, return it.
+        variables[key]?.let { return it }
+
+//        // If we don't, before we create a new variable expression we need to check in case there's a placeholder
+//        if (key is QualifiedKey) {
+//            val placeholderVersionOfTheKey =
+//                QualifiedKey(
+//                    key.field,
+//                    KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
+//                )
+//
+//            // Try to fetch that
+//            variables[placeholderVersionOfTheKey]?.let {
+//                it.replaceTypeInTree<> {  }
+//            }
+//        }
+
+        // Ok now we really do have no choice
+        return VariableExpr.new(KeyBackreference(key, idx))
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
@@ -205,28 +221,31 @@ class Context(
         val qualifier = lExpr.qualifier
         val fieldKey = lExpr.field
 
-        if (qualifier is VariableExpr<*>) {
+        if (qualifier is VariableExpr<*>) { // This is too constrictive.
+            assertIs<ObjectSetIndicator>(qualifier.ind)
+
             var toReturn = withVarField(qualifier, fieldKey, rExpr)
 
             val candidates: Set<Qualifier> = variables.keys
                 .filterIsInstance<QualifiedKey>()
                 .map { it.qualifier }
                 .filter { qualifier != it && qualifier.ind == it.ind }
-                .toSet()
+                .toSet() + KeyBackreference(PlaceholderKey(qualifier.ind), this.idx)
 
             for (k in candidates) {
                 val candidateExpr = k.toLeafExpr()
 
                 fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
-                    return IfExpr(
-                        rExpr.tryCastTo(exprInd)!!,
-                        getVar(QualifiedKey(fieldKey, k)).tryCastTo(exprInd)!!,
-                        ComparisonExpr(
-                            candidateExpr.tryCastTo(qualifierInd)!!,
-                            qualifier.key.toLeafExpr().tryCastTo(qualifierInd)!!,
-                            ComparisonOp.EQUAL
-                        )
+                    val trueExpr = rExpr.tryCastTo(exprInd)!!
+                    val falseExpr = getVar(QualifiedKey(fieldKey, k)).tryCastTo(exprInd)!!
+
+                    val condition = ComparisonExpr(
+                        candidateExpr.tryCastTo(qualifierInd)!!,
+                        qualifier.key.toLeafExpr().tryCastTo(qualifierInd)!!,
+                        ComparisonOp.EQUAL
                     )
+
+                    return IfExpr(trueExpr, falseExpr, condition)
                 }
 
                 val newRExpr = inner(rExpr.ind, qualifier.ind)
@@ -329,7 +348,7 @@ class Context(
     fun stack(other: Context): Context {
         // Gotta not resolve returns here, as that wouldn't be the backward resolve that returns are supposed to be.
         // Returns still need to have other variables in their expressions resolved, though.
-        val resolvedOther = other.withVariablesResolvedBy(withoutReturnValue())
+        val resolvedOther = other.stripPlaceholderKeys().withVariablesResolvedBy(withoutReturnValue())
 
         // ...then we add that newly resolved return value to the new context,
         var newContext = resolvedOther.returnPair?.let { withAdditionalReturn(it.first, it.second) } ?: this
@@ -365,6 +384,17 @@ class Context(
 
     private fun stripTemporaryKeys(): Context {
         return Context(variables.filterKeys { !it.temporary }, thisType, idx)
+    }
+
+    private fun stripPlaceholderKeys(): Context {
+        return Context(
+            variables.filterKeys {
+                val isPlaceholder = it is PlaceholderKey || (it is QualifiedKey && it.isPlaceholder())
+                !isPlaceholder
+            },
+            thisType,
+            idx
+        )
     }
 
     fun withoutReturnValue(): Context {

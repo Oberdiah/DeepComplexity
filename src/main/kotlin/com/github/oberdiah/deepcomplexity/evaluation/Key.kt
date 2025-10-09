@@ -52,6 +52,7 @@ sealed class Key() {
             is ReturnKey -> 2
             is ExpressionKey -> 1
             is EphemeralKey -> 0
+            is PlaceholderKey -> 0
         }
     }
 
@@ -64,6 +65,7 @@ sealed class Key() {
             is VariableKey -> variable
             is QualifiedKey -> field.getElement()
             is ThisKey -> throw IllegalArgumentException("Cannot get element of this key")
+            is PlaceholderKey -> throw IllegalArgumentException("Cannot get element of placeholder key")
             is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
             is EphemeralKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
             is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")

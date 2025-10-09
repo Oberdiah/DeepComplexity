@@ -1308,7 +1308,7 @@ public class MyTestData {
 		return (x > 0) ? 0 : (short) q.x;
 	}
 	
-	public static short simpleClassTest36(short x) {
+	public static short go(short x) {
 		MyClass obj = new MyClass(1);
 		MyClass a = obj;
 		MyClass b = obj;
