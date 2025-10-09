@@ -192,6 +192,7 @@ object MethodProcessing {
                 psi.update?.let { processPsiStatement(it, bodyContext) }
 
                 LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
+                TODO("Loops haven't been implemented yet")
             }
 
             is PsiReturnStatement -> {
