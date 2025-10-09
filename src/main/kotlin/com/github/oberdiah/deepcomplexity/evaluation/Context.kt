@@ -193,7 +193,7 @@ class Context(
             val placeholderQualifierKey =
                 KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
             val placeholderVersionOfTheKey = QualifiedKey(key.field, placeholderQualifierKey)
-            
+
             variables[placeholderVersionOfTheKey]?.let {
                 val replacementQualified = VariableExpr.new(KeyBackreference(key, this.idx))
                 val replacementRaw = key.qualifier.toLeafExpr()
@@ -239,8 +239,9 @@ class Context(
 
             val candidates: Set<Qualifier> = variables.keys
                 .filterIsInstance<QualifiedKey>()
+                .filter { !it.isPlaceholder() }
                 .map { it.qualifier }
-                .filter { qualifier != it && qualifier.ind == it.ind }
+                .filter { qualifier.key != it && qualifier.ind == it.ind }
                 .toSet() + KeyBackreference(PlaceholderKey(qualifier.ind), this.idx)
 
             for (k in candidates) {
