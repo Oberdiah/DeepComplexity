@@ -305,7 +305,7 @@ class Context(
     private fun doAliasing(qualifier: VariableExpr<*>, fieldKey: QualifiedKey.Field, rExpr: Expr<*>): Context {
         assertIs<ObjectSetIndicator>(qualifier.ind)
 
-        var toReturn = withVarField(qualifier, fieldKey, rExpr)
+        var toReturn = setVar(QualifiedKey(fieldKey, qualifier.key), rExpr)
 
         val candidates: Set<Qualifier> = variables.keys
             .filterIsInstance<QualifiedKey>()
@@ -315,14 +315,12 @@ class Context(
             .toSet() + KeyBackreference(PlaceholderKey(qualifier.ind), this.idx)
 
         for (k in candidates) {
-            val candidateExpr = k.toLeafExpr()
-
             fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
                 val trueExpr = rExpr.tryCastTo(exprInd)!!
                 val falseExpr = getVar(QualifiedKey(fieldKey, k)).tryCastTo(exprInd)!!
 
                 val condition = ComparisonExpr(
-                    candidateExpr.tryCastTo(qualifierInd)!!,
+                    k.toLeafExpr().tryCastTo(qualifierInd)!!,
                     qualifier.key.toLeafExpr().tryCastTo(qualifierInd)!!,
                     ComparisonOp.EQUAL
                 )
@@ -332,10 +330,14 @@ class Context(
 
             val newRExpr = inner(rExpr.ind, qualifier.ind)
 
-            toReturn = toReturn.withVarField(candidateExpr, fieldKey, newRExpr)
+            toReturn = toReturn.setVar(QualifiedKey(fieldKey, k), newRExpr)
         }
 
         return toReturn
+    }
+
+    private fun setVar(key: UnknownKey, expr: Expr<*>): Context {
+        return Context(variables + (key to expr), thisType, idx)
     }
 
     private fun withVariablesResolvedBy(resolver: Context): Context {
