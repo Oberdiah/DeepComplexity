@@ -87,6 +87,9 @@ sealed interface Qualifier {
 
 data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey() {
     override val ind: SetIndicator<*> = this.field.ind
+
+    val qualifierInd: ObjectSetIndicator = qualifier.ind as ObjectSetIndicator
+
     override fun toString(): String = "$qualifier.$field"
     override fun addContextId(id: Context.ContextId): QualifiedKey = QualifiedKey(field, qualifier.addContextId(id))
     override fun isNewlyCreated(): Boolean = qualifier.isNew()

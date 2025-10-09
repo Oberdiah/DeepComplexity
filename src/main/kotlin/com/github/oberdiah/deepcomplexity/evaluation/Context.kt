@@ -4,7 +4,6 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 typealias Vars = Map<UnknownKey, Expr<*>>
 
@@ -233,7 +232,7 @@ class Context(
         val fieldKey = lExpr.field
 
         if (qualifier is VariableExpr<*>) {
-            return doAliasing(qualifier, fieldKey, rExpr)
+            return doAliasing(QualifiedKey(fieldKey, qualifier.key), rExpr)
         } else {
             return withVarField(qualifier, fieldKey, rExpr)
         }
@@ -302,17 +301,19 @@ class Context(
         return Context(newVariables, thisType, idx)
     }
 
-    private fun doAliasing(qualifier: VariableExpr<*>, fieldKey: QualifiedKey.Field, rExpr: Expr<*>): Context {
-        assertIs<ObjectSetIndicator>(qualifier.ind)
+    private fun doAliasing(qualifiedKey: QualifiedKey, rExpr: Expr<*>): Context {
+        val qualifier = qualifiedKey.qualifier
+        val fieldKey = qualifiedKey.field
+        val qualifierInd = qualifiedKey.qualifierInd
 
-        var toReturn = setVar(QualifiedKey(fieldKey, qualifier.key), rExpr)
+        var toReturn = setVar(qualifiedKey, rExpr)
 
         val candidates: Set<Qualifier> = variables.keys
             .filterIsInstance<QualifiedKey>()
             .filter { !it.isPlaceholder() }
             .map { it.qualifier }
-            .filter { qualifier.key != it && qualifier.ind == it.ind }
-            .toSet() + KeyBackreference(PlaceholderKey(qualifier.ind), this.idx)
+            .filter { qualifier != it && qualifier.ind == it.ind }
+            .toSet() + KeyBackreference(PlaceholderKey(qualifierInd), this.idx)
 
         for (k in candidates) {
             fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
@@ -321,7 +322,7 @@ class Context(
 
                 val condition = ComparisonExpr(
                     k.toLeafExpr().tryCastTo(qualifierInd)!!,
-                    qualifier.key.toLeafExpr().tryCastTo(qualifierInd)!!,
+                    qualifier.toLeafExpr().tryCastTo(qualifierInd)!!,
                     ComparisonOp.EQUAL
                 )
 
