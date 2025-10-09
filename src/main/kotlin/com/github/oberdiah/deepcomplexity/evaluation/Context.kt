@@ -222,8 +222,7 @@ class Context(
         }
 
         if (lExpr is LValueKeyExpr) {
-            val castVar = rExpr.castToUsingTypeCast(lExpr.key.ind, false)
-            return Context(variables + (lExpr.key to castVar), thisType, idx)
+            return withVar(lExpr.key, rExpr)
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
@@ -281,17 +280,24 @@ class Context(
                 }
             }
 
-            newContext = newContext.assignVariable(thisVarKey, newValue)
+            newContext = newContext.withVar(thisVarKey, newValue)
         }
+        
         return newContext
     }
 
-    private fun assignVariable(qualifiedKey: QualifiedKey, rExpr: Expr<*>): Context {
-        val qualifier = qualifiedKey.qualifier
-        val fieldKey = qualifiedKey.field
-        val qualifierInd = qualifiedKey.qualifierInd
+    private fun withVar(key: UnknownKey, uncastExpr: Expr<*>): Context {
+        val rExpr = uncastExpr.castToUsingTypeCast(key.ind, false)
 
-        val newVariables = (variables + (qualifiedKey to rExpr)).toMutableMap()
+        if (key !is QualifiedKey) {
+            return Context(variables + (key to rExpr), thisType, idx)
+        }
+
+        val newVariables = (variables + (key to rExpr)).toMutableMap()
+
+        val qualifier = key.qualifier
+        val fieldKey = key.field
+        val qualifierInd = key.qualifierInd
 
         val candidates: Set<Qualifier> = variables.keys
             .filterIsInstance<QualifiedKey>()
