@@ -142,6 +142,8 @@ class Context(
 
                         // This equality is probably not very cheap.
                         // I'm sure that can be improved in the future.
+                        // EXPR_EQUALITY_PERF_ISSUE (Note: this is the only one of these flags, I removed the other
+                        // which used to be in [StaticExpressionComparisonAnalysis] as)
                         if (aVal == bVal) {
                             // Safety: We know that at least one is not null, so both must be non-null in here.
                             aVal!!
@@ -322,13 +324,13 @@ class Context(
                 val trueExpr = rExpr.tryCastTo(exprInd)!!
                 val falseExpr = getVar(aliasingKey).tryCastTo(exprInd)!!
 
-                val condition = ComparisonExpr(
+                val condition = ComparisonExpr.new(
                     aliasingKey.qualifier.toLeafExpr().tryCastTo(qualifierInd)!!,
                     qualifier.toLeafExpr().tryCastTo(qualifierInd)!!,
                     ComparisonOp.EQUAL
                 )
 
-                return IfExpr(trueExpr, falseExpr, condition)
+                return IfExpr.new(trueExpr, falseExpr, condition)
             }
 
             val newRExpr = inner(rExpr.ind, qualifier.ind)

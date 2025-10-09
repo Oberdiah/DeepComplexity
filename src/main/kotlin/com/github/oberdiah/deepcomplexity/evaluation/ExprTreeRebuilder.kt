@@ -31,7 +31,7 @@ object ExprTreeRebuilder {
                 replaceTreeLeaves(expr.rhs, replacer),
             )
 
-            is IfExpr -> IfExpr(
+            is IfExpr -> IfExpr.newRaw(
                 replaceTreeLeaves(expr.trueExpr, replacer),
                 replaceTreeLeaves(expr.falseExpr, replacer),
                 expr.thisCondition,
@@ -118,7 +118,7 @@ object ExprTreeRebuilder {
             )
 
             is ComparisonExpr<*> -> {
-                fun <T : Any> extra(expr: ComparisonExpr<T>): ComparisonExpr<T> = ComparisonExpr(
+                fun <T : Any> extra(expr: ComparisonExpr<T>): Expr<Boolean> = ComparisonExpr.new(
                     rebuildTree(expr.lhs, replacer),
                     rebuildTree(expr.rhs, replacer),
                     expr.comp,
@@ -147,7 +147,7 @@ object ExprTreeRebuilder {
                 rebuildTree(expr.rhs, replacer),
             )
 
-            is IfExpr -> IfExpr(
+            is IfExpr -> IfExpr.newRaw(
                 rebuildTree(expr.trueExpr, replacer),
                 rebuildTree(expr.falseExpr, replacer),
                 rebuildTree(expr.thisCondition, replacer),

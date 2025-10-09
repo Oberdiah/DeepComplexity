@@ -541,7 +541,7 @@ object MethodProcessing {
             )
                 .map { lhs, rhs ->
                     return@map when {
-                        comparisonOp != null -> ComparisonExpr(lhs, rhs, comparisonOp)
+                        comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)
                         binaryNumberOp != null -> ArithmeticExpr(lhs, rhs, binaryNumberOp)
                         else -> TODO("Unsupported binary operation: $tokenType ($lhsPrecast, $rhsPrecast)")
                     }

@@ -1,5 +1,6 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.github.oberdiah.deepcomplexity.evaluation.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
@@ -186,11 +187,20 @@ data class ArithmeticExpr<T : Number>(
         get() = lhs.ind
 }
 
-data class ComparisonExpr<T : Any>(
+
+@ConsistentCopyVisibility
+data class ComparisonExpr<T : Any> private constructor(
     val lhs: Expr<T>,
     val rhs: Expr<T>,
     val comp: ComparisonOp,
 ) : Expr<Boolean>() {
+    companion object {
+        fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
+            StaticExpressionComparisonAnalysis.attemptToSimplify(lhs, rhs, comp)?.let { return it }
+            return ComparisonExpr(lhs, rhs, comp)
+        }
+    }
+
     init {
         assert(lhs.ind == rhs.ind) {
             "Comparing expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -214,7 +224,8 @@ data class TypeCastExpr<T : Any, Q : Any>(
     val explicit: Boolean,
 ) : Expr<T>()
 
-data class IfExpr<T : Any>(
+@ConsistentCopyVisibility
+data class IfExpr<T : Any> private constructor(
     val trueExpr: Expr<T>,
     val falseExpr: Expr<T>,
     val thisCondition: Expr<Boolean>,
@@ -229,15 +240,26 @@ data class IfExpr<T : Any>(
         get() = trueExpr.ind
 
     companion object {
+        /**
+         * Like [new], but doesn't do any optimisations. Should only really be used during tree traversal.
+         */
+        fun <T : Any> newRaw(a: Expr<T>, b: Expr<T>, condition: Expr<Boolean>): IfExpr<T> = IfExpr(a, b, condition)
+
         fun <A : Any, B : Any> new(
             a: Expr<A>,
             b: Expr<B>,
             condition: Expr<Boolean>
         ): Expr<A> {
-            val castB = b.tryCastTo(a.ind)
+            val b = b.tryCastTo(a.ind)
                 ?: throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
 
-            return IfExpr(a, castB, condition)
+            if (condition == ConstExpr.TRUE) {
+                return a
+            } else if (condition == ConstExpr.FALSE) {
+                return b
+            }
+
+            return IfExpr(a, b, condition)
         }
     }
 }

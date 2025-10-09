@@ -36,13 +36,13 @@ object ExprConstrain {
 
             is ComparisonExpr<*> -> {
                 fun <Q : Any> extra(me: ComparisonExpr<Q>): Expr<Boolean> =
-                    ComparisonExpr(me.lhs, me.rhs, me.comp.invert())
+                    ComparisonExpr.new(me.lhs, me.rhs, me.comp.invert())
                 extra(expr)
             }
 
             is ConstExpr -> ConstExpr(!expr.value, expr.ind)
             is IfExpr -> {
-                IfExpr(
+                IfExpr.new(
                     expr.thisCondition,
                     expr.falseExpr.inverted(),
                     expr.trueExpr.inverted()
