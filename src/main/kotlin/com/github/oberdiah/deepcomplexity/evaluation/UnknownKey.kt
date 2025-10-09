@@ -63,7 +63,7 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
  */
 data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
     override val temporary: Boolean = true
-    override fun toString(): String = "(${ind.type.toStringPretty()})"
+    override fun toString(): String = "PH(${ind.type.toStringPretty()})"
 }
 
 /**

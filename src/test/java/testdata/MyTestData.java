@@ -1356,6 +1356,18 @@ public class MyTestData {
 		return (short) obj.x;
 	}
 	
+	public static short simpleClassTest39(short x) {
+		MyClass obj1 = new MyClass(1);
+		MyClass obj2 = obj1;
+		if (x > 0) {
+			obj1.x++;
+			((x > 2) ? obj2 : obj2).x++;
+			return (short) obj1.x;
+		}
+		
+		return -5;
+	}
+	
 	private static void updateNesting(MyNestingClass nesting, int val) {
 		nesting.nested.x = val;
 	}
