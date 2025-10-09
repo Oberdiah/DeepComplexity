@@ -216,6 +216,12 @@ class Context(
         return VariableExpr.new(KeyBackreference(key, idx))
     }
 
+    /**
+     * Sets the given l-value expression to the provided [rExpr], returning a new context.
+     *
+     * This operation may not just update a single variable; if the l-value expression
+     * is a field expression, we may end up doing quite a bit.
+     */
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
         assert(rExpr.iterateTree().none { it is LValueExpr }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
@@ -269,7 +275,7 @@ class Context(
         for (qualifier in qualifiersMentionedInQualifierExpr) {
             val thisVarKey = QualifiedKey(field, qualifier)
             // grab whatever it's currently set to,
-            val existingExpr = getVar(thisVarKey)
+            val existingExpr = newContext.getVar(thisVarKey)
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
             val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
@@ -280,13 +286,15 @@ class Context(
                 }
             }
 
+            // In the simple cases this will just perform a basic assignment, but
+            // in reality under the hood it may do other stuff due to aliasing.
             newContext = newContext.withVar(thisVarKey, newValue)
         }
-        
+
         return newContext
     }
 
-    private fun withVar(key: UnknownKey, uncastExpr: Expr<*>): Context {
+    fun withVar(key: UnknownKey, uncastExpr: Expr<*>): Context {
         val rExpr = uncastExpr.castToUsingTypeCast(key.ind, false)
 
         if (key !is QualifiedKey) {
@@ -299,20 +307,23 @@ class Context(
         val fieldKey = key.field
         val qualifierInd = key.qualifierInd
 
-        val candidates: Set<Qualifier> = variables.keys
+        val potentialAliasers: Set<QualifiedKey> = variables.keys
             .filterIsInstance<QualifiedKey>()
-            .filter { !it.isPlaceholder() }
-            .map { it.qualifier }
-            .filter { qualifier != it && qualifier.ind == it.ind }
-            .toSet() + KeyBackreference(PlaceholderKey(qualifierInd), this.idx)
+            .filter {
+                !it.isPlaceholder()
+                        && qualifier != it.qualifier
+                        && fieldKey == it.field
+                        && qualifier.ind == it.qualifier.ind
+            }
+            .toSet() + QualifiedKey(fieldKey, KeyBackreference(PlaceholderKey(qualifierInd), this.idx))
 
-        for (k in candidates) {
+        for (aliasingKey in potentialAliasers) {
             fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
                 val trueExpr = rExpr.tryCastTo(exprInd)!!
-                val falseExpr = getVar(QualifiedKey(fieldKey, k)).tryCastTo(exprInd)!!
+                val falseExpr = getVar(aliasingKey).tryCastTo(exprInd)!!
 
                 val condition = ComparisonExpr(
-                    k.toLeafExpr().tryCastTo(qualifierInd)!!,
+                    aliasingKey.qualifier.toLeafExpr().tryCastTo(qualifierInd)!!,
                     qualifier.toLeafExpr().tryCastTo(qualifierInd)!!,
                     ComparisonOp.EQUAL
                 )
@@ -322,7 +333,7 @@ class Context(
 
             val newRExpr = inner(rExpr.ind, qualifier.ind)
 
-            newVariables[QualifiedKey(fieldKey, k)] = newRExpr
+            newVariables[aliasingKey] = newRExpr
         }
 
         return Context(newVariables, thisType, idx)
