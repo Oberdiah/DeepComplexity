@@ -1356,6 +1356,7 @@ public class MyTestData {
 		return (short) obj.x;
 	}
 	
+	@RequiredScore(1.0)
 	public static short simpleClassTest39(short x) {
 		MyClass obj1 = new MyClass(1);
 		MyClass obj2 = obj1;

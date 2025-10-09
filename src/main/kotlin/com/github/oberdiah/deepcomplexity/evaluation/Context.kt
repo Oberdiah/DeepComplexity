@@ -278,7 +278,7 @@ class Context(
                 .filterIsInstance<Qualifier>()
                 .toSet()
 
-        val newVariables = variables.toMutableMap()
+        var newContext = this
 
         // For every distinct qualifier we mention...
         for (qualifier in qualifiersMentionedInQualifierExpr) {
@@ -295,10 +295,10 @@ class Context(
                 }
             }
 
-            newVariables[thisVarKey] = newValue
+            newContext = newContext.doAliasing(thisVarKey, newValue)
         }
 
-        return Context(newVariables, thisType, idx)
+        return newContext
     }
 
     private fun doAliasing(qualifiedKey: QualifiedKey, rExpr: Expr<*>): Context {
