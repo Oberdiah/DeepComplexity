@@ -46,9 +46,17 @@ object ExprEvaluate {
     fun <T : Any> evaluate(expr: Expr<T>, scope: Scope, skipSimplify: Boolean = false): Bundle<T> {
         @Suppress("UNCHECKED_CAST")
         val evaluatedBundle = when (expr.ind) {
-            is NumberSetIndicator<*> -> evaluateNums(expr.castToNumbers(), scope)
+            is NumberSetIndicator<*> -> {
+                // Split into two lines for nicer debugging
+                val castExpr = expr.castToNumbers()
+                evaluateNums(castExpr, scope)
+            }
+
             is ObjectSetIndicator -> evaluateGenerics(expr as Expr<*>, scope)
-            BooleanSetIndicator -> evaluateBools(expr.castToBoolean(), scope)
+            BooleanSetIndicator -> {
+                val castExpr = expr.castToBoolean()
+                evaluateBools(castExpr, scope)
+            }
         } as Bundle<T>
 
         return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)

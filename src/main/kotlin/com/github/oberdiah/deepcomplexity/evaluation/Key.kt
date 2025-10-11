@@ -21,18 +21,14 @@ sealed class Key() {
         override fun toString(): String = ExprToString.toExprKeyString(expr)
     }
 
-    /**
-     * Primarily for testing, doesn't have a specific element.
-     */
-    data class EphemeralKey(val key: Any) : Key() {
+    object EphemeralKey : Key() {
         override val ind: SetIndicator<*>
             get() = throw IllegalStateException("Ephemeral keys don't have a type.")
 
-        override fun toString(): String = "#$key"
+        override fun toString(): String = "E"
 
-        companion object {
-            private var KEY_INDEX = 0
-            fun new(): EphemeralKey = EphemeralKey(KEY_INDEX++)
+        fun new(): EphemeralKey {
+            return EphemeralKey
         }
     }
 

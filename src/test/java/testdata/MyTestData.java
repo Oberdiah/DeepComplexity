@@ -112,6 +112,16 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	public static short incrementTest3(short x) {
+		int a = 0;
+		a++;
+		a++;
+		a++;
+		a++;
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
 	public static short decrementTest(short x) {
 		int a = x;
 		int b = a--;
