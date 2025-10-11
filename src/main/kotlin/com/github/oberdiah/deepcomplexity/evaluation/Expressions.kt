@@ -75,6 +75,23 @@ sealed class Expr<T : Any>() {
         })
     }
 
+    /**
+     * Recursively calls [simplify] on every node in the tree, rebuilding the tree as it goes.
+     */
+    fun optimise(): Expr<T> {
+        return rebuildTree(object : ExprTreeRebuilder.Replacer {
+            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
+                return expr.simplify()
+            }
+        })
+    }
+
+    /**
+     * Simplifies the expression if possible.
+     * Does not operate recursively.
+     */
+    open fun simplify(): Expr<T> = this
+
     fun evaluate(scope: ExprEvaluate.Scope): Bundle<T> = ExprEvaluate.evaluate(this, scope)
     fun dStr(): String = ExprToString.toDebugString(this)
 }
@@ -195,11 +212,18 @@ data class ComparisonExpr<T : Any> private constructor(
     val comp: ComparisonOp,
 ) : Expr<Boolean>() {
     companion object {
+        fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> =
+            ComparisonExpr(lhs, rhs, comp)
+
         fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
-            StaticExpressionComparisonAnalysis.attemptToSimplify(lhs, rhs, comp)?.let { return it }
+            StaticExpressionComparisonAnalysis.attemptToSimplify(lhs, rhs, comp)?.let {
+                return it
+            }
             return ComparisonExpr(lhs, rhs, comp)
         }
     }
+
+    override fun simplify(): Expr<Boolean> = new(lhs, rhs, comp)
 
     init {
         assert(lhs.ind == rhs.ind) {
@@ -239,27 +263,48 @@ data class IfExpr<T : Any> private constructor(
     override val ind: SetIndicator<T>
         get() = trueExpr.ind
 
+    override fun simplify(): Expr<T> = new(trueExpr, falseExpr, thisCondition)
+
     companion object {
         /**
-         * Like [new], but doesn't do any optimisations. Should only really be used during tree traversal.
+         * Like [new], but perform on-the-fly optimisations. Should only really be used during tree traversal.
+         *
+         * A tree replacement traversal relies on the only changes coming from the replacer itself -
+         * if we did our own optimisations, we could end up in a situation where a replacer sees the same
+         * expression more than once.
+         *
+         * For example,
+         * ```kotlin
+         * if (x > 6) {
+         *      if (x == x) {
+         *          a
+         *      } else {
+         *          b
+         *      }
+         * }
+         * ```
+         * If we ran the above through an identity replacer it would end up seeing `a` twice. Once when it parsed
+         * the original leaf node, and then again once the inner if was optimised away. This would obviously
+         * be incorrect.
          */
-        fun <T : Any> newRaw(a: Expr<T>, b: Expr<T>, condition: Expr<Boolean>): IfExpr<T> = IfExpr(a, b, condition)
+        fun <T : Any> newRaw(trueExpr: Expr<T>, falseExpr: Expr<T>, condition: Expr<Boolean>): IfExpr<T> =
+            IfExpr(trueExpr, falseExpr, condition)
 
         fun <A : Any, B : Any> new(
-            a: Expr<A>,
-            b: Expr<B>,
+            trueExpr: Expr<A>,
+            falseExpr: Expr<B>,
             condition: Expr<Boolean>
         ): Expr<A> {
-            val b = b.tryCastTo(a.ind)
-                ?: throw IllegalStateException("Incompatible types in if statement: ${a.ind} and ${b.ind}")
+            val b = falseExpr.tryCastTo(trueExpr.ind)
+                ?: throw IllegalStateException("Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}")
 
             if (condition == ConstExpr.TRUE) {
-                return a
+                return trueExpr
             } else if (condition == ConstExpr.FALSE) {
                 return b
             }
 
-            return IfExpr(a, b, condition)
+            return IfExpr(trueExpr, b, condition)
         }
     }
 }

@@ -17,6 +17,8 @@ sealed class UnknownKey : Key() {
      * Most keys don't need to worry about this.
      */
     open fun addContextId(id: Context.ContextId): UnknownKey = this
+
+    open fun isPlaceholder(): Boolean = false
 }
 
 sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {
@@ -64,6 +66,7 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
 data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
     override val temporary: Boolean = true
     override fun toString(): String = "PH(${ind.type.toStringPretty()})"
+    override fun isPlaceholder(): Boolean = true
 }
 
 /**
@@ -96,7 +99,7 @@ data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey
 
     // This is a bit ugly.
     // This whole situation is, really, with the recursive qualified key situation being so confusing.
-    fun isPlaceholder(): Boolean {
+    override fun isPlaceholder(): Boolean {
         return when (qualifier) {
             is KeyBackreference -> qualifier.isPlaceholder()
             is HeapMarker -> false

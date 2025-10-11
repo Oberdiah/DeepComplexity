@@ -6,6 +6,11 @@ object StaticExpressionComparisonAnalysis {
      * trivial comparisons from going to the full evaluation engine.
      */
     fun <T : Any> attemptToSimplify(rhs: Expr<T>, lhs: Expr<T>, comp: ComparisonOp): Expr<Boolean>? {
+        // To disable optimisations for testing purposes:
+//        if (true) {
+//            return null
+//        }
+
         return when (comp) {
             ComparisonOp.LESS_THAN -> null
             ComparisonOp.LESS_THAN_OR_EQUAL -> null
@@ -49,6 +54,11 @@ object StaticExpressionComparisonAnalysis {
         }
         if (lhs is VariableExpr<*> && rhs is VariableExpr<*>) {
             return lhs.key == rhs.key
+        }
+        if (lhs is TypeCastExpr<*, *> && rhs is TypeCastExpr<*, *>) {
+            if (lhs.ind == rhs.ind && lhs.explicit == rhs.explicit) {
+                return guaranteedEqual(lhs.expr, rhs.expr)
+            }
         }
         return false
     }

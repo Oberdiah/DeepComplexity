@@ -110,12 +110,7 @@ class Context(
 
         override fun toLeafExpr(): LeafExpr<*> = VariableExpr.new(this)
 
-        fun isPlaceholder(): Boolean {
-            return when (key) {
-                is QualifiedKey -> key.isPlaceholder()
-                else -> key is PlaceholderKey
-            }
-        }
+        fun isPlaceholder(): Boolean = key.isPlaceholder()
     }
 
     companion object {
@@ -175,14 +170,20 @@ class Context(
         get() = returnKey?.let { Pair(it, returnValue!!) }
 
     override fun toString(): String {
-        val variablesString =
-            variables.entries.joinToString("\n") { entry ->
-                val expr = entry.value
-                val key = entry.key
-
-                "$key:\n${expr.toString().prependIndent()}"
+        val nonPlaceholderVariablesString =
+            variables.filterKeys { !it.isPlaceholder() }.entries.joinToString("\n") { entry ->
+                "${entry.key}:\n${entry.value.toString().prependIndent()}"
             }
-        return "Context: {\n${variablesString.prependIndent()}\n}"
+        val placeholderVariablesString =
+            variables.filterKeys { it.isPlaceholder() }.entries.joinToString("\n") { entry ->
+                "${entry.key}:\n${entry.value.toString().prependIndent()}"
+            }
+        return "Context: {\n" + nonPlaceholderVariablesString.prependIndent() + "\n" +
+                if (placeholderVariablesString.isNotEmpty()) {
+                    "################\n${placeholderVariablesString.prependIndent()}\n"
+                } else {
+                    ""
+                } + "}"
     }
 
     fun getVar(key: UnknownKey): Expr<*> {
@@ -357,7 +358,7 @@ class Context(
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
             varExpr.key.safelyResolveUsing(this)
-        }
+        }.optimise()
 
     /**
      * Stacks the later context on top of this one.
@@ -406,14 +407,7 @@ class Context(
     }
 
     private fun stripPlaceholderKeys(): Context {
-        return Context(
-            variables.filterKeys {
-                val isPlaceholder = it is PlaceholderKey || (it is QualifiedKey && it.isPlaceholder())
-                !isPlaceholder
-            },
-            thisType,
-            idx
-        )
+        return Context(variables.filterKeys { !it.isPlaceholder() }, thisType, idx)
     }
 
     fun withoutReturnValue(): Context {

@@ -19,7 +19,7 @@ object ExprTreeRebuilder {
      * leaves too, just can't change their type).
      *
      * This replacement only works on a subset of all expressions (only expressions where every node can
-     * take any type, so no `ArithmeticExpression`, `ComparisonExpression`, etc.),
+     * take any type, so no `ArithmeticExpression`, `ComparisonExpression`, etc.).
      */
     fun <T : Any> replaceTreeLeaves(
         expr: Expr<*>,
@@ -63,21 +63,30 @@ object ExprTreeRebuilder {
         fun <T : Any> replace(expr: Expr<T>): Expr<T>
     }
 
+    /**
+     * Rebuilds the expression tree, replacing nodes using the given [Replacer].
+     *
+     * This performs a post-order traversal (bottom-up replacement) of the tree. This means children are
+     * always fully replaced before their parents, and parents operate on the results of their children's
+     * replacements.
+     *
+     * This can be very helpful for optimisations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
+     */
     fun <T : Any> rebuildTree(
         expr: Expr<T>,
         replacer: Replacer
     ): Expr<T> {
-        return replacer.replace(
-            @Suppress("UNCHECKED_CAST")
-            when (expr.ind) {
-                is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as Expr<T>
-                is ObjectSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer) as Expr<T>
-                BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer) as Expr<T>
-            }
-        )
+        @Suppress("UNCHECKED_CAST")
+        val rebuiltExpr = when (expr.ind) {
+            is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as Expr<T>
+            is ObjectSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer) as Expr<T>
+            BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer) as Expr<T>
+        }
+
+        return replacer.replace(rebuiltExpr)
     }
 
-    fun <T : Number> rebuildTreeNums(
+    private fun <T : Number> rebuildTreeNums(
         expr: Expr<T>,
         replacer: Replacer
     ): Expr<T> {
@@ -102,7 +111,7 @@ object ExprTreeRebuilder {
         }
     }
 
-    fun rebuildTreeBooleans(
+    private fun rebuildTreeBooleans(
         expr: Expr<Boolean>,
         replacer: Replacer
     ): Expr<Boolean> {
@@ -118,7 +127,7 @@ object ExprTreeRebuilder {
             )
 
             is ComparisonExpr<*> -> {
-                fun <T : Any> extra(expr: ComparisonExpr<T>): Expr<Boolean> = ComparisonExpr.new(
+                fun <T : Any> extra(expr: ComparisonExpr<T>): Expr<Boolean> = ComparisonExpr.newRaw(
                     rebuildTree(expr.lhs, replacer),
                     rebuildTree(expr.rhs, replacer),
                     expr.comp,
@@ -130,14 +139,14 @@ object ExprTreeRebuilder {
         }
     }
 
-    fun <T : Any> rebuildTreeGenerics(
+    private fun <T : Any> rebuildTreeGenerics(
         expr: Expr<T>,
         replacer: Replacer
     ): Expr<T> {
         return rebuildTreeAnythings(expr, replacer)
     }
 
-    fun <T : Any> rebuildTreeAnythings(
+    private fun <T : Any> rebuildTreeAnythings(
         expr: Expr<T>,
         replacer: Replacer
     ): Expr<T> {
