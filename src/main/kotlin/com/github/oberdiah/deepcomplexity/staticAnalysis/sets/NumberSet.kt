@@ -227,7 +227,8 @@ data class NumberSet<T : Number> private constructor(
                 if (mySmallestPossibleValue == myLargestPossibleValue &&
                     otherSmallestPossibleValue == otherLargestPossibleValue &&
                     mySmallestPossibleValue == otherSmallestPossibleValue
-                ) { // We can only sure we are equal if we're both literally a single value, otherwise there's uncertainty there.
+                ) {
+                    // We can only sure we are equal if we're both literally a single value, otherwise there's uncertainty there.
                     return BooleanSet.TRUE
                 } else if (myLargestPossibleValue < otherSmallestPossibleValue ||
                     mySmallestPossibleValue > otherLargestPossibleValue
@@ -245,6 +246,7 @@ data class NumberSet<T : Number> private constructor(
                     otherSmallestPossibleValue == otherLargestPossibleValue &&
                     mySmallestPossibleValue == otherSmallestPossibleValue
                 ) {
+                    // We know for sure we're equal, thus NOT_EQUAL is guaranteed false.
                     return BooleanSet.FALSE
                 }
             }
@@ -312,13 +314,6 @@ data class NumberSet<T : Number> private constructor(
                 }
             }
 
-
-        if (comp == LESS_THAN_OR_EQUAL) {
-            newData = newData + ranges
-        } else if (comp == GREATER_THAN_OR_EQUAL) {
-            newData = ranges + newData
-        }
-
         return unaryMakeNew(newData)
     }
 
@@ -376,7 +371,6 @@ data class NumberSet<T : Number> private constructor(
     override fun invert(): NumberSet<T> {
         val newList: MutableList<NumberRange<T>> = mutableListOf()
 
-        // Affine death is inevitable here.
         val minValue = ind.getMinValue()
         val maxValue = ind.getMaxValue()
 

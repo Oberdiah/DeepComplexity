@@ -183,7 +183,7 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
         BooleanSet.fromBoolean(constant)
 }
 
-class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarker::class) {
+data class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarker::class) {
     override fun toString(): String {
         return "ObjectSetIndicator(${type.toStringPretty()})"
     }
@@ -196,20 +196,4 @@ class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarke
 
     override fun newEmptySet(): ISet<HeapMarker> = ObjectSet.newEmptySet(this)
     override fun newFullSet(): ISet<HeapMarker> = ObjectSet.newFullSet(this)
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is ObjectSetIndicator) return false
-
-        if (clazz != other.clazz) return false
-        if (type != other.type) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = clazz.hashCode()
-        result = 31 * result + type.hashCode()
-        return result
-    }
 }
