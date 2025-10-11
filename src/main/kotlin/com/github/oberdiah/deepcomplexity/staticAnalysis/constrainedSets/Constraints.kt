@@ -45,7 +45,7 @@ data class Constraints private constructor(
         }
 
         fun unreachable(): Constraints {
-            return Constraints(mapOf(Key.EphemeralKey.new() to BooleanSet.NEITHER))
+            return Constraints(mapOf(Key.ConstantKey to BooleanSet.NEITHER))
         }
     }
 
@@ -70,9 +70,9 @@ data class Constraints private constructor(
     }
 
     fun withConstraint(key: Key, iSet: ISet<*>): Constraints {
-        assertIsNot<Key.EphemeralKey>(
+        assertIsNot<Key.ConstantKey>(
             key,
-            "Ephemeral keys shouldn't really be allowed to be added to constraints."
+            "Constant keys shouldn't be allowed to be added to constraints."
         )
         assert(key.ind == iSet.ind) {
             "Key and bundle must have the same type. (${key.ind} != ${iSet.ind})"
