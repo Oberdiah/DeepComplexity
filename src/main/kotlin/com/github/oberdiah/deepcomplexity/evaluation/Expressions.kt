@@ -33,7 +33,8 @@ sealed class Expr<T : Any>() {
      * As it's doing that, it calls the replacer on every expression so you can make any modifications
      * you want.
      */
-    fun rebuildTree(replacer: ExprTreeRebuilder.Replacer) = ExprTreeRebuilder.rebuildTree(this, replacer)
+    fun rebuildTree(replacer: ExprTreeRebuilder.Replacer, includeIfCondition: Boolean = true) =
+        ExprTreeRebuilder.rebuildTree(this, replacer, includeIfCondition)
 
     fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
         ExprTreeRebuilder.replaceTreeLeaves(this, replacer)

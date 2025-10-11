@@ -71,16 +71,19 @@ object ExprTreeRebuilder {
      * replacements.
      *
      * This can be very helpful for optimisations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
+     *
+     * [includeIfCondition]: Whether to explore the condition of [IfExpr]s in the rebuild.
      */
     fun <T : Any> rebuildTree(
         expr: Expr<T>,
-        replacer: Replacer
+        replacer: Replacer,
+        includeIfCondition: Boolean = true
     ): Expr<T> {
         @Suppress("UNCHECKED_CAST")
         val rebuiltExpr = when (expr.ind) {
-            is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer) as Expr<T>
-            is ObjectSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer) as Expr<T>
-            BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer) as Expr<T>
+            is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer, includeIfCondition) as Expr<T>
+            is ObjectSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer, includeIfCondition) as Expr<T>
+            BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer, includeIfCondition) as Expr<T>
         }
 
         return replacer.replace(rebuiltExpr)
@@ -88,7 +91,8 @@ object ExprTreeRebuilder {
 
     private fun <T : Number> rebuildTreeNums(
         expr: Expr<T>,
-        replacer: Replacer
+        replacer: Replacer,
+        includeIfCondition: Boolean
     ): Expr<T> {
         return when (expr) {
             is ArithmeticExpr -> ArithmeticExpr(
@@ -107,13 +111,14 @@ object ExprTreeRebuilder {
                 expr.terms,
             )
 
-            else -> rebuildTreeAnythings(expr, replacer)
+            else -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
         }
     }
 
     private fun rebuildTreeBooleans(
         expr: Expr<Boolean>,
-        replacer: Replacer
+        replacer: Replacer,
+        includeIfCondition: Boolean
     ): Expr<Boolean> {
         return when (expr) {
             is BooleanExpr -> BooleanExpr(
@@ -135,20 +140,22 @@ object ExprTreeRebuilder {
                 extra(expr)
             }
 
-            else -> rebuildTreeAnythings(expr, replacer)
+            else -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
         }
     }
 
     private fun <T : Any> rebuildTreeGenerics(
         expr: Expr<T>,
-        replacer: Replacer
+        replacer: Replacer,
+        includeIfCondition: Boolean
     ): Expr<T> {
-        return rebuildTreeAnythings(expr, replacer)
+        return rebuildTreeAnythings(expr, replacer, includeIfCondition)
     }
 
     private fun <T : Any> rebuildTreeAnythings(
         expr: Expr<T>,
-        replacer: Replacer
+        replacer: Replacer,
+        includeIfCondition: Boolean
     ): Expr<T> {
         return when (expr) {
             is UnionExpr -> UnionExpr(
@@ -159,7 +166,10 @@ object ExprTreeRebuilder {
             is IfExpr -> IfExpr.newRaw(
                 rebuildTree(expr.trueExpr, replacer),
                 rebuildTree(expr.falseExpr, replacer),
-                rebuildTree(expr.thisCondition, replacer),
+                if (includeIfCondition) rebuildTree(
+                    expr.thisCondition,
+                    replacer
+                ) else expr.thisCondition,
             )
 
             is TypeCastExpr<*, *> -> TypeCastExpr(
