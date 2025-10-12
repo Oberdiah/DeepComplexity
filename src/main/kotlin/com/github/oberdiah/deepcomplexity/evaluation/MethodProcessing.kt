@@ -495,7 +495,13 @@ object MethodProcessing {
         val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
         val booleanOp = BooleanOp.fromJavaTokenType(tokenType)
 
-        assert(listOf(comparisonOp, binaryNumberOp, booleanOp).count { it != null } == 1) {
+        val numTokenTypes = listOf(comparisonOp, binaryNumberOp, booleanOp).count { it != null }
+
+        if (numTokenTypes == 0) {
+            throw IllegalArgumentException("As-yet unsupported binary operation: $tokenType")
+        }
+
+        assert(numTokenTypes == 1) {
             "Multiple binary operation types detected for token type: $tokenType"
         }
 
