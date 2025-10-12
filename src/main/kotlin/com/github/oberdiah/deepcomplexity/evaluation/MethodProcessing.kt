@@ -96,8 +96,12 @@ object MethodProcessing {
             }
 
             is PsiIfStatement -> {
-                // We need a new context for the if statement.
-                // We start out that context with any modifications the condition has made.
+                // Important note: We create a new context here not because it wouldn't work if
+                // it was a clone of [context] (with `val combined =` swapped for `context.c =` below),
+                // but because stacking is a non-negotiable part of how loops and method calls work,
+                // and the more test coverage we can get of that operation the better.
+                // We don't bother, for example, to do it with short-circuiting boolean operations because
+                // of the complexity it would add.
                 val ifContext = newContext(context.c.thisType)
                 val condition = processPsiExpression(
                     psi.condition ?: throw ExpressionIncompleteException(),
@@ -287,44 +291,12 @@ object MethodProcessing {
             }
 
             is PsiBinaryExpression -> {
-                val lhsOperand = psi.lOperand
-                val rhsOperand = psi.rOperand ?: throw ExpressionIncompleteException()
-
-                val tokenType = psi.operationSign.tokenType
-
-                // This gets slightly complicated because of short-circuiting, so we need
-                // to treat this lhs as if it could be the condition in an if statement.
-                val binaryExprContext = newContext(context.c.thisType)
-                val lhs = processPsiExpression(lhsOperand, binaryExprContext)
-
-                val processedExpr =
-                    processBinaryExpr(binaryExprContext, lhs, rhsOperand, tokenType)
-                        .resolveUnknowns(context.c)
-
-                // This context could contain an if statement containing the lhs.
-                context.stack(binaryExprContext.c)
-
-                return processedExpr
+                val operands = listOf(psi.lOperand, psi.rOperand ?: throw ExpressionIncompleteException())
+                return processPolyadicExpr(context, operands, psi.operationSign.tokenType)
             }
 
             is PsiPolyadicExpression -> {
-                val operands = psi.operands
-                if (operands.size < 2) {
-                    throw ExpressionIncompleteException()
-                } else {
-                    // Process it as a bunch of binary expressions in a row, left to right.
-                    val tokenType = psi.operationTokenType
-                    val originalLhs = processPsiExpression(operands[0], context)
-
-                    var currentExpr = processBinaryExpr(context, originalLhs, operands[1], tokenType)
-
-                    for (i in 2 until operands.size) {
-                        val newExpr = processBinaryExpr(context, currentExpr, operands[i], tokenType)
-                        currentExpr = newExpr
-                    }
-
-                    return currentExpr
-                }
+                return processPolyadicExpr(context, psi.operands.toList(), psi.operationTokenType)
             }
 
             is PsiTypeCastExpression -> {
@@ -483,6 +455,31 @@ object MethodProcessing {
             processPsiStatement(body, methodContext)
         }
         return methodContext.c
+    }
+
+    private fun processPolyadicExpr(
+        context: ContextWrapper,
+        operands: List<PsiExpression>,
+        tokenType: IElementType
+    ): Expr<*> {
+        if (operands.size < 2) {
+            throw ExpressionIncompleteException()
+        } else {
+            // Although short-circuiting means that we could go through the whole context-stacking
+            // rigmarole for each binary expression, let's not bother and just keep the code cleaner.
+            // It's not like our test coverage would improve much by doing that anyway.
+            val originalLhs = processPsiExpression(operands[0], context)
+
+            // Process it as a bunch of binary expressions in a row, left to right.
+            var currentExpr = processBinaryExpr(context, originalLhs, operands[1], tokenType)
+
+            for (i in 2 until operands.size) {
+                val newExpr = processBinaryExpr(context, currentExpr, operands[i], tokenType)
+                currentExpr = newExpr
+            }
+
+            return currentExpr
+        }
     }
 
     /**
