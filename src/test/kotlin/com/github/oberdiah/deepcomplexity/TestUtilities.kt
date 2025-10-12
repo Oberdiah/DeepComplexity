@@ -174,6 +174,12 @@ object TestUtilities {
         val context = try {
             MethodProcessing.getMethodContext(psiMethod)
         } catch (e: Throwable) {
+            // If it's an assertion error, we should fully error out regardless.
+            // Those shouldn't be thrown, even on tests that aren't required to pass yet.
+            if (e is AssertionError) {
+                throw e
+            }
+
             e.printStackTrace()
             return (e.message ?: "Failed to parse PSI")
                 .replace("An operation is not implemented: ", "") to 0.0

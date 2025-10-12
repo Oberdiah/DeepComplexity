@@ -96,18 +96,19 @@ object MethodProcessing {
             }
 
             is PsiIfStatement -> {
-                val conditionContext = newContext(context.c.thisType)
+                // We need a new context for the if statement.
+                // We start out that context with any modifications the condition has made.
+                val ifContext = newContext(context.c.thisType)
                 val condition = processPsiExpression(
                     psi.condition ?: throw ExpressionIncompleteException(),
-                    conditionContext
+                    ifContext
                 ).castToBoolean()
-                context.stack(conditionContext.c)
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
-                val trueBranchContext = newContext(context.c.thisType)
+                val trueBranchContext = ifContext.copy()
                 processPsiStatement(trueBranch, trueBranchContext)
 
-                val falseBranchContext = newContext(context.c.thisType)
+                val falseBranchContext = ifContext.copy()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
                 val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
@@ -118,25 +119,16 @@ object MethodProcessing {
             }
 
             is PsiConditionalExpression -> {
-                val conditionContext = newContext(context.c.thisType)
-                val condition = processPsiExpression(psi.condition, conditionContext).castToBoolean()
-                // The side effects of the condition need to happen immediately. However,
-                // we still need a separate context so that we don't resolve anything into
-                // the condition from the main context, as the condition is going to be stacked
-                // later on anyway.
-                context.stack(conditionContext.c)
+                val ifContext = newContext(context.c.thisType)
+                val condition = processPsiExpression(psi.condition, ifContext).castToBoolean()
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
-                val trueExprContext = newContext(context.c.thisType)
+                val trueExprContext = ifContext.copy()
                 val trueResult = processPsiExpression(trueBranch, trueExprContext)
 
                 val falseBranch = psi.elseExpression ?: throw ExpressionIncompleteException()
-                val falseExprContext = newContext(context.c.thisType)
+                val falseExprContext = ifContext.copy()
                 val falseResult = processPsiExpression(falseBranch, falseExprContext)
-
-                val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
-                    IfExpr.new(a, b, condition)
-                }
 
                 val evaluatesTo = (
                         if (trueResult.ind == falseResult.ind) {
@@ -165,6 +157,9 @@ object MethodProcessing {
                         // side effects.
                         ).resolveUnknowns(context.c)
 
+                val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
+                    IfExpr.new(a, b, condition)
+                }
 
                 context.stack(combined)
 
@@ -297,23 +292,19 @@ object MethodProcessing {
 
                 val tokenType = psi.operationSign.tokenType
 
-                val lhs = processPsiExpression(lhsOperand, context)
-                return processBinaryExpr(context, lhs, rhsOperand, tokenType)
-            }
+                // This gets slightly complicated because of short-circuiting, so we need
+                // to treat this lhs as if it could be the condition in an if statement.
+                val binaryExprContext = newContext(context.c.thisType)
+                val lhs = processPsiExpression(lhsOperand, binaryExprContext)
 
-            is PsiTypeCastExpression -> {
-                val expr = processPsiExpression(
-                    psi.operand ?: throw ExpressionIncompleteException(),
-                    context
-                )
+                val processedExpr =
+                    processBinaryExpr(binaryExprContext, lhs, rhsOperand, tokenType)
+                        .resolveUnknowns(context.c)
 
-                val psiType = psi.castType ?: throw ExpressionIncompleteException()
-                val setInd = Utilities.psiTypeToSetIndicator(psiType.type)
-                return TypeCastExpr(expr, setInd, false)
-            }
+                // This context could contain an if statement containing the lhs.
+                context.stack(binaryExprContext.c)
 
-            is PsiParenthesizedExpression -> {
-                return processPsiExpression(psi.expression ?: throw ExpressionIncompleteException(), context)
+                return processedExpr
             }
 
             is PsiPolyadicExpression -> {
@@ -334,6 +325,21 @@ object MethodProcessing {
 
                     return currentExpr
                 }
+            }
+
+            is PsiTypeCastExpression -> {
+                val expr = processPsiExpression(
+                    psi.operand ?: throw ExpressionIncompleteException(),
+                    context
+                )
+
+                val psiType = psi.castType ?: throw ExpressionIncompleteException()
+                val setInd = Utilities.psiTypeToSetIndicator(psiType.type)
+                return TypeCastExpr(expr, setInd, false)
+            }
+
+            is PsiParenthesizedExpression -> {
+                return processPsiExpression(psi.expression ?: throw ExpressionIncompleteException(), context)
             }
 
             is PsiReferenceExpression -> {
@@ -492,15 +498,18 @@ object MethodProcessing {
         val comparisonOp = ComparisonOp.fromJavaTokenType(tokenType)
         val binaryNumberOp = BinaryNumberOp.fromJavaTokenType(tokenType)
         val booleanOp = BooleanOp.fromJavaTokenType(tokenType)
+
+        assert(listOf(comparisonOp, binaryNumberOp, booleanOp).count { it != null } == 1) {
+            "Multiple binary operation types detected for token type: $tokenType"
+        }
+
         if (booleanOp != null) {
             // We need to worry about short-circuiting here.
 
             val lhs = lhsPrecast.castToBoolean()
 
-            val rhsContext = newContext(context.c.thisType)
-            val rhs = processPsiExpression(rhsPsi, rhsContext)
-                .resolveUnknowns(context.c)
-                .castToBoolean()
+            val rhsContext = context.copy()
+            val rhs = processPsiExpression(rhsPsi, rhsContext).castToBoolean()
 
             /**
              * Effectively operate as an if statement here, where the condition is the lhs.
@@ -515,37 +524,47 @@ object MethodProcessing {
              * becomes
              * `var foo = doFoo() ? true : doBar()`
              */
-            val combined = when (booleanOp) {
+            context.c = when (booleanOp) {
                 BooleanOp.AND -> {
-                    Context.combine(rhsContext.c, Context.brandNew(context.c.thisType)) { a, b ->
+                    Context.combine(rhsContext.c, context.copy().c) { a, b ->
                         IfExpr.new(a, b, lhs)
                     }
                 }
 
                 BooleanOp.OR -> {
-                    Context.combine(Context.brandNew(context.c.thisType), rhsContext.c) { a, b ->
+                    Context.combine(context.copy().c, rhsContext.c) { a, b ->
                         IfExpr.new(a, b, lhs)
                     }
                 }
             }
 
-            context.stack(combined)
-
             return BooleanExpr(lhs, rhs, booleanOp)
         } else {
             val rhsPrecast = processPsiExpression(rhsPsi, context)
 
-            return ConversionsAndPromotion.binaryNumericPromotion(
-                lhsPrecast.castToNumbers(),
-                rhsPrecast.castToNumbers()
-            )
-                .map { lhs, rhs ->
+            return if (lhsPrecast.ind is NumberSetIndicator || rhsPrecast.ind is NumberSetIndicator) {
+                ConversionsAndPromotion.binaryNumericPromotion(
+                    lhsPrecast.castToNumbers(),
+                    rhsPrecast.castToNumbers()
+                ).map { lhs, rhs ->
                     return@map when {
                         comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)
                         binaryNumberOp != null -> ArithmeticExpr(lhs, rhs, binaryNumberOp)
                         else -> TODO("Unsupported binary operation: $tokenType ($lhsPrecast, $rhsPrecast)")
                     }
                 }
+            } else {
+                ConversionsAndPromotion.castAToB(
+                    lhsPrecast,
+                    rhsPrecast,
+                    false
+                ).map { lhs, rhs ->
+                    return@map when {
+                        comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)
+                        else -> TODO("Unsupported binary operation on non-numeric types: $tokenType ($lhsPrecast, $rhsPrecast)")
+                    }
+                }
+            }
         }
     }
 }

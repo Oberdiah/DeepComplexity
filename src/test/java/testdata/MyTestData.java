@@ -81,6 +81,42 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	public static short test8(short x) {
+		int q = 0;
+		if (q++ > 0) {
+			return (short) q;
+		}
+		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	public static short test9(short x) {
+		int q = 0;
+		if (++q > 0) {
+			return (short) q;
+		}
+		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	public static short test10(short x) {
+		boolean b = true;
+		if (b = false == true) {
+			return 1;
+		}
+		return (short) (b ? 2 : 3);
+	}
+	
+	@RequiredScore(1.0)
+	public static short test11(short x) {
+		int q = 0;
+		if ((q++ > 0) && (q++ > 1) && (q++ > 2)) {
+			return (short) q;
+		}
+		return (short) (q + 100);
+	}
+	
+	@RequiredScore(1.0)
 	public static short negateTest(short x) {
 		return (short) (-x);
 	}
@@ -1577,6 +1613,24 @@ public class MyTestData {
 		boolean p = false;
 		boolean result = p || p;
 		return (result ? (short) 1 : (short) 0);
+	}
+	
+	@RequiredScore(1.0)
+	public static short shortCircuit6(short x) {
+		int q = 0;
+		if (x > 0) {
+			boolean t = q++ > 0 && q++ > 0 && true;
+		}
+		return (short) q;
+	}
+	
+	@RequiredScore(1.0)
+	public static short shortCircuit7(short x) {
+		int q = 0;
+		if (x > 0) {
+			boolean t = ++q > 0 && ++q > 0 && true;
+		}
+		return (short) q;
 	}
 	
 	public static short interfaceSideEffect(short x) {
