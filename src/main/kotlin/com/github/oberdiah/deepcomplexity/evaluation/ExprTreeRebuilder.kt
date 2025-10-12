@@ -121,7 +121,7 @@ object ExprTreeRebuilder {
         includeIfCondition: Boolean
     ): Expr<Boolean> {
         return when (expr) {
-            is BooleanExpr -> BooleanExpr(
+            is BooleanExpr -> BooleanExpr.newRaw(
                 rebuildTree(expr.lhs, replacer),
                 rebuildTree(expr.rhs, replacer),
                 expr.op,

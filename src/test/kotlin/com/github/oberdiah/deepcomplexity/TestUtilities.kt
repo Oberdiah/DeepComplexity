@@ -171,7 +171,7 @@ object TestUtilities {
     }
 
     private fun getMethodScore(method: Method, psiMethod: PsiMethod): Pair<String, Double> {
-        val context = try {
+        val returnValue = try {
             MethodProcessing.getMethodContext(psiMethod)
         } catch (e: Throwable) {
             // If it's an assertion error, we should fully error out regardless.
@@ -183,16 +183,16 @@ object TestUtilities {
             e.printStackTrace()
             return (e.message ?: "Failed to parse PSI")
                 .replace("An operation is not implemented: ", "") to 0.0
-        }
+        }.returnValue!!
 
         val range = try {
             if (System.getenv("DEBUG") != "false") {
-                println((context.returnValue!!.dStr()).prependIndent())
+                println((returnValue.dStr()).prependIndent())
             } else {
                 println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
             }
 
-            val unknownsInReturn = context.returnValue!!.iterateTree(true)
+            val unknownsInReturn = returnValue.iterateTree(true)
                 .filterIsInstance<VariableExpr<*>>()
                 .map { it.key }
                 .toSet()
@@ -203,7 +203,7 @@ object TestUtilities {
                 "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
             }
 
-            val bundle: Bundle<*> = context.returnValue!!.evaluate(ExprEvaluate.Scope())
+            val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope())
             val castBundle = bundle.cast(ShortSetIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle

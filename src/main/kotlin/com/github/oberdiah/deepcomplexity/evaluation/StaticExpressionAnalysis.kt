@@ -1,11 +1,39 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-object StaticExpressionComparisonAnalysis {
+object StaticExpressionAnalysis {
+    fun attemptToSimplifyBooleanExpr(rhs: Expr<Boolean>, lhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean>? {
+        return when (op) {
+            BooleanOp.AND -> {
+                if (lhs == ConstExpr.FALSE || rhs == ConstExpr.FALSE) {
+                    ConstExpr.FALSE
+                } else if (lhs == ConstExpr.TRUE) {
+                    rhs
+                } else if (rhs == ConstExpr.TRUE) {
+                    lhs
+                } else {
+                    null
+                }
+            }
+
+            BooleanOp.OR -> {
+                if (lhs == ConstExpr.TRUE || rhs == ConstExpr.TRUE) {
+                    ConstExpr.TRUE
+                } else if (lhs == ConstExpr.FALSE) {
+                    rhs
+                } else if (rhs == ConstExpr.FALSE) {
+                    lhs
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
     /**
      * All of this should be extremely cheap. It's designed to be a quick pre-check to prevent
      * trivial comparisons from going to the full evaluation engine.
      */
-    fun <T : Any> attemptToSimplify(rhs: Expr<T>, lhs: Expr<T>, comp: ComparisonOp): Expr<Boolean>? {
+    fun <T : Any> attemptToSimplifyComparison(rhs: Expr<T>, lhs: Expr<T>, comp: ComparisonOp): Expr<Boolean>? {
         // To disable optimisations for testing purposes:
 //        if (true) {
 //            return null
@@ -38,14 +66,14 @@ object StaticExpressionComparisonAnalysis {
         }
     }
 
-    fun guaranteedNotEqual(lhs: Expr<*>, rhs: Expr<*>): Boolean {
+    private fun guaranteedNotEqual(lhs: Expr<*>, rhs: Expr<*>): Boolean {
         if (lhs is ConstExpr<*> && rhs is ConstExpr<*>) {
             return lhs.value != rhs.value
         }
         return false
     }
 
-    fun guaranteedEqual(lhs: Expr<*>, rhs: Expr<*>): Boolean {
+    private fun guaranteedEqual(lhs: Expr<*>, rhs: Expr<*>): Boolean {
         // This could do a full lhs == rhs equality check, but I
         // felt it was unnecessary. If you ever encounter a situation
         // where it might simplify stuff, feel free to add it.

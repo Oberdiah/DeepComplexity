@@ -715,6 +715,8 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(0.4)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	public static short nastyPerformanceTest(short x) {
 		int a = 0;
 		

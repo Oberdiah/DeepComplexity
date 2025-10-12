@@ -420,7 +420,6 @@ object MethodProcessing {
         }
     }
 
-
     /**
      * Returns the new updated original context, and then the context of the method call.
      */
@@ -535,7 +534,7 @@ object MethodProcessing {
                 }
             }
 
-            return BooleanExpr(lhs, rhs, booleanOp)
+            return BooleanExpr.new(lhs, rhs, booleanOp)
         } else {
             val rhsPrecast = processPsiExpression(rhsPsi, context)
 

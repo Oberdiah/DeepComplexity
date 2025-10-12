@@ -217,7 +217,7 @@ data class ComparisonExpr<T : Any> private constructor(
             ComparisonExpr(lhs, rhs, comp)
 
         fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
-            StaticExpressionComparisonAnalysis.attemptToSimplify(lhs, rhs, comp)?.let {
+            StaticExpressionAnalysis.attemptToSimplifyComparison(lhs, rhs, comp)?.let {
                 return it
             }
             return ComparisonExpr(lhs, rhs, comp)
@@ -296,16 +296,16 @@ data class IfExpr<T : Any> private constructor(
             falseExpr: Expr<B>,
             condition: Expr<Boolean>
         ): Expr<A> {
-            val b = falseExpr.tryCastTo(trueExpr.ind)
+            val falseExpr = falseExpr.tryCastTo(trueExpr.ind)
                 ?: throw IllegalStateException("Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}")
 
             if (condition == ConstExpr.TRUE) {
                 return trueExpr
             } else if (condition == ConstExpr.FALSE) {
-                return b
+                return falseExpr
             }
 
-            return IfExpr(trueExpr, b, condition)
+            return IfExpr(trueExpr, falseExpr, condition)
         }
     }
 }
@@ -321,7 +321,9 @@ data class UnionExpr<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
         get() = lhs.ind
 }
 
-data class BooleanExpr(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) : Expr<Boolean>() {
+@ConsistentCopyVisibility
+data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) :
+    Expr<Boolean>() {
     init {
         assert(lhs.ind == rhs.ind) {
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -330,6 +332,20 @@ data class BooleanExpr(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: B
 
     override val ind: SetIndicator<Boolean>
         get() = BooleanSetIndicator
+
+    companion object {
+        fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanExpr =
+            BooleanExpr(lhs, rhs, op)
+
+        fun new(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
+            StaticExpressionAnalysis.attemptToSimplifyBooleanExpr(lhs, rhs, op)?.let {
+                return it
+            }
+            return BooleanExpr(lhs, rhs, op)
+        }
+    }
+
+    override fun simplify(): Expr<Boolean> = new(lhs, rhs, op)
 }
 
 sealed class LValueExpr<T : Any> : Expr<T>() {

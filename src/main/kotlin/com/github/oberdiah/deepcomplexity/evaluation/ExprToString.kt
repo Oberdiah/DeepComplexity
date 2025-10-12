@@ -1,8 +1,5 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.AND
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp.OR
-
 object ExprToString {
     fun <T : Any> toString(expr: Expr<T>): String {
         return when (expr) {
@@ -20,7 +17,7 @@ object ExprToString {
             is BooleanInvertExpr -> "!${expr.expr}"
             is NegateExpr -> "-${expr.expr}"
             is UnionExpr -> "(${expr.lhs} ∪ ${expr.rhs})"
-            is BooleanExpr -> booleanExprToString(expr)
+            is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is NumIterationTimesExpr -> "(initial: ${expr.variable}, update: ${expr.terms} condition: ${expr.constraint})"
             is TypeCastExpr<*, *> -> {
                 if (expr.explicit) {
@@ -45,39 +42,13 @@ object ExprToString {
             is BooleanInvertExpr -> "'!'"
             is NegateExpr -> "'-'"
             is UnionExpr -> "'∪'"
-            is BooleanExpr -> booleanExprToString(expr)
+            is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is VariableExpr -> expr.key.toString()
             is NumIterationTimesExpr -> "'for'"
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr<*> -> "${expr.key}"
         }
-    }
-
-    private fun booleanExprToString(expr: BooleanExpr): String {
-        if (expr.lhs == ConstExpr.TRUE) {
-            return when (expr.op) {
-                AND -> expr.rhs.toString()
-                OR -> "TRUE"
-            }
-        } else if (expr.lhs == ConstExpr.FALSE) {
-            return when (expr.op) {
-                AND -> "FALSE"
-                OR -> expr.rhs.toString()
-            }
-        } else if (expr.rhs == ConstExpr.TRUE) {
-            return when (expr.op) {
-                AND -> expr.lhs.toString()
-                OR -> "TRUE"
-            }
-        } else if (expr.rhs == ConstExpr.FALSE) {
-            return when (expr.op) {
-                AND -> "FALSE"
-                OR -> expr.lhs.toString()
-            }
-        }
-
-        return "(${expr.lhs} ${expr.op} ${expr.rhs})"
     }
 
     fun <T : Any> toDebugString(expr: Expr<T>): String {
@@ -110,7 +81,7 @@ object ExprToString {
             is BooleanInvertExpr -> "!${expr.expr.dStr()} = $myResult"
             is NegateExpr -> "-${expr.expr.dStr()}"
             is UnionExpr -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
-            is BooleanExpr -> booleanExprToString(expr)
+            is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is VariableExpr -> expr.key.toString()
             is NumIterationTimesExpr -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"
             is TypeCastExpr<*, *> -> {

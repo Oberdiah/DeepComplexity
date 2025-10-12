@@ -186,9 +186,17 @@ class Bundle<T : Any> private constructor(
 
                 if (newConstraints.unreachable) continue
 
+                // Only do the fun optimisation if we were tracking something beforehand, otherwise we're just
+                // going to start tracking a constant for no reason.
+                val wereTrackingSomething =
+                    (myBundle.variances.varsTracking() + otherBundle.variances.varsTracking()).isNotEmpty()
+
                 val newVariances = op(myBundle.variances, otherBundle.variances, newConstraints)
 
-                if (newVariances.varsTracking().isEmpty() && newVariances is NumberVariances<*>) {
+                if (newVariances.varsTracking().isEmpty()
+                    && wereTrackingSomething
+                    && newVariances is NumberVariances<*>
+                ) {
                     // If the new variance isn't tracking anything, we can help it out a bit
                     // by creating a new constraint around it and making it track the
                     // expression key itself. This allows us to continue tracking things to a

@@ -24,7 +24,7 @@ object ExprConstrain {
         return when (expr) {
             is BooleanInvertExpr -> expr.expr
             is BooleanExpr -> {
-                BooleanExpr(
+                BooleanExpr.new(
                     expr.lhs.inverted(),
                     expr.rhs.inverted(),
                     when (expr.op) {
@@ -126,9 +126,9 @@ object ExprConstrain {
                 val falseCondition = condition.falseExpr
 
                 val convertedToBooleanExpr =
-                    BooleanExpr(
-                        BooleanExpr(ifCondition, trueCondition, BooleanOp.AND),
-                        BooleanExpr(invertedIf, falseCondition, BooleanOp.AND),
+                    BooleanExpr.new(
+                        BooleanExpr.new(ifCondition, trueCondition, BooleanOp.AND),
+                        BooleanExpr.new(invertedIf, falseCondition, BooleanOp.AND),
                         BooleanOp.OR
                     )
 
