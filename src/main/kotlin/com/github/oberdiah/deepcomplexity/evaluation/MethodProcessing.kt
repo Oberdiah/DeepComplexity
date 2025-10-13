@@ -195,15 +195,13 @@ object MethodProcessing {
             }
 
             is PsiReturnStatement -> {
-                val returnExpression = psi.returnValue
-                if (returnExpression != null) {
-                    val returnKey = psi.toKey()
-
-                    val returnExpr = processPsiExpression(returnExpression, context)
+                val returnKey = psi.toKey()
+                val returnExpr = psi.returnValue?.let {
+                    processPsiExpression(it, context)
                         .castToUsingTypeCast(returnKey.ind, false)
+                } ?: ConstExpr.VOID
 
-                    context.c = context.c.withAdditionalReturn(returnKey, returnExpr)
-                }
+                context.c = context.c.withAdditionalReturn(returnKey, returnExpr)
             }
 
             is PsiExpressionStatement -> {

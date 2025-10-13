@@ -8,6 +8,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.intellij.psi.PsiTypes
 
 sealed class Expr<T : Any>() {
     /**
@@ -477,6 +478,8 @@ data class ConstExpr<T : Any>(override val underlying: T, override val ind: SetI
     companion object {
         val TRUE = ConstExpr(true, BooleanSetIndicator)
         val FALSE = ConstExpr(false, BooleanSetIndicator)
+        val VOID = fromHeapMarker(HeapMarker.new(PsiTypes.voidType()))
+        val NULL = fromHeapMarker(HeapMarker.new(PsiTypes.nullType()))
 
         fun <T : Number> zero(ind: NumberSetIndicator<T>): ConstExpr<T> =
             ConstExpr(ind.getZero(), ind)
