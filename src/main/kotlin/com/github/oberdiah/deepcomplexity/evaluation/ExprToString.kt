@@ -27,6 +27,7 @@ object ExprToString {
                 }
             }
 
+            is RestOfMethodExpr -> "REM(${expr.expr})"
             is VariableExpr -> expr.key.toString()
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
@@ -48,6 +49,7 @@ object ExprToString {
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr<*> -> "${expr.key}"
+            is RestOfMethodExpr -> toExprKeyString(expr.expr)
         }
     }
 
@@ -92,6 +94,7 @@ object ExprToString {
                 }
             }
 
+            is RestOfMethodExpr -> "REM(${expr.expr})"
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
         }

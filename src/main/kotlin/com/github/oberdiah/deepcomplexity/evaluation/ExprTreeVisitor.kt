@@ -51,6 +51,7 @@ object ExprTreeVisitor {
             visitor(expr.rhs)
         }
 
+        is RestOfMethodExpr -> visitor(expr.expr)
         is NumIterationTimesExpr -> visitor(expr.variable)
         is TypeCastExpr<*, *> -> visitor(expr.expr)
         is LValueFieldExpr<*> -> visitor(expr.qualifier)

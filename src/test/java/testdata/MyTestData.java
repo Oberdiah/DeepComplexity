@@ -1576,10 +1576,12 @@ public class MyTestData {
 	}
 	
 	private static void updateClassField2(MyClass nested, int x) {
+		nested.x = x;
 		if (x < 5) {
+			nested.x = 2;
 			return;
 		}
-		nested.x = x;
+		nested.x++;
 	}
 	
 	@RequiredScore(1.0)
