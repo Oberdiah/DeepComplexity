@@ -1,12 +1,11 @@
 package testdata;
 
+import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
 import com.github.oberdiah.deepcomplexity.GoodEnough;
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
 import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
 import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
-
-import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
 
 public class MyTestData {
 	@RequiredScore(1.0)
@@ -806,6 +805,18 @@ public class MyTestData {
 		}
 		
 		return (short) (a + b + c);
+	}
+	
+	public static short nastyPerformanceTest2(short x) {
+		MyClass foo = new MyClass(50);
+		if (x > 100) {
+			if (x > 200) {
+				foo = new MyClass(100);
+			}
+		}
+		foo.x++;
+		foo.x++;
+		return (short) foo.getX();
 	}
 	
 	@RequiredScore(1.0)
