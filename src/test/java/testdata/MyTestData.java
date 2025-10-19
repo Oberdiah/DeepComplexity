@@ -1189,7 +1189,7 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(2)
-	public static short go(short x) {
+	public static short simpleClassTest10(short x) {
 		MyClass nested = new MyClass(50);
 		if (x == 100) {
 			nested = new MyClass(100);
