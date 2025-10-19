@@ -112,7 +112,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         summaryDescription.forEach { println(it) }
 
         if (System.getenv("UPDATE_ANNOTATIONS") == "True") {
-            TestUtilities.applyRequiredScoreAnnotationsIfRequested()
+            AnnotationApplier.applyAnnotations()
         } else {
             println("UPDATE_ANNOTATIONS is not 'True'. Skipping annotation updates.")
         }

@@ -14,10 +14,35 @@ object TestUtilities {
     private val predictedArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
     private val actualArray = BooleanArray(Short.MAX_VALUE.toInt() - Short.MIN_VALUE.toInt() + 1)
 
-    // Stores methods that achieved a perfect score (1.0) during the test run.
-    data class PerfectMethod(val filePath: String, val methodName: String)
+    data class MethodAnnotationInfo(
+        val filePath: String,
+        val methodName: String,
+        val scoreAchieved: Double,
+        val expressionSize: Int
+    )
 
-    val perfectMethods = mutableListOf<PerfectMethod>()
+    sealed interface MethodScoreResults {
+        val score: Double
+        val expressionSize: Int
+
+        val scoreReceivedColumn: String
+        val extraInfoColumn: String
+    }
+
+    data class MethodFailed(val failureMessage: String) : MethodScoreResults {
+        override val score: Double = 0.0
+        override val expressionSize: Int = 0
+        override val scoreReceivedColumn: String = "N/A"
+        override val extraInfoColumn: String = failureMessage
+    }
+
+    data class MethodRan(val fraction: String, override val score: Double, override val expressionSize: Int) :
+        MethodScoreResults {
+        override val scoreReceivedColumn: String = fraction
+        override val extraInfoColumn: String = ""
+    }
+
+    val annotationInformation = mutableListOf<MethodAnnotationInfo>()
 
     /**
      * Returns a string summary of the test results, to be printed in the summary test,
@@ -30,124 +55,53 @@ object TestUtilities {
         val reflectMethod = clazz.declaredMethods.find { it.name == method.name }
             ?: throw NoSuchMethodException("Method ${method.name} not found in class ${clazz.name}")
 
-        val (msg, methodScore) = getMethodScore(reflectMethod, method.psiMethod)
+        val scoreResults = getMethodScore(reflectMethod, method.psiMethod)
 
         val annotation = reflectMethod.getAnnotation(RequiredScore::class.java)
 
         // Track perfect-score methods for optional annotation updates in the summary phase.
-        if (methodScore == 1.0) {
-            val filePath = method
-                .psiMethod
-                .containingFile
-                ?.virtualFile
-                ?.path
-                ?.replace("/src", "src/test/java/testdata")
-            if (filePath != null) {
-                perfectMethods.add(PerfectMethod(filePath, method.name))
-            }
+        val filePath = method
+            .psiMethod
+            .containingFile
+            ?.virtualFile
+            ?.path
+            ?.replace("/src", "src/test/java/testdata")
+        if (filePath != null) {
+            annotationInformation.add(
+                MethodAnnotationInfo(
+                    filePath,
+                    method.name,
+                    scoreResults.score,
+                    scoreResults.expressionSize
+                )
+            )
         }
 
-        val (columns, passed) = getSummaryTableRow(msg, methodScore, annotation, reflectMethod)
+        val (columns, passed) = getSummaryTableRow(scoreResults, annotation, reflectMethod)
         val columnSpacing = listOf(17, 11, 7, 1, 1)
         val summary = columns.mapIndexed { i, s -> s.padEnd(columnSpacing[i]) }.joinToString(" | ")
         return summary to passed
     }
 
-    /**
-     * If UPDATE_ANNOTATIONS == "True", go through the collected perfect-score methods and update
-     * the corresponding Java files by adding @RequiredScore(1.0) above each method declaration.
-     * Also ensures an import for com.github.oberdiah.deepcomplexity.RequiredScore is present.
-     */
-    fun applyRequiredScoreAnnotationsIfRequested() {
-        if (perfectMethods.isEmpty()) {
-            println("No methods achieved a perfect score. No annotations to update.")
-            return
-        }
-
-        val methodsByFile = perfectMethods.groupBy { it.filePath }
-        methodsByFile.forEach { (filePath, methods) ->
-            try {
-                val path = java.nio.file.Paths.get(filePath)
-                var content = java.nio.file.Files.readAllLines(path).toMutableList()
-
-                // Ensure import exists
-                val importLine = "import com.github.oberdiah.deepcomplexity.RequiredScore;"
-                val hasImport = content.any { it.trim() == importLine }
-                if (!hasImport) {
-                    // Find package line and last import index
-                    val packageIndex = content.indexOfFirst { it.trim().startsWith("package ") }
-                    var insertIndex = packageIndex + 1
-                    while (insertIndex < content.size && content[insertIndex].trim().startsWith("import ")) {
-                        insertIndex++
-                    }
-                    // Insert a blank line if none between package and imports
-                    if (insertIndex == packageIndex + 1) {
-                        content.add(insertIndex, "")
-                        insertIndex++
-                    }
-                    content.add(insertIndex, importLine)
-                }
-
-                // For each method in this file, add annotation if not already present
-                methods.forEach { pm ->
-                    val methodName = pm.methodName
-                    // Find the line index of the method declaration
-                    val idx = content.indexOfFirst { line ->
-                        val trimmed = line.trim()
-                        // Match public static ... methodName(
-                        trimmed.startsWith("public ") && trimmed.contains(" ${methodName}(")
-                    }
-                    if (idx >= 0) {
-                        // Check if the previous non-empty, non-comment line already has @RequiredScore
-                        var lookback = idx - 1
-                        var alreadyAnnotated = false
-                        while (lookback >= 0) {
-                            val t = content[lookback].trim()
-                            if (t.isEmpty()) {
-                                lookback--; continue
-                            }
-                            if (t.startsWith("//")) {
-                                lookback--; continue
-                            }
-                            if (t.startsWith("@RequiredScore")) {
-                                alreadyAnnotated = true
-                            }
-                            break
-                        }
-                        if (!alreadyAnnotated) {
-                            val indent = content[idx].takeWhile { it.isWhitespace() }
-                            content.add(idx, indent + "@RequiredScore(1.0)")
-                            println("Added @RequiredScore(1.0) to $filePath#$methodName")
-                        }
-                    } else {
-                        println("Warning: Could not locate method declaration for $filePath#$methodName")
-                    }
-                }
-
-                java.nio.file.Files.writeString(path, content.joinToString("\n"))
-            } catch (e: Throwable) {
-                println("Failed to update annotations in file '$filePath': ${e.message}")
-                e.printStackTrace()
-            }
-        }
-    }
-
     private fun getSummaryTableRow(
-        msg: String,
-        methodScore: Double,
+        scoreResults: MethodScoreResults,
         annotation: RequiredScore?,
         method: Method
     ): Pair<List<String>, Boolean> {
-        val scoreReceivedColumn = if (methodScore == 0.0) "N/A" else msg
-        val extraInfoColumn = if (methodScore == 0.0) msg else ""
-        val methodScoreStr = String.format("%.2f", methodScore * 100)
+        val scoreReceivedColumn = scoreResults.scoreReceivedColumn
+        val extraInfoColumn = scoreResults.extraInfoColumn
+        val methodScoreStr = String.format("%.2f", scoreResults.score * 100)
+        val msg = when (scoreResults) {
+            is MethodFailed -> scoreResults.failureMessage
+            is MethodRan -> scoreResults.fraction
+        }
 
         if (annotation != null) {
             val requiredScore = annotation.value
             val requiredScoreStr = String.format("%.2f", requiredScore * 100)
 
             if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {
-                if (methodScore == 0.0) {
+                if (scoreResults.score == 0.0) {
                     println("\t$msg")
                 } else {
                     println("\tReceived a score of $msg ($methodScoreStr%) which was not sufficient (<$requiredScoreStr%)")
@@ -164,13 +118,13 @@ object TestUtilities {
                 return listOf("Passed", msg, "$methodScoreStr%", goldStar, notes) to true
             }
         } else {
-            println(if (methodScore == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg")
+            println(if (scoreResults.score == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg")
             println("\tThis method was not required to reach a score threshold and as such it passed by default.")
             return listOf("Passed by default", scoreReceivedColumn, "$methodScoreStr%", "", extraInfoColumn) to true
         }
     }
 
-    private fun getMethodScore(method: Method, psiMethod: PsiMethod): Pair<String, Double> {
+    private fun getMethodScore(method: Method, psiMethod: PsiMethod): MethodScoreResults {
         val returnValue = try {
             MethodProcessing.getMethodContext(psiMethod)
         } catch (e: Throwable) {
@@ -181,8 +135,10 @@ object TestUtilities {
             }
 
             e.printStackTrace()
-            return (e.message ?: "Failed to parse PSI")
-                .replace("An operation is not implemented: ", "") to 0.0
+            return MethodFailed(
+                (e.message ?: "Failed to parse PSI")
+                    .replace("An operation is not implemented: ", ""),
+            )
         }.returnValue!!
 
         val range = try {
@@ -209,8 +165,10 @@ object TestUtilities {
             collapsedBundle
         } catch (e: Throwable) {
             e.printStackTrace()
-            return (e.message ?: "Failed to parse PSI")
-                .replace("An operation is not implemented: ", "") to 0.0
+            return MethodFailed(
+                (e.message ?: "Failed to parse PSI")
+                    .replace("An operation is not implemented: ", "")
+            )
         }
 
         println("\tRange of return value: $range")
@@ -220,7 +178,7 @@ object TestUtilities {
             method.parameterTypes[0] != Short::class.java ||
             method.returnType != Short::class.java
         ) {
-            return "Skipped method ${method.name} as it's not valid for testing." to 0.0
+            return MethodFailed("Skipped method ${method.name} as it's not valid for testing.")
         }
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
             predictedArray[s - Short.MIN_VALUE] = range.contains(s.toShort())
@@ -232,10 +190,10 @@ object TestUtilities {
                 val result = method.invoke(null, s.toShort()) as Short
 
                 if (!range.contains(result)) {
-                    return "Failed for input $s, returned $result which is not in range $range" to 0.0
+                    return MethodFailed("Failed for input $s, returned $result which is not in range $range")
                 } else {
                     if (result !in Short.MIN_VALUE..Short.MAX_VALUE) {
-                        return "Failed for input $s, returned $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}" to 0.0
+                        return MethodFailed("Failed for input $s, returned $result which is not in range ${Short.MIN_VALUE}..${Short.MAX_VALUE}")
                     }
                     actualArray[result - Short.MIN_VALUE] = true
                 }
@@ -249,10 +207,10 @@ object TestUtilities {
                         continue
                     }
                 }
-                return "Failed for input $s, exception: ${e.targetException.message}" to 0.0
+                return MethodFailed("Failed for input $s, exception: ${e.targetException.message}")
             } catch (e: Throwable) {
                 e.printStackTrace()
-                return "Method ${method.name} threw an unexpected exception for input $s: ${e.message}" to 0.0
+                return MethodFailed("Method ${method.name} threw an unexpected exception for input $s: ${e.message}")
             }
         }
 
@@ -287,7 +245,7 @@ object TestUtilities {
         println()
 
         if (numEntriesPredicted == 0) {
-            return "Didn't predict any valid values at all" to 0.0
+            return MethodFailed("Didn't predict any valid values at all")
         }
 
         var numEntriesCorrect = 0
@@ -311,6 +269,8 @@ object TestUtilities {
             }
         }
 
-        return "$numEntriesCorrect/$numEntriesPredicted" to scoreFraction
+        val expressionSize = returnValue.iterateTree(true).map { 1 }.sum()
+
+        return MethodRan("$numEntriesCorrect/$numEntriesPredicted", scoreFraction, expressionSize)
     }
 }
