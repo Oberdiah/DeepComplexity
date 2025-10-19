@@ -5,6 +5,7 @@ import com.github.oberdiah.deepcomplexity.evaluation.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -191,11 +192,11 @@ inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
     }(newInd, replacement)
 }
 
-object RestOfMethodExpr : Expr<Any>() {
-    override val ind: SetIndicator<Any>
-        get() = throw IllegalStateException(
-            "Nothing should be accessing this. To nearly all of the program this shouldn't exist."
-        )
+/**
+ * The indicator of this really shouldn't matter, we just had to pick something.
+ */
+object RestOfMethodExpr : Expr<HeapMarker>() {
+    override val ind: ObjectSetIndicator = ObjectSetIndicator(PsiTypes.voidType())
 }
 
 data class ArithmeticExpr<T : Number>(

@@ -5,7 +5,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
 
-typealias Vars = Map<UnknownKey, Expr<*>>
+typealias Vars = Map<UnknownKey, RootExpression<*>>
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never
@@ -134,9 +134,11 @@ class Context(
                         val aVal = a.variables[key]
                         val bVal = b.variables[key]
 
-                        how(
-                            aVal ?: VariableExpr.new(KeyBackreference(key, a.idx)),
-                            bVal ?: VariableExpr.new(KeyBackreference(key, b.idx))
+                        RootExpression.combine(
+                            VariableExpr.new(KeyBackreference(key, a.idx)),
+                            aVal,
+                            bVal,
+                            how
                         )
                     },
                 a.thisType,
@@ -146,7 +148,7 @@ class Context(
     }
 
     val returnValue: Expr<*>?
-        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()
+        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.getREMExpr()
 
     val returnKey: ReturnKey?
         get() = variables.keys.filterIsInstance<ReturnKey>().firstOrNull()
@@ -173,7 +175,7 @@ class Context(
 
     fun getVar(key: UnknownKey): Expr<*> {
         // If we have it, return it.
-        variables[key]?.let { return it }
+        variables[key]?.let { return it.getREMExpr() }
 
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedKey) {
@@ -196,7 +198,7 @@ class Context(
                     }
                 }
 
-                return replacedExpr
+                return replacedExpr.getREMExpr()
             }
         }
 
@@ -286,10 +288,8 @@ class Context(
         val rExpr = uncastExpr.castToUsingTypeCast(key.ind, false)
 
         if (key !is QualifiedKey) {
-            return Context(variables + (key to rExpr), thisType, idx)
+            return withKeyToExpr(key, rExpr)
         }
-
-        val newVariables = (variables + (key to rExpr)).toMutableMap()
 
         val qualifier = key.qualifier
         val fieldKey = key.field
@@ -304,6 +304,8 @@ class Context(
                         && qualifier.ind == it.qualifier.ind
             }
             .toSet() + QualifiedKey(fieldKey, KeyBackreference(PlaceholderKey(qualifierInd), this.idx))
+
+        var newContext = withKeyToExpr(key, rExpr)
 
         for (aliasingKey in potentialAliasers) {
             fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
@@ -320,17 +322,27 @@ class Context(
             }
 
             val newRExpr = inner(rExpr.ind, qualifier.ind)
-
-            newVariables[aliasingKey] = newRExpr
+            newContext = newContext.withKeyToExpr(aliasingKey, newRExpr)
         }
 
-        return Context(newVariables, thisType, idx)
+        return newContext
+    }
+
+    /**
+     * The only location that should be making new root expressions.
+     * In some ways, one of the most important parts of [Context].
+     */
+    private fun withKeyToExpr(key: UnknownKey, expr: Expr<*>): Context {
+        val existingRootExpr = variables[key] ?: RootExpression.new(VariableExpr.new(KeyBackreference(key, idx)))
+        return Context(variables + (key to existingRootExpr.withREMExpr(expr)), thisType, idx)
     }
 
     private fun withVariablesResolvedBy(resolver: Context): Context {
         return Context(
             variables.mapValues { (_, expr) ->
-                resolver.resolveKnownVariables(expr)
+                expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
+                    varExpr.key.safelyResolveUsing(resolver)
+                }.optimise()
             },
             thisType,
             idx
@@ -367,7 +379,7 @@ class Context(
                 LValueKeyExpr.new(key)
             }
 
-            newContext = newContext.withVar(lValue, expr)
+            newContext = newContext.withVar(lValue, expr.getREMExpr())
         }
 
         return newContext.stripTemporaryKeys()
@@ -384,7 +396,7 @@ class Context(
             }
         } ?: expr
 
-        return Context(variables + (returnKey to newRetExpr), thisType, idx)
+        return withKeyToExpr(returnKey, newRetExpr)
     }
 
     private fun stripTemporaryKeys(): Context {

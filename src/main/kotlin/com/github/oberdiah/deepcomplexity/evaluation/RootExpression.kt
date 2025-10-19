@@ -68,7 +68,7 @@ class RootExpression<T : Any>(
     /**
      * The opposite of [getREMExpr]; returns a new RootExpression with the given REM expression.
      */
-    fun withREMExpr(expr: Expr<T>): RootExpression<T> = RootExpression(
+    fun withREMExpr(expr: Expr<*>): RootExpression<*> = RootExpression(
         staticExpr = staticExpr,
         restOfMethodExpr = expr
     )
@@ -90,6 +90,11 @@ class RootExpression<T : Any>(
             restOfMethodExpr = doNothingExpr
         )
     }
+
+    fun optimise() = RootExpression(
+        staticExpr = staticExpr.optimise(),
+        restOfMethodExpr = restOfMethodExpr.optimise()
+    )
 
     internal inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): RootExpression<T> {
         val newStaticExpr = staticExpr.replaceTypeInTree<Q>(replacement)
