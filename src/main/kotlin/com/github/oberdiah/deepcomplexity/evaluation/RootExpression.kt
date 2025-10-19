@@ -22,8 +22,14 @@ package com.github.oberdiah.deepcomplexity.evaluation
  * restOfMethodExpr: a.x` + 2
  * ```
  */
-class RootExpression<T : Any>(private val staticExpr: Expr<*>, private val restOfMethodExpr: Expr<T>) {
+class RootExpression<T : Any>(
+    private val staticExpr: Expr<*>,
+    private val restOfMethodExpr: Expr<T>
+) {
     companion object {
+        /**
+         * Should be used pretty sparingly. The majority of the time using [withREMExpr] makes more sense.
+         */
         fun new(expr: Expr<*>): RootExpression<*> {
             return RootExpression(
                 staticExpr = RestOfMethodExpr,
@@ -32,15 +38,47 @@ class RootExpression<T : Any>(private val staticExpr: Expr<*>, private val restO
         }
 
         fun combine(
+            doNothingExpr: Expr<*>,
             lhs: RootExpression<*>?,
             rhs: RootExpression<*>?,
             how: (a: Expr<*>, b: Expr<*>) -> Expr<*>
         ): RootExpression<*> {
-            TODO()
+            val lhsStaticExpr = lhs?.staticExpr ?: RestOfMethodExpr
+            val rhsStaticExpr = rhs?.staticExpr ?: RestOfMethodExpr
+
+            val finalStaticExpr = how(lhsStaticExpr, rhsStaticExpr)
+
+            val rhsROMExpr = rhs?.restOfMethodExpr ?: doNothingExpr
+            val lhsROMExpr = lhs?.restOfMethodExpr ?: doNothingExpr
+
+            val finalROMExpr = how(lhsROMExpr, rhsROMExpr)
+
+            return RootExpression(
+                staticExpr = finalStaticExpr,
+                restOfMethodExpr = finalROMExpr
+            )
         }
     }
 
-    fun getExpr(): Expr<*> {
+    /**
+     * Returns the 'rest of method' of this expression; this is the bit you typically want when you getVar().
+     */
+    fun getREMExpr(): Expr<*> = restOfMethodExpr
+
+    /**
+     * The opposite of [getREMExpr]; returns a new RootExpression with the given REM expression.
+     */
+    fun withREMExpr(expr: Expr<T>): RootExpression<T> = RootExpression(
+        staticExpr = staticExpr,
+        restOfMethodExpr = expr
+    )
+
+
+    /**
+     * You'll typically only call this if you're a method and want to collapse this expression
+     * as short-circuiting returns are no longer a concern.
+     */
+    fun collapseAndGetFullExpr(): Expr<*> {
         return staticExpr.replaceTypeInLeaves<RestOfMethodExpr>(restOfMethodExpr.ind) {
             restOfMethodExpr
         }
@@ -50,6 +88,15 @@ class RootExpression<T : Any>(private val staticExpr: Expr<*>, private val restO
         return RootExpression(
             staticExpr = restOfMethodExpr,
             restOfMethodExpr = doNothingExpr
+        )
+    }
+
+    internal inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): RootExpression<T> {
+        val newStaticExpr = staticExpr.replaceTypeInTree<Q>(replacement)
+        val newRestOfMethodExpr = restOfMethodExpr.replaceTypeInTree<Q>(replacement)
+        return RootExpression(
+            staticExpr = newStaticExpr,
+            restOfMethodExpr = newRestOfMethodExpr
         )
     }
 }
