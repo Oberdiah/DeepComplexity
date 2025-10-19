@@ -74,7 +74,6 @@ data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
  */
 sealed interface Qualifier {
     val ind: SetIndicator<*>
-    fun isNew(): Boolean
     fun addContextId(newId: Context.ContextId): Qualifier
 
     /**
@@ -95,7 +94,6 @@ data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey
 
     override fun toString(): String = "$qualifier.$field"
     override fun addContextId(id: Context.ContextId): QualifiedKey = QualifiedKey(field, qualifier.addContextId(id))
-    override fun isNewlyCreated(): Boolean = qualifier.isNew()
 
     // This is a bit ugly.
     // This whole situation is, really, with the recursive qualified key situation being so confusing.

@@ -1188,8 +1188,8 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
-	public static short simpleClassTest10(short x) {
+	@ExpectedExpressionSize(2)
+	public static short go(short x) {
 		MyClass nested = new MyClass(50);
 		if (x == 100) {
 			nested = new MyClass(100);
@@ -1267,7 +1267,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(2)
 	public static short simpleClassTest19(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = makeNewClass(2);
@@ -1403,7 +1403,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(2)
 	public static short simpleClassTest29(short x) {
 		MyClass nested = new MyClass(50);
 		if (x == 100) {
@@ -1414,7 +1414,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(134)
+	@ExpectedExpressionSize(63)
 	public static short simpleClassTest30(short x) {
 		MyClass c = makeNewClass(100);
 		
@@ -1436,7 +1436,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(39)
+	@ExpectedExpressionSize(8)
 	public static short simpleClassTest31(short x) {
 		MyClass c = new MyClass(100);
 		
@@ -1549,7 +1549,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(40)
+	@ExpectedExpressionSize(14)
 	public static short simpleClassTest39(short x) {
 		MyClass obj1 = new MyClass(1);
 		MyClass obj2 = obj1;
@@ -1711,7 +1711,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(19)
+	@ExpectedExpressionSize(11)
 	public static short ternaryTest6(short x) {
 		if (x == 0) {
 			return (x++ == 0) ? x : x;

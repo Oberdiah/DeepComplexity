@@ -273,7 +273,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with method call inside ternary
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnTernary(short x) {
 		if (x == 0) {
 			return 1;

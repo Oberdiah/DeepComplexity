@@ -155,7 +155,7 @@ object TestUtilities {
                 (e.message ?: "Failed to parse PSI")
                     .replace("An operation is not implemented: ", ""),
             )
-        }.returnValue!!
+        }.returnValue!!.optimise()
 
         val range = try {
             if (System.getenv("DEBUG") != "false") {

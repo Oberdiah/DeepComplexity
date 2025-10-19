@@ -20,7 +20,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation with equality
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(10)
 	public static short equalityConstraint(short x) {
 		int a = x;
 		if (a == 10) {
@@ -74,7 +74,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing multiple variable constraints
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(9)
 	public static short multiVariableConstraint(short x) {
 		int a = x;
 		int b = x;

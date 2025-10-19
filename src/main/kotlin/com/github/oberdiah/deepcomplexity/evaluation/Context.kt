@@ -85,7 +85,6 @@ class Context(
         override fun addContextId(newId: ContextId): KeyBackreference =
             KeyBackreference(key.addContextId(newId), contextId + newId)
 
-        override fun isNew(): Boolean = key.isNewlyCreated()
         fun isReturnExpr(): Boolean = key is ReturnKey
 
         /**
@@ -135,18 +134,10 @@ class Context(
                         val aVal = a.variables[key]
                         val bVal = b.variables[key]
 
-
-                        if (aVal != null && bVal != null) {
-                            how(aVal, bVal)
-                        } else if (key.isNewlyCreated()) {
-                            // Safety: We know at least one is not null.
-                            aVal ?: bVal!!
-                        } else {
-                            how(
-                                aVal ?: VariableExpr.new(KeyBackreference(key, a.idx)),
-                                bVal ?: VariableExpr.new(KeyBackreference(key, b.idx))
-                            )
-                        }
+                        how(
+                            aVal ?: VariableExpr.new(KeyBackreference(key, a.idx)),
+                            bVal ?: VariableExpr.new(KeyBackreference(key, b.idx))
+                        )
                     },
                 a.thisType,
                 a.idx + b.idx

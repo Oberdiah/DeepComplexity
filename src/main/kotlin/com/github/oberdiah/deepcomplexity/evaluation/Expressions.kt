@@ -225,10 +225,7 @@ data class ComparisonExpr<T : Any> private constructor(
             ComparisonExpr(lhs, rhs, comp)
 
         fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
-            StaticExpressionAnalysis.attemptToSimplifyComparison(lhs, rhs, comp)?.let {
-                return it
-            }
-            return ComparisonExpr(lhs, rhs, comp)
+            return StaticExpressionAnalysis.attemptToSimplifyComparison(lhs, rhs, comp)
         }
     }
 
@@ -307,20 +304,7 @@ data class IfExpr<T : Any> private constructor(
             val falseExpr = falseExpr.tryCastTo(trueExpr.ind)
                 ?: throw IllegalStateException("Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}")
 
-            // This equality is probably not very cheap.
-            // I'm sure that can be improved in the future.
-            // EXPR_EQUALITY_PERF_ISSUE
-            if (trueExpr == falseExpr) {
-                return trueExpr
-            }
-
-            if (condition == ConstExpr.TRUE) {
-                return trueExpr
-            } else if (condition == ConstExpr.FALSE) {
-                return falseExpr
-            }
-
-            return IfExpr(trueExpr, falseExpr, condition)
+            return StaticExpressionAnalysis.attemptToSimplifyIfExpr(trueExpr, falseExpr, condition)
         }
     }
 }
@@ -353,10 +337,7 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
             BooleanExpr(lhs, rhs, op)
 
         fun new(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
-            StaticExpressionAnalysis.attemptToSimplifyBooleanExpr(lhs, rhs, op)?.let {
-                return it
-            }
-            return BooleanExpr(lhs, rhs, op)
+            return StaticExpressionAnalysis.attemptToSimplifyBooleanExpr(lhs, rhs, op)
         }
     }
 
