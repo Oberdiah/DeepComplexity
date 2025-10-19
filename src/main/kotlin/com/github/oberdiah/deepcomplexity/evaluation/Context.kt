@@ -301,8 +301,10 @@ class Context(
         val rExpr = uncastExpr.castToUsingTypeCast(key.ind, false)
 
         if (key !is QualifiedKey) {
-            return withKeyToVar(key, rExpr)
+            return Context(variables + (key to rExpr), thisType, idx)
         }
+
+        val newVariables = (variables + (key to rExpr)).toMutableMap()
 
         val qualifier = key.qualifier
         val fieldKey = key.field
@@ -317,8 +319,6 @@ class Context(
                         && qualifier.ind == it.qualifier.ind
             }
             .toSet() + QualifiedKey(fieldKey, KeyBackreference(PlaceholderKey(qualifierInd), this.idx))
-
-        var newContext = withKeyToVar(key, rExpr)
 
         for (aliasingKey in potentialAliasers) {
             fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
@@ -336,14 +336,10 @@ class Context(
 
             val newRExpr = inner(rExpr.ind, qualifier.ind)
 
-            newContext = newContext.withKeyToVar(aliasingKey, newRExpr)
+            newVariables[aliasingKey] = newRExpr
         }
 
-        return newContext
-    }
-
-    private fun withKeyToVar(key: UnknownKey, expr: Expr<*>): Context {
-        return Context(variables + (key to expr), thisType, idx)
+        return Context(newVariables, thisType, idx)
     }
 
     private fun withVariablesResolvedBy(resolver: Context): Context {

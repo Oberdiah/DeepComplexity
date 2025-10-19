@@ -238,29 +238,6 @@ data class ComparisonExpr<T : Any> private constructor(
 }
 
 /**
- * Represents where, in an expression, the rest of the method is considered to continue from.
- *
- * For example, we would represent
- * ```
- * if (y > 10) {
- * 	a.x += 1;
- * 	return;
- * }
- * a.x = a.x + 2;
- * ```
- * as
- * ```
- * (y > 10) ? (a.x` + 1) : REM(a.x` + 2)
- * ```
- *
- * A method without any control flow will always just have a single [RestOfMethodExpr] wrapping its entire
- * expression.
- */
-data class RestOfMethodExpr<T : Any>(val expr: Expr<T>) : Expr<T>() {
-    override val ind: SetIndicator<T> = expr.ind
-}
-
-/**
  * Tries to cast the expression to the given set indicator.
  * Does nothing if the expression is already of the given type.
  *
