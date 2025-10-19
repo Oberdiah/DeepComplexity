@@ -135,14 +135,8 @@ class Context(
                         val aVal = a.variables[key]
                         val bVal = b.variables[key]
 
-                        // This equality is probably not very cheap.
-                        // I'm sure that can be improved in the future.
-                        // EXPR_EQUALITY_PERF_ISSUE (Note: this is the only one of these flags, I removed the other
-                        // which used to be in [StaticExpressionComparisonAnalysis] as)
-                        if (aVal == bVal) {
-                            // Safety: We know that at least one is not null, so both must be non-null in here.
-                            aVal!!
-                        } else if (aVal != null && bVal != null) {
+
+                        if (aVal != null && bVal != null) {
                             how(aVal, bVal)
                         } else if (key.isNewlyCreated()) {
                             // Safety: We know at least one is not null.

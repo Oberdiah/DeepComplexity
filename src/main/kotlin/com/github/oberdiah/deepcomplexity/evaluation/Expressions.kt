@@ -307,6 +307,13 @@ data class IfExpr<T : Any> private constructor(
             val falseExpr = falseExpr.tryCastTo(trueExpr.ind)
                 ?: throw IllegalStateException("Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}")
 
+            // This equality is probably not very cheap.
+            // I'm sure that can be improved in the future.
+            // EXPR_EQUALITY_PERF_ISSUE
+            if (trueExpr == falseExpr) {
+                return trueExpr
+            }
+
             if (condition == ConstExpr.TRUE) {
                 return trueExpr
             } else if (condition == ConstExpr.FALSE) {
