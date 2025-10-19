@@ -3,9 +3,12 @@ package testdata.ai;
 
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
+import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
+
 public class LongChainedComplexConditionalTest {
     	// Testing long chain of if-else with simple conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(27)
 	public static short chainedIfBasic(short x) {
 	    int result = 0;
 	    if (x > 10) {
@@ -24,6 +27,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with compound conditions using AND
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(35)
 	public static short chainedIfCompoundAnd(short x) {
 	    int result = 0;
 	    if (x > 20 && x < 25) {
@@ -40,6 +44,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with compound conditions using OR
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(38)
 	public static short chainedIfCompoundOr(short x) {
 	    int result = 0;
 	    if (x < -100 || x > 100) {
@@ -56,6 +61,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with mixed AND/OR conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(53)
 	public static short chainedIfMixedConditions(short x) {
 	    int result = 0;
 	    if ((x > 100 && x < 110) || x < -100) {
@@ -89,6 +95,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing nested if statements within chained if-else
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(40)
 	public static short nestedInChained(short x) {
 	    int result = 0;
 	    if (x > 0) {
@@ -119,6 +126,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with variable modifications
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(30)
 	public static short chainedIfVariableModification(short x) {
 	    int value = x;
 	    int result = 0;
@@ -156,6 +164,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing deeply nested chained conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(32)
 	public static short deeplyNestedChained(short x) {
 	    int result = 0;
 	    if (x > 0) {
@@ -207,6 +216,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with object field conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(34)
 	public static short chainedIfObjectFields(short x) {
 	    TestObject obj = new TestObject(x);
 	    int result = 0;
@@ -250,6 +260,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with early returns
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(31)
 	public static short chainedIfEarlyReturn(short x) {
 	    if (x > 100) {
 	        return 1;
@@ -265,6 +276,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with complex arithmetic in conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(50)
 	public static short chainedIfComplexArithmetic(short x) {
 	    int result = 0;
 	    if ((x * x + 2 * x + 1) > 100) {
@@ -344,6 +356,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with ternary operators in conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(64)
 	public static short chainedIfTernary(short x) {
 	    int result = 0;
 	    int val = x > 0 ? x : -x;

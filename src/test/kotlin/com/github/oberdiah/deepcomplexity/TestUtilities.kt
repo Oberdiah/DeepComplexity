@@ -57,8 +57,6 @@ object TestUtilities {
 
         val scoreResults = getMethodScore(reflectMethod, method.psiMethod)
 
-        val annotation = reflectMethod.getAnnotation(RequiredScore::class.java)
-
         // Track perfect-score methods for optional annotation updates in the summary phase.
         val filePath = method
             .psiMethod
@@ -77,7 +75,7 @@ object TestUtilities {
             )
         }
 
-        val (columns, passed) = getSummaryTableRow(scoreResults, annotation, reflectMethod)
+        val (columns, passed) = getSummaryTableRow(scoreResults, reflectMethod)
         val columnSpacing = listOf(17, 11, 7, 1, 1)
         val summary = columns.mapIndexed { i, s -> s.padEnd(columnSpacing[i]) }.joinToString(" | ")
         return summary to passed
@@ -85,9 +83,12 @@ object TestUtilities {
 
     private fun getSummaryTableRow(
         scoreResults: MethodScoreResults,
-        annotation: RequiredScore?,
         method: Method
     ): Pair<List<String>, Boolean> {
+        val requiredScoreAnnotation = method.getAnnotation(RequiredScore::class.java)
+        val expressionSizeAnnotation = method.getAnnotation(ExpectedExpressionSize::class.java)
+
+
         val scoreReceivedColumn = scoreResults.scoreReceivedColumn
         val extraInfoColumn = scoreResults.extraInfoColumn
         val methodScoreStr = String.format("%.2f", scoreResults.score * 100)
@@ -96,8 +97,22 @@ object TestUtilities {
             is MethodRan -> scoreResults.fraction
         }
 
-        if (annotation != null) {
-            val requiredScore = annotation.value
+        if (expressionSizeAnnotation != null) {
+            val requiredMaxExpressionSize = expressionSizeAnnotation.value
+            if (scoreResults.expressionSize > requiredMaxExpressionSize) {
+                println("\tExpression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize")
+                return listOf(
+                    "### Failed ###",
+                    scoreReceivedColumn,
+                    "$methodScoreStr%",
+                    "",
+                    "Expression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize"
+                ) to false
+            }
+        }
+
+        if (requiredScoreAnnotation != null) {
+            val requiredScore = requiredScoreAnnotation.value
             val requiredScoreStr = String.format("%.2f", requiredScore * 100)
 
             if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {

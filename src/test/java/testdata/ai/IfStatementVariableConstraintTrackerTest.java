@@ -2,9 +2,12 @@ package testdata.ai;
 
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
+import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
+
 public class IfStatementVariableConstraintTrackerTest {
 	// Testing basic constraint propagation through if statement
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short basicConstraint(short x) {
 		int a = x;
 		if (a > 5) {
@@ -17,6 +20,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation with equality
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(17)
 	public static short equalityConstraint(short x) {
 		int a = x;
 		if (a == 10) {
@@ -29,6 +33,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation with negation
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short negationConstraint(short x) {
 		int a = x;
 		if (a != 5) {
@@ -41,6 +46,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation with less than
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short lessThanConstraint(short x) {
 		int a = x;
 		if (a < 10) {
@@ -53,6 +59,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation in else branch
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short elseConstraint(short x) {
 		int a = x;
 		if (a > 100) {
@@ -67,6 +74,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing multiple variable constraints
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short multiVariableConstraint(short x) {
 		int a = x;
 		int b = x;
@@ -80,6 +88,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint with modified variable
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(15)
 	public static short modifiedVariableConstraint(short x) {
 		int a = x;
 		if (a > 5) {
@@ -93,6 +102,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation with logical AND
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(21)
 	public static short logicalAndConstraint(short x) {
 		int a = x;
 		if (a > 5 && a < 20) {
@@ -105,6 +115,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation with logical OR
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(21)
 	public static short logicalOrConstraint(short x) {
 		int a = x;
 		if (a < 5 || a > 20) {
@@ -117,6 +128,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing nested constraint refinement
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(23)
 	public static short nestedRefinement(short x) {
 		int a = x;
 		if (a > 0) {
@@ -131,6 +143,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint with aliased variables
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short aliasedConstraint(short x) {
 		int a = x;
 		int b = a;
@@ -144,6 +157,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint invalidation after assignment
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short constraintInvalidation(short x) {
 		int a = x;
 		if (a > 10) {
@@ -158,6 +172,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint with boundary values
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short boundaryConstraint(short x) {
 		int a = x;
 		if (a >= 10) {
@@ -170,6 +185,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation through multiple conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(24)
 	public static short multipleCondition(short x) {
 		int a = x;
 		if (a == 42) {
@@ -184,6 +200,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint with field access
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short fieldConstraint(short x) {
 		TestClass obj = new TestClass(x);
 		if (obj.value > 5) {
@@ -204,6 +221,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint with method return value
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short methodConstraint(short x) {
 		int a = getValue(x);
 		if (a > 10) {
@@ -220,6 +238,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint reset in different branches
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(23)
 	public static short branchConstraintReset(short x) {
 		int a = x;
 		if (a > 0) {
@@ -237,6 +256,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint with combined conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(18)
 	public static short combinedConstraint(short x) {
 		int a = x;
 		int b = x + 1;
@@ -250,6 +270,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint contradiction detection
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(14)
 	public static short contradiction(short x) {
 		int a = x;
 		if (a > 10 && a < 5) {

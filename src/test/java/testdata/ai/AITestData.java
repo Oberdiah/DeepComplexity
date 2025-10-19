@@ -5,9 +5,12 @@ import com.github.oberdiah.deepcomplexity.RequiredScore;
 
 import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
 
+import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
+
 public class AITestData {
 	// 1. Short overflow, but int is fine — subtle wrap
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short tricky1(short x) {
 		if (x == 30000) return (short) (x + 10000);  // Wraps past MAX_SHORT
 		return 0;
@@ -15,6 +18,7 @@ public class AITestData {
 	
 	// 2. Flip sign bit
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short tricky2(short x) {
 		if (x == -32768) return (short) (-x);  // Still -32768 due to two's complement
 		return 0;
@@ -22,6 +26,7 @@ public class AITestData {
 	
 	// 3. Comparison after cast wrap
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(13)
 	public static short tricky3(short x) {
 		int y = x + 40000;
 		short z = (short) y;
@@ -31,6 +36,7 @@ public class AITestData {
 	
 	// 4. Multiplication causes wrap only in short
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short tricky4(short x) {
 		if (x == 256) return (short) (x * 256);  // 256 * 256 = 65536 → 0 in short
 		return 0;
@@ -38,6 +44,7 @@ public class AITestData {
 	
 	// 5. Branch on overflowed result
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(13)
 	public static short tricky5(short x) {
 		short y = (short) (x + 32767);
 		if (y < 0) return 1;  // Will be negative only when wrapping occurs
@@ -46,6 +53,7 @@ public class AITestData {
 	
 	// 6. Wrap during subtraction
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(13)
 	public static short tricky6(short x) {
 		if (x == -30000) return (short) (x - 10000);  // Wraps
 		return 0;
@@ -53,6 +61,7 @@ public class AITestData {
 	
 	// 7. Control flow based on int, but returned value cast
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(11)
 	public static short tricky7(short x) {
 		int y = x * 5000;
 		if (y > 100000) return 1;
@@ -61,6 +70,7 @@ public class AITestData {
 	
 	// 8. Double cast wrap
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(14)
 	public static short tricky8(short x) {
 		int y = 70000;
 		if (x == 123) return (short) ((short) y + x);  // Outer cast wraps
@@ -69,6 +79,7 @@ public class AITestData {
 	
 	// 10. Opposite sign wrapping check
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short tricky9(short x) {
 		if (x == 16384) return (short) (x * 2);  // Exactly 32768 → wraps to -32768
 		return 0;
@@ -76,6 +87,7 @@ public class AITestData {
 	
 	// Test 1: Overflow at short boundary with conditional logic
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(15)
 	public static short overflowWithCondition(short x) {
 		short result = 0;
 		
@@ -93,6 +105,7 @@ public class AITestData {
 	// Test 2: Unexpected behaviour when casting after multiplication
 	@RequiredScore(0.0)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
+	@ExpectedExpressionSize(5)
 	public static short multiplicationCastTrap(short x) {
 		int temp = x * 32768; // Intentionally outside short range
 		return (short) temp;  // This truncates in an interesting way
@@ -100,6 +113,7 @@ public class AITestData {
 	
 	// Test 3: Boundary value testing with cascading conditions
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(28)
 	public static short boundaryValueCascade(short x) {
 		if (x == 32767) {
 			return -10;
@@ -169,6 +183,7 @@ public class AITestData {
 	
 	// Test 8: Combination of multiplication and conditional boundary
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(29)
 	public static short multiplyAndCompare(short x) {
 		int doubled = x * 2;
 		
@@ -183,6 +198,7 @@ public class AITestData {
 	
 	// Test 10: Mixed arithmetic with potential intermediate overflow
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(70)
 	public static short mixedArithmeticOverflow(short x) {
 		if (x > 120) {
 			return 0;
@@ -209,6 +225,7 @@ public class AITestData {
 	
 	// Test 12: Casting with potential overflow in multipliers - This test passed
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(17)
 	public static short testMultiplierEquivalence(short x) {
 		// This test creates a scenario where individual multipliers might overflow
 		// when cast to short, but the combined result might not (or vice versa)
@@ -226,6 +243,7 @@ public class AITestData {
 	
 	// Test 13: Edge case with maximum short value
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(18)
 	public static short testMaxShortEquivalence(short x) {
 		if (x == 32767) {
 			// This creates a scenario where casting the multiplier vs. the result
@@ -241,6 +259,7 @@ public class AITestData {
 	
 	// Test 14: Multiple multipliers with wrapping behavior
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(36)
 	public static short testMultipleWrapping(short x) {
 		if (x > 100 && x < 200) {
 			// Create multiple multipliers that might wrap differently
@@ -262,6 +281,7 @@ public class AITestData {
 	
 	// Test 15: Casting with negative multipliers
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(26)
 	public static short testNegativeEquivalence(short x) {
 		if (x < 0) {
 			// Negative values might be handled differently when casting

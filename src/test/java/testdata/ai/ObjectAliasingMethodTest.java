@@ -2,9 +2,12 @@ package testdata.ai;
 
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
+import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
+
 public class ObjectAliasingMethodTest {
 	// Testing basic aliasing with field modification
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short basicAliasing(short x) {
 		AliasClass obj = new AliasClass(5);
 		modifyBothRefs(obj, obj);
@@ -18,6 +21,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with conditional modification
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short conditionalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		conditionalModify(obj, obj);
@@ -33,6 +37,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with method chaining
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(8)
 	public static short chainingAliasing(short x) {
 		AliasClass obj = new AliasClass(5);
 		chainedModify(obj, obj);
@@ -47,6 +52,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with return value dependency
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short returnAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		return (short) modifyAndCheck(obj, obj);
@@ -59,6 +65,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with nested object references
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short nestedAliasing(short x) {
 		Container c1 = new Container(new AliasClass(0));
 		Container c2 = new Container(c1.inner);
@@ -85,6 +92,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with multiple field updates
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(4)
 	public static short multiFieldAliasing(short x) {
 		MultiField obj = new MultiField(1, 2);
 		multiFieldModify(obj, obj);
@@ -112,6 +120,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with object swapping attempt
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short swapAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		attemptSwap(obj, obj);
@@ -160,6 +169,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with method overloading
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short overloadAliasing(short x) {
 		AliasClass obj = new AliasClass(10);
 		overloadedModify(obj, obj, 20);
@@ -191,6 +201,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with synchronized methods
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(4)
 	public static short synchronizedAliasing(short x) {
 		AliasClass obj = new AliasClass(44);
 		synchronizedModify(obj, obj);
@@ -243,6 +254,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with final parameter modification
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short finalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		finalModify(obj, obj);
@@ -275,6 +287,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with constructor chaining
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short constructorAliasing(short x) {
 		ChainedClass obj = new ChainedClass(0);
 		constructorModify(obj.inner, obj.inner);

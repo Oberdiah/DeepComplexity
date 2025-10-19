@@ -1,78 +1,175 @@
 package com.github.oberdiah.deepcomplexity
 
 import com.github.oberdiah.deepcomplexity.TestUtilities.annotationInformation
-import org.jetbrains.kotlin.backend.common.push
+import java.nio.file.Files
+import java.nio.file.Paths
 
 object AnnotationApplier {
     val ANNOTATIONS = listOf(
-        "com.github.oberdiah.deepcomplexity.RequiredScore"
+        "com.github.oberdiah.deepcomplexity.RequiredScore",
+        "com.github.oberdiah.deepcomplexity.ExpectedExpressionSize"
     )
+
+    private fun updateAnnotationIfNeeded(
+        content: MutableList<String>,
+        methodIndex: Int,
+        annotationName: String,
+        newValue: Number,
+        filePath: String,
+        methodName: String,
+        // New, Existing -> Should we update?
+        shouldUpdate: (Double, Double?) -> Boolean
+    ) {
+        // Regex to capture the value from annotations like @Name(1.0) or @Name(value = 1.0) or @Name(1)
+        val valueRegex = "${annotationName}\\((?:value\\s*=\\s*)?([0-9.]+)\\)".toRegex()
+        val newScoreAsDouble = newValue.toDouble()
+
+        var existingAnnotationIndex = -1
+        var existingScore: Double? = null
+
+        // Look backward from the method definition to find an existing annotation
+        var lookback = methodIndex - 1
+        while (lookback >= 0) {
+            val trimmedLine = content[lookback].trim()
+
+            // Skip empty lines and comments
+            if (trimmedLine.isEmpty() || trimmedLine.startsWith("//") || trimmedLine.startsWith("/*") || trimmedLine.endsWith(
+                    "*/"
+                )
+            ) {
+                lookback--
+                continue
+            }
+
+            // Check if this is the annotation we care about
+            if (trimmedLine.startsWith(annotationName)) {
+                existingAnnotationIndex = lookback
+                // Try to parse the score from it
+                valueRegex.find(trimmedLine)?.let { match ->
+                    existingScore = match.groupValues[1].toDoubleOrNull()
+                }
+                break // Found it, stop looking
+            }
+
+            // If it's another annotation, keep looking up
+            if (trimmedLine.startsWith("@")) {
+                lookback--
+                continue
+            }
+
+            // If we hit code (not an annotation, comment, or empty line), stop
+            break
+        }
+
+        val indent = content[methodIndex].takeWhile { it.isWhitespace() }
+        val annotationString =
+            "$indent$annotationName($newValue)"
+
+        if (shouldUpdate(newScoreAsDouble, existingScore)) {
+            if (existingAnnotationIndex != -1) {
+                // --- Update existing annotation ---
+                content[existingAnnotationIndex] = annotationString
+                println("Updated $annotationName from $existingScore to $newValue for $filePath#$methodName")
+            } else {
+                // --- Add new annotation ---
+                content.add(methodIndex, annotationString)
+                println("Added $annotationString to $filePath#$methodName")
+            }
+        }
+    }
 
     fun applyAnnotations() {
         val methodsByFile = annotationInformation.groupBy { it.filePath }
         methodsByFile.forEach { (filePath, methods) ->
             try {
-                val path = java.nio.file.Paths.get(filePath)
-                var content = java.nio.file.Files.readAllLines(path).toMutableList()
+                val path = Paths.get(filePath)
+                var content = Files.readAllLines(path).toMutableList()
 
-                // Ensure imports exist
+                // --- Ensure imports exist ---
                 for (annotation in ANNOTATIONS) {
-                    val importLine = "import ${annotation};"
+                    val importLine = "import $annotation;"
                     val hasImport = content.any { it.trim() == importLine }
                     if (!hasImport) {
-                        // Find package line and last import index
                         val packageIndex = content.indexOfFirst { it.trim().startsWith("package ") }
-                        var insertIndex = packageIndex + 1
-                        while (insertIndex < content.size && content[insertIndex].trim().startsWith("import ")) {
+                        var insertIndex = if (packageIndex != -1) packageIndex + 1 else 0
+
+                        // Find last import or first non-empty line
+                        while (insertIndex < content.size && (content[insertIndex].trim()
+                                .startsWith("import ") || content[insertIndex].trim().isEmpty())
+                        ) {
                             insertIndex++
                         }
-                        // Insert a blank line if none between package and imports
-                        if (insertIndex == packageIndex + 1) {
-                            content.add(insertIndex, "")
-                            insertIndex++
+
+                        // Find the first non-empty/non-import line after package
+                        val firstCodeLineIndex = content.drop(packageIndex + 1).indexOfFirst {
+                            !it.trim().startsWith("import ") && it.trim().isNotEmpty()
                         }
-                        content.add(insertIndex, importLine)
+
+                        var finalInsertIndex =
+                            if (firstCodeLineIndex != -1) (packageIndex + 1 + firstCodeLineIndex) else insertIndex
+
+                        // If we are inserting right after the package, add a blank line
+                        if (finalInsertIndex == packageIndex + 1 && packageIndex != -1) {
+                            content.add(finalInsertIndex, "")
+                            finalInsertIndex++
+                        }
+
+                        content.add(finalInsertIndex, importLine)
+
+                        // Add a blank line after the new import if needed
+                        if (finalInsertIndex < content.size - 1 && content[finalInsertIndex + 1].trim()
+                                .isNotEmpty() && !content[finalInsertIndex + 1].trim().startsWith("import ")
+                        ) {
+                            content.add(finalInsertIndex + 1, "")
+                        }
                     }
                 }
 
-                // For each method in this file, add annotation if not already present
-                methods.forEach { pm ->
+                // First, find all method indices based on the *original* content
+                val methodsWithIndices = methods.map { pm ->
                     val methodName = pm.methodName
-                    // Find the line index of the method declaration
                     val idx = content.indexOfFirst { line ->
                         val trimmed = line.trim()
-                        // Match public static ... methodName(
-                        trimmed.startsWith("public ") && trimmed.contains(" ${methodName}(")
+                        // Match lines like: public ..., private ..., protected ..., or default package ... methodName(
+                        (trimmed.startsWith("public ") || trimmed.startsWith("private ") || trimmed.startsWith("protected ") ||
+                                !trimmed.startsWith("@")) &&
+                                trimmed.contains(" ${methodName}(")
                     }
-                    if (idx >= 0) {
-                        // Check if the previous non-empty, non-comment line already has @RequiredScore
-                        var lookback = idx - 1
-                        var annotationsWeHave = mutableListOf<String>()
-                        while (lookback >= 0) {
-                            val t = content[lookback].trim()
-                            if (t.isEmpty()) {
-                                lookback--; continue
-                            }
-                            if (t.startsWith("//")) {
-                                lookback--; continue
-                            }
-                            if (t.startsWith("@")) {
-                                annotationsWeHave.push(t.takeWhile { it != '(' })
-                            }
-                            break
-                        }
-                        val indent = content[idx].takeWhile { it.isWhitespace() }
+                    pm to idx
+                }
 
-                        if (!annotationsWeHave.contains("@RequiredScore") && pm.scoreAchieved == 1.0) {
-                            content.add(idx, "$indent@RequiredScore(1.0)")
-                            println("Added @RequiredScore(1.0) to $filePath#$methodName")
-                        }
-                    } else {
-                        println("Warning: Could not locate method declaration for $filePath#$methodName")
+                // Process methods in REVERSE line order to avoid index shifting
+                methodsWithIndices.filter { it.second >= 0 }.sortedByDescending { it.second }.forEach { (pm, idx) ->
+                    val methodName = pm.methodName
+
+                    updateAnnotationIfNeeded(
+                        content = content,
+                        methodIndex = idx,
+                        annotationName = "@ExpectedExpressionSize",
+                        newValue = pm.expressionSize,
+                        filePath = filePath,
+                        methodName = methodName,
+                        shouldUpdate = { new, existing -> new > 0.0 && (existing == null || new < existing) }
+                    )
+                    if (pm.scoreAchieved == 1.0) {
+                        updateAnnotationIfNeeded(
+                            content = content,
+                            methodIndex = idx,
+                            annotationName = "@RequiredScore",
+                            newValue = pm.scoreAchieved,
+                            filePath = filePath,
+                            methodName = methodName,
+                            shouldUpdate = { new, existing -> new > (existing ?: 0.0) }
+                        )
                     }
                 }
 
-                java.nio.file.Files.writeString(path, content.joinToString("\n"))
+                // Log warnings for methods not found
+                methodsWithIndices.filter { it.second < 0 }.forEach { (pm, idx) ->
+                    println("Warning: Could not locate method declaration for $filePath#${pm.methodName}")
+                }
+
+                Files.writeString(path, content.joinToString("\n"))
             } catch (e: Throwable) {
                 println("Failed to update annotations in file '$filePath': ${e.message}")
                 e.printStackTrace()

@@ -2,8 +2,11 @@ package testdata.ai;
 
 import com.github.oberdiah.deepcomplexity.RequiredScore;
 
+import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
+
 public class ParameterOrderEvaluationTest {
 	// Testing parameter evaluation order with side effects
+	@ExpectedExpressionSize(8)
 	public static short parameterOrder(short x) {
 		Counter c = new Counter();
 		multiParamMethod(c.increment(), c.increment(), c.increment());
@@ -19,6 +22,7 @@ public class ParameterOrderEvaluationTest {
 	
 	// Testing field modification in parameter evaluation
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short fieldParamOrder(short x) {
 		FieldClass obj = new FieldClass(5);
 		multiParamMethod(obj.field, obj.field = 10, obj.field + 5);
@@ -43,6 +47,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing nested method calls in parameter evaluation
+	@ExpectedExpressionSize(12)
 	public static short nestedCallParam(short x) {
 		Counter c = new Counter();
 		multiParamMethod(incrementTwice(c), c.increment(), incrementTwice(c));
@@ -57,6 +62,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with object creation
+	@ExpectedExpressionSize(6)
 	public static short objectCreationParam(short x) {
 		Counter c = new Counter();
 		multiParamMethod(new Counter().increment(), c.increment(), c.increment());
@@ -72,6 +78,7 @@ public class ParameterOrderEvaluationTest {
 	
 	// Testing parameter evaluation with volatile fields
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short volatileParam(short x) {
 		VolatileClass obj = new VolatileClass(3);
 		multiParamMethod(obj.volatileField, obj.volatileField = 7, obj.volatileField + 4);
@@ -87,6 +94,7 @@ public class ParameterOrderEvaluationTest {
 	
 	// Testing parameter evaluation with inheritance
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(4)
 	public static short inheritanceParam(short x) {
 		ChildClass child = new ChildClass(4);
 		multiParamMethod(child.getValue(), child.doubleValue(), child.getValue());
@@ -94,6 +102,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with boolean short-circuit
+	@ExpectedExpressionSize(17)
 	public static short shortCircuitParam(short x) {
 		Counter c = new Counter();
 		booleanMethod(c.increment() > 0 && c.increment() > 0, c.increment() > 0);
@@ -108,6 +117,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with constructor calls
+	@ExpectedExpressionSize(8)
 	public static short constructorParam(short x) {
 		Counter c = new Counter();
 		multiParamMethod(c.increment(), new Counter(c.increment()).value, c.increment());
@@ -122,6 +132,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with ternary operator
+	@ExpectedExpressionSize(6)
 	public static short ternaryParam(short x) {
 		Counter c = new Counter();
 		multiParamMethod(c.increment(), true ? c.increment() : c.increment(), c.value);
@@ -138,6 +149,7 @@ public class ParameterOrderEvaluationTest {
 	
 	// Testing parameter order with multiple assignment
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short multipleAssignmentParam(short x) {
 		int a = 10, b = 20;
 		multiParamMethod(a, a = b, b = 30);
