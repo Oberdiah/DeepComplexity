@@ -43,9 +43,9 @@ object ExprConstrain {
             is ConstExpr -> ConstExpr(!expr.value, expr.ind)
             is IfExpr -> {
                 IfExpr.new(
-                    expr.thisCondition,
+                    expr.trueExpr.inverted(),
                     expr.falseExpr.inverted(),
-                    expr.trueExpr.inverted()
+                    expr.thisCondition
                 )
             }
 

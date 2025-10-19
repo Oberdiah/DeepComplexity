@@ -96,6 +96,7 @@ object TestUtilities {
             is MethodFailed -> scoreResults.failureMessage
             is MethodRan -> scoreResults.fraction
         }
+        println("\tExpression size: ${scoreResults.expressionSize}")
 
         if (expressionSizeAnnotation != null) {
             val requiredMaxExpressionSize = expressionSizeAnnotation.value
