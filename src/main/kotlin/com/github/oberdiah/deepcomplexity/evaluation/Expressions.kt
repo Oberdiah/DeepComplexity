@@ -191,6 +191,13 @@ inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
     }(newInd, replacement)
 }
 
+object RestOfMethodExpr : Expr<Any>() {
+    override val ind: SetIndicator<Any>
+        get() = throw IllegalStateException(
+            "Nothing should be accessing this. To nearly all of the program this shouldn't exist."
+        )
+}
+
 data class ArithmeticExpr<T : Number>(
     val lhs: Expr<T>,
     val rhs: Expr<T>,
