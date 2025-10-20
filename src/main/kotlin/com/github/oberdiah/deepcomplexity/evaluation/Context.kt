@@ -159,12 +159,11 @@ class Context(
             variables.filterKeys { it.isPlaceholder() }.entries.joinToString("\n") { entry ->
                 "${entry.key}:\n${entry.value.toString().prependIndent()}"
             }
-        return "Context: {\n" + nonPlaceholderVariablesString.prependIndent() + "\n" +
-                if (placeholderVariablesString.isNotEmpty()) {
-                    "################\n${placeholderVariablesString.prependIndent()}\n"
-                } else {
-                    ""
-                } + "}"
+
+        return "Context: {\n" +
+                "${nonPlaceholderVariablesString.prependIndent()}\n" +
+                "${placeholderVariablesString.prependIndent()}\n" +
+                "}"
     }
 
     fun getVar(key: UnknownKey): Expr<*> {
@@ -378,20 +377,12 @@ class Context(
         return Context(newVariables, thisType, idx).stripTemporaryKeys()
     }
 
-    /**
-     * Adds the return onto this context in the manner that returns should be added;
-     * that is, if this context already has a return, this new one is substituted into the old.
-     */
-    fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>, doNewStuff: Boolean = true): Context {
+    fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>): Context {
         val newRetExpr = returnValue?.let { returnValue ->
             returnValue.replaceTypeInTree<VariableExpr<*>> {
                 if (it.key.isReturnExpr()) expr else null
             }
         } ?: expr
-
-        if (!doNewStuff) {
-            return withKeyToExpr(returnKey, newRetExpr)
-        }
 
         var variables = withKeyToExpr(returnKey, newRetExpr).variables
 

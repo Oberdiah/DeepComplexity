@@ -451,8 +451,7 @@ object MethodProcessing {
         method.body?.let { body ->
             processPsiStatement(body, methodContext)
         }
-        methodContext.c = methodContext.c.withCollapsedRootExpressions()
-        return methodContext.c
+        return methodContext.c.withCollapsedRootExpressions()
     }
 
     private fun processPolyadicExpr(
