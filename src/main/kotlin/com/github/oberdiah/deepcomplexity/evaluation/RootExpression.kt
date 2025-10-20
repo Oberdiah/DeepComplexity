@@ -76,6 +76,15 @@ class RootExpression<T : Any>(
         )
     }
 
+    fun withHitReturnMethod(doNothingExpr: Expr<*>): RootExpression<*> {
+        return RootExpression(
+            staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
+                restOfMethodExpr
+            },
+            restOfMethodExpr = doNothingExpr
+        )
+    }
+
     override fun toString(): String {
         if (staticExpr is RestOfMethodExpr<*>) {
             return restOfMethodExpr.toString()
@@ -91,6 +100,7 @@ class RootExpression<T : Any>(
      */
     fun getREMExpr(): Expr<*> = restOfMethodExpr
 
+
     /**
      * The opposite of [getREMExpr]; returns a new RootExpression with the given REM expression.
      */
@@ -98,7 +108,6 @@ class RootExpression<T : Any>(
         staticExpr = staticExpr,
         restOfMethodExpr = expr
     )
-
 
     /**
      * You'll typically only call this if you're a method and want to collapse this expression
@@ -108,13 +117,6 @@ class RootExpression<T : Any>(
         return staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
             restOfMethodExpr
         }
-    }
-
-    fun withHitReturnMethod(doNothingExpr: Expr<*>): RootExpression<*> {
-        return RootExpression(
-            staticExpr = restOfMethodExpr,
-            restOfMethodExpr = doNothingExpr
-        )
     }
 
     fun optimise() = RootExpression(
