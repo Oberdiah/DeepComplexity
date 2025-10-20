@@ -1724,16 +1724,68 @@ public class MyTestData {
 	@ExpectedExpressionSize(10)
 	public static short earlyReturnTest1(short x) {
 		MyClass nested = new MyClass(2);
-		
-		updateClassField2(nested, x);
-		
+		earlyReturnTest1Method(nested, x);
 		return (short) nested.x;
 	}
 	
-	private static void updateClassField2(MyClass nested, int x) {
+	private static void earlyReturnTest1Method(MyClass nested, int x) {
 		nested.x = 0;
 		if (x < 5) {
 			nested.x = 2;
+			return;
+		}
+		nested.x++;
+	}
+	
+	@RequiredScore(1.0)
+	public static short earlyReturnTest2(short x) {
+		MyClass nested = new MyClass(2);
+		earlyReturnTest2Method(nested, x);
+		return (short) nested.x;
+	}
+	
+	private static void earlyReturnTest2Method(MyClass nested, int x) {
+		nested.x = 0;
+		if (x < 5) {
+			nested.x = 2;
+			return;
+		}
+		if (x < 10) {
+			nested.x = 3;
+			return;
+		}
+		nested.x++;
+	}
+	
+	public static short earlyReturnTest3(short x) {
+		MyClass nested = new MyClass(2);
+		earlyReturnTest3Method(nested, x);
+		return (short) nested.x;
+	}
+	
+	private static void earlyReturnTest3Method(MyClass nested, int x) {
+		nested.x++;
+		if (x < 10) {
+			if (x < 5) {
+				nested.x = 2;
+				return;
+			}
+			nested.x += 3;
+			if (x > 7) {
+				return;
+			}
+		}
+		nested.x++;
+	}
+	
+	public static short earlyReturnTest4(short x) {
+		MyClass nested = new MyClass(2);
+		earlyReturnTest4Method(nested, x);
+		return (short) nested.x;
+	}
+	
+	private static void earlyReturnTest4Method(MyClass nested, int x) {
+		if (x < 10) {
 			return;
 		}
 		nested.x++;
