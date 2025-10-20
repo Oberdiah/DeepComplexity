@@ -148,13 +148,7 @@ class Context(
     }
 
     val returnValue: Expr<*>?
-        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.getREMExpr()
-
-    val returnKey: ReturnKey?
-        get() = variables.keys.filterIsInstance<ReturnKey>().firstOrNull()
-
-    val returnPair: Pair<ReturnKey, Expr<*>>?
-        get() = returnKey?.let { Pair(it, returnValue!!) }
+        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.collapseAndGetFullExpr()
 
     override fun toString(): String {
         val nonPlaceholderVariablesString =
@@ -363,15 +357,10 @@ class Context(
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(other: Context): Context {
-        // Gotta not resolve returns here, as that wouldn't be the backward resolve that returns are supposed to be.
-        // Returns still need to have other variables in their expressions resolved, though.
-        val resolvedOther = other.stripPlaceholderKeys().withVariablesResolvedBy(withoutReturnValue())
+        val resolvedOther = other.stripPlaceholderKeys().withVariablesResolvedBy(this)
+        var newContext = this
 
-        // ...then we add that newly resolved return value to the new context,
-        var newContext = resolvedOther.returnPair?.let { withAdditionalReturn(it.first, it.second, false) } ?: this
-
-        // finally, we avoid stomping over that newly created return value.
-        for ((key, expr) in resolvedOther.withoutReturnValue().variables) {
+        for ((key, expr) in resolvedOther.variables) {
             val lValue = if (key is QualifiedKey) {
                 LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this))
             } else {
@@ -383,7 +372,7 @@ class Context(
         }
 
         val newVariables = newContext.variables.mapValues {
-            it.value.withStackedRoot(other.variables[it.key])
+            it.value.withStackedRoot(resolvedOther.variables[it.key])
         }
 
         return Context(newVariables, thisType, idx).stripTemporaryKeys()
@@ -407,10 +396,7 @@ class Context(
         var variables = withKeyToExpr(returnKey, newRetExpr).variables
 
         variables = variables.mapValues {
-            if (it.key is ReturnKey)
-                it.value
-            else
-                it.value.withHitReturnMethod(VariableExpr.new(KeyBackreference(it.key, idx)))
+            it.value.withHitReturnMethod(VariableExpr.new(KeyBackreference(it.key, idx)))
         }
 
         return Context(variables, thisType, idx)
