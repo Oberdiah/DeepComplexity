@@ -451,6 +451,7 @@ object MethodProcessing {
         method.body?.let { body ->
             processPsiStatement(body, methodContext)
         }
+        methodContext.c = methodContext.c.withCollapsedRootExpressions()
         return methodContext.c
     }
 

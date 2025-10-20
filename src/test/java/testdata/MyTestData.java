@@ -119,7 +119,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(101)
+	@ExpectedExpressionSize(127)
 	public static short test11(short x) {
 		int q = 0;
 		if ((q++ > 0) && (q++ > 1) && (q++ > 2)) {
@@ -1720,6 +1720,8 @@ public class MyTestData {
 		return -10;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(10)
 	public static short earlyReturnTest1(short x) {
 		MyClass nested = new MyClass(2);
 		
@@ -1729,7 +1731,7 @@ public class MyTestData {
 	}
 	
 	private static void updateClassField2(MyClass nested, int x) {
-		nested.x = x;
+		nested.x = 0;
 		if (x < 5) {
 			nested.x = 2;
 			return;

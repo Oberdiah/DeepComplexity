@@ -1,5 +1,7 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+
 /**
  * In order to implement early returns, each expression in a context needs to be
  * split in half - a section representing the 'rest of the method' and a section
@@ -32,7 +34,7 @@ class RootExpression<T : Any>(
          */
         fun new(expr: Expr<*>): RootExpression<*> {
             return RootExpression(
-                staticExpr = RestOfMethodExpr,
+                staticExpr = RestOfMethodExpr(expr.ind),
                 restOfMethodExpr = expr
             )
         }
@@ -43,8 +45,10 @@ class RootExpression<T : Any>(
             rhs: RootExpression<*>?,
             how: (a: Expr<*>, b: Expr<*>) -> Expr<*>
         ): RootExpression<*> {
-            val lhsStaticExpr = lhs?.staticExpr ?: RestOfMethodExpr
-            val rhsStaticExpr = rhs?.staticExpr ?: RestOfMethodExpr
+            val ind = doNothingExpr.ind
+
+            val lhsStaticExpr = lhs?.staticExpr ?: RestOfMethodExpr(ind)
+            val rhsStaticExpr = rhs?.staticExpr ?: RestOfMethodExpr(ind)
 
             val finalStaticExpr = how(lhsStaticExpr, rhsStaticExpr)
 
@@ -59,6 +63,28 @@ class RootExpression<T : Any>(
             )
         }
     }
+
+    fun withStackedRoot(other: RootExpression<*>?): RootExpression<*> {
+        if (other == null) return this
+
+        return RootExpression(
+            staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
+                other.staticExpr
+            },
+            // Just stack the static expression for now.
+            restOfMethodExpr = this.restOfMethodExpr
+        )
+    }
+
+    override fun toString(): String {
+        if (staticExpr is RestOfMethodExpr<*>) {
+            return restOfMethodExpr.toString()
+        }
+
+        return "{\n${staticExpr.toString().prependIndent()}\n\n${restOfMethodExpr.toString().prependIndent()}\n}"
+    }
+
+    private val ind: SetIndicator<T> = restOfMethodExpr.ind
 
     /**
      * Returns the 'rest of method' of this expression; this is the bit you typically want when you getVar().
@@ -79,12 +105,12 @@ class RootExpression<T : Any>(
      * as short-circuiting returns are no longer a concern.
      */
     fun collapseAndGetFullExpr(): Expr<*> {
-        return staticExpr.replaceTypeInLeaves<RestOfMethodExpr>(restOfMethodExpr.ind) {
+        return staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
             restOfMethodExpr
         }
     }
 
-    fun withHitReturnMethod(doNothingExpr: Expr<T>): RootExpression<T> {
+    fun withHitReturnMethod(doNothingExpr: Expr<*>): RootExpression<*> {
         return RootExpression(
             staticExpr = restOfMethodExpr,
             restOfMethodExpr = doNothingExpr

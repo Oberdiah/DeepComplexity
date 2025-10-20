@@ -368,7 +368,7 @@ class Context(
         val resolvedOther = other.stripPlaceholderKeys().withVariablesResolvedBy(withoutReturnValue())
 
         // ...then we add that newly resolved return value to the new context,
-        var newContext = resolvedOther.returnPair?.let { withAdditionalReturn(it.first, it.second) } ?: this
+        var newContext = resolvedOther.returnPair?.let { withAdditionalReturn(it.first, it.second, false) } ?: this
 
         // finally, we avoid stomping over that newly created return value.
         for ((key, expr) in resolvedOther.withoutReturnValue().variables) {
@@ -382,21 +382,38 @@ class Context(
             newContext = newContext.withVar(lValue, expr.getREMExpr())
         }
 
-        return newContext.stripTemporaryKeys()
+        val newVariables = newContext.variables.mapValues {
+            it.value.withStackedRoot(other.variables[it.key])
+        }
+
+        return Context(newVariables, thisType, idx).stripTemporaryKeys()
     }
 
     /**
      * Adds the return onto this context in the manner that returns should be added;
      * that is, if this context already has a return, this new one is substituted into the old.
      */
-    fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>): Context {
+    fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>, doNewStuff: Boolean = true): Context {
         val newRetExpr = returnValue?.let { returnValue ->
             returnValue.replaceTypeInTree<VariableExpr<*>> {
                 if (it.key.isReturnExpr()) expr else null
             }
         } ?: expr
 
-        return withKeyToExpr(returnKey, newRetExpr)
+        if (!doNewStuff) {
+            return withKeyToExpr(returnKey, newRetExpr)
+        }
+
+        var variables = withKeyToExpr(returnKey, newRetExpr).variables
+
+        variables = variables.mapValues {
+            if (it.key is ReturnKey)
+                it.value
+            else
+                it.value.withHitReturnMethod(VariableExpr.new(KeyBackreference(it.key, idx)))
+        }
+
+        return Context(variables, thisType, idx)
     }
 
     private fun stripTemporaryKeys(): Context {
@@ -409,5 +426,13 @@ class Context(
 
     fun withoutReturnValue(): Context {
         return Context(variables.filterKeys { it !is ReturnKey }, thisType, idx)
+    }
+
+    fun withCollapsedRootExpressions(): Context {
+        return Context(
+            variables.mapValues { RootExpression.new(it.value.collapseAndGetFullExpr()) },
+            thisType,
+            idx
+        )
     }
 }
