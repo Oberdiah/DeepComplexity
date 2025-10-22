@@ -378,8 +378,8 @@ class Context(
     }
 
     fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>): Context {
-        val newRetExpr = returnValue?.let { returnValue ->
-            returnValue.replaceTypeInTree<VariableExpr<*>> {
+        val newRetExpr = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.let { returnValue ->
+            returnValue.getREMExpr().replaceTypeInTree<VariableExpr<*>> {
                 if (it.key.isReturnExpr()) expr else null
             }
         } ?: expr
