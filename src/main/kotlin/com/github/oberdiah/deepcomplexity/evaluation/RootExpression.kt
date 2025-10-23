@@ -85,6 +85,15 @@ class RootExpression<T : Any>(
         )
     }
 
+    fun stackedUnder(stackedUnder: RootExpression<*>): RootExpression<*> {
+        return RootExpression(
+            staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
+                stackedUnder.staticExpr
+            },
+            restOfMethodExpr = stackedUnder.restOfMethodExpr
+        )
+    }
+
     fun withHitReturnMethod(doNothingExpr: Expr<*>): RootExpression<*> {
         return RootExpression(
             staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {

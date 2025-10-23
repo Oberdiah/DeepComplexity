@@ -279,7 +279,7 @@ class Context(
         val rExpr = uncastExpr.castToUsingTypeCast(key.ind, false)
 
         if (key !is QualifiedKey) {
-            return withKeyToExpr(key, rExpr)
+            return withKeyToExpr(key, RootExpression.new(rExpr))
         }
 
         val qualifier = key.qualifier
@@ -296,7 +296,7 @@ class Context(
             }
             .toSet() + QualifiedKey(fieldKey, KeyBackreference(PlaceholderKey(qualifierInd), this.idx))
 
-        var newContext = withKeyToExpr(key, rExpr)
+        var newContext = withKeyToExpr(key, RootExpression.new(rExpr))
 
         for (aliasingKey in potentialAliasers) {
             fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
@@ -313,7 +313,7 @@ class Context(
             }
 
             val newRExpr = inner(rExpr.ind, qualifier.ind)
-            newContext = newContext.withKeyToExpr(aliasingKey, newRExpr)
+            newContext = newContext.withKeyToExpr(aliasingKey, RootExpression.new(newRExpr))
         }
 
         return newContext
@@ -323,9 +323,10 @@ class Context(
      * The only location that should be making new root expressions.
      * In some ways, one of the most important parts of [Context].
      */
-    private fun withKeyToExpr(key: UnknownKey, expr: Expr<*>): Context {
+    private fun withKeyToExpr(key: UnknownKey, expr: RootExpression<*>): Context {
         val existingRootExpr = variables[key] ?: RootExpression.new(VariableExpr.new(KeyBackreference(key, idx)))
-        return Context(variables + (key to existingRootExpr.withREMExpr(expr)), thisType, idx)
+
+        return Context(variables + (key to existingRootExpr.stackedUnder(expr)), thisType, idx)
     }
 
     private fun withVariablesResolvedBy(resolver: Context): Context {
@@ -376,13 +377,7 @@ class Context(
     }
 
     fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>): Context {
-        val newRetExpr = returnValue?.let { returnValue ->
-            returnValue.replaceTypeInTree<VariableExpr<*>> {
-                if (it.key.isReturnExpr()) expr else null
-            }
-        } ?: expr
-
-        var variables = withKeyToExpr(returnKey, newRetExpr).variables
+        var variables = withKeyToExpr(returnKey, RootExpression.new(expr)).variables
 
         variables = variables.mapValues {
             it.value.withHitReturnMethod(VariableExpr.new(KeyBackreference(it.key, idx)))
