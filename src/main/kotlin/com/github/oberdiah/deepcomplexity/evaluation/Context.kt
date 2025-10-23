@@ -355,7 +355,7 @@ class Context(
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(other: Context): Context {
-        val resolvedOther = other.stripPlaceholderKeys().withVariablesResolvedBy(this)
+        val resolvedOther = other.withoutPlaceholderKeys().withVariablesResolvedBy(this)
         var newContext = this
 
         for ((key, expr) in resolvedOther.variables) {
@@ -373,34 +373,22 @@ class Context(
             it.value.withStackedRoot(resolvedOther.variables[it.key])
         }
 
-        return Context(newVariables, thisType, idx).stripTemporaryKeys()
+        return Context(newVariables, thisType, idx).withoutTemporaryKeys()
     }
 
-    fun haveHitReturn(): Context = Context(
-        variables.mapValues {
-            it.value.withHitReturnMethod(VariableExpr.new(KeyBackreference(it.key, idx)))
-        },
-        thisType,
-        idx
-    )
+    fun haveHitReturn(): Context =
+        this.mapVariables { key, expr ->
+            expr.withHitReturnMethod(VariableExpr.new(KeyBackreference(key, idx)))
+        }
 
-    private fun stripTemporaryKeys(): Context {
-        return Context(variables.filterKeys { !it.temporary }, thisType, idx)
-    }
+    private fun withoutTemporaryKeys(): Context = this.filterVariables { !it.temporary }
+    private fun withoutPlaceholderKeys(): Context = this.filterVariables { !it.isPlaceholder() }
+    fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
+    fun withCollapsedRootExpressions(): Context = this.mapVariables { _, expr -> expr.collapse() }
 
-    private fun stripPlaceholderKeys(): Context {
-        return Context(variables.filterKeys { !it.isPlaceholder() }, thisType, idx)
-    }
+    private fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
+        Context(variables.filterKeys(predicate), thisType, idx)
 
-    fun withoutReturnValue(): Context {
-        return Context(variables.filterKeys { it !is ReturnKey }, thisType, idx)
-    }
-
-    fun withCollapsedRootExpressions(): Context {
-        return Context(
-            variables.mapValues { it.value.collapse() },
-            thisType,
-            idx
-        )
-    }
+    private fun mapVariables(transform: (UnknownKey, RootExpression<*>) -> RootExpression<*>): Context =
+        Context(variables.mapValues { transform(it.key, it.value) }, thisType, idx)
 }

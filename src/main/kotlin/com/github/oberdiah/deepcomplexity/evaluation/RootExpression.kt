@@ -4,7 +4,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 
 /**
  * In order to implement early returns, each expression in a context needs to be
- * split in half - a section representing the 'rest of the method' and a section
+ * split in half - a section representing the expression currently in flux and a section
  * that is set in stone and can no longer be changed.
  *
  * In the [staticExpr], [RestOfMethodExpr]s are used to indicate the sections that should
@@ -119,7 +119,17 @@ class RootExpression<T : Any>(
 
     /**
      * You'll typically only call this if you're a method and want to collapse this expression
-     * as short-circuiting returns are no longer a concern.
+     * as short-circuiting returns are no longer a concern. Collapses the static and REM parts.
+     * For example,
+     * ```
+     * staticExpr: (y > 10) ? (a.x` + 1) : REM
+     * restOfMethodExpr: a.x` + 2
+     * ```
+     * becomes
+     * ```
+     * staticExpr: REM
+     * restOfMethodExpr: (y > 10) ? (a.x` + 1) : a.x` + 2
+     * ```
      */
     fun collapse(): RootExpression<*> =
         RootExpression(
