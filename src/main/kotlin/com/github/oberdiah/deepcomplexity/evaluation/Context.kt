@@ -148,7 +148,7 @@ class Context(
     }
 
     val returnValue: Expr<*>?
-        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.collapseAndGetFullExpr()
+        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.getREMExpr()
 
     override fun toString(): String {
         val nonPlaceholderVariablesString =
@@ -174,20 +174,18 @@ class Context(
         if (key is QualifiedKey) {
             val placeholderQualifierKey =
                 KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
+
+            val replacementQualified = VariableExpr.new(KeyBackreference(key, this.idx))
+            val replacementRaw = key.qualifier.toLeafExpr()
             val placeholderVersionOfTheKey = QualifiedKey(key.field, placeholderQualifierKey)
+            val p = KeyBackreference(placeholderVersionOfTheKey, this.idx)
 
             variables[placeholderVersionOfTheKey]?.let {
-                val replacementQualified = VariableExpr.new(KeyBackreference(key, this.idx))
-                val replacementRaw = key.qualifier.toLeafExpr()
-                val p = KeyBackreference(placeholderVersionOfTheKey, this.idx)
-
                 val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
-                    if (expr.key == p) {
-                        replacementQualified
-                    } else if (expr.key == placeholderQualifierKey) {
-                        replacementRaw
-                    } else {
-                        null
+                    when (expr.key) {
+                        p -> replacementQualified
+                        placeholderQualifierKey -> replacementRaw
+                        else -> null
                     }
                 }
 
@@ -407,7 +405,7 @@ class Context(
 
     fun withCollapsedRootExpressions(): Context {
         return Context(
-            variables.mapValues { RootExpression.new(it.value.collapseAndGetFullExpr()) },
+            variables.mapValues { it.value.collapse() },
             thisType,
             idx
         )

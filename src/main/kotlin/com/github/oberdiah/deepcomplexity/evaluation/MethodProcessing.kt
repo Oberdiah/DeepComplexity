@@ -31,7 +31,7 @@ object MethodProcessing {
             processPsiStatement(body, wrapper)
         }
 
-        return wrapper.c
+        return wrapper.c.withCollapsedRootExpressions()
     }
 
     fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(Context.brandNew(thisType))

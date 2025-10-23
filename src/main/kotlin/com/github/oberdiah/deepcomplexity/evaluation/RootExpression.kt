@@ -113,11 +113,13 @@ class RootExpression<T : Any>(
      * You'll typically only call this if you're a method and want to collapse this expression
      * as short-circuiting returns are no longer a concern.
      */
-    fun collapseAndGetFullExpr(): Expr<*> {
-        return staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
-            restOfMethodExpr
-        }
-    }
+    fun collapse(): RootExpression<*> =
+        RootExpression(
+            RestOfMethodExpr(ind),
+            staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
+                restOfMethodExpr
+            }
+        )
 
     fun optimise() = RootExpression(
         staticExpr = staticExpr.optimise(),
