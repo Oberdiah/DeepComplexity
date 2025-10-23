@@ -135,7 +135,7 @@ class Context(
                         val bVal = b.variables[key]
 
                         RootExpression.combine(
-                            VariableExpr.new(KeyBackreference(key, a.idx)),
+                            VariableExpr.new(KeyBackreference(key, a.idx + b.idx)),
                             aVal,
                             bVal,
                             how
