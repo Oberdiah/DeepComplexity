@@ -148,7 +148,7 @@ class Context(
     }
 
     val returnValue: Expr<*>?
-        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.getREMExpr()
+        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.getDynExpr()
 
     override fun toString(): String {
         val nonPlaceholderVariablesString =
@@ -168,7 +168,7 @@ class Context(
 
     fun getVar(key: UnknownKey): Expr<*> {
         // If we have it, return it.
-        variables[key]?.let { return it.getREMExpr() }
+        variables[key]?.let { return it.getDynExpr() }
 
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedKey) {
@@ -189,7 +189,7 @@ class Context(
                     }
                 }
 
-                return replacedExpr.getREMExpr()
+                return replacedExpr.getDynExpr()
             }
         }
 
@@ -366,7 +366,7 @@ class Context(
                 LValueKeyExpr.new(key)
             }
 
-            newContext = newContext.withVar(lValue, expr.getREMExpr())
+            newContext = newContext.withVar(lValue, expr.getDynExpr())
         }
 
         val newVariables = newContext.variables.mapValues {
@@ -384,7 +384,7 @@ class Context(
     private fun withoutTemporaryKeys(): Context = this.filterVariables { !it.temporary }
     private fun withoutPlaceholderKeys(): Context = this.filterVariables { !it.isPlaceholder() }
     fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
-    fun withCollapsedRootExpressions(): Context = this.mapVariables { _, expr -> expr.collapse() }
+    fun forcedDynamic(): Context = this.mapVariables { _, expr -> expr.forcedDynamic() }
 
     private fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
         Context(variables.filterKeys(predicate), thisType, idx)

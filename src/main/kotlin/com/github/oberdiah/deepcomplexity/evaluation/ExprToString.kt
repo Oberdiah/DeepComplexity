@@ -30,7 +30,7 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
-            is RestOfMethodExpr -> "REM"
+            is DynamicExpr -> "Dyn"
         }
     }
 
@@ -49,7 +49,7 @@ object ExprToString {
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr<*> -> "${expr.key}"
-            is RestOfMethodExpr -> "REM"
+            is DynamicExpr -> "Dyn"
         }
     }
 
@@ -96,7 +96,7 @@ object ExprToString {
 
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
-            is RestOfMethodExpr -> "REM"
+            is DynamicExpr -> "Dyn"
         }
     }
 }

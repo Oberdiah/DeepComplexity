@@ -7,8 +7,8 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
  * split in half - a section representing the expression currently in flux and a section
  * that is set in stone and can no longer be changed.
  *
- * In the [staticExpr], [RestOfMethodExpr]s are used to indicate the sections that should
- * be replaced with the [restOfMethodExpr] when stacking.
+ * In the [staticExpr], [DynamicExpr]s are used to indicate the sections that should
+ * be replaced with the [dynamicExpr] when stacking.
  *
  * For example, we would represent
  * ```
@@ -20,22 +20,22 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
  * ```
  * as
  * ```
- * staticExpr: (y > 10) ? (a.x` + 1) : REM
- * restOfMethodExpr: a.x` + 2
+ * staticExpr: (y > 10) ? (a.x` + 1) : Dyn
+ * dynamicExpr: a.x` + 2
  * ```
  */
 class RootExpression<T : Any>(
     private val staticExpr: Expr<*>,
-    private val restOfMethodExpr: Expr<T>,
+    private val dynamicExpr: Expr<T>,
 ) {
     companion object {
         /**
-         * Should be used pretty sparingly. The majority of the time using [withREMExpr] makes more sense.
+         * Should be used pretty sparingly.
          */
         fun new(expr: Expr<*>): RootExpression<*> {
             return RootExpression(
-                staticExpr = RestOfMethodExpr(expr.ind),
-                restOfMethodExpr = expr
+                staticExpr = DynamicExpr(expr.ind),
+                dynamicExpr = expr
             )
         }
 
@@ -47,109 +47,98 @@ class RootExpression<T : Any>(
         ): RootExpression<*> {
             val ind = doNothingExpr.ind
 
-            val lhsStaticExpr = lhs?.staticExpr ?: RestOfMethodExpr(ind)
-            val rhsStaticExpr = rhs?.staticExpr ?: RestOfMethodExpr(ind)
+            val lhsStaticExpr = lhs?.staticExpr ?: DynamicExpr(ind)
+            val rhsStaticExpr = rhs?.staticExpr ?: DynamicExpr(ind)
 
             val finalStaticExpr = how(lhsStaticExpr, rhsStaticExpr)
 
-            val rhsROMExpr = rhs?.restOfMethodExpr ?: doNothingExpr
-            val lhsROMExpr = lhs?.restOfMethodExpr ?: doNothingExpr
+            val rhsDynExpr = rhs?.dynamicExpr ?: doNothingExpr
+            val lhsDynExpr = lhs?.dynamicExpr ?: doNothingExpr
 
-            val finalROMExpr = how(lhsROMExpr, rhsROMExpr)
+            val finalDynExpr = how(lhsDynExpr, rhsDynExpr)
 
             return RootExpression(
                 staticExpr = finalStaticExpr,
-                restOfMethodExpr = finalROMExpr
+                dynamicExpr = finalDynExpr
             )
         }
     }
 
-    override fun toString(): String {
-        if (staticExpr is RestOfMethodExpr<*>) {
-            return restOfMethodExpr.toString()
-        }
-
-        return "{\n${staticExpr.toString().prependIndent()}\n\n${restOfMethodExpr.toString().prependIndent()}\n}"
+    override fun toString(): String = if (staticExpr is DynamicExpr<*>) {
+        dynamicExpr.toString()
+    } else {
+        "{\n${staticExpr.toString().prependIndent()}\n\n${dynamicExpr.toString().prependIndent()}\n}"
     }
 
-    private val ind: SetIndicator<T> = restOfMethodExpr.ind
+    private val ind: SetIndicator<T> = dynamicExpr.ind
 
     fun withStackedRoot(other: RootExpression<*>?): RootExpression<*> {
         if (other == null) return this
 
         return RootExpression(
-            staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
+            staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
                 other.staticExpr
             },
-            restOfMethodExpr = this.restOfMethodExpr
+            dynamicExpr = this.dynamicExpr
         )
     }
 
     fun stackedUnder(stackedUnder: RootExpression<*>): RootExpression<*> {
         return RootExpression(
-            staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
+            staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
                 stackedUnder.staticExpr
             },
-            restOfMethodExpr = stackedUnder.restOfMethodExpr
+            dynamicExpr = stackedUnder.dynamicExpr
         )
     }
 
     fun withHitReturnMethod(doNothingExpr: Expr<*>): RootExpression<*> {
         return RootExpression(
-            staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
-                restOfMethodExpr
+            staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
+                dynamicExpr
             },
-            restOfMethodExpr = doNothingExpr
+            dynamicExpr = doNothingExpr
         )
     }
 
     /**
      * Returns the 'rest of method' of this expression; this is the bit you typically want when you getVar().
      */
-    fun getREMExpr(): Expr<*> = restOfMethodExpr
-
-
-    /**
-     * The opposite of [getREMExpr]; returns a new RootExpression with the given REM expression.
-     */
-    fun withREMExpr(expr: Expr<*>): RootExpression<*> = RootExpression(
-        staticExpr = staticExpr,
-        restOfMethodExpr = expr
-    )
+    fun getDynExpr(): Expr<*> = dynamicExpr
 
     /**
-     * You'll typically only call this if you're a method and want to collapse this expression
-     * as short-circuiting returns are no longer a concern. Collapses the static and REM parts.
+     * You'll typically only call this if you're a method and want to make the whole thing dynamic again
+     * as short-circuiting returns are no longer a concern. Collapses the static and dynamic parts.
      * For example,
      * ```
-     * staticExpr: (y > 10) ? (a.x` + 1) : REM
-     * restOfMethodExpr: a.x` + 2
+     * staticExpr: (y > 10) ? (a.x` + 1) : Dyn
+     * dynamicExpr: a.x` + 2
      * ```
      * becomes
      * ```
-     * staticExpr: REM
-     * restOfMethodExpr: (y > 10) ? (a.x` + 1) : a.x` + 2
+     * staticExpr: Dyn
+     * dynamicExpr: (y > 10) ? (a.x` + 1) : a.x` + 2
      * ```
      */
-    fun collapse(): RootExpression<*> =
+    fun forcedDynamic(): RootExpression<*> =
         RootExpression(
-            RestOfMethodExpr(ind),
-            staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
-                restOfMethodExpr
+            DynamicExpr(ind),
+            staticExpr.replaceTypeInTree<DynamicExpr<*>> {
+                dynamicExpr
             }
         )
 
     fun optimise() = RootExpression(
         staticExpr = staticExpr.optimise(),
-        restOfMethodExpr = restOfMethodExpr.optimise()
+        dynamicExpr = dynamicExpr.optimise()
     )
 
     internal inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): RootExpression<T> {
         val newStaticExpr = staticExpr.replaceTypeInTree<Q>(replacement)
-        val newRestOfMethodExpr = restOfMethodExpr.replaceTypeInTree<Q>(replacement)
+        val newRestOfMethodExpr = dynamicExpr.replaceTypeInTree<Q>(replacement)
         return RootExpression(
             staticExpr = newStaticExpr,
-            restOfMethodExpr = newRestOfMethodExpr
+            dynamicExpr = newRestOfMethodExpr
         )
     }
 }

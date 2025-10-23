@@ -192,7 +192,7 @@ inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
 /**
  * The indicator of this really shouldn't matter, we just had to pick something.
  */
-data class RestOfMethodExpr<T : Any>(override val ind: SetIndicator<T>) : Expr<T>()
+data class DynamicExpr<T : Any>(override val ind: SetIndicator<T>) : Expr<T>()
 
 data class ArithmeticExpr<T : Number>(
     val lhs: Expr<T>,

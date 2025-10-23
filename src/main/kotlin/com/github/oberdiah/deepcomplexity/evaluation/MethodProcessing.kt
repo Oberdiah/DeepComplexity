@@ -31,7 +31,7 @@ object MethodProcessing {
             processPsiStatement(body, wrapper)
         }
 
-        return wrapper.c.withCollapsedRootExpressions()
+        return wrapper.c.forcedDynamic()
     }
 
     fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(Context.brandNew(thisType))
@@ -453,7 +453,7 @@ object MethodProcessing {
         method.body?.let { body ->
             processPsiStatement(body, methodContext)
         }
-        return methodContext.c.withCollapsedRootExpressions()
+        return methodContext.c.forcedDynamic()
     }
 
     private fun processPolyadicExpr(
