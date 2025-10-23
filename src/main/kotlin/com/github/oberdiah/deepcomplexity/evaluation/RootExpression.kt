@@ -26,7 +26,7 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
  */
 class RootExpression<T : Any>(
     private val staticExpr: Expr<*>,
-    private val restOfMethodExpr: Expr<T>
+    private val restOfMethodExpr: Expr<T>,
 ) {
     companion object {
         /**
@@ -64,6 +64,16 @@ class RootExpression<T : Any>(
         }
     }
 
+    override fun toString(): String {
+        if (staticExpr is RestOfMethodExpr<*>) {
+            return restOfMethodExpr.toString()
+        }
+
+        return "{\n${staticExpr.toString().prependIndent()}\n\n${restOfMethodExpr.toString().prependIndent()}\n}"
+    }
+
+    private val ind: SetIndicator<T> = restOfMethodExpr.ind
+
     fun withStackedRoot(other: RootExpression<*>?): RootExpression<*> {
         if (other == null) return this
 
@@ -71,7 +81,6 @@ class RootExpression<T : Any>(
             staticExpr = staticExpr.replaceTypeInTree<RestOfMethodExpr<*>> {
                 other.staticExpr
             },
-            // Just stack the static expression for now.
             restOfMethodExpr = this.restOfMethodExpr
         )
     }
@@ -84,16 +93,6 @@ class RootExpression<T : Any>(
             restOfMethodExpr = doNothingExpr
         )
     }
-
-    override fun toString(): String {
-        if (staticExpr is RestOfMethodExpr<*>) {
-            return restOfMethodExpr.toString()
-        }
-
-        return "{\n${staticExpr.toString().prependIndent()}\n\n${restOfMethodExpr.toString().prependIndent()}\n}"
-    }
-
-    private val ind: SetIndicator<T> = restOfMethodExpr.ind
 
     /**
      * Returns the 'rest of method' of this expression; this is the bit you typically want when you getVar().
