@@ -376,15 +376,13 @@ class Context(
         return Context(newVariables, thisType, idx).stripTemporaryKeys()
     }
 
-    fun withAdditionalReturn(returnKey: ReturnKey, expr: Expr<*>): Context {
-        var variables = withKeyToExpr(returnKey, RootExpression.new(expr)).variables
-
-        variables = variables.mapValues {
+    fun haveHitReturn(): Context = Context(
+        variables.mapValues {
             it.value.withHitReturnMethod(VariableExpr.new(KeyBackreference(it.key, idx)))
-        }
-
-        return Context(variables, thisType, idx)
-    }
+        },
+        thisType,
+        idx
+    )
 
     private fun stripTemporaryKeys(): Context {
         return Context(variables.filterKeys { !it.temporary }, thisType, idx)

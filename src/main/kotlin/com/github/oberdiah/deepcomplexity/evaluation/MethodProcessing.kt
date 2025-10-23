@@ -201,7 +201,9 @@ object MethodProcessing {
                         .castToUsingTypeCast(returnKey.ind, false)
                 } ?: ConstExpr.VOID
 
-                context.c = context.c.withAdditionalReturn(returnKey, returnExpr)
+                context.addVar(LValueKeyExpr.new(returnKey), returnExpr)
+
+                context.c = context.c.haveHitReturn()
             }
 
             is PsiExpressionStatement -> {
