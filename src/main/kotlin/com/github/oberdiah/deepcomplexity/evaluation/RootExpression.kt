@@ -92,17 +92,8 @@ class RootExpression<T : Any>(
         )
     }
 
-    fun withHitReturnMethod(doNothingExpr: Expr<*>): RootExpression<*> {
-        return RootExpression(
-            staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
-                dynamicExpr
-            },
-            dynamicExpr = doNothingExpr
-        )
-    }
-
     /**
-     * Returns the 'rest of method' of this expression; this is the bit you typically want when you getVar().
+     * Returns the 'dynamic' part of this expression; this is the bit you want when you getVar().
      */
     fun getDynExpr(): Expr<*> = dynamicExpr
 
@@ -120,25 +111,32 @@ class RootExpression<T : Any>(
      * dynamicExpr: (y > 10) ? (a.x` + 1) : a.x` + 2
      * ```
      */
-    fun forcedDynamic(): RootExpression<*> =
-        RootExpression(
-            DynamicExpr(ind),
-            staticExpr.replaceTypeInTree<DynamicExpr<*>> {
-                dynamicExpr
-            }
-        )
+    fun forcedDynamic(): RootExpression<*> = RootExpression(
+        staticExpr = DynamicExpr(ind),
+        dynamicExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
+            dynamicExpr
+        }
+    )
+
+    /**
+     * The opposite of [forcedDynamic]; collapses the static and dynamic parts together and makes
+     * them both static. Used when a control flow break has been reached, e.g. a return statement.
+     */
+    fun forcedStatic(doNothingExpr: Expr<*>): RootExpression<*> = RootExpression(
+        staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
+            dynamicExpr
+        },
+        dynamicExpr = doNothingExpr
+    )
 
     fun optimise() = RootExpression(
         staticExpr = staticExpr.optimise(),
         dynamicExpr = dynamicExpr.optimise()
     )
 
-    internal inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): RootExpression<T> {
-        val newStaticExpr = staticExpr.replaceTypeInTree<Q>(replacement)
-        val newRestOfMethodExpr = dynamicExpr.replaceTypeInTree<Q>(replacement)
-        return RootExpression(
-            staticExpr = newStaticExpr,
-            dynamicExpr = newRestOfMethodExpr
+    internal inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): RootExpression<T> =
+        RootExpression(
+            staticExpr = staticExpr.replaceTypeInTree<Q>(replacement),
+            dynamicExpr = dynamicExpr.replaceTypeInTree<Q>(replacement)
         )
-    }
 }

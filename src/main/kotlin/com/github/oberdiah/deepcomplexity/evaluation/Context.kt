@@ -378,7 +378,7 @@ class Context(
 
     fun haveHitReturn(): Context =
         this.mapVariables { key, expr ->
-            expr.withHitReturnMethod(VariableExpr.new(KeyBackreference(key, idx)))
+            expr.forcedStatic(VariableExpr.new(KeyBackreference(key, idx)))
         }
 
     private fun withoutTemporaryKeys(): Context = this.filterVariables { !it.temporary }
