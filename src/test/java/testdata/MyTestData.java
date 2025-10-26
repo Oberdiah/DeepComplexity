@@ -1811,6 +1811,23 @@ public class MyTestData {
 		nested.x++;
 	}
 	
+	public static short earlyReturnTest6(short x) {
+		MyClass nested = new MyClass(2);
+		MyClass nested2 = new MyClass(3);
+		earlyReturnTest6Method(nested, nested, x);
+		return (short) (nested.x + nested2.x);
+	}
+	
+	private static void earlyReturnTest6Method(MyClass nested, MyClass nested2, int x) {
+		nested.x = 0;
+		MyClass p = ((x == 3) ? nested : nested2);
+		if (x < 5) {
+			p.x = 2;
+			return;
+		}
+		nested.x++;
+	}
+	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(2)
 	public static short shortCircuit1(short x) {
