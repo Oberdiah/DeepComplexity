@@ -17,6 +17,11 @@ import com.intellij.psi.PsiType
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
+/**
+ * Can be useful when you want to cast two things to the same indicator<*>.
+ */
+fun <T : Any, S : SetIndicator<T>, Q> S.with(doIt: (S) -> Q) = doIt(this)
+
 sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     /**
      * Instantiate a set with no valid values.

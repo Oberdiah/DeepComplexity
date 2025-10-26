@@ -1,6 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.github.oberdiah.deepcomplexity.staticAnalysis.with
+import kotlin.test.assertEquals
 
 /**
  * In order to implement early returns, each expression in a context needs to be
@@ -25,14 +27,19 @@ import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
  * ```
  */
 class RootExpression<T : Any>(
-    private val staticExpr: Expr<*>,
+    /**
+     * Both expressions have type T - the type represents what the expression
+     * will be once evaluated, and so [staticExpr] still has that type, even if its
+     * leaf nodes are mostly [DynamicExpr]s.
+     */
+    private val staticExpr: Expr<T>,
     private val dynamicExpr: Expr<T>,
 ) {
     companion object {
         /**
          * Should be used pretty sparingly.
          */
-        fun new(expr: Expr<*>): RootExpression<*> {
+        fun <T : Any> new(expr: Expr<T>): RootExpression<T> {
             return RootExpression(
                 staticExpr = DynamicExpr(expr.ind),
                 dynamicExpr = expr
@@ -57,10 +64,14 @@ class RootExpression<T : Any>(
 
             val finalDynExpr = how(lhsDynExpr, rhsDynExpr)
 
-            return RootExpression(
-                staticExpr = finalStaticExpr,
-                dynamicExpr = finalDynExpr
-            )
+            assertEquals(finalStaticExpr.ind, finalDynExpr.ind)
+            assertEquals(finalDynExpr.ind, ind)
+            return ind.with {
+                RootExpression(
+                    staticExpr = finalStaticExpr.castOrThrow(it),
+                    dynamicExpr = finalDynExpr.castOrThrow(it)
+                )
+            }
         }
     }
 
@@ -83,12 +94,12 @@ class RootExpression<T : Any>(
         )
     }
 
-    fun stackedUnder(stackedUnder: RootExpression<*>): RootExpression<*> {
+    fun stackedUnder(stackedUnder: RootExpression<*>): RootExpression<T> {
         return RootExpression(
             staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
                 stackedUnder.staticExpr
             },
-            dynamicExpr = stackedUnder.dynamicExpr
+            dynamicExpr = stackedUnder.dynamicExpr.castOrThrow(ind)
         )
     }
 
@@ -122,11 +133,11 @@ class RootExpression<T : Any>(
      * The opposite of [forcedDynamic]; collapses the static and dynamic parts together and makes
      * them both static. Used when a control flow break has been reached, e.g. a return statement.
      */
-    fun forcedStatic(doNothingExpr: Expr<*>): RootExpression<*> = RootExpression(
+    fun forcedStatic(doNothingExpr: Expr<*>): RootExpression<T> = RootExpression(
         staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
             dynamicExpr
         },
-        dynamicExpr = doNothingExpr
+        dynamicExpr = doNothingExpr.castOrThrow(ind)
     )
 
     fun optimise() = RootExpression(
