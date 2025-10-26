@@ -143,8 +143,7 @@ fun <T : Any> Expr<*>.castOrThrow(indicator: SetIndicator<T>): Expr<T> {
  */
 fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: Boolean): Expr<T> {
     return if (this.ind == indicator) {
-        @Suppress("UNCHECKED_CAST")
-        this as Expr<T>
+        this.castOrThrow(indicator)
     } else {
         TypeCastExpr(this, indicator, explicit)
     }
