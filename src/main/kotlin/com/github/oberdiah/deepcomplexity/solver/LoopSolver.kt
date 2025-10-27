@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.context.Context
 import com.github.oberdiah.deepcomplexity.evaluation.*
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastToReified
 import com.intellij.psi.PsiElement
 
 object LoopSolver {
@@ -9,9 +10,8 @@ object LoopSolver {
      * Given the context for the loop body, and the condition, figure out our new context.
      */
     fun processLoopContext(context: Context, condition: Expr<Boolean>) {
-        var numLoops: NumIterationTimesExpr<*>? = null
 
-        val conditionVariables = condition.getVariables()
+        condition.getVariables()
 //        for ((key, expr) in context.variables) {
 //            val variablesMatchingCondition = expr.getVariables()
 //                .filter { vari -> conditionVariables.any { vari.key == it.key } }

@@ -1,10 +1,9 @@
 package com.github.oberdiah.deepcomplexity.services
 
+import com.github.oberdiah.deepcomplexity.MyBundle
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
-import com.github.oberdiah.deepcomplexity.MyBundle
-import com.intellij.codeInspection.allClasses
 import org.jetbrains.uast.UFile
 
 @Service(Service.Level.PROJECT)
@@ -24,6 +23,6 @@ class MyProjectService(project: Project) {
 
     // Effectively the entry point for the entire plugin.
     fun processFile(file: UFile) {
-        
+
     }
 }

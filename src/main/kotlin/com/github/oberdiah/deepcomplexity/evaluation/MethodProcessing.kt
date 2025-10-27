@@ -1,6 +1,10 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
 import com.github.oberdiah.deepcomplexity.context.*
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.github.oberdiah.deepcomplexity.solver.LoopSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
@@ -394,19 +398,20 @@ object MethodProcessing {
 
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {
-                LValueFieldExpr.new(
-                    QualifiedFieldKey.Field(resolved),
-                    psi.qualifier?.let {
-                        processPsiExpression(it, context)
-                    }.orElse {
-                        val thisType = context.c.thisType
-                        assertNotNull(
-                            thisType,
-                            "No qualifier on field ${resolved.name}, but also no `this` type in context?"
-                        )
-                        context.c.getVar(ThisKey(thisType))
-                    }
-                )
+                val qualifierExpr = psi.qualifier?.let {
+                    processPsiExpression(it, context)
+                }.orElse {
+                    val thisType = context.c.thisType
+                    assertNotNull(
+                        thisType,
+                        "No qualifier on field ${resolved.name}, but also no `this` type in context?"
+                    )
+                    context.c.getVar(ThisKey(thisType))
+                }
+
+                assertIs<ObjectSetIndicator>(qualifierExpr.ind)
+
+                LValueFieldExpr.new(QualifiedFieldKey.Field(resolved), qualifierExpr)
             }
 
             is PsiLocalVariable -> LValueKeyExpr.new(resolved.toKey())

@@ -2,7 +2,7 @@ package com.github.oberdiah.deepcomplexity.context
 
 import com.github.oberdiah.deepcomplexity.evaluation.DynamicExpr
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.castOrThrow
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.with
 import kotlin.test.assertEquals

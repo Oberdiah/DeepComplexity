@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.solver
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
@@ -116,8 +117,7 @@ object ConstraintSolver {
             )
 
             // Safety: We know the variable is a number set.
-            @Suppress("UNCHECKED_CAST")
-            val castVariable = variable as VariableExpr<out Number>
+            variable
 
             // Commented out as unused. Should be uncommented if we find we need it.
 //            val variableConstraints = getVariableConstraints(expr, castVariable, ConstExpr.TRUE) ?: continue

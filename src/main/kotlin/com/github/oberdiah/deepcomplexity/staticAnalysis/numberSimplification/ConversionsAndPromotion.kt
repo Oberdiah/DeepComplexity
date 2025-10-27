@@ -1,7 +1,7 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.castToUsingTypeCast
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.github.oberdiah.deepcomplexity.staticAnalysis.*
 
 object ConversionsAndPromotion {
