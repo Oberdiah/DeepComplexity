@@ -17,13 +17,13 @@ package com.github.oberdiah.deepcomplexity.utilities;
  * limitations under the License.
  */
 
+import org.apache.commons.numbers.core.NativeOperators;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Objects;
-
-import org.apache.commons.numbers.core.NativeOperators;
 
 // Richard Mullender (2025-03-15)
 // Modified to fix bug in compareTo functionality.
@@ -1092,10 +1092,9 @@ public final class BigFraction extends Number implements Comparable<BigFraction>
 			return true;
 		}
 		
-		if (other instanceof BigFraction) {
+		if (other instanceof BigFraction rhs) {
 			// Since fractions are always in lowest terms, numerators and
 			// denominators can be compared directly for equality.
-			final BigFraction rhs = (BigFraction) other;
 			if (signum() == rhs.signum()) {
 				return numerator.abs().equals(rhs.numerator.abs()) &&
 						denominator.abs().equals(rhs.denominator.abs());

@@ -16,7 +16,7 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
     fun invert(): BooleanVariances = BooleanVariances(value.invert())
     override val ind: SetIndicator<Boolean> = BooleanSetIndicator
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>? =
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q> =
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
     override fun collapse(constraints: Constraints): ISet<Boolean> = value

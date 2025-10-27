@@ -32,7 +32,7 @@ class PrimaryIndex : FileBasedIndexExtension<String, IndexValue>() {
     }
 
     override fun getKeyDescriptor(): KeyDescriptor<String> {
-        return EnumeratorStringDescriptor.INSTANCE;
+        return EnumeratorStringDescriptor.INSTANCE
     }
 
     override fun getIndexer(): DataIndexer<String, IndexValue, FileContent> {

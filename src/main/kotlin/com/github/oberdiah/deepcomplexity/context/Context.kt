@@ -52,7 +52,7 @@ class Context(
      */
     private val variables: Vars = variables.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
-            VariableExpr.Companion.new(it.key.withAddedContextId(idx))
+            VariableExpr.new(it.key.withAddedContextId(idx))
         }
     }.mapKeys { it.key.withAddedContextId(idx) }
 
@@ -106,7 +106,7 @@ class Context(
             }
         }
 
-        override fun toLeafExpr(): LeafExpr<*> = VariableExpr.Companion.new(this)
+        override fun toLeafExpr(): LeafExpr<*> = VariableExpr.new(this)
 
         fun isPlaceholder(): Boolean = key.isPlaceholder()
     }
@@ -133,8 +133,8 @@ class Context(
                         val aVal = a.variables[key]
                         val bVal = b.variables[key]
 
-                        RootExpression.Companion.combine(
-                            VariableExpr.Companion.new(KeyBackreference(key, a.idx + b.idx)),
+                        RootExpression.combine(
+                            VariableExpr.new(KeyBackreference(key, a.idx + b.idx)),
                             aVal,
                             bVal,
                             how
@@ -174,7 +174,7 @@ class Context(
             val placeholderQualifierKey =
                 KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
 
-            val replacementQualified = VariableExpr.Companion.new(KeyBackreference(key, this.idx))
+            val replacementQualified = VariableExpr.new(KeyBackreference(key, this.idx))
             val replacementRaw = key.qualifier.toLeafExpr()
             val placeholderVersionOfTheKey = QualifiedKey(key.field, placeholderQualifierKey)
             val p = KeyBackreference(placeholderVersionOfTheKey, this.idx)
@@ -193,7 +193,7 @@ class Context(
         }
 
         // OK, now we really do have no choice
-        return VariableExpr.Companion.new(KeyBackreference(key, idx))
+        return VariableExpr.new(KeyBackreference(key, idx))
     }
 
     /**
@@ -206,7 +206,7 @@ class Context(
         assert(rExpr.iterateTree().none { it is LValueExpr }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
-        return withVar(lExpr, RootExpression.Companion.new(rExpr))
+        return withVar(lExpr, RootExpression.new(rExpr))
     }
 
     /**
@@ -292,7 +292,7 @@ class Context(
 
             // First, check if we already have a value assigned to this key. If not, we pretend we did.
             val existingRootExpr = newVariables[key]
-                ?: RootExpression.Companion.new(VariableExpr.Companion.new(KeyBackreference(key, idx)))
+                ?: RootExpression.new(VariableExpr.new(KeyBackreference(key, idx)))
 
             // Stack the new expression on top. Stacking expressions combines their static expressions
             // and takes the top dynamic expression.
@@ -322,7 +322,7 @@ class Context(
             .toSet() + QualifiedKey(fieldKey, KeyBackreference(PlaceholderKey(qualifierInd), this.idx))
 
         for (aliasingKey in potentialAliasers) {
-            val condition = ComparisonExpr.Companion.new(
+            val condition = ComparisonExpr.new(
                 aliasingKey.qualifier.toLeafExpr(),
                 qualifier.toLeafExpr(),
                 ComparisonOp.EQUAL
@@ -333,7 +333,7 @@ class Context(
             val newRExpr = rExpr.mapDynamic {
                 // If the objects turn out to be the same, the aliasing object is set to whatever value we're
                 // setting. Otherwise, we leave it alone.
-                IfExpr.Companion.new(it, getVar(aliasingKey), condition)
+                IfExpr.new(it, getVar(aliasingKey), condition)
             }
 
             addExprToNewVariables(aliasingKey, newRExpr)
@@ -343,7 +343,7 @@ class Context(
     }
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        resolveKnownVariables(RootExpression.Companion.new(expr)).getDynExpr()
+        resolveKnownVariables(RootExpression.new(expr)).getDynExpr()
 
     /**
      * Resolves all variables in the expression that are known of in this context.
@@ -367,9 +367,9 @@ class Context(
 
             // ...and any keys that might also need resolved...
             val lValue = if (key is QualifiedKey) {
-                LValueFieldExpr.Companion.new(key.field, key.qualifier.safelyResolveUsing(this))
+                LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this))
             } else {
-                LValueKeyExpr.Companion.new(key)
+                LValueKeyExpr.new(key)
             }
 
             // ...and then assign to us.
@@ -382,7 +382,7 @@ class Context(
 
     fun haveHitReturn(): Context =
         this.mapVariables { key, expr ->
-            expr.forcedStatic(VariableExpr.Companion.new(KeyBackreference(key, idx)))
+            expr.forcedStatic(VariableExpr.new(KeyBackreference(key, idx)))
         }
 
     private fun withoutTemporaryKeys(): Context = this.filterVariables { !it.temporary }

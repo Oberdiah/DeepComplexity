@@ -35,6 +35,6 @@ data class HeapMarker private constructor(
         return "#$idx"
     }
 
-    override fun safelyResolveUsing(context: Context): Expr<*> = ConstExpr.Companion.fromHeapMarker(this)
-    override fun toLeafExpr(): LeafExpr<*> = ConstExpr.Companion.fromHeapMarker(this)
+    override fun safelyResolveUsing(context: Context): Expr<*> = ConstExpr.fromHeapMarker(this)
+    override fun toLeafExpr(): LeafExpr<*> = ConstExpr.fromHeapMarker(this)
 }

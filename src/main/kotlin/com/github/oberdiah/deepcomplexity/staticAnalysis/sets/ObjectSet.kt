@@ -35,7 +35,7 @@ class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>, ove
 
     override fun union(other: ISet<HeapMarker>): ISet<HeapMarker> = ObjectSet(values.union(other.into().values), ind)
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
+    override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q> {
         TODO("Not yet implemented")
     }
 }
