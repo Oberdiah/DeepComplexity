@@ -51,9 +51,9 @@ class Context(
      */
     private val variables: Vars = variables.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
-            VariableExpr.new(it.key.addContextId(idx))
+            VariableExpr.new(it.key.withAddedContextId(idx))
         }
-    }.mapKeys { it.key.addContextId(idx) }
+    }.mapKeys { it.key.withAddedContextId(idx) }
 
     init {
         assert(variables.keys.filterIsInstance<ReturnKey>().size <= 1) {
@@ -82,8 +82,8 @@ class Context(
         override fun hashCode(): Int = key.hashCode()
 
         override val ind: SetIndicator<*> = key.ind
-        override fun addContextId(newId: ContextId): KeyBackreference =
-            KeyBackreference(key.addContextId(newId), contextId + newId)
+        override fun withAddedContextId(newId: ContextId): KeyBackreference =
+            KeyBackreference(key.withAddedContextId(newId), contextId + newId)
 
         /**
          * This shouldn't be used unless you know for certain you're in the evaluation stage;

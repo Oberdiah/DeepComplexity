@@ -24,7 +24,7 @@ data class HeapMarker private constructor(
         }
     }
 
-    override fun addContextId(newId: Context.ContextId): Qualifier = this
+    override fun withAddedContextId(newId: Context.ContextId): Qualifier = this
     override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
     override fun toString(): String {
         if (this == NULL) return "null"

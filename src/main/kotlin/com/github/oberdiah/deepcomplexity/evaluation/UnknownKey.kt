@@ -16,7 +16,7 @@ sealed class UnknownKey : Key() {
     /**
      * Most keys don't need to worry about this.
      */
-    open fun addContextId(id: Context.ContextId): UnknownKey = this
+    open fun withAddedContextId(id: Context.ContextId): UnknownKey = this
 
     open fun isPlaceholder(): Boolean = false
 }
@@ -74,7 +74,7 @@ data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
  */
 sealed interface Qualifier {
     val ind: SetIndicator<*>
-    fun addContextId(newId: Context.ContextId): Qualifier
+    fun withAddedContextId(newId: Context.ContextId): Qualifier
 
     /**
      * Turns this [Qualifier] into an expression by trying to resolve it against the given context.
@@ -93,7 +93,8 @@ data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey
     val qualifierInd: ObjectSetIndicator = qualifier.ind as ObjectSetIndicator
 
     override fun toString(): String = "$qualifier.$field"
-    override fun addContextId(id: Context.ContextId): QualifiedKey = QualifiedKey(field, qualifier.addContextId(id))
+    override fun withAddedContextId(id: Context.ContextId): QualifiedKey =
+        QualifiedKey(field, qualifier.withAddedContextId(id))
 
     // This is a bit ugly.
     // This whole situation is, really, with the recursive qualified key situation being so confusing.
