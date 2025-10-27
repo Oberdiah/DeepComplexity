@@ -103,7 +103,7 @@ class RootExpression<T : Any>(
     /**
      * Returns the 'dynamic' part of this expression; this is the bit you want when you getVar().
      */
-    fun getDynExpr(): Expr<*> = dynamicExpr
+    fun getDynExpr(): Expr<T> = dynamicExpr
 
     /**
      * You'll typically only call this if you're a method and want to make the whole thing dynamic again

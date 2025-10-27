@@ -85,8 +85,6 @@ class Context(
         override fun addContextId(newId: ContextId): KeyBackreference =
             KeyBackreference(key.addContextId(newId), contextId + newId)
 
-        fun isReturnExpr(): Boolean = key is ReturnKey
-
         /**
          * This shouldn't be used unless you know for certain you're in the evaluation stage;
          * using this in the method processing stage may lead to you resolving a key using your
@@ -197,8 +195,13 @@ class Context(
         return VariableExpr.new(KeyBackreference(key, idx))
     }
 
-    fun withVar(lExpr: LValueExpr<*>, uncastExpr: Expr<*>): Context {
-        val rExpr = uncastExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
+    /**
+     * Sets the given l-value expression to the provided [rExpr], returning a new context.
+     * This operation may not just update a single variable; if the l-value expression
+     * is a field expression, we may end up doing quite a bit of work.
+     */
+    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
+        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
         assert(rExpr.iterateTree().none { it is LValueExpr }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
@@ -206,10 +209,7 @@ class Context(
     }
 
     /**
-     * Sets the given l-value expression to the provided [rExpr], returning a new context.
-     *
-     * This operation may not just update a single variable; if the l-value expression
-     * is a field expression, we may end up doing quite a bit.
+     * This first private [withVar] deals with complex qualifier expressions.
      *
      * The core of this does look a bit scary, so I'll try to walk you through it:
      * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
@@ -222,7 +222,7 @@ class Context(
      * ((x > 0) ? a : b).x = 5
      * ```
      * Now, the only objects we should be touching with our operation are `a` and `b`, so we gather
-     * them first into [varKeysInvolved]. That part's simple enough.
+     * them first into a set. That part's simple enough.
      * Then, for the variables we want to modify, we take our qualifier as specified above, and replace
      * `a` and `b` with either:
      *      a) The value already at that object, effectively turning `b` into `b.x`
@@ -278,12 +278,31 @@ class Context(
         return newContext
     }
 
-    fun withVar(key: UnknownKey, rExpr: RootExpression<*>): Context {
-        var newContext = withKeyToExpr(key, rExpr)
+    /**
+     * This second private [withVar] handles any potential aliasing.
+     * Using this alone should be perfectly correct.
+     */
+    private fun withVar(key: UnknownKey, rExpr: RootExpression<*>): Context {
+        val newVariables = this.variables.toMutableMap()
+
+        fun addExprToNewVariables(key: UnknownKey, expr: RootExpression<*>) {
+            // We've checked for aliasing, we've done all of our pre-processing; it's finally
+            // time to assign this expression to our variables.
+
+            // First, check if we already have a value assigned to this key. If not, we pretend we did.
+            val existingRootExpr = newVariables[key]
+                ?: RootExpression.new(VariableExpr.new(KeyBackreference(key, idx)))
+
+            // Stack the new expression on top. Stacking expressions combines their static expressions
+            // and takes the top dynamic expression.
+            newVariables += (key to existingRootExpr.stackedUnder(expr))
+        }
+
+        addExprToNewVariables(key, rExpr)
 
         if (key !is QualifiedKey) {
             // No need to do anything further if there's no risk of aliasing.
-            return newContext
+            return Context(newVariables, thisType, idx)
         }
 
         val qualifier = key.qualifier
@@ -316,38 +335,19 @@ class Context(
                 IfExpr.new(it, getVar(aliasingKey), condition)
             }
 
-            newContext = newContext.withKeyToExpr(aliasingKey, newRExpr)
+            addExprToNewVariables(aliasingKey, newRExpr)
         }
 
-        return newContext
+        return Context(newVariables, thisType, idx)
     }
 
-    /**
-     * The only location that should be making new root expressions.
-     * In some ways, one of the most important parts of [Context].
-     */
-    private fun withKeyToExpr(key: UnknownKey, expr: RootExpression<*>): Context {
-        val existingRootExpr = variables[key] ?: RootExpression.new(VariableExpr.new(KeyBackreference(key, idx)))
-
-        return Context(variables + (key to existingRootExpr.stackedUnder(expr)), thisType, idx)
-    }
-
-    private fun withVariablesResolvedBy(resolver: Context): Context {
-        return Context(
-            variables.mapValues { (_, expr) ->
-                expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
-                    varExpr.key.safelyResolveUsing(resolver)
-                }.optimise()
-            },
-            thisType,
-            idx
-        )
-    }
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
+        resolveKnownVariables(RootExpression.new(expr)).getDynExpr()
 
     /**
      * Resolves all variables in the expression that are known of in this context.
      */
-    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
+    private fun <T : Any> resolveKnownVariables(expr: RootExpression<T>): RootExpression<T> =
         expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
             varExpr.key.safelyResolveUsing(this)
         }.optimise()
@@ -358,20 +358,24 @@ class Context(
      * That is, prioritise the later context and fall back to this one if the key doesn't exist.
      */
     fun stack(other: Context): Context {
-        val resolvedOther = other.withoutPlaceholderKeys().withVariablesResolvedBy(this)
         var newContext = this
 
-        for ((key, expr) in resolvedOther.variables) {
+        for ((key, expr) in other.withoutPlaceholderKeys().variables) {
+            // Resolve the expression...
+            val expr = resolveKnownVariables(expr)
+
+            // ...and any keys that might also need resolved...
             val lValue = if (key is QualifiedKey) {
                 LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this))
             } else {
-                // Do nothing, just assign as normal.
                 LValueKeyExpr.new(key)
             }
 
+            // ...and then assign to us.
             newContext = newContext.withVar(lValue, expr)
         }
 
+        // Simple!
         return newContext.withoutTemporaryKeys()
     }
 
