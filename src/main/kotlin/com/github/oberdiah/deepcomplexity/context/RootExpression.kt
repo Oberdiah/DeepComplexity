@@ -1,5 +1,8 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.github.oberdiah.deepcomplexity.context
 
+import com.github.oberdiah.deepcomplexity.evaluation.DynamicExpr
+import com.github.oberdiah.deepcomplexity.evaluation.Expr
+import com.github.oberdiah.deepcomplexity.evaluation.castOrThrow
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.with
 import kotlin.test.assertEquals
@@ -9,7 +12,7 @@ import kotlin.test.assertEquals
  * split in half - a section representing the expression currently in flux and a section
  * that is set in stone and can no longer be changed.
  *
- * In the [staticExpr], [DynamicExpr]s are used to indicate the sections that should
+ * In the [staticExpr], [com.github.oberdiah.deepcomplexity.evaluation.DynamicExpr]s are used to indicate the sections that should
  * be replaced with the [dynamicExpr] when stacking.
  *
  * For example, we would represent
@@ -30,7 +33,7 @@ class RootExpression<T : Any>(
     /**
      * Both expressions have type T - the type represents what the expression
      * will be once evaluated, and so [staticExpr] still has that type, even if its
-     * leaf nodes are mostly [DynamicExpr]s.
+     * leaf nodes are mostly [com.github.oberdiah.deepcomplexity.evaluation.DynamicExpr]s.
      */
     private val staticExpr: Expr<T>,
     private val dynamicExpr: Expr<T>,

@@ -1,7 +1,8 @@
 package com.github.oberdiah.deepcomplexity.evaluation
 
+import com.github.oberdiah.deepcomplexity.context.*
+import com.github.oberdiah.deepcomplexity.context.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
-import com.github.oberdiah.deepcomplexity.evaluation.Key.ExpressionKey
 import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
@@ -466,7 +467,7 @@ data class VariableExpr<T : Any> private constructor(
 }
 
 /**
- * Objects are represented as a [ConstExpr] with an underlying [HeapMarker].
+ * Objects are represented as a [ConstExpr] with an underlying [com.github.oberdiah.deepcomplexity.context.HeapMarker].
  */
 data class ConstExpr<T : Any>(override val underlying: T, override val ind: SetIndicator<T>) : LeafExpr<T>() {
     val value: T = underlying

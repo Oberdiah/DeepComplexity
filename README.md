@@ -21,9 +21,7 @@ updates on that.
 
 If you've changed a method signature in the main project, the tests may no longer run. Their .class files don't seem
 to update correctly.
-To resolve this, delete the `.intellijPlatform` and `.build` folders, run `./gradlew stop`, clear all IntelliJ
-caches, restart IntelliJ, then run `./gradlew clean build --rerun-tasks`. After that you'll need to update all the
-launch configurations again.
+To resolve this, delete the `.intellijPlatform` and `.build` folders, then run `./gradlew clean build --rerun-tasks`.
 Some of those steps may be redundant, feel free to experiment.
 
 ```shell

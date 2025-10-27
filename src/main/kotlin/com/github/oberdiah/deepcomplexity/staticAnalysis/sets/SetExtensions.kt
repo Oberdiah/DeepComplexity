@@ -1,6 +1,6 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.github.oberdiah.deepcomplexity.evaluation.HeapMarker
+import com.github.oberdiah.deepcomplexity.context.HeapMarker
 import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances

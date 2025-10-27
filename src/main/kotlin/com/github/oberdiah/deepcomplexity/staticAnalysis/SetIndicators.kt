@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity.staticAnalysis
 
+import com.github.oberdiah.deepcomplexity.context.HeapMarker
+import com.github.oberdiah.deepcomplexity.context.Key
 import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.evaluation.HeapMarker
-import com.github.oberdiah.deepcomplexity.evaluation.Key
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet

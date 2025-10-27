@@ -1,5 +1,8 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.github.oberdiah.deepcomplexity.context
 
+import com.github.oberdiah.deepcomplexity.evaluation.ConstExpr
+import com.github.oberdiah.deepcomplexity.evaluation.Expr
+import com.github.oberdiah.deepcomplexity.evaluation.LeafExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
@@ -32,6 +35,6 @@ data class HeapMarker private constructor(
         return "#$idx"
     }
 
-    override fun safelyResolveUsing(context: Context): Expr<*> = ConstExpr.fromHeapMarker(this)
-    override fun toLeafExpr(): LeafExpr<*> = ConstExpr.fromHeapMarker(this)
+    override fun safelyResolveUsing(context: Context): Expr<*> = ConstExpr.Companion.fromHeapMarker(this)
+    override fun toLeafExpr(): LeafExpr<*> = ConstExpr.Companion.fromHeapMarker(this)
 }

@@ -1,8 +1,8 @@
 package com.github.oberdiah.deepcomplexity.utilities
 
-import com.github.oberdiah.deepcomplexity.evaluation.LocalVariableKey
-import com.github.oberdiah.deepcomplexity.evaluation.ParameterKey
-import com.github.oberdiah.deepcomplexity.evaluation.ReturnKey
+import com.github.oberdiah.deepcomplexity.context.LocalVariableKey
+import com.github.oberdiah.deepcomplexity.context.ParameterKey
+import com.github.oberdiah.deepcomplexity.context.ReturnKey
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.*

@@ -1,6 +1,8 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.github.oberdiah.deepcomplexity.context
 
-import com.github.oberdiah.deepcomplexity.evaluation.Context.KeyBackreference
+import com.github.oberdiah.deepcomplexity.context.Context.KeyBackreference
+import com.github.oberdiah.deepcomplexity.evaluation.Expr
+import com.github.oberdiah.deepcomplexity.evaluation.LeafExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
@@ -82,7 +84,7 @@ sealed interface Qualifier {
     fun safelyResolveUsing(context: Context): Expr<*>
 
     /**
-     * Turns this [Qualifier] directly into a leaf expression, so either it'll be a [ConstExpr] or a [VariableExpr]
+     * Turns this [Qualifier] directly into a leaf expression, so either it'll be a [com.github.oberdiah.deepcomplexity.evaluation.ConstExpr] or a [com.github.oberdiah.deepcomplexity.evaluation.VariableExpr]
      */
     fun toLeafExpr(): LeafExpr<*>
 }
