@@ -72,7 +72,7 @@ data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
 }
 
 /**
- * Things that can be qualifiers in a [QualifiedKey]. This is really just [HeapMarker]s and [Context.KeyBackreference]s.
+ * Things that can be qualifiers in a [QualifiedFieldKey]. This is really just [HeapMarker]s and [Context.KeyBackreference]s.
  */
 sealed interface Qualifier {
     val ind: SetIndicator<*>
@@ -89,14 +89,14 @@ sealed interface Qualifier {
     fun toLeafExpr(): LeafExpr<*>
 }
 
-data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey() {
-    override val ind: SetIndicator<*> = this.field.ind
+data class QualifiedFieldKey(val qualifier: Qualifier, val field: Field) : UnknownKey() {
+    override val ind: SetIndicator<*> = field.ind
 
     val qualifierInd: ObjectSetIndicator = qualifier.ind as ObjectSetIndicator
 
     override fun toString(): String = "$qualifier.$field"
-    override fun withAddedContextId(id: Context.ContextId): QualifiedKey =
-        QualifiedKey(field, qualifier.withAddedContextId(id))
+    override fun withAddedContextId(id: Context.ContextId): QualifiedFieldKey =
+        QualifiedFieldKey(qualifier.withAddedContextId(id), field)
 
     // This is a bit ugly.
     // This whole situation is, really, with the recursive qualified key situation being so confusing.
@@ -108,7 +108,7 @@ data class QualifiedKey(val field: Field, val qualifier: Qualifier) : UnknownKey
     }
 
     /**
-     * This isn't a full key by itself, you'll need a [Qualifier] as well and then will want to make a [QualifiedKey].
+     * This isn't a full key by itself, you'll need a [Qualifier] as well and then will want to make a [QualifiedFieldKey].
      */
     data class Field(private val field: PsiField) {
         override fun toString(): String = field.toStringPretty()

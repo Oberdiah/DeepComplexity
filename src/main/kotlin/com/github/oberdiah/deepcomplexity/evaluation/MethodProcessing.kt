@@ -395,7 +395,7 @@ object MethodProcessing {
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {
                 LValueFieldExpr.new(
-                    QualifiedKey.Field(resolved),
+                    QualifiedFieldKey.Field(resolved),
                     psi.qualifier?.let {
                         processPsiExpression(it, context)
                     }.orElse {

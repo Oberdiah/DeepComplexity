@@ -150,9 +150,9 @@ fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: 
     }
 }
 
-fun Expr<*>.getField(context: Context, field: QualifiedKey.Field): Expr<*> {
+fun Expr<*>.getField(context: Context, field: QualifiedFieldKey.Field): Expr<*> {
     return replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
-        context.getVar(QualifiedKey(field, it.underlying as Qualifier))
+        context.getVar(QualifiedFieldKey(it.underlying as Qualifier, field))
     }
 }
 
@@ -357,7 +357,7 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
  * Represents an expression on the left-hand side in an assignment.
  *
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
- * a [QualifiedKey] or not.
+ * a [QualifiedFieldKey] or not.
  */
 data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndicator<T>) : LValueExpr<T>() {
     companion object {
@@ -375,12 +375,12 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
  * For example, the LValue `((x > 2) ? a : b).y`
  */
 data class LValueFieldExpr<T : Any>(
-    val field: QualifiedKey.Field,
+    val field: QualifiedFieldKey.Field,
     val qualifier: Expr<*>,
     override val ind: SetIndicator<T>
 ) : LValueExpr<T>() {
     companion object {
-        fun new(field: QualifiedKey.Field, qualifier: Expr<*>): LValueFieldExpr<*> =
+        fun new(field: QualifiedFieldKey.Field, qualifier: Expr<*>): LValueFieldExpr<*> =
             LValueFieldExpr(field, qualifier, field.ind)
     }
 

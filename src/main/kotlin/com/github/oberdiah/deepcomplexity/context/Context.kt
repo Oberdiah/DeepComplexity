@@ -98,7 +98,7 @@ class Context(
                 "Cannot resolve a KeyBackreference in the context it was created in."
             }
 
-            return if (key is QualifiedKey && key.qualifier is KeyBackreference) {
+            return if (key is QualifiedFieldKey && key.qualifier is KeyBackreference) {
                 val q = key.qualifier.safelyResolveUsing(context)
                 q.getField(context, key.field)
             } else {
@@ -170,13 +170,13 @@ class Context(
         variables[key]?.let { return it.getDynExpr() }
 
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
-        if (key is QualifiedKey) {
+        if (key is QualifiedFieldKey) {
             val placeholderQualifierKey =
                 KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
 
             val replacementQualified = VariableExpr.new(KeyBackreference(key, this.idx))
             val replacementRaw = key.qualifier.toLeafExpr()
-            val placeholderVersionOfTheKey = QualifiedKey(key.field, placeholderQualifierKey)
+            val placeholderVersionOfTheKey = QualifiedFieldKey(placeholderQualifierKey, key.field)
             val p = KeyBackreference(placeholderVersionOfTheKey, this.idx)
 
             variables[placeholderVersionOfTheKey]?.let {
@@ -255,7 +255,7 @@ class Context(
         var newContext = this
         // For every distinct qualifier we mention...
         for (qualifier in qualifiersMentionedInQualifierExpr) {
-            val thisVarKey = QualifiedKey(field, qualifier)
+            val thisVarKey = QualifiedFieldKey(qualifier, field)
             // grab whatever it's currently set to,
             val existingExpr = newContext.getVar(thisVarKey)
 
@@ -301,7 +301,7 @@ class Context(
 
         addExprToNewVariables(key, rExpr)
 
-        if (key !is QualifiedKey) {
+        if (key !is QualifiedFieldKey) {
             // No need to do anything further if there's no risk of aliasing.
             return Context(newVariables, thisType, idx)
         }
@@ -311,15 +311,15 @@ class Context(
         val qualifierInd = key.qualifierInd
 
         // Collect a list of all objects we know of that could alias with the object we're trying to set.
-        val potentialAliasers: Set<QualifiedKey> = variables.keys
-            .filterIsInstance<QualifiedKey>()
+        val potentialAliasers: Set<QualifiedFieldKey> = variables.keys
+            .filterIsInstance<QualifiedFieldKey>()
             .filter {
                 !it.isPlaceholder()
                         && qualifier != it.qualifier
                         && fieldKey == it.field
                         && qualifier.ind == it.qualifier.ind
             }
-            .toSet() + QualifiedKey(fieldKey, KeyBackreference(PlaceholderKey(qualifierInd), this.idx))
+            .toSet() + QualifiedFieldKey(KeyBackreference(PlaceholderKey(qualifierInd), this.idx), fieldKey)
 
         for (aliasingKey in potentialAliasers) {
             val condition = ComparisonExpr.new(
@@ -366,7 +366,7 @@ class Context(
             val expr = resolveKnownVariables(expr)
 
             // ...and any keys that might also need resolved...
-            val lValue = if (key is QualifiedKey) {
+            val lValue = if (key is QualifiedFieldKey) {
                 LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this))
             } else {
                 LValueKeyExpr.new(key)

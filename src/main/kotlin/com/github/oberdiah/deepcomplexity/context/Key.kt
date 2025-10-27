@@ -43,7 +43,7 @@ sealed class Key() {
     fun importance(): Int {
         return when (this) {
             is VariableKey -> 6
-            is QualifiedKey -> 5
+            is QualifiedFieldKey -> 5
             is ThisKey -> 4
             is ReturnKey -> 2
             is ExpressionKey -> 1
@@ -59,7 +59,7 @@ sealed class Key() {
     fun getElement(): PsiElement {
         return when (this) {
             is VariableKey -> variable
-            is QualifiedKey -> field.getElement()
+            is QualifiedFieldKey -> field.getElement()
             is ThisKey -> throw IllegalArgumentException("Cannot get element of this key")
             is PlaceholderKey -> throw IllegalArgumentException("Cannot get element of placeholder key")
             is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
