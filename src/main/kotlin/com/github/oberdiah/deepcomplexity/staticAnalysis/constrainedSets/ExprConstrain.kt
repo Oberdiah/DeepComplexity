@@ -34,20 +34,13 @@ object ExprConstrain {
                 )
             }
 
-            is ComparisonExpr<*> -> {
-                fun <Q : Any> extra(me: ComparisonExpr<Q>): Expr<Boolean> =
-                    ComparisonExpr.new(me.lhs, me.rhs, me.comp.invert())
-                extra(expr)
-            }
-
+            is ComparisonExpr<*> -> ComparisonExpr.new(expr.lhs, expr.rhs, expr.comp.invert())
             is ConstExpr -> ConstExpr(!expr.value, expr.ind)
-            is IfExpr -> {
-                IfExpr.new(
-                    expr.trueExpr.inverted(),
-                    expr.falseExpr.inverted(),
-                    expr.thisCondition
-                )
-            }
+            is IfExpr -> IfExpr.new(
+                expr.trueExpr.inverted(),
+                expr.falseExpr.inverted(),
+                expr.thisCondition
+            )
 
             else -> TODO("Not implemented for $expr")
         }

@@ -233,7 +233,7 @@ class Context(
         }
 
         if (lExpr is LValueKeyExpr) {
-            return withVar(lExpr.key, rExpr)
+            return withVar(lExpr.key, RootExpression.new(rExpr))
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
@@ -266,21 +266,25 @@ class Context(
 
             // In the simple cases this will just perform a basic assignment, but
             // in reality under the hood it may do other stuff due to aliasing.
-            newContext = newContext.withVar(thisVarKey, newValue)
+            newContext = newContext.withVar(thisVarKey, RootExpression.new(newValue))
         }
 
         return newContext
     }
 
-    fun withVar(key: UnknownKey, rExpr: Expr<*>): Context {
+    fun withVar(key: UnknownKey, rExpr: RootExpression<*>): Context {
+        var newContext = withKeyToExpr(key, rExpr)
+
         if (key !is QualifiedKey) {
-            return withKeyToExpr(key, RootExpression.new(rExpr))
+            // No need to do anything further if there's no risk of aliasing.
+            return newContext
         }
 
         val qualifier = key.qualifier
         val fieldKey = key.field
         val qualifierInd = key.qualifierInd
 
+        // Collect a list of all objects we know of that could alias with the object we're trying to set.
         val potentialAliasers: Set<QualifiedKey> = variables.keys
             .filterIsInstance<QualifiedKey>()
             .filter {
@@ -291,8 +295,6 @@ class Context(
             }
             .toSet() + QualifiedKey(fieldKey, KeyBackreference(PlaceholderKey(qualifierInd), this.idx))
 
-        var newContext = withKeyToExpr(key, RootExpression.new(rExpr))
-
         for (aliasingKey in potentialAliasers) {
             val condition = ComparisonExpr.new(
                 aliasingKey.qualifier.toLeafExpr(),
@@ -300,9 +302,15 @@ class Context(
                 ComparisonOp.EQUAL
             )
 
-            val falseExpr = getVar(aliasingKey)
-            val newRExpr = IfExpr.new(rExpr, falseExpr, condition)
-            newContext = newContext.withKeyToExpr(aliasingKey, RootExpression.new(newRExpr))
+            // Each of the aliasers' values needs to be updated to take into account this new assignment,
+            // as they may have been affected if it turns out they were equal.
+            val newRExpr = rExpr.mapDynamic {
+                // If the objects turn out to be the same, the aliasing object is set to whatever value we're
+                // setting. Otherwise, we leave it alone.
+                IfExpr.new(it, getVar(aliasingKey), condition)
+            }
+
+            newContext = newContext.withKeyToExpr(aliasingKey, newRExpr)
         }
 
         return newContext

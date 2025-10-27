@@ -83,6 +83,14 @@ class RootExpression<T : Any>(
 
     private val ind: SetIndicator<T> = dynamicExpr.ind
 
+    /**
+     * Change the dynamic part of this expression from one value to another, using the provided [mapper].
+     */
+    fun mapDynamic(mapper: (Expr<T>) -> Expr<T>): RootExpression<T> = RootExpression(
+        staticExpr = staticExpr,
+        dynamicExpr = mapper(dynamicExpr)
+    )
+
     fun withStackedRoot(other: RootExpression<*>?): RootExpression<*> {
         if (other == null) return this
 

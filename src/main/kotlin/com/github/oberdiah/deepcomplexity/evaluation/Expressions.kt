@@ -436,6 +436,9 @@ data class NumIterationTimesExpr<T : Number>(
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>() {
+    /**
+     * The value that represents whichever value is at the leaf of this leaf expression.
+     */
     abstract val underlying: Any
 }
 
