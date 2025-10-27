@@ -290,11 +290,11 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
  */
 data class LValueFieldExpr<T : Any>(
     val field: QualifiedFieldKey.Field,
-    val qualifier: Expr<*>,
+    val qualifier: Expr<HeapMarker>,
     override val ind: SetIndicator<T>
 ) : LValueExpr<T>() {
     companion object {
-        fun new(field: QualifiedFieldKey.Field, qualifier: Expr<*>): LValueFieldExpr<*> =
+        fun new(field: QualifiedFieldKey.Field, qualifier: Expr<HeapMarker>): LValueFieldExpr<*> =
             LValueFieldExpr(field, qualifier, field.ind)
     }
 

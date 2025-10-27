@@ -2,6 +2,7 @@ package com.github.oberdiah.deepcomplexity.context
 
 import com.github.oberdiah.deepcomplexity.evaluation.*
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
@@ -371,9 +372,7 @@ class Context(
 
             // ...and any keys that might also need resolved...
             val lValue = if (key is QualifiedFieldKey) {
-                val q = key.qualifier.safelyResolveUsing(this)
-                assert(q.ind is ObjectSetIndicator)
-                LValueFieldExpr.new(key.field, q)
+                LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
             } else {
                 LValueKeyExpr.new(key)
             }

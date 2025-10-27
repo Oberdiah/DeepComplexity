@@ -3,6 +3,7 @@ package com.github.oberdiah.deepcomplexity.evaluation
 import com.github.oberdiah.deepcomplexity.context.*
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.github.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
@@ -407,9 +408,7 @@ object MethodProcessing {
                         "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                     )
                     context.c.getVar(ThisKey(thisType))
-                }
-
-                assertIs<ObjectSetIndicator>(qualifierExpr.ind)
+                }.castToObject()
 
                 LValueFieldExpr.new(QualifiedFieldKey.Field(resolved), qualifierExpr)
             }
