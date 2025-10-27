@@ -202,8 +202,32 @@ class Context(
      *
      * This operation may not just update a single variable; if the l-value expression
      * is a field expression, we may end up doing quite a bit.
+     *
+     * The core of this does look a bit scary, so I'll try to walk you through it:
+     * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
+     * In the simplest case it is, and this all becomes a lot easier, but in the general case
+     * it may be any complicated expression.
+     * Let's go with the following example:
+     * ```
+     * a = new C(2);
+     * b = new C(3);
+     * ((x > 0) ? a : b).x = 5
+     * ```
+     * Now, the only objects we should be touching with our operation are `a` and `b`, so we gather
+     * them first into [varKeysInvolved]. That part's simple enough.
+     * Then, for the variables we want to modify, we take our qualifier as specified above, and replace
+     * `a` and `b` with either:
+     *      a) The value already at that object, effectively turning `b` into `b.x`
+     *      b) The value that we're setting this field to
+     *  depending on whether the object we're modifying is the object being replaced in the expression.
+     *  The result of this is that for something like `((x > 0) ? a : b).x = 5`, the variables end up
+     *  like so:
+     *      `a.x = { (x > 0) ? 5 : 3 }`
+     *      `b.x = { (x > 0) ? 2 : 5 }`
+     *  which is exactly as desired.
      */
-    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
+    fun withVar(lExpr: LValueExpr<*>, uncastExpr: Expr<*>): Context {
+        val rExpr = uncastExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
         assert(rExpr.iterateTree().none { it is LValueExpr }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
@@ -213,33 +237,6 @@ class Context(
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
-
-        /**
-         * This does look a bit scary, so I'll try to walk you through it:
-         * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
-         * In the simplest case it is, and this all becomes a lot easier, but in the general case
-         * it may be any complicated expression.
-         * Let's go with the following example:
-         * ```
-         * a = new C(2);
-         * b = new C(3);
-         * ((x > 0) ? a : b).x = 5
-         * ```
-         * Now, the only objects we should be touching with our operation are `a` and `b`, so we gather
-         * them first into [varKeysInvolved]. That part's simple enough.
-         *
-         * Then, for the variables we want to modify, we take our qualifier as specified above, and replace
-         * `a` and `b` with either:
-         *      a) The value already at that object, effectively turning `b` into `b.x`
-         *      b) The value that we're setting this field to
-         *  depending on whether the object we're modifying is the object being replaced in the expression.
-         *
-         *  The result of this is that for something like `((x > 0) ? a : b).x = 5`, the variables end up
-         *  like so:
-         *      `a.x = { (x > 0) ? 5 : 3 }`
-         *      `b.x = { (x > 0) ? 2 : 5 }`
-         *  which is exactly as desired.
-         */
 
         val qualifierExpr = lExpr.qualifier
         val field = lExpr.field
@@ -275,9 +272,7 @@ class Context(
         return newContext
     }
 
-    fun withVar(key: UnknownKey, uncastExpr: Expr<*>): Context {
-        val rExpr = uncastExpr.castToUsingTypeCast(key.ind, false)
-
+    fun withVar(key: UnknownKey, rExpr: Expr<*>): Context {
         if (key !is QualifiedKey) {
             return withKeyToExpr(key, RootExpression.new(rExpr))
         }
@@ -299,20 +294,14 @@ class Context(
         var newContext = withKeyToExpr(key, RootExpression.new(rExpr))
 
         for (aliasingKey in potentialAliasers) {
-            fun <T : Any, Q : Any> inner(exprInd: SetIndicator<T>, qualifierInd: SetIndicator<Q>): Expr<T> {
-                val trueExpr = rExpr.tryCastTo(exprInd)!!
-                val falseExpr = getVar(aliasingKey).tryCastTo(exprInd)!!
+            val condition = ComparisonExpr.new(
+                aliasingKey.qualifier.toLeafExpr(),
+                qualifier.toLeafExpr(),
+                ComparisonOp.EQUAL
+            )
 
-                val condition = ComparisonExpr.new(
-                    aliasingKey.qualifier.toLeafExpr().tryCastTo(qualifierInd)!!,
-                    qualifier.toLeafExpr().tryCastTo(qualifierInd)!!,
-                    ComparisonOp.EQUAL
-                )
-
-                return IfExpr.new(trueExpr, falseExpr, condition)
-            }
-
-            val newRExpr = inner(rExpr.ind, qualifier.ind)
+            val falseExpr = getVar(aliasingKey)
+            val newRExpr = IfExpr.new(rExpr, falseExpr, condition)
             newContext = newContext.withKeyToExpr(aliasingKey, RootExpression.new(newRExpr))
         }
 

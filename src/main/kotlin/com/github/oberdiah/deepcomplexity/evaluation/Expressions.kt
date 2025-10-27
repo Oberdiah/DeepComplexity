@@ -219,7 +219,12 @@ data class ComparisonExpr<T : Any> private constructor(
         fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> =
             ComparisonExpr(lhs, rhs, comp)
 
-        fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
+        /**
+         * Compile-time casts [rhs] for you so you don't have to worry about it. If you provide
+         * a wrongly typed [rhs] you'll get a runtime exception.
+         */
+        fun <A : Any> new(lhs: Expr<A>, rhs: Expr<*>, comp: ComparisonOp): Expr<Boolean> {
+            val rhs = rhs.castOrThrow(lhs.ind)
             return StaticExpressionAnalysis.attemptToSimplifyComparison(lhs, rhs, comp)
         }
     }
@@ -291,14 +296,12 @@ data class IfExpr<T : Any> private constructor(
         fun <T : Any> newRaw(trueExpr: Expr<T>, falseExpr: Expr<T>, condition: Expr<Boolean>): IfExpr<T> =
             IfExpr(trueExpr, falseExpr, condition)
 
-        fun <A : Any, B : Any> new(
-            trueExpr: Expr<A>,
-            falseExpr: Expr<B>,
-            condition: Expr<Boolean>
-        ): Expr<A> {
-            val falseExpr = falseExpr.tryCastTo(trueExpr.ind)
-                ?: throw IllegalStateException("Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}")
-
+        /**
+         * Compile-time casts [rhs] for you so you don't have to worry about it. If you provide
+         * a wrongly typed [rhs] you'll get a runtime exception.
+         */
+        fun <A : Any> new(trueExpr: Expr<A>, falseExpr: Expr<*>, condition: Expr<Boolean>): Expr<A> {
+            val falseExpr = falseExpr.castOrThrow(trueExpr.ind)
             return StaticExpressionAnalysis.attemptToSimplifyIfExpr(trueExpr, falseExpr, condition)
         }
     }
