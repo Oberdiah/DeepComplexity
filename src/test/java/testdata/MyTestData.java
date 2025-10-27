@@ -1811,6 +1811,7 @@ public class MyTestData {
 		nested.x++;
 	}
 	
+	@RequiredScore(1.0)
 	public static short earlyReturnTest6(short x) {
 		MyClass nested = new MyClass(2);
 		MyClass nested2 = new MyClass(3);

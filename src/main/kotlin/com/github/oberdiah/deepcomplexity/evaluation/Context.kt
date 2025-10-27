@@ -197,6 +197,14 @@ class Context(
         return VariableExpr.new(KeyBackreference(key, idx))
     }
 
+    fun withVar(lExpr: LValueExpr<*>, uncastExpr: Expr<*>): Context {
+        val rExpr = uncastExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
+        assert(rExpr.iterateTree().none { it is LValueExpr }) {
+            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
+        }
+        return withVar(lExpr, RootExpression.new(rExpr))
+    }
+
     /**
      * Sets the given l-value expression to the provided [rExpr], returning a new context.
      *
@@ -226,14 +234,9 @@ class Context(
      *      `b.x = { (x > 0) ? 2 : 5 }`
      *  which is exactly as desired.
      */
-    fun withVar(lExpr: LValueExpr<*>, uncastExpr: Expr<*>): Context {
-        val rExpr = uncastExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
-        assert(rExpr.iterateTree().none { it is LValueExpr }) {
-            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
-        }
-
+    fun withVar(lExpr: LValueExpr<*>, rExpr: RootExpression<*>): Context {
         if (lExpr is LValueKeyExpr) {
-            return withVar(lExpr.key, RootExpression.new(rExpr))
+            return withVar(lExpr.key, rExpr)
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
@@ -254,19 +257,22 @@ class Context(
             val thisVarKey = QualifiedKey(field, qualifier)
             // grab whatever it's currently set to,
             val existingExpr = newContext.getVar(thisVarKey)
-            // and replace it with the qualifier expression itself, but with each leaf
-            // replaced with either what we used to be, or [rExpr].
-            val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
-                if (expr.underlying == qualifier) {
-                    rExpr
-                } else {
-                    existingExpr
-                }
+
+            val newValue = rExpr.mapDynamic {
+                // and replace it with the qualifier expression itself, but with each leaf
+                // replaced with either what we used to be, or [rExpr].
+                qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
+                    if (expr.underlying == qualifier) {
+                        it
+                    } else {
+                        existingExpr
+                    }
+                }.castOrThrow(it.ind)
             }
 
             // In the simple cases this will just perform a basic assignment, but
             // in reality under the hood it may do other stuff due to aliasing.
-            newContext = newContext.withVar(thisVarKey, RootExpression.new(newValue))
+            newContext = newContext.withVar(thisVarKey, newValue)
         }
 
         return newContext
@@ -363,14 +369,10 @@ class Context(
                 LValueKeyExpr.new(key)
             }
 
-            newContext = newContext.withVar(lValue, expr.getDynExpr())
+            newContext = newContext.withVar(lValue, expr)
         }
 
-        val newVariables = newContext.variables.mapValues {
-            it.value.withStackedRoot(resolvedOther.variables[it.key])
-        }
-
-        return Context(newVariables, thisType, idx).withoutTemporaryKeys()
+        return newContext.withoutTemporaryKeys()
     }
 
     fun haveHitReturn(): Context =

@@ -91,17 +91,6 @@ class RootExpression<T : Any>(
         dynamicExpr = mapper(dynamicExpr)
     )
 
-    fun withStackedRoot(other: RootExpression<*>?): RootExpression<*> {
-        if (other == null) return this
-
-        return RootExpression(
-            staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
-                other.staticExpr
-            },
-            dynamicExpr = this.dynamicExpr
-        )
-    }
-
     fun stackedUnder(stackedUnder: RootExpression<*>): RootExpression<T> {
         return RootExpression(
             staticExpr = staticExpr.replaceTypeInTree<DynamicExpr<*>> {
