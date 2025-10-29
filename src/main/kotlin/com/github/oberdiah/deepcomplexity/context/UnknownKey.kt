@@ -1,8 +1,10 @@
 package com.github.oberdiah.deepcomplexity.context
 
 import com.github.oberdiah.deepcomplexity.context.Context.KeyBackreference
+import com.github.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
 import com.github.oberdiah.deepcomplexity.evaluation.LeafExpr
+import com.github.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.github.oberdiah.deepcomplexity.utilities.Utilities
@@ -15,12 +17,22 @@ import com.intellij.psi.*
 sealed class UnknownKey : Key() {
     open val temporary: Boolean = false
 
-    /**
-     * Most keys don't need to worry about this.
-     */
-    open fun withAddedContextId(id: Context.ContextId): UnknownKey = this
+    fun withAddedContextId(id: Context.ContextId): UnknownKey {
+        return when (this) {
+            is QualifiedFieldKey if qualifier is KeyBackreference ->
+                QualifiedFieldKey(qualifier.withAddedContextId(id), field)
 
-    open fun isPlaceholder(): Boolean = false
+            else -> this
+        }
+    }
+
+    fun isPlaceholder(): Boolean {
+        return when (this) {
+            is PlaceholderKey -> true
+            is QualifiedFieldKey if qualifier is KeyBackreference -> qualifier.isPlaceholder()
+            else -> false
+        }
+    }
 }
 
 sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {
@@ -68,7 +80,6 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
 data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
     override val temporary: Boolean = true
     override fun toString(): String = "PH(${ind.type.toStringPretty()})"
-    override fun isPlaceholder(): Boolean = true
 }
 
 /**
@@ -76,7 +87,6 @@ data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
  */
 sealed interface Qualifier {
     val ind: SetIndicator<*>
-    fun withAddedContextId(newId: Context.ContextId): Qualifier
 
     /**
      * Turns this [Qualifier] into an expression by trying to resolve it against the given context.
@@ -84,28 +94,23 @@ sealed interface Qualifier {
     fun safelyResolveUsing(context: Context): Expr<*>
 
     /**
-     * Turns this [Qualifier] directly into a leaf expression, so either it'll be a [com.github.oberdiah.deepcomplexity.evaluation.ConstExpr] or a [com.github.oberdiah.deepcomplexity.evaluation.VariableExpr]
+     * Turns this [Qualifier] directly into a leaf expression, so either it'll be a
+     * [com.github.oberdiah.deepcomplexity.evaluation.ConstExpr] or a
+     * [com.github.oberdiah.deepcomplexity.evaluation.VariableExpr]
      */
-    fun toLeafExpr(): LeafExpr<*>
+    fun toLeafExpr(): LeafExpr<*> {
+        return when (this) {
+            is HeapMarker -> ConstExpr.fromHeapMarker(this)
+            is KeyBackreference -> VariableExpr.new(this)
+        }
+    }
 }
 
 data class QualifiedFieldKey(val qualifier: Qualifier, val field: Field) : UnknownKey() {
     override val ind: SetIndicator<*> = field.ind
-
     val qualifierInd: ObjectSetIndicator = qualifier.ind as ObjectSetIndicator
 
     override fun toString(): String = "$qualifier.$field"
-    override fun withAddedContextId(id: Context.ContextId): QualifiedFieldKey =
-        QualifiedFieldKey(qualifier.withAddedContextId(id), field)
-
-    // This is a bit ugly.
-    // This whole situation is, really, with the recursive qualified key situation being so confusing.
-    override fun isPlaceholder(): Boolean {
-        return when (qualifier) {
-            is KeyBackreference -> qualifier.isPlaceholder()
-            is HeapMarker -> false
-        }
-    }
 
     /**
      * This isn't a full key by itself, you'll need a [Qualifier] as well and then will want to make a [QualifiedFieldKey].

@@ -2,7 +2,6 @@ package com.github.oberdiah.deepcomplexity.context
 
 import com.github.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.LeafExpr
 import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
@@ -27,7 +26,6 @@ data class HeapMarker private constructor(
         }
     }
 
-    override fun withAddedContextId(newId: Context.ContextId): Qualifier = this
     override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
     override fun toString(): String {
         if (this == NULL) return "null"
@@ -36,5 +34,4 @@ data class HeapMarker private constructor(
     }
 
     override fun safelyResolveUsing(context: Context): Expr<HeapMarker> = ConstExpr.fromHeapMarker(this)
-    override fun toLeafExpr(): LeafExpr<*> = ConstExpr.fromHeapMarker(this)
 }

@@ -88,7 +88,7 @@ class Context(
         override fun hashCode(): Int = key.hashCode()
 
         override val ind: SetIndicator<*> = key.ind
-        override fun withAddedContextId(newId: ContextId): KeyBackreference =
+        fun withAddedContextId(newId: ContextId): KeyBackreference =
             KeyBackreference(key.withAddedContextId(newId), contextId + newId)
 
         /**
@@ -110,8 +110,6 @@ class Context(
                 context.getVar(key)
             }
         }
-
-        override fun toLeafExpr(): LeafExpr<*> = VariableExpr.new(this)
 
         fun isPlaceholder(): Boolean = key.isPlaceholder()
     }
