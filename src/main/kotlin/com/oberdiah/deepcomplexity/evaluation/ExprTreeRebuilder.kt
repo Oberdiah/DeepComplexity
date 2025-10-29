@@ -1,10 +1,10 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 
 object ExprTreeRebuilder {
     /**

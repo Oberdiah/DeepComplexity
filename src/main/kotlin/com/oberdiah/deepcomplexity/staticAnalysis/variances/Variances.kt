@@ -1,12 +1,12 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
+package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
-import com.github.oberdiah.deepcomplexity.context.Key
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 /**
  * A set of possible values of type T, alongside optional variance data that can be used to

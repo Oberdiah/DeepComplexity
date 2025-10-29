@@ -1,6 +1,6 @@
-package com.github.oberdiah.deepcomplexity
+package com.oberdiah.deepcomplexity
 
-import com.github.oberdiah.deepcomplexity.utilities.BigFraction
+import com.oberdiah.deepcomplexity.utilities.BigFraction
 import org.apache.commons.lang3.math.Fraction
 import org.junit.jupiter.api.Test
 

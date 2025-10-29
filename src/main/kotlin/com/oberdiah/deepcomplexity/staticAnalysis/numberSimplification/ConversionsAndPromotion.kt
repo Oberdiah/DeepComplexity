@@ -1,8 +1,8 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
+package com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
-import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
-import com.github.oberdiah.deepcomplexity.staticAnalysis.*
+import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
+import com.oberdiah.deepcomplexity.staticAnalysis.*
 
 object ConversionsAndPromotion {
     class TypedPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {

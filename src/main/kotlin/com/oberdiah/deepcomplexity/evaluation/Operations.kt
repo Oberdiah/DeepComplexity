@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.tree.IElementType

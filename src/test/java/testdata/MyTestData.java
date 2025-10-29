@@ -1,11 +1,11 @@
 package testdata;
 
-import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
-import com.github.oberdiah.deepcomplexity.GoodEnough;
-import com.github.oberdiah.deepcomplexity.RequiredScore;
+import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
+import com.oberdiah.deepcomplexity.GoodEnough;
+import com.oberdiah.deepcomplexity.RequiredScore;
 
-import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
-import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
+import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
+import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
 
 public class MyTestData {
 	@RequiredScore(1.0)

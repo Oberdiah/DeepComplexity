@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.settings
+package com.oberdiah.deepcomplexity.settings
 
 object Settings {
     enum class OverflowBehaviour {

@@ -1,11 +1,11 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
+package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.github.oberdiah.deepcomplexity.context.HeapMarker
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
-import com.github.oberdiah.deepcomplexity.utilities.MathematicalSet
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.utilities.MathematicalSet
 
 /**
  * Tracks the possible heap allocations of a variable.

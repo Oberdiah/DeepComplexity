@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.actions
+package com.oberdiah.deepcomplexity.actions
 
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.DumbService

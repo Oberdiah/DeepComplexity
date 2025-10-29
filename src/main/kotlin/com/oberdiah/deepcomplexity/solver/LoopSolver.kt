@@ -1,8 +1,8 @@
-package com.github.oberdiah.deepcomplexity.solver
+package com.oberdiah.deepcomplexity.solver
 
-import com.github.oberdiah.deepcomplexity.context.Context
-import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastToReified
+import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastToReified
 import com.intellij.psi.PsiElement
 
 object LoopSolver {

@@ -9,7 +9,7 @@
 To grab the JVM arguments for the IntelliJ JUnit tests, run:
 
 ```shell
-./gradlew :test --tests "com.github.oberdiah.deepcomplexity.SimpleMustPassTest"
+./gradlew :test --tests "com.oberdiah.deepcomplexity.SimpleMustPassTest"
 ```
 
 See https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1757 for why we have to do that.

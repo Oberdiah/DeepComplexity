@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.data
+package com.oberdiah.deepcomplexity.data
 
 class IndexValue(val data: String) {
     override fun equals(other: Any?): Boolean {

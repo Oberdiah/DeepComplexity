@@ -1,8 +1,8 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
+package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 interface ISet<T : Any> {
     val ind: SetIndicator<T>

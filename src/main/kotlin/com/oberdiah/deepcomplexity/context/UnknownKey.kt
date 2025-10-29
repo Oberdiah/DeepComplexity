@@ -1,14 +1,14 @@
-package com.github.oberdiah.deepcomplexity.context
+package com.oberdiah.deepcomplexity.context
 
-import com.github.oberdiah.deepcomplexity.context.Context.KeyBackreference
-import com.github.oberdiah.deepcomplexity.evaluation.ConstExpr
-import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.LeafExpr
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpr
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.utilities.Utilities
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
+import com.oberdiah.deepcomplexity.context.Context.KeyBackreference
+import com.oberdiah.deepcomplexity.evaluation.ConstExpr
+import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.LeafExpr
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.utilities.Utilities
+import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import com.intellij.psi.*
 
 /**
@@ -95,8 +95,8 @@ sealed interface Qualifier {
 
     /**
      * Turns this [Qualifier] directly into a leaf expression, so either it'll be a
-     * [com.github.oberdiah.deepcomplexity.evaluation.ConstExpr] or a
-     * [com.github.oberdiah.deepcomplexity.evaluation.VariableExpr]
+     * [com.oberdiah.deepcomplexity.evaluation.ConstExpr] or a
+     * [com.oberdiah.deepcomplexity.evaluation.VariableExpr]
      */
     fun toLeafExpr(): LeafExpr<*> {
         return when (this) {

@@ -1,7 +1,7 @@
 package testdata.ai;
 
-import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
-import com.github.oberdiah.deepcomplexity.RequiredScore;
+import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
+import com.oberdiah.deepcomplexity.RequiredScore;
 
 public class OperationEvaluationOrderTest {
 	// Testing short-circuit AND with side effects on left operand

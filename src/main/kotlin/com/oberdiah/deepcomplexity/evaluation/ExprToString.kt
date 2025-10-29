@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
 object ExprToString {
     fun <T : Any> toString(expr: Expr<T>): String {

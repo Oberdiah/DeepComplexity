@@ -1,13 +1,13 @@
-package com.github.oberdiah.deepcomplexity
+package com.oberdiah.deepcomplexity
 
-import com.github.oberdiah.deepcomplexity.TestUtilities.annotationInformation
+import com.oberdiah.deepcomplexity.TestUtilities.annotationInformation
 import java.nio.file.Files
 import java.nio.file.Paths
 
 object AnnotationApplier {
     val ANNOTATIONS = listOf(
-        "com.github.oberdiah.deepcomplexity.RequiredScore",
-        "com.github.oberdiah.deepcomplexity.ExpectedExpressionSize"
+        "com.oberdiah.deepcomplexity.RequiredScore",
+        "com.oberdiah.deepcomplexity.ExpectedExpressionSize"
     )
 
     private fun updateAnnotationIfNeeded(

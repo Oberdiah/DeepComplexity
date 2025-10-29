@@ -1,11 +1,11 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
+package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.github.oberdiah.deepcomplexity.context.Key
-import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 /**

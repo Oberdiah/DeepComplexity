@@ -1,8 +1,8 @@
 package testdata.ai;
 
-import com.github.oberdiah.deepcomplexity.RequiredScore;
+import com.oberdiah.deepcomplexity.RequiredScore;
 
-import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
+import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
 
 public class EarlyReturnMethodCallInteractionTest {
 	// Testing early return with no method calls

@@ -1,10 +1,10 @@
-package com.github.oberdiah.deepcomplexity.utilities
+package com.oberdiah.deepcomplexity.utilities
 
-import com.github.oberdiah.deepcomplexity.context.LocalVariableKey
-import com.github.oberdiah.deepcomplexity.context.ParameterKey
-import com.github.oberdiah.deepcomplexity.context.ReturnKey
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.context.LocalVariableKey
+import com.oberdiah.deepcomplexity.context.ParameterKey
+import com.oberdiah.deepcomplexity.context.ReturnKey
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.*
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal

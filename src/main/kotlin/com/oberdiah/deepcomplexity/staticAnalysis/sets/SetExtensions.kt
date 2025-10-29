@@ -1,12 +1,12 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
+package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.github.oberdiah.deepcomplexity.context.HeapMarker
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 fun <T : Number> ISet<T>.into(): NumberSet<T> =
     this as NumberSet<T>

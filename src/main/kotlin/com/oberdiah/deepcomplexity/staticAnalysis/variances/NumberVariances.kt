@@ -1,18 +1,18 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
+package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
-import com.github.oberdiah.deepcomplexity.context.Key
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
-import com.github.oberdiah.deepcomplexity.utilities.Functional
+import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
+import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.utilities.Functional
 
 /**
  * Think of this as a linear equation like the form: `2x + 3y + 4z + c`

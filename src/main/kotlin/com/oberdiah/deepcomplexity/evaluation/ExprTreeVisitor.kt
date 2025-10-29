@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
 object ExprTreeVisitor {
     fun iterateTree(expr: Expr<*>, includeIfCondition: Boolean = true): Sequence<Expr<*>> {

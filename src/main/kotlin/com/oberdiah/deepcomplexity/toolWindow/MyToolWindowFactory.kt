@@ -1,7 +1,7 @@
-package com.github.oberdiah.deepcomplexity.toolWindow
+package com.oberdiah.deepcomplexity.toolWindow
 
-import com.github.oberdiah.deepcomplexity.MyBundle
-import com.github.oberdiah.deepcomplexity.services.MyProjectService
+import com.oberdiah.deepcomplexity.MyBundle
+import com.oberdiah.deepcomplexity.services.MyProjectService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project

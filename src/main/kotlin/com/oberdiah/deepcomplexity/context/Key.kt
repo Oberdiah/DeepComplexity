@@ -1,8 +1,8 @@
-package com.github.oberdiah.deepcomplexity.context
+package com.oberdiah.deepcomplexity.context
 
-import com.github.oberdiah.deepcomplexity.evaluation.Expr
-import com.github.oberdiah.deepcomplexity.evaluation.ExprToString
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.ExprToString
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.PsiElement
 
 /**

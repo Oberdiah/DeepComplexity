@@ -1,11 +1,11 @@
-package com.github.oberdiah.deepcomplexity
+package com.oberdiah.deepcomplexity
 
-import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.github.oberdiah.deepcomplexity.evaluation.MethodProcessing
-import com.github.oberdiah.deepcomplexity.evaluation.VariableExpr
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.oberdiah.deepcomplexity.evaluation.MethodProcessing
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
+import com.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.intellij.psi.PsiMethod
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method

@@ -1,14 +1,14 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.variances
+package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
-import com.github.oberdiah.deepcomplexity.context.Key
-import com.github.oberdiah.deepcomplexity.evaluation.BooleanOp
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.evaluation.BooleanOp
+import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 
 data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> {
     override fun toString(): String = value.toString()

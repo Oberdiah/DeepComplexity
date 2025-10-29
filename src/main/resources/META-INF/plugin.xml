@@ -1,6 +1,6 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.oberdiah.deepcomplexity</id>
+    <id>com.oberdiah.deepcomplexity</id>
     <name>DeepComplexity</name>
     <vendor>oberdiah</vendor>
 
@@ -11,12 +11,12 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.oberdiah.deepcomplexity.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <fileBasedIndex implementation="com.github.oberdiah.deepcomplexity.indexes.PrimaryIndex"/>
+        <toolWindow factoryClass="com.oberdiah.deepcomplexity.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <fileBasedIndex implementation="com.oberdiah.deepcomplexity.indexes.PrimaryIndex"/>
     </extensions>
 
     <applicationListeners>
-        <listener class="com.github.oberdiah.deepcomplexity.listeners.MyApplicationActivationListener"
+        <listener class="com.oberdiah.deepcomplexity.listeners.MyApplicationActivationListener"
                   topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
 </idea-plugin>

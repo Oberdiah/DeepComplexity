@@ -1,11 +1,11 @@
 package testdata.ai;
 
-import com.github.oberdiah.deepcomplexity.GoodEnough;
-import com.github.oberdiah.deepcomplexity.RequiredScore;
+import com.oberdiah.deepcomplexity.GoodEnough;
+import com.oberdiah.deepcomplexity.RequiredScore;
 
-import static com.github.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
+import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
 
-import com.github.oberdiah.deepcomplexity.ExpectedExpressionSize;
+import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
 
 public class AITestData {
 	// 1. Short overflow, but int is fine — subtle wrap

@@ -1,7 +1,7 @@
-package com.github.oberdiah.deepcomplexity.indexes
+package com.oberdiah.deepcomplexity.indexes
 
-import com.github.oberdiah.deepcomplexity.data.IndexValue
-import com.github.oberdiah.deepcomplexity.services.MyProjectService
+import com.oberdiah.deepcomplexity.data.IndexValue
+import com.oberdiah.deepcomplexity.services.MyProjectService
 import com.intellij.ide.highlighter.JavaFileType
 import com.intellij.openapi.components.service
 import com.intellij.util.indexing.*

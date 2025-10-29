@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
 object StaticExpressionAnalysis {
     fun attemptToSimplifyBooleanExpr(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {

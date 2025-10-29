@@ -1,24 +1,24 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.sets
+package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.github.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
-import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
-import com.github.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.castInto
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.compareTo
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.isOne
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.isZero
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.max
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.min
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.negate
-import com.github.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
+import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
+import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
+import com.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
+import com.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
+import com.oberdiah.deepcomplexity.utilities.Utilities.isOne
+import com.oberdiah.deepcomplexity.utilities.Utilities.isZero
+import com.oberdiah.deepcomplexity.utilities.Utilities.max
+import com.oberdiah.deepcomplexity.utilities.Utilities.min
+import com.oberdiah.deepcomplexity.utilities.Utilities.negate
+import com.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import kotlin.reflect.KClass
 
 @ConsistentCopyVisibility

@@ -1,6 +1,6 @@
-package com.github.oberdiah.deepcomplexity.services
+package com.oberdiah.deepcomplexity.services
 
-import com.github.oberdiah.deepcomplexity.MyBundle
+import com.oberdiah.deepcomplexity.MyBundle
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project

@@ -1,21 +1,21 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.context.Context
-import com.github.oberdiah.deepcomplexity.context.HeapMarker
-import com.github.oberdiah.deepcomplexity.context.Key.ExpressionKey
-import com.github.oberdiah.deepcomplexity.context.QualifiedFieldKey
-import com.github.oberdiah.deepcomplexity.context.UnknownKey
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
-import com.github.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
-import com.github.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
+import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
+import com.oberdiah.deepcomplexity.context.UnknownKey
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
+import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
+import com.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.intellij.psi.PsiTypes
 
 sealed class Expr<T : Any>() {
@@ -381,7 +381,7 @@ data class VariableExpr<T : Any> private constructor(
 }
 
 /**
- * Objects are represented as a [ConstExpr] with an underlying [com.github.oberdiah.deepcomplexity.context.HeapMarker].
+ * Objects are represented as a [ConstExpr] with an underlying [com.oberdiah.deepcomplexity.context.HeapMarker].
  */
 data class ConstExpr<T : Any>(override val underlying: T, override val ind: SetIndicator<T>) : LeafExpr<T>() {
     val value: T = underlying

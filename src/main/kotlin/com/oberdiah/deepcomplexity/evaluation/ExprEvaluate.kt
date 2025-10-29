@@ -1,15 +1,15 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.context.Key
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.github.oberdiah.deepcomplexity.solver.CastSolver
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.oberdiah.deepcomplexity.solver.CastSolver
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 object ExprEvaluate {
     data class Scope(

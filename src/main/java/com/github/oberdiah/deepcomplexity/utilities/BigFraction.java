@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.utilities;
+package com.oberdiah.deepcomplexity.utilities;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

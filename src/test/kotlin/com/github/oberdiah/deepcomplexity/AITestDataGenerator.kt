@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity
+package com.oberdiah.deepcomplexity
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName

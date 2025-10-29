@@ -1,15 +1,15 @@
-package com.github.oberdiah.deepcomplexity.solver
+package com.oberdiah.deepcomplexity.solver
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import com.github.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import kotlin.test.assertIs
 
 object ConstraintSolver {

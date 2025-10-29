@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity
+package com.oberdiah.deepcomplexity
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.psi.PsiFile

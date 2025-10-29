@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.exceptions
+package com.oberdiah.deepcomplexity.exceptions
 
 /**
  * Maybe we want to handle this more elegantly in the future, but this

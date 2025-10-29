@@ -1,14 +1,14 @@
-package com.github.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation
 
-import com.github.oberdiah.deepcomplexity.context.Context
-import com.github.oberdiah.deepcomplexity.context.HeapMarker
-import com.github.oberdiah.deepcomplexity.context.QualifiedFieldKey
-import com.github.oberdiah.deepcomplexity.context.Qualifier
-import com.github.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
+import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
+import com.oberdiah.deepcomplexity.context.Qualifier
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
 object ExpressionExtensions {
     fun Expr<Boolean>.inverted(): Expr<Boolean> = ExprConstrain.invert(this)

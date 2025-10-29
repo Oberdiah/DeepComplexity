@@ -1,7 +1,7 @@
-package com.github.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
+package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
+import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
 
 object ExprConstrain {
     fun combineConstraints(a: Set<Constraints>, b: Set<Constraints>): Set<Constraints> {

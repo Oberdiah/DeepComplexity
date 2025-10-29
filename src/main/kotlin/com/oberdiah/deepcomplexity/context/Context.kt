@@ -1,13 +1,13 @@
-package com.github.oberdiah.deepcomplexity.context
+package com.oberdiah.deepcomplexity.context
 
-import com.github.oberdiah.deepcomplexity.evaluation.*
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
-import com.github.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
-import com.github.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.github.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
 

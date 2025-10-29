@@ -1,4 +1,4 @@
-package com.github.oberdiah.deepcomplexity.utilities
+package com.oberdiah.deepcomplexity.utilities
 
 class MathematicalSet<T> private constructor(
     private val impl: Impl<T>
