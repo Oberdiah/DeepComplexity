@@ -1,5 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.intellij.psi.*
+import com.intellij.psi.tree.IElementType
 import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
@@ -10,15 +12,13 @@ import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.oberdiah.deepcomplexity.solver.LoopSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.getThisType
 import com.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.oberdiah.deepcomplexity.utilities.Utilities.toKey
-import com.intellij.psi.*
-import com.intellij.psi.tree.IElementType
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
@@ -221,18 +221,10 @@ object MethodProcessing {
             }
 
             is PsiMethodCallExpression -> {
-                val qualifier = psi.methodExpression.qualifier?.let {
-                    // This has to come before the method call is processed,
-                    // because this may create an object on the heap that the method call
-                    // would use.
-                    processPsiExpression(it, context)
-                }
-                val methodContext = processMethod(context, psi)
-
-                qualifier?.let {
-                    val ind = it.ind
-                    assertIs<ObjectSetIndicator>(ind)
-                    context.addVar(LValueKeyExpr.new(ThisKey(ind.type)), it)
+                val methodContext = processMethod(psi) { methodCallSiteContext ->
+                    psi.methodExpression.qualifier?.let {
+                        processPsiExpression(it, methodCallSiteContext).castToObject()
+                    }
                 }
 
                 val methodReturnValue = methodContext.returnValue?.resolveUnknowns(context.c)
@@ -372,9 +364,10 @@ object MethodProcessing {
                 val objType = psi.type!!
                 val newObj = ConstExpr.fromHeapMarker(HeapMarker.new(objType))
 
-                val methodContext = processMethod(context, psi)
+                val methodContext = processMethod(psi) {
+                    newObj
+                }
 
-                context.addVar(LValueKeyExpr.new(ThisKey(objType)), newObj)
                 context.stack(methodContext)
 
                 return newObj
@@ -425,16 +418,15 @@ object MethodProcessing {
         }
     }
 
-    /**
-     * Returns the new updated original context, and then the context of the method call.
-     */
     private fun processMethod(
-        context: ContextWrapper,
-        callExpr: PsiCallExpression
+        callExpr: PsiCallExpression,
+        getQualifierExpr: (methodCtx: ContextWrapper) -> Expr<HeapMarker>?
     ): Context {
         val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
             "Failed to resolve method for call: ${callExpr.text}"
         )
+
+        val methodCallSiteContext = newContext(method.getThisType())
 
         val parameters = method.parameterList.parameters
         val arguments = callExpr.argumentList?.expressions ?: throw ExpressionIncompleteException(
@@ -448,17 +440,24 @@ object MethodProcessing {
         }
 
         for ((param, arg) in parameters.zip(arguments)) {
-            context.addVar(
+            methodCallSiteContext.addVar(
                 LValueKeyExpr.new(ParameterKey(param, true)),
-                processPsiExpression(arg, context)
+                processPsiExpression(arg, methodCallSiteContext)
             )
         }
 
+        getQualifierExpr(methodCallSiteContext)?.let {
+            methodCallSiteContext.addVar(LValueKeyExpr.new(ThisKey(it.ind.into().type)), it)
+        }
+
+        // We keep [methodContext] separate from [methodCallSiteContext] because we want to be able to
+        // calculate every method entirely independently of any outer context.
         val methodContext = newContext(method.getThisType())
         method.body?.let { body ->
             processPsiStatement(body, methodContext)
         }
-        return methodContext.c.forcedDynamic()
+
+        return methodCallSiteContext.c.stack(methodContext.c).forcedDynamic()
     }
 
     private fun processPolyadicExpr(
