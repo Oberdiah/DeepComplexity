@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.context.Context
 import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
@@ -16,7 +17,6 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import com.intellij.psi.PsiTypes
 
 sealed class Expr<T : Any>() {
     /**
@@ -212,8 +212,8 @@ data class IfExpr<T : Any> private constructor(
             IfExpr(trueExpr, falseExpr, condition)
 
         /**
-         * Compile-time casts [rhs] for you so you don't have to worry about it. If you provide
-         * a wrongly typed [rhs] you'll get a runtime exception.
+         * Compile-time casts [falseExpr] for you so you don't have to worry about it. If you provide
+         * a wrongly typed [falseExpr] you'll get a runtime exception.
          */
         fun <A : Any> new(trueExpr: Expr<A>, falseExpr: Expr<*>, condition: Expr<Boolean>): Expr<A> {
             val falseExpr = falseExpr.castOrThrow(trueExpr.ind)
@@ -279,7 +279,7 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
     }
 
     override fun resolve(context: Context): Expr<T> {
-        return context.getVar(key).tryCastTo(ind)!!
+        return context.getVar(key).castOrThrow(ind)
     }
 }
 
@@ -299,7 +299,7 @@ data class LValueFieldExpr<T : Any>(
     }
 
     override fun resolve(context: Context): Expr<T> {
-        return qualifier.getField(context, field).tryCastTo(ind)!!
+        return qualifier.getField(context, field).castOrThrow(ind)
     }
 }
 

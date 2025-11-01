@@ -59,7 +59,7 @@ object ExpressionExtensions {
 
     fun <T : Any> Expr<*>.castOrThrow(indicator: SetIndicator<T>): Expr<T> {
         return this.tryCastTo(indicator)
-            ?: throw IllegalStateException("Failed to cast to $indicator: $this (${this.ind})")
+            ?: throw IllegalStateException("Failed to cast '$this' to $indicator; (${this.ind} != $indicator)")
     }
 
     /**
@@ -81,7 +81,7 @@ object ExpressionExtensions {
 
     /**
      * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
-     * An ergonomic and slightly constrained version of [replaceLeaves].
+     * An ergonomic and slightly constrained version of [com.oberdiah.deepcomplexity.evaluation.Expr.replaceLeaves].
      *
      * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
      * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
