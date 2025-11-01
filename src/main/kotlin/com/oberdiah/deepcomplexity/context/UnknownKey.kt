@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
+import com.intellij.psi.*
 import com.oberdiah.deepcomplexity.context.Context.KeyBackreference
 import com.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
@@ -9,13 +10,31 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
-import com.intellij.psi.*
 
 /**
  * Not all keys fall into this category, for example [ExpressionKey]s do not.
  */
 sealed class UnknownKey : Key() {
-    open val temporary: Boolean = false
+    open val lifetime: Lifetime = Lifetime.FOREVER
+
+    fun shouldBeStripped(lifetimeToStrip: Lifetime): Boolean = this.lifetime.ordinal <= lifetimeToStrip.ordinal
+
+    enum class Lifetime {
+        /**
+         * The key will be removed as soon as it moves out of the block it was created in.
+         */
+        BLOCK,
+
+        /**
+         * The key will be removed as soon as it moves out of the method it was created in.
+         */
+        METHOD,
+
+        /**
+         * The key will never be removed.
+         */
+        FOREVER
+    }
 
     fun withAddedContextId(id: Context.ContextId): UnknownKey {
         return when (this) {
@@ -43,10 +62,10 @@ sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {
 }
 
 class LocalVariableKey(variable: PsiLocalVariable) : VariableKey(variable)
-class ParameterKey(variable: PsiParameter, override val temporary: Boolean = false) : VariableKey(variable)
+class ParameterKey(variable: PsiParameter, override val lifetime: Lifetime = Lifetime.FOREVER) : VariableKey(variable)
 
 data class ThisKey(val type: PsiType) : UnknownKey() {
-    override val temporary: Boolean = true
+    override val lifetime: Lifetime = Lifetime.METHOD
     override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(type)
     override fun toString(): String = "this"
     override fun hashCode(): Int = 0
@@ -78,8 +97,8 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
  * ```
  */
 data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
-    override val temporary: Boolean = true
-    override fun toString(): String = "PH(${ind.type.toStringPretty()})"
+    override val lifetime: Lifetime = Lifetime.BLOCK
+    override fun toString(): String = "PK(${ind.type.toStringPretty()})"
 }
 
 /**
@@ -88,6 +107,9 @@ data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
 sealed interface Qualifier {
     val ind: SetIndicator<*>
 
+    val lifetime: UnknownKey.Lifetime
+        get() = UnknownKey.Lifetime.FOREVER
+
     /**
      * Turns this [Qualifier] into an expression by trying to resolve it against the given context.
      */
@@ -95,20 +117,19 @@ sealed interface Qualifier {
 
     /**
      * Turns this [Qualifier] directly into a leaf expression, so either it'll be a
-     * [com.oberdiah.deepcomplexity.evaluation.ConstExpr] or a
-     * [com.oberdiah.deepcomplexity.evaluation.VariableExpr]
+     * [ConstExpr] or a
+     * [VariableExpr]
      */
-    fun toLeafExpr(): LeafExpr<*> {
-        return when (this) {
-            is HeapMarker -> ConstExpr.fromHeapMarker(this)
-            is KeyBackreference -> VariableExpr.new(this)
-        }
+    fun toLeafExpr(): LeafExpr<*> = when (this) {
+        is HeapMarker -> ConstExpr.fromHeapMarker(this)
+        is KeyBackreference -> VariableExpr.new(this)
     }
 }
 
 data class QualifiedFieldKey(val qualifier: Qualifier, val field: Field) : UnknownKey() {
     override val ind: SetIndicator<*> = field.ind
     val qualifierInd: ObjectSetIndicator = qualifier.ind as ObjectSetIndicator
+    override val lifetime: Lifetime = qualifier.lifetime
 
     override fun toString(): String = "$qualifier.$field"
 

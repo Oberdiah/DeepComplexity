@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
+import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
@@ -8,7 +9,6 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.intellij.psi.PsiType
 import kotlin.test.assertEquals
 
 typealias Vars = Map<UnknownKey, RootExpression<*>>
@@ -112,6 +112,8 @@ class Context(
         }
 
         fun isPlaceholder(): Boolean = key.isPlaceholder()
+        override val lifetime: UnknownKey.Lifetime
+            get() = key.lifetime
     }
 
     companion object {
@@ -364,7 +366,9 @@ class Context(
     fun stack(other: Context): Context {
         var newContext = this
 
-        for ((key, expr) in other.withoutPlaceholderKeys().variables) {
+        val other = other.stripKeys(UnknownKey.Lifetime.BLOCK)
+
+        for ((key, expr) in other.variables) {
             // Resolve the expression...
             val expr = resolveKnownVariables(expr)
 
@@ -380,7 +384,7 @@ class Context(
         }
 
         // Simple!
-        return newContext.withoutTemporaryKeys()
+        return newContext
     }
 
     fun haveHitReturn(): Context =
@@ -388,8 +392,7 @@ class Context(
             expr.forcedStatic(VariableExpr.new(KeyBackreference(key, idx)))
         }
 
-    private fun withoutTemporaryKeys(): Context = this.filterVariables { !it.temporary }
-    private fun withoutPlaceholderKeys(): Context = this.filterVariables { !it.isPlaceholder() }
+    fun stripKeys(lifetime: UnknownKey.Lifetime): Context = this.filterVariables { !it.shouldBeStripped(lifetime) }
     fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
     fun forcedDynamic(): Context = this.mapVariables { _, expr -> expr.forcedDynamic() }
 

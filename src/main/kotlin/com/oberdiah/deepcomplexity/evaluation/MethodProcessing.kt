@@ -22,7 +22,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.toKey
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
-
+@Suppress("unused")
 object MethodProcessing {
     /**
      * Only used for debugging; a nice fast way to get context on what we're doing.
@@ -441,7 +441,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             methodCallSiteContext.addVar(
-                LValueKeyExpr.new(ParameterKey(param, true)),
+                LValueKeyExpr.new(ParameterKey(param, UnknownKey.Lifetime.METHOD)),
                 processPsiExpression(arg, methodCallSiteContext)
             )
         }
@@ -457,7 +457,9 @@ object MethodProcessing {
             processPsiStatement(body, methodContext)
         }
 
-        return methodCallSiteContext.c.stack(methodContext.c).forcedDynamic()
+        return methodCallSiteContext.c.stack(methodContext.c)
+            .forcedDynamic()
+            .stripKeys(UnknownKey.Lifetime.METHOD)
     }
 
     private fun processPolyadicExpr(
