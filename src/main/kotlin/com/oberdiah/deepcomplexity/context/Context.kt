@@ -7,7 +7,6 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import kotlin.test.assertEquals
 
@@ -171,34 +170,9 @@ class Context(
     }
 
     fun getVar(key: UnknownKey): Expr<*> {
-        // If we have it, return it.
-        variables[key]?.let { return it.getDynExpr() }
-
-        // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
-        if (key is QualifiedFieldKey) {
-            val placeholderQualifierKey =
-                KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator), this.idx)
-
-            val replacementQualified = VariableExpr.new(KeyBackreference(key, this.idx))
-            val replacementRaw = key.qualifier.toLeafExpr()
-            val placeholderVersionOfTheKey = QualifiedFieldKey(placeholderQualifierKey, key.field)
-            val p = KeyBackreference(placeholderVersionOfTheKey, this.idx)
-
-            variables[placeholderVersionOfTheKey]?.let {
-                val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
-                    when (expr.key) {
-                        p -> replacementQualified
-                        placeholderQualifierKey -> replacementRaw
-                        else -> null
-                    }
-                }
-
-                return replacedExpr.getDynExpr()
-            }
+        return ContextVarsAssistant.getVar(variables, key) { key ->
+            KeyBackreference(key, this.idx)
         }
-
-        // OK, now we really do have no choice
-        return VariableExpr.new(KeyBackreference(key, idx))
     }
 
     /**
