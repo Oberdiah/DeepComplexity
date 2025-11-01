@@ -2,11 +2,9 @@ package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import kotlin.test.assertEquals
 
@@ -170,8 +168,8 @@ class Context(
     }
 
     fun getVar(key: UnknownKey): Expr<*> {
-        return ContextVarsAssistant.getVar(variables, key) { key ->
-            KeyBackreference(key, this.idx)
+        return ContextVarsAssistant.getVar(variables, key) {
+            KeyBackreference(it, this.idx)
         }
     }
 
@@ -188,138 +186,10 @@ class Context(
         return withVar(lExpr, RootExpression.new(rExpr))
     }
 
-    /**
-     * This first private [withVar] deals with complex qualifier expressions.
-     *
-     * The core of this does look a bit scary, so I'll try to walk you through it:
-     * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
-     * In the simplest case it is, and this all becomes a lot easier, but in the general case
-     * it may be any complicated expression.
-     * Let's go with the following example:
-     * ```
-     * a = new C(2);
-     * b = new C(3);
-     * ((x > 0) ? a : b).x = 5
-     * ```
-     * Now, the only objects we should be touching with our operation are `a` and `b`, so we gather
-     * them first into a set. That part's simple enough.
-     * Then, for the variables we want to modify, we take our qualifier as specified above, and replace
-     * `a` and `b` with either:
-     *      a) The value already at that object, effectively turning `b` into `b.x`
-     *      b) The value that we're setting this field to
-     *  depending on whether the object we're modifying is the object being replaced in the expression.
-     *  The result of this is that for something like `((x > 0) ? a : b).x = 5`, the variables end up
-     *  like so:
-     *      `a.x = { (x > 0) ? 5 : 3 }`
-     *      `b.x = { (x > 0) ? 2 : 5 }`
-     *  which is exactly as desired.
-     */
-    fun withVar(lExpr: LValueExpr<*>, rExpr: RootExpression<*>): Context {
-        if (lExpr is LValueKeyExpr) {
-            return withVar(lExpr.key, rExpr)
-        } else if (lExpr !is LValueFieldExpr) {
-            throw IllegalArgumentException("This cannot happen")
-        }
-
-        val qualifierExpr = lExpr.qualifier
-        val field = lExpr.field
-
-        val qualifiersMentionedInQualifierExpr: Set<Qualifier> =
-            qualifierExpr.iterateTree()
-                .filterIsInstance<LeafExpr<*>>()
-                .map { it.underlying }
-                .filterIsInstance<Qualifier>()
-                .toSet()
-
-        var newContext = this
-        // For every distinct qualifier we mention...
-        for (qualifier in qualifiersMentionedInQualifierExpr) {
-            val thisVarKey = QualifiedFieldKey(qualifier, field)
-            // grab whatever it's currently set to,
-            val existingExpr = newContext.getVar(thisVarKey)
-
-            val newValue = rExpr.mapDynamic {
-                // and replace it with the qualifier expression itself, but with each leaf
-                // replaced with either what we used to be, or [rExpr].
-                qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
-                    if (expr.underlying == qualifier) {
-                        it
-                    } else {
-                        existingExpr
-                    }
-                }.castOrThrow(it.ind)
-            }
-
-            // In the simple cases this will just perform a basic assignment, but
-            // in reality under the hood it may do other stuff due to aliasing.
-            newContext = newContext.withVar(thisVarKey, newValue)
-        }
-
-        return newContext
-    }
-
-    /**
-     * This second private [withVar] handles any potential aliasing.
-     * Using this alone should be perfectly correct.
-     */
-    private fun withVar(key: UnknownKey, rExpr: RootExpression<*>): Context {
-        val newVariables = this.variables.toMutableMap()
-
-        fun addExprToNewVariables(key: UnknownKey, expr: RootExpression<*>) {
-            // We've checked for aliasing, we've done all of our pre-processing; it's finally
-            // time to assign this expression to our variables.
-
-            // First, check if we already have a value assigned to this key. If not, we pretend we did.
-            val existingRootExpr = newVariables[key]
-                ?: RootExpression.new(VariableExpr.new(KeyBackreference(key, idx)))
-
-            // Stack the new expression on top. Stacking expressions combines their static expressions
-            // and takes the top dynamic expression.
-            newVariables += (key to existingRootExpr.stackedUnder(expr))
-        }
-
-        addExprToNewVariables(key, rExpr)
-
-        if (key !is QualifiedFieldKey) {
-            // No need to do anything further if there's no risk of aliasing.
-            return Context(newVariables, thisType, idx)
-        }
-
-        val qualifier = key.qualifier
-        val fieldKey = key.field
-        val qualifierInd = key.qualifierInd
-
-        // Collect a list of all objects we know of that could alias with the object we're trying to set.
-        val potentialAliasers: Set<QualifiedFieldKey> = variables.keys
-            .filterIsInstance<QualifiedFieldKey>()
-            .filter {
-                !it.isPlaceholder()
-                        && qualifier != it.qualifier
-                        && fieldKey == it.field
-                        && qualifier.ind == it.qualifier.ind
-            }
-            .toSet() + QualifiedFieldKey(KeyBackreference(PlaceholderKey(qualifierInd), this.idx), fieldKey)
-
-        for (aliasingKey in potentialAliasers) {
-            val condition = ComparisonExpr.new(
-                aliasingKey.qualifier.toLeafExpr(),
-                qualifier.toLeafExpr(),
-                ComparisonOp.EQUAL
-            )
-
-            // Each of the aliasers' values needs to be updated to take into account this new assignment,
-            // as they may have been affected if it turns out they were equal.
-            val newRExpr = rExpr.mapDynamic {
-                // If the objects turn out to be the same, the aliasing object is set to whatever value we're
-                // setting. Otherwise, we leave it alone.
-                IfExpr.new(it, getVar(aliasingKey), condition)
-            }
-
-            addExprToNewVariables(aliasingKey, newRExpr)
-        }
-
-        return Context(newVariables, thisType, idx)
-    }
+    fun withVar(lExpr: LValueExpr<*>, rExpr: RootExpression<*>): Context =
+        Context(ContextVarsAssistant.withVar(variables, lExpr, rExpr) {
+            KeyBackreference(it, this.idx)
+        }, thisType, idx)
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         resolveKnownVariables(RootExpression.new(expr)).getDynExpr()
