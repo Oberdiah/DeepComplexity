@@ -126,22 +126,7 @@ object ContextVarsAssistant {
         rExpr: RootExpression<*>,
         makeBackreference: (UnknownKey) -> KeyBackreference
     ): Vars {
-        val newVariables = vars.toMutableMap()
-
-        fun addExprToNewVariables(key: UnknownKey, expr: RootExpression<*>) {
-            // We've checked for aliasing, we've done all of our pre-processing; it's finally
-            // time to assign this expression to our variables.
-
-            // First, check if we already have a value assigned to this key. If not, we pretend we did.
-            val existingRootExpr = newVariables[key]
-                ?: RootExpression.new(VariableExpr.new(makeBackreference(key)))
-
-            // Stack the new expression on top. Stacking expressions combines their static expressions
-            // and takes the top dynamic expression.
-            newVariables += (key to existingRootExpr.stackedUnder(expr))
-        }
-
-        addExprToNewVariables(key, rExpr)
+        var newVariables = withNewKeyToExpr(vars, key, rExpr, makeBackreference)
 
         if (key !is QualifiedFieldKey) {
             // No need to do anything further if there's no risk of aliasing.
@@ -175,12 +160,30 @@ object ContextVarsAssistant {
             val newRExpr = rExpr.mapDynamic {
                 // If the objects turn out to be the same, the aliasing object is set to whatever value we're
                 // setting. Otherwise, we leave it alone.
-                IfExpr.new(it, getVar(vars, aliasingKey, makeBackreference), condition)
+                IfExpr.new(it, getVar(newVariables, aliasingKey, makeBackreference), condition)
             }
 
-            addExprToNewVariables(aliasingKey, newRExpr)
+            newVariables = withNewKeyToExpr(newVariables, aliasingKey, newRExpr, makeBackreference)
         }
 
         return newVariables
+    }
+
+    private fun withNewKeyToExpr(
+        vars: Vars,
+        key: UnknownKey,
+        expr: RootExpression<*>,
+        makeBackreference: (UnknownKey) -> KeyBackreference
+    ): Vars {
+        // We've checked for aliasing, we've done all of our pre-processing; it's finally
+        // time to assign this expression to our variables.
+
+        // First, check if we already have a value assigned to this key. If not, we pretend we did.
+        val existingRootExpr = vars[key]
+            ?: RootExpression.new(VariableExpr.new(makeBackreference(key)))
+
+        // Stack the new expression on top. Stacking expressions combines their static expressions
+        // and takes the top dynamic expression.
+        return vars + (key to existingRootExpr.stackedUnder(expr))
     }
 }
