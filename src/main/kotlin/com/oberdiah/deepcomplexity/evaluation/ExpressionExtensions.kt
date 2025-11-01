@@ -36,15 +36,6 @@ object ExpressionExtensions {
         }
     }
 
-    inline fun <Set : Any, reified T : Expr<Set>> Expr<*>.tryCastToReified(indicator: SetIndicator<Set>): T? {
-        return if (this::class == T::class && indicator == this.ind) {
-            @Suppress("UNCHECKED_CAST")
-            this as T
-        } else {
-            null
-        }
-    }
-
     /**
      * Basically a nicer way of doing `this as Expr<T>`, but with type checking :)
      */
@@ -57,9 +48,23 @@ object ExpressionExtensions {
         }
     }
 
+    inline fun <reified T : Any> Expr<*>.tryCastTo(): Expr<T>? {
+        return if (this.ind.clazz == T::class) {
+            @Suppress("UNCHECKED_CAST")
+            this as Expr<T>
+        } else {
+            null
+        }
+    }
+
     fun <T : Any> Expr<*>.castOrThrow(indicator: SetIndicator<T>): Expr<T> {
         return this.tryCastTo(indicator)
             ?: throw IllegalStateException("Failed to cast '$this' to $indicator; (${this.ind} != $indicator)")
+    }
+
+    inline fun <reified T : Any> Expr<*>.castOrThrow(): Expr<T> {
+        return this.tryCastTo<T>()
+            ?: throw IllegalStateException("Failed to cast '$this' to ${T::class}; (${this.ind} != ${T::class})")
     }
 
     /**
@@ -86,7 +91,7 @@ object ExpressionExtensions {
      * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
      * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
      */
-    inline fun <reified Q> Expr<*>.replaceTypeInLeaves(
+    inline fun <reified Q : Any> Expr<*>.replaceTypeInLeaves(
         newInd: SetIndicator<*>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<*> {
@@ -94,21 +99,28 @@ object ExpressionExtensions {
             inline operator fun <T : Any> invoke(
                 newInd: SetIndicator<T>,
                 crossinline replacement: (Q) -> Expr<*>
-            ): Expr<*> {
-                return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->
-                    val newExpr = if (expr is Q) {
-                        replacement(expr)
-                    } else {
-                        throw IllegalArgumentException(
-                            "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
-                        )
-                    }
-
-                    newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
-                        "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
-                    )
-                })
+            ): Expr<T> {
+                return this@replaceTypeInLeaves.replaceTypeInLeavesReified<Q, T>(newInd, replacement)
             }
         }(newInd, replacement)
+    }
+
+    inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesReified(
+        newInd: SetIndicator<T>,
+        crossinline replacement: (Q) -> Expr<*>
+    ): Expr<T> {
+        return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->
+            val newExpr = if (expr is Q) {
+                replacement(expr)
+            } else {
+                throw IllegalArgumentException(
+                    "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
+                )
+            }
+
+            newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
+                "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
+            )
+        })
     }
 }

@@ -1,9 +1,8 @@
 package com.oberdiah.deepcomplexity.solver
 
+import com.intellij.psi.PsiElement
 import com.oberdiah.deepcomplexity.context.Context
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastToReified
-import com.intellij.psi.PsiElement
 
 object LoopSolver {
     /**
@@ -94,15 +93,15 @@ object LoopSolver {
         // Some edge cases might be doable in certain situations, for now I'm not going to bother.
         if (variables.size != 1) return null
 
-        val unresolved = variables.first().tryCastToReified<T, VariableExpr<T>>(expr.ind) ?: return null
+        val unresolved = TODO() // variables.first().tryCastToReified<T, VariableExpr<T>>(expr.ind) ?: return null
 
         // This happens when we rely only on one thing, but it's not us.
         // We might be able to deal with this with a bit more work, but
         // I'm not going to bother for now.
 //        if (!unresolved.key.matchesElement(psiElement)) return null
 
-        val terms = ConstraintSolver.expandTerms(expr, unresolved, ConstExpr.TRUE)
-        if (terms == null) return null
-        return terms to unresolved
+//        val terms = ConstraintSolver.expandTerms(expr, unresolved, ConstExpr.TRUE)
+//        if (terms == null) return null
+//        return terms to unresolved
     }
 }

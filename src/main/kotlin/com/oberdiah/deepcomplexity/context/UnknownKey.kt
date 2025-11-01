@@ -96,8 +96,14 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
  * }
  * ```
  */
-data class PlaceholderKey(override val ind: ObjectSetIndicator) : UnknownKey() {
+data class PlaceholderKey(
+    override val ind: ObjectSetIndicator,
     override val lifetime: Lifetime = Lifetime.BLOCK
+) : UnknownKey() {
+    companion object {
+        val GLOBAL_PLACEHOLDER = PlaceholderKey(ObjectSetIndicator(PsiTypes.voidType()), Lifetime.METHOD)
+    }
+
     override fun toString(): String = "PK(${ind.type.toStringPretty()})"
 }
 

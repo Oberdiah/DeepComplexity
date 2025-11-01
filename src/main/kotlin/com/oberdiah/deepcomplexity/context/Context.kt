@@ -30,7 +30,7 @@ typealias Vars = Map<UnknownKey, RootExpression<*>>
  *    `a.x` is also actually `a'.x`.
  *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
-class Context(
+class Context private constructor(
     variables: Vars,
     /**
      * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
@@ -114,7 +114,12 @@ class Context(
     }
 
     companion object {
-        fun brandNew(thisType: PsiType?): Context = Context(emptyMap(), thisType, ContextId.new())
+        fun brandNew(thisType: PsiType?): Context {
+            val contextIdx = ContextId.new()
+            val key = PlaceholderKey.GLOBAL_PLACEHOLDER
+            val value = RootExpression.new(VariableExpr.new(KeyBackreference(key, contextIdx)))
+            return Context(mapOf(key to value), thisType, contextIdx)
+        }
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
@@ -231,10 +236,9 @@ class Context(
         return newContext
     }
 
-    fun haveHitReturn(): Context =
-        this.mapVariables { key, expr ->
-            expr.forcedStatic(VariableExpr.new(KeyBackreference(key, idx)))
-        }
+    fun haveHitReturn(): Context = this.mapVariables { key, expr ->
+        expr.forcedStatic(VariableExpr.new(KeyBackreference(key, idx)))
+    }
 
     fun stripKeys(lifetime: UnknownKey.Lifetime): Context = this.filterVariables { !it.shouldBeStripped(lifetime) }
     fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
