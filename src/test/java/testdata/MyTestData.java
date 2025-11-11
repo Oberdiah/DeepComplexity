@@ -7,6 +7,7 @@ import com.oberdiah.deepcomplexity.RequiredScore;
 import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
 import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
 
+@SuppressWarnings("ALL")
 public class MyTestData {
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(9)
@@ -1831,7 +1832,7 @@ public class MyTestData {
 	
 	public static short earlyReturnTest7(short x) {
 		MyClass nested = new MyClass(2);
-		earlyReturnTest4Method(nested, x);
+		earlyReturnTest7Method(nested, x);
 		return (short) nested.x;
 	}
 	
