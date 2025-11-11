@@ -96,16 +96,15 @@ object ExpressionExtensions {
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<*> {
         return object {
-            inline operator fun <T : Any> invoke(
+            operator fun <T : Any> invoke(
                 newInd: SetIndicator<T>,
-                crossinline replacement: (Q) -> Expr<*>
             ): Expr<T> {
-                return this@replaceTypeInLeaves.replaceTypeInLeavesReified<Q, T>(newInd, replacement)
+                return this@replaceTypeInLeaves.replaceTypeInLeavesTyped<Q, T>(newInd, replacement)
             }
-        }(newInd, replacement)
+        }(newInd)
     }
 
-    inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesReified(
+    inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesTyped(
         newInd: SetIndicator<T>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<T> {

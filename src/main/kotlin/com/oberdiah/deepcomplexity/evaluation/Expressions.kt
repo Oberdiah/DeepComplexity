@@ -106,7 +106,15 @@ sealed class Expr<T : Any>() {
 
 fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
 
-data class DynamicExpr<T : Any>(override val ind: SetIndicator<T>) : Expr<T>()
+/**
+ * Represents a link to the dynamic part of the expression when part of a [com.oberdiah.deepcomplexity.context.RootExpression]'s
+ * static expression.
+ * Shouldn't be seen as part of any other expression.
+ */
+data class DynamicExpr<T : Any>(override val ind: SetIndicator<T>) : LeafExpr<T>() {
+    override val underlying: Any
+        get() = throw IllegalStateException("DynamicExpr has no underlying value")
+}
 
 data class ArithmeticExpr<T : Number>(
     val lhs: Expr<T>,

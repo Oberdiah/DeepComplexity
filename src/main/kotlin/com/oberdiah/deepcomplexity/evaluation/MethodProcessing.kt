@@ -47,6 +47,8 @@ object MethodProcessing {
      * contained to this single location.
      */
     data class ContextWrapper(var c: Context) {
+        override fun toString(): String = c.toString()
+
         fun addVar(lExpr: LValueExpr<*>, rExpr: Expr<*>) {
             c = c.withVar(lExpr, rExpr)
         }
@@ -457,8 +459,8 @@ object MethodProcessing {
             processPsiStatement(body, methodContext)
         }
 
-        return methodCallSiteContext.c.stack(methodContext.c)
-            .forcedDynamic()
+        return methodCallSiteContext.c
+            .stack(methodContext.c.forcedDynamic())
             .stripKeys(UnknownKey.Lifetime.METHOD)
     }
 

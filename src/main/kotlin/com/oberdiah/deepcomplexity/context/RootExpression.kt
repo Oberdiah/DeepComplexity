@@ -3,6 +3,7 @@ package com.oberdiah.deepcomplexity.context
 import com.oberdiah.deepcomplexity.evaluation.DynamicExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeavesTyped
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.with
 import kotlin.test.assertEquals
@@ -144,6 +145,29 @@ class RootExpression<T : Any>(
         staticExpr = staticExpr.optimise(),
         dynamicExpr = dynamicExpr.optimise()
     )
+
+    internal inline fun <reified Q : Any> replaceTypeInLeaves(
+        newInd: SetIndicator<*>,
+        crossinline replacement: (Q) -> Expr<*>
+    ): RootExpression<*> {
+        return object {
+            operator fun <V : Any> invoke(
+                newInd: SetIndicator<V>,
+            ): RootExpression<V> {
+                return this@RootExpression.replaceTypeInLeavesTyped<Q, V>(newInd, replacement)
+            }
+        }(newInd)
+    }
+
+    internal inline fun <reified Q : Any, P : Any> replaceTypeInLeavesTyped(
+        newInd: SetIndicator<P>,
+        crossinline replacement: (Q) -> Expr<*>
+    ): RootExpression<P> {
+        return RootExpression(
+            staticExpr = staticExpr.replaceTypeInLeavesTyped<Q, P>(newInd, replacement),
+            dynamicExpr = dynamicExpr.replaceTypeInLeavesTyped<Q, P>(newInd, replacement)
+        )
+    }
 
     internal inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): RootExpression<T> =
         RootExpression(
