@@ -189,7 +189,7 @@ object ExprTreeRebuilder {
                 newFieldExpr as Expr<T>
             }
 
-            is DynamicExpr -> expr
+            is ContextExpr -> expr
             is LeafExpr -> expr
             is LValueExpr -> expr
 

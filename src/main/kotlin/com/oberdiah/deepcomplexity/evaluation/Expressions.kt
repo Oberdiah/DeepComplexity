@@ -1,11 +1,8 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.intellij.psi.PsiTypes
-import com.oberdiah.deepcomplexity.context.Context
-import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
-import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
-import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
@@ -14,6 +11,7 @@ import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -55,8 +53,8 @@ sealed class Expr<T : Any>() {
         .filterIsInstance<VariableExpr<*>>()
         .toSet()
 
-    fun resolveUnknowns(context: Context): Expr<T> =
-        context.resolveKnownVariables(this)
+    fun resolveUnknowns(mCtx: MetaContext): Expr<T> =
+        mCtx.hackyTempGetContext().resolveKnownVariables(this)
 
     /**
      * Rebuilds every expression in the tree.
@@ -107,13 +105,12 @@ sealed class Expr<T : Any>() {
 fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
 
 /**
- * Represents a link to the dynamic part of the expression when part of a [com.oberdiah.deepcomplexity.context.RootExpression]'s
- * static expression.
- * Shouldn't be seen as part of any other expression.
+ * Represents a link to an entire context. If it's null it represents the meta context's
+ * personal `ctx` value.
  */
-data class DynamicExpr<T : Any>(override val ind: SetIndicator<T>) : LeafExpr<T>() {
-    override val underlying: Any
-        get() = throw IllegalStateException("DynamicExpr has no underlying value")
+data class ContextExpr(val ctx: Context? = null) : Expr<HeapMarker>() {
+    override val ind: SetIndicator<HeapMarker>
+        get() = ObjectSetIndicator(PsiTypes.voidType())
 }
 
 data class ArithmeticExpr<T : Number>(

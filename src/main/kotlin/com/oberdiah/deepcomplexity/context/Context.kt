@@ -235,10 +235,6 @@ class Context private constructor(
 
     fun stripKeys(lifetime: UnknownKey.Lifetime): Context = this.filterVariables { !it.shouldBeStripped(lifetime) }
     fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
-    fun forcedDynamic(): Context = this.mapVariables { _, expr -> expr }
-    fun haveHitReturn(): Context = this.mapVariables { key, expr ->
-        expr
-    }
 
     private fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
         Context(variables.filterKeys(predicate), thisType, idx)
