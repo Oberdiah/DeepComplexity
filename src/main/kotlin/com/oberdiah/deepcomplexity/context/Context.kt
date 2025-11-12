@@ -2,13 +2,14 @@ package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import kotlin.test.assertEquals
 
-typealias Vars = Map<UnknownKey, RootExpression<*>>
+typealias Vars = Map<UnknownKey, Expr<*>>
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never
@@ -117,7 +118,7 @@ class Context private constructor(
         fun brandNew(thisType: PsiType?): Context {
             val contextIdx = ContextId.new()
             val key = PlaceholderKey.GLOBAL_PLACEHOLDER
-            val value = RootExpression.new(VariableExpr.new(KeyBackreference(key, contextIdx)))
+            val value = VariableExpr.new(KeyBackreference(key, contextIdx))
             return Context(mapOf(key to value), thisType, contextIdx)
         }
 
@@ -137,15 +138,17 @@ class Context private constructor(
             return Context(
                 (a.variables.keys + b.variables.keys)
                     .associateWith { key ->
-                        val aVal = a.variables[key]
-                        val bVal = b.variables[key]
+                        val lhs = a.variables[key]
+                        val rhs = b.variables[key]
 
-                        RootExpression.combine(
-                            VariableExpr.new(KeyBackreference(key, a.idx + b.idx)),
-                            aVal,
-                            bVal,
-                            how
-                        )
+                        val doNothingExpr = VariableExpr.new(KeyBackreference(key, a.idx + b.idx))
+
+                        val rhsExpr = rhs ?: doNothingExpr
+                        val lhsExpr = lhs ?: doNothingExpr
+
+                        val finalDynExpr = how(lhsExpr, rhsExpr)
+
+                        finalDynExpr.castOrThrow(doNothingExpr.ind)
                     },
                 a.thisType,
                 a.idx + b.idx
@@ -154,7 +157,7 @@ class Context private constructor(
     }
 
     val returnValue: Expr<*>?
-        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()?.getDynExpr()
+        get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()
 
     override fun toString(): String {
         val nonPlaceholderVariablesString =
@@ -188,21 +191,15 @@ class Context private constructor(
         assert(rExpr.iterateTree().none { it is LValueExpr }) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
-        return withVar(lExpr, RootExpression.new(rExpr))
-    }
-
-    fun withVar(lExpr: LValueExpr<*>, rExpr: RootExpression<*>): Context =
-        Context(ContextVarsAssistant.withVar(variables, lExpr, rExpr) {
+        return Context(ContextVarsAssistant.withVar(variables, lExpr, rExpr) {
             KeyBackreference(it, this.idx)
         }, thisType, idx)
-
-    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        resolveKnownVariables(RootExpression.new(expr)).getDynExpr()
+    }
 
     /**
      * Resolves all variables in the expression that are known of in this context.
      */
-    private fun <T : Any> resolveKnownVariables(expr: RootExpression<T>): RootExpression<T> =
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
             varExpr.key.safelyResolveUsing(this)
         }.optimise()
@@ -236,17 +233,16 @@ class Context private constructor(
         return newContext
     }
 
-    fun haveHitReturn(): Context = this.mapVariables { key, expr ->
-        expr.forcedStatic(VariableExpr.new(KeyBackreference(key, idx)))
-    }
-
     fun stripKeys(lifetime: UnknownKey.Lifetime): Context = this.filterVariables { !it.shouldBeStripped(lifetime) }
     fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
-    fun forcedDynamic(): Context = this.mapVariables { _, expr -> expr.forcedDynamic() }
+    fun forcedDynamic(): Context = this.mapVariables { _, expr -> expr }
+    fun haveHitReturn(): Context = this.mapVariables { key, expr ->
+        expr
+    }
 
     private fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
         Context(variables.filterKeys(predicate), thisType, idx)
 
-    private fun mapVariables(transform: (UnknownKey, RootExpression<*>) -> RootExpression<*>): Context =
+    private fun mapVariables(transform: (UnknownKey, Expr<*>) -> Expr<*>): Context =
         Context(variables.mapValues { transform(it.key, it.value) }, thisType, idx)
 }
