@@ -54,7 +54,7 @@ sealed class Expr<T : Any>() {
         .toSet()
 
     fun resolveUnknowns(mCtx: MetaContext): Expr<T> =
-        mCtx.hackyTempGetContext().resolveKnownVariables(this)
+        mCtx.resolveKnownVariables(this)
 
     /**
      * Rebuilds every expression in the tree.
@@ -269,7 +269,7 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
      * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
      * into whatever underlying expr it represents.
      */
-    abstract fun resolve(context: Context): Expr<T>
+    abstract fun resolve(context: MetaContext): Expr<T>
 }
 
 /**
@@ -283,7 +283,7 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
         fun new(key: UnknownKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
     }
 
-    override fun resolve(context: Context): Expr<T> {
+    override fun resolve(context: MetaContext): Expr<T> {
         return context.getVar(key).castOrThrow(ind)
     }
 }
@@ -303,7 +303,7 @@ data class LValueFieldExpr<T : Any>(
             LValueFieldExpr(field, qualifier, field.ind)
     }
 
-    override fun resolve(context: Context): Expr<T> {
+    override fun resolve(context: MetaContext): Expr<T> {
         return qualifier.getField(context, field).castOrThrow(ind)
     }
 }

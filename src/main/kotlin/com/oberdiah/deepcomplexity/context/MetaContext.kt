@@ -25,9 +25,9 @@ class MetaContext(
     val returnValue = ctx.returnValue
     fun withoutReturnValue() = MetaContext(flowExpr, ctx.withoutReturnValue())
     fun stripKeys(lifetime: UnknownKey.Lifetime) = MetaContext(flowExpr, ctx.stripKeys(lifetime))
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = ctx.resolveKnownVariables(expr)
 
     fun getVar(key: UnknownKey): Expr<*> = ctx.getVar(key)
-
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext =
         MetaContext(flowExpr, ctx.withVar(lExpr, rExpr))
@@ -44,5 +44,4 @@ class MetaContext(
     }
 
     fun grabContext(): Context = ctx
-    fun hackyTempGetContext(): Context = ctx
 }
