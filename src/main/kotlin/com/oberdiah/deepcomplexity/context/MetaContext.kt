@@ -81,24 +81,17 @@ class MetaContext(
         MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType)
 
     fun stack(other: MetaContext): MetaContext {
-        val otherResolvedFlowExpr =
-            resolveKnownVariables(other.flowExpr).replaceTypeInLeaves<ContextExpr>(ContextExpr().ind) {
-                if (it.ctx != null) {
-                    ContextExpr(ctx.stack(it.ctx))
-                } else {
-                    it
-                }
-            }
+        val stacked = other.mapContexts { ctx.stack(it) }
 
         val afterStack = MetaContext(
             flowExpr.replaceTypeInLeaves<ContextExpr>(ContextExpr().ind) {
                 if (it.ctx != null) {
                     it
                 } else {
-                    otherResolvedFlowExpr
+                    resolveKnownVariables(stacked.flowExpr)
                 }
             },
-            ctx.stack(other.ctx),
+            stacked.ctx,
             thisType
         )
 
