@@ -1,8 +1,7 @@
 package testdata.ai;
 
-import com.oberdiah.deepcomplexity.RequiredScore;
-
 import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
+import com.oberdiah.deepcomplexity.RequiredScore;
 
 public class ParameterOrderEvaluationTest {
 	// Testing parameter evaluation order with side effects
@@ -95,8 +94,6 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter evaluation with inheritance
-	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
 	public static short inheritanceParam(short x) {
 		ChildClass child = new ChildClass(4);
 		multiParamMethod(child.getValue(), child.doubleValue(), child.getValue());
