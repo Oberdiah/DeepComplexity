@@ -56,18 +56,18 @@ class MetaContext(
     fun stripKeys(lifetime: UnknownKey.Lifetime) = mapContexts { it.stripKeys(lifetime) }
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = ctx.resolveKnownVariables(expr)
 
-    fun getVar(key: UnknownKey): Expr<*> = flowExpr.replaceTypeInLeaves<ContextExpr>(key.ind) {
-        (it.ctx ?: ctx).getVar(key)
+    fun getVar(key: UnknownKey): Expr<*> {
+        return ctx.getVar(key)
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext =
         MetaContext(flowExpr, ctx.withVar(lExpr, rExpr))
 
-    fun stack(metaContext: MetaContext): MetaContext {
+    fun stack(other: MetaContext): MetaContext {
         val otherResolvedFlowExpr =
-            metaContext.flowExpr.resolveUnknowns(this).replaceTypeInLeaves<ContextExpr>(ContextExpr().ind) {
+            resolveKnownVariables(other.flowExpr).replaceTypeInLeaves<ContextExpr>(ContextExpr().ind) {
                 if (it.ctx != null) {
-                    ContextExpr(it.ctx.resolveUsingOtherCtx(ctx))
+                    ContextExpr(ctx.stack(it.ctx))
                 } else {
                     it
                 }
@@ -81,7 +81,7 @@ class MetaContext(
                     otherResolvedFlowExpr
                 }
             },
-            ctx.stack(metaContext.ctx)
+            ctx.stack(other.ctx)
         )
 
         return afterStack
@@ -89,13 +89,18 @@ class MetaContext(
 
     fun forcedDynamic(): MetaContext {
         val allKeys = mutableSetOf<UnknownKey>()
+        allKeys.addAll(ctx.variables.keys)
         flowExpr.iterateTree(false).forEach {
             if (it is ContextExpr && it.ctx != null) {
                 allKeys.addAll(it.ctx.variables.keys)
             }
         }
 
-        val newVars: Vars = allKeys.associateWith { getVar(it) }
+        val newVars: Vars = allKeys.associateWith { key ->
+            flowExpr.replaceTypeInLeaves<ContextExpr>(key.ind) {
+                (it.ctx ?: ctx).getVar(key)
+            }
+        }
 
         return MetaContext(
             ContextExpr(),

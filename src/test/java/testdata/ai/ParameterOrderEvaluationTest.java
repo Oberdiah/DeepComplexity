@@ -30,6 +30,8 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing method calls with shared state in parameters
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(18)
 	public static short sharedStateParam(short x) {
 		SharedState state = new SharedState(0);
 		return (short) multiParamSum(state.addAndGet(1), state.addAndGet(2), state.addAndGet(3));

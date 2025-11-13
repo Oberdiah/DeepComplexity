@@ -199,9 +199,6 @@ class Context(
             varExpr.key.safelyResolveUsing(this)
         }.optimise()
 
-    fun resolveUsingOtherCtx(other: Context): Context =
-        mapVariables { _, expr -> other.resolveKnownVariables(expr) }
-
     /**
      * Stacks the later context on top of this one.
      *
