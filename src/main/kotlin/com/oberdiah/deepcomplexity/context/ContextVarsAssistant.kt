@@ -124,7 +124,7 @@ object ContextVarsAssistant {
         rExpr: Expr<*>,
         makeBackreference: (UnknownKey) -> KeyBackreference
     ): Vars {
-        var newVariables = withNewKeyToExpr(vars, key, rExpr)
+        var newVariables = vars + (key to rExpr)
 
         if (key !is QualifiedFieldKey) {
             // No need to do anything further if there's no risk of aliasing.
@@ -159,19 +159,9 @@ object ContextVarsAssistant {
             // setting. Otherwise, we leave it alone.
             val newRExpr = IfExpr.new(rExpr, getVar(newVariables, aliasingKey, makeBackreference), condition)
 
-            newVariables = withNewKeyToExpr(newVariables, aliasingKey, newRExpr)
+            newVariables += aliasingKey to newRExpr
         }
 
         return newVariables
-    }
-
-    private fun withNewKeyToExpr(
-        vars: Vars,
-        key: UnknownKey,
-        expr: Expr<*>,
-    ): Vars {
-        // Stack the new expression on top. Stacking expressions combines their static expressions
-        // and takes the top dynamic expression.
-        return vars + (key to expr)
     }
 }
