@@ -5,6 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.ContextExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.evaluation.LValueExpr
+import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
 import kotlin.test.assertEquals
 
 class MetaContext(
@@ -48,7 +49,7 @@ class MetaContext(
         for (line in lines) {
             if (line.contains(ContextExpr.STRING_PLACEHOLDER)) {
                 val indent = "# " + line.takeWhile { it.isWhitespace() }
-                newLines.add(ctx.toString().prependIndent(indent))
+                newLines.add(ctx.toString().betterPrependIndent(indent))
             } else {
                 newLines.add(line)
             }
@@ -71,14 +72,11 @@ class MetaContext(
         )
     }
 
+    fun grabContext(): Context = ctx
     fun withoutReturnValue() = mapContexts { it.withoutReturnValue() }
     fun stripKeys(lifetime: UnknownKey.Lifetime) = mapContexts { it.stripKeys(lifetime) }
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = ctx.resolveKnownVariables(expr)
-
-    fun getVar(key: UnknownKey): Expr<*> {
-        return ctx.getVar(key)
-    }
-
+    fun getVar(key: UnknownKey): Expr<*> = ctx.getVar(key)
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext =
         MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType)
 
@@ -142,6 +140,4 @@ class MetaContext(
             thisType
         )
     }
-
-    fun grabContext(): Context = ctx
 }
