@@ -42,20 +42,16 @@ class MetaContext(
         }
     }
 
-    override fun toString(): String {
-        val flowExprString = flowExpr.toString()
-        val lines = flowExprString.split("\n")
-        val newLines = mutableListOf<String>()
-        for (line in lines) {
+    override fun toString(): String = flowExpr.toString()
+        .lines()
+        .joinToString("\n") { line ->
             if (line.contains(ContextExpr.STRING_PLACEHOLDER)) {
-                val indent = "# " + line.takeWhile { it.isWhitespace() }
-                newLines.add(ctx.toString().betterPrependIndent(indent))
+                val indent = "# " + line.takeWhile { c -> c.isWhitespace() }
+                ctx.toString().betterPrependIndent(indent)
             } else {
-                newLines.add(line)
+                line
             }
         }
-        return newLines.joinToString("\n")
-    }
 
     val returnValue: Expr<*>?
         get() {
