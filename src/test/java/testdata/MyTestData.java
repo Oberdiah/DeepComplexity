@@ -7,6 +7,7 @@ import com.oberdiah.deepcomplexity.RequiredScore;
 import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
 import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
 
+@SuppressWarnings("ALL")
 public class MyTestData {
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(9)
@@ -617,7 +618,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(51)
+	@ExpectedExpressionSize(37)
 	public static short returnTest2(short x) {
 		int a = -5;
 		
@@ -1738,6 +1739,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short earlyReturnTest2(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest2Method(nested, x);
@@ -1757,6 +1759,8 @@ public class MyTestData {
 		nested.x++;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(52)
 	public static short earlyReturnTest3(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest3Method(nested, x);
@@ -1778,6 +1782,8 @@ public class MyTestData {
 		nested.x++;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(10)
 	public static short earlyReturnTest4(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest4Method(nested, x);
@@ -1792,6 +1798,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(20)
 	public static short earlyReturnTest5(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest5Method(nested, x);
@@ -1812,6 +1819,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short earlyReturnTest6(short x) {
 		MyClass nested = new MyClass(2);
 		MyClass nested2 = new MyClass(3);
@@ -1824,6 +1832,22 @@ public class MyTestData {
 		MyClass p = ((x == 3) ? nested : nested2);
 		if (x < 5) {
 			p.x = 2;
+			return;
+		}
+		nested.x++;
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(14)
+	public static short earlyReturnTest7(short x) {
+		MyClass nested = new MyClass(2);
+		earlyReturnTest7Method(nested, x);
+		return (short) nested.x;
+	}
+	
+	private static void earlyReturnTest7Method(MyClass nested, int x) {
+		nested.x++;
+		if (x < 10) {
 			return;
 		}
 		nested.x++;

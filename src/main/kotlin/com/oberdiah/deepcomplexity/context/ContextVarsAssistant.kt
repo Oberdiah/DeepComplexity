@@ -10,7 +10,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 object ContextVarsAssistant {
     fun getVar(vars: Vars, key: UnknownKey, makeBackreference: (UnknownKey) -> KeyBackreference): Expr<*> {
         // If we have it, return it.
-        vars[key]?.let { return it.getDynExpr() }
+        vars[key]?.let { return it }
 
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedFieldKey) {
@@ -31,7 +31,7 @@ object ContextVarsAssistant {
                     }
                 }
 
-                return replacedExpr.getDynExpr()
+                return replacedExpr
             }
         }
 
@@ -69,7 +69,7 @@ object ContextVarsAssistant {
     fun withVar(
         vars: Vars,
         lExpr: LValueExpr<*>,
-        rExpr: RootExpression<*>,
+        rExpr: Expr<*>,
         makeBackreference: (UnknownKey) -> KeyBackreference
     ): Vars {
         if (lExpr is LValueKeyExpr) {
@@ -96,17 +96,15 @@ object ContextVarsAssistant {
             // grab whatever it's currently set to,
             val existingExpr = getVar(vars, thisVarKey, makeBackreference)
 
-            val newValue = rExpr.mapDynamic {
-                // and replace it with the qualifier expression itself, but with each leaf
-                // replaced with either what we used to be, or [rExpr].
-                qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
-                    if (expr.underlying == qualifier) {
-                        it
-                    } else {
-                        existingExpr
-                    }
-                }.castOrThrow(it.ind)
-            }
+            // and replace it with the qualifier expression itself, but with each leaf
+            // replaced with either what we used to be, or [rExpr].
+            val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
+                if (expr.underlying == qualifier) {
+                    rExpr
+                } else {
+                    existingExpr
+                }
+            }.castOrThrow(rExpr.ind)
 
             // In the simple cases this will just perform a basic assignment, but
             // in reality under the hood it may do other stuff due to aliasing.
@@ -123,10 +121,10 @@ object ContextVarsAssistant {
     private fun withVar(
         vars: Vars,
         key: UnknownKey,
-        rExpr: RootExpression<*>,
+        rExpr: Expr<*>,
         makeBackreference: (UnknownKey) -> KeyBackreference
     ): Vars {
-        var newVariables = withNewKeyToExpr(vars, key, rExpr, makeBackreference)
+        var newVariables = vars + (key to rExpr)
 
         if (key !is QualifiedFieldKey) {
             // No need to do anything further if there's no risk of aliasing.
@@ -157,33 +155,13 @@ object ContextVarsAssistant {
 
             // Each of the aliasers' values needs to be updated to take into account this new assignment,
             // as they may have been affected if it turns out they were equal.
-            val newRExpr = rExpr.mapDynamic {
-                // If the objects turn out to be the same, the aliasing object is set to whatever value we're
-                // setting. Otherwise, we leave it alone.
-                IfExpr.new(it, getVar(newVariables, aliasingKey, makeBackreference), condition)
-            }
+            // If the objects turn out to be the same, the aliasing object is set to whatever value we're
+            // setting. Otherwise, we leave it alone.
+            val newRExpr = IfExpr.new(rExpr, getVar(newVariables, aliasingKey, makeBackreference), condition)
 
-            newVariables = withNewKeyToExpr(newVariables, aliasingKey, newRExpr, makeBackreference)
+            newVariables += aliasingKey to newRExpr
         }
 
         return newVariables
-    }
-
-    private fun withNewKeyToExpr(
-        vars: Vars,
-        key: UnknownKey,
-        expr: RootExpression<*>,
-        makeBackreference: (UnknownKey) -> KeyBackreference
-    ): Vars {
-        // We've checked for aliasing, we've done all of our pre-processing; it's finally
-        // time to assign this expression to our variables.
-
-        // First, check if we already have a value assigned to this key. If not, we pretend we did.
-        val existingRootExpr = vars[key]
-            ?: RootExpression.new(VariableExpr.new(makeBackreference(key)))
-
-        // Stack the new expression on top. Stacking expressions combines their static expressions
-        // and takes the top dynamic expression.
-        return vars + (key to existingRootExpr.stackedUnder(expr))
     }
 }

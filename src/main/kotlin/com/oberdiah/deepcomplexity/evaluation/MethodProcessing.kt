@@ -9,7 +9,6 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
-import com.oberdiah.deepcomplexity.solver.LoopSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
@@ -37,21 +36,23 @@ object MethodProcessing {
             processPsiStatement(body, wrapper)
         }
 
-        return wrapper.c.forcedDynamic()
+        return wrapper.c.forcedDynamic().grabContext()
     }
 
-    fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(Context.brandNew(thisType))
+    fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(MetaContext.brandNew(thisType))
 
     /**
      * This feels a bit silly, but in some ways it's nice to keep all of our mutability
      * contained to this single location.
      */
-    data class ContextWrapper(var c: Context) {
+    data class ContextWrapper(var c: MetaContext) {
+        override fun toString(): String = c.toString()
+
         fun addVar(lExpr: LValueExpr<*>, rExpr: Expr<*>) {
             c = c.withVar(lExpr, rExpr)
         }
 
-        fun stack(other: Context) {
+        fun stack(other: MetaContext) {
             c = c.stack(other)
         }
     }
@@ -121,11 +122,12 @@ object MethodProcessing {
                 val falseBranchContext = ifContext.copy()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
-                val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
+                val combined = MetaContext.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpr.new(a, b, condition)
                 }
 
                 context.stack(combined)
+                context
             }
 
             is PsiConditionalExpression -> {
@@ -167,7 +169,7 @@ object MethodProcessing {
                         // side effects.
                         ).resolveUnknowns(context.c)
 
-                val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
+                val combined = MetaContext.combine(trueExprContext.c, falseExprContext.c) { a, b ->
                     IfExpr.new(a, b, condition)
                 }
 
@@ -196,7 +198,7 @@ object MethodProcessing {
                 psi.body?.let { processPsiStatement(it, bodyContext) }
                 psi.update?.let { processPsiStatement(it, bodyContext) }
 
-                LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
+//                LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
                 TODO("Loops haven't been implemented yet")
             }
 
@@ -421,7 +423,7 @@ object MethodProcessing {
     private fun processMethod(
         callExpr: PsiCallExpression,
         getQualifierExpr: (methodCtx: ContextWrapper) -> Expr<HeapMarker>?
-    ): Context {
+    ): MetaContext {
         val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
             "Failed to resolve method for call: ${callExpr.text}"
         )
@@ -457,8 +459,8 @@ object MethodProcessing {
             processPsiStatement(body, methodContext)
         }
 
-        return methodCallSiteContext.c.stack(methodContext.c)
-            .forcedDynamic()
+        return methodCallSiteContext.c
+            .stack(methodContext.c.forcedDynamic())
             .stripKeys(UnknownKey.Lifetime.METHOD)
     }
 
@@ -534,13 +536,13 @@ object MethodProcessing {
              */
             context.c = when (booleanOp) {
                 BooleanOp.AND -> {
-                    Context.combine(rhsContext.c, context.copy().c) { a, b ->
+                    MetaContext.combine(rhsContext.c, context.copy().c) { a, b ->
                         IfExpr.new(a, b, lhs)
                     }
                 }
 
                 BooleanOp.OR -> {
-                    Context.combine(context.copy().c, rhsContext.c) { a, b ->
+                    MetaContext.combine(context.copy().c, rhsContext.c) { a, b ->
                         IfExpr.new(a, b, lhs)
                     }
                 }

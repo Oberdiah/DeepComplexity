@@ -1,9 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.context.Context
-import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
-import com.oberdiah.deepcomplexity.context.Qualifier
+import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
@@ -78,6 +75,14 @@ object ExpressionExtensions {
         }
     }
 
+    // We should be able to de-dupe this one day in the fairly near future
+    fun Expr<*>.getField(context: MetaContext, field: QualifiedFieldKey.Field): Expr<*> {
+        return replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
+            context.getVar(QualifiedFieldKey(it.underlying as Qualifier, field))
+        }
+    }
+
+    // We should be able to de-dupe this one day in the fairly near future
     fun Expr<*>.getField(context: Context, field: QualifiedFieldKey.Field): Expr<*> {
         return replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
             context.getVar(QualifiedFieldKey(it.underlying as Qualifier, field))
@@ -96,16 +101,15 @@ object ExpressionExtensions {
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<*> {
         return object {
-            inline operator fun <T : Any> invoke(
+            operator fun <T : Any> invoke(
                 newInd: SetIndicator<T>,
-                crossinline replacement: (Q) -> Expr<*>
             ): Expr<T> {
-                return this@replaceTypeInLeaves.replaceTypeInLeavesReified<Q, T>(newInd, replacement)
+                return this@replaceTypeInLeaves.replaceTypeInLeavesTyped<Q, T>(newInd, replacement)
             }
-        }(newInd, replacement)
+        }(newInd)
     }
 
-    inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesReified(
+    inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesTyped(
         newInd: SetIndicator<T>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<T> {

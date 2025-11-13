@@ -1,11 +1,11 @@
 package com.oberdiah.deepcomplexity.utilities
 
+import com.intellij.psi.*
 import com.oberdiah.deepcomplexity.context.LocalVariableKey
 import com.oberdiah.deepcomplexity.context.ParameterKey
 import com.oberdiah.deepcomplexity.context.ReturnKey
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.intellij.psi.*
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -427,4 +427,7 @@ object Utilities {
         Pair(this.first, transform(this.second))
 
     fun BigFraction.half(): BigFraction = this.divide(2)
+
+    fun String.betterPrependIndent(indent: String = "    "): String =
+        lineSequence().map { indent + it }.joinToString("\n")
 }

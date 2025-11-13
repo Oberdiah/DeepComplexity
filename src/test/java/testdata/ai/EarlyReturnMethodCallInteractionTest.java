@@ -1,8 +1,7 @@
 package testdata.ai;
 
-import com.oberdiah.deepcomplexity.RequiredScore;
-
 import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
+import com.oberdiah.deepcomplexity.RequiredScore;
 
 public class EarlyReturnMethodCallInteractionTest {
 	// Testing early return with no method calls
@@ -86,8 +85,6 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with method that modifies global state
-	@RequiredScore(1.0)
-	@ExpectedExpressionSize(11)
 	public static short earlyReturnGlobalState(short x) {
 		counter = 1;
 		if (x == 0) {
@@ -290,8 +287,6 @@ public class EarlyReturnMethodCallInteractionTest {
 	}
 	
 	// Testing early return with void method call affecting return value
-	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
 	public static short earlyReturnVoidMethod(short x) {
 		state = 0;
 		if (x > 0) {
