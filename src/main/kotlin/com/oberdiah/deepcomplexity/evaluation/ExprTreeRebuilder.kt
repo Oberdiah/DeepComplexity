@@ -54,6 +54,8 @@ object ExprTreeRebuilder {
             }
 
             is LeafExpr<*> -> replacer.replacer(expr)
+            is ContextExpr -> replacer.replacer(expr)
+            
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }

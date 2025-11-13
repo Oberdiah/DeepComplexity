@@ -127,6 +127,7 @@ object MethodProcessing {
                 }
 
                 context.stack(combined)
+                context
             }
 
             is PsiConditionalExpression -> {

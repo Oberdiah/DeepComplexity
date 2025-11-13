@@ -109,6 +109,10 @@ fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
  * personal `ctx` value.
  */
 data class ContextExpr(val ctx: Context? = null) : Expr<HeapMarker>() {
+    companion object {
+        val STRING_PLACEHOLDER = "##ContextExpr##"
+    }
+
     override val ind: SetIndicator<HeapMarker>
         get() = ObjectSetIndicator(PsiTypes.voidType())
 }

@@ -31,7 +31,7 @@ typealias Vars = Map<UnknownKey, Expr<*>>
  *    `a.x` is also actually `a'.x`.
  *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
-class Context private constructor(
+class Context(
     variables: Vars,
     /**
      * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
@@ -45,7 +45,7 @@ class Context private constructor(
      * to at least some degree to perform alias protection, and the only place to store that is in the context.
      */
     val thisType: PsiType?,
-    private val idx: ContextId
+    val idx: ContextId
 ) {
     /**
      * All the variables in this context.
@@ -53,7 +53,7 @@ class Context private constructor(
      * We map all the expressions to our own context id as now that they're here, they must
      * never be resolved with us either, alongside anything they were previously forbidden to resolve.
      */
-    private val variables: Vars = variables.mapValues { expr ->
+    val variables: Vars = variables.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
             VariableExpr.new(it.key.withAddedContextId(idx))
         }
@@ -115,12 +115,7 @@ class Context private constructor(
     }
 
     companion object {
-        fun brandNew(thisType: PsiType?): Context {
-            val contextIdx = ContextId.new()
-            val key = PlaceholderKey.GLOBAL_PLACEHOLDER
-            val value = VariableExpr.new(KeyBackreference(key, contextIdx))
-            return Context(mapOf(key to value), thisType, contextIdx)
-        }
+        fun brandNew(thisType: PsiType?): Context = Context(mapOf(), thisType, ContextId.new())
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
@@ -203,6 +198,9 @@ class Context private constructor(
         expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
             varExpr.key.safelyResolveUsing(this)
         }.optimise()
+
+    fun resolveUsingOtherCtx(other: Context): Context =
+        mapVariables { _, expr -> other.resolveKnownVariables(expr) }
 
     /**
      * Stacks the later context on top of this one.
