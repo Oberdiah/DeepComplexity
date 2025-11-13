@@ -5,19 +5,38 @@ import com.oberdiah.deepcomplexity.evaluation.ContextExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.evaluation.LValueExpr
+import kotlin.test.assertEquals
 
 class MetaContext(
     private val flowExpr: Expr<*>,
-    private val ctx: Context
+    private val ctx: Context,
+    /**
+     * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
+     * it in the key of the `this` object? What would we do when we don't know that expression yet, though?)
+     *
+     * The reason this is needed is when we're doing aliasing resolution inside a method with no
+     * additional context, we need to know if `this` has the same type as any of the parameters, in case
+     * they alias.
+     *
+     * Imagine a case where we're evaluating an expression like `int t = this.q`. `this`'s type needs to be known
+     * to at least some degree to perform alias protection, and the only place to store that is in the context.
+     */
+    val thisType: PsiType?
 ) {
     companion object {
         fun brandNew(thisType: PsiType?): MetaContext =
-            MetaContext(ContextExpr(), Context.brandNew(thisType))
+            MetaContext(ContextExpr(), Context.brandNew(), thisType)
 
         fun combine(lhs: MetaContext, rhs: MetaContext, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): MetaContext {
+            assertEquals(
+                lhs.thisType,
+                rhs.thisType,
+                "Cannot combine contexts with different 'this' types."
+            )
             return MetaContext(
                 how(lhs.flowExpr, rhs.flowExpr),
-                Context.combine(lhs.ctx, rhs.ctx, how)
+                Context.combine(lhs.ctx, rhs.ctx, how),
+                lhs.thisType
             )
         }
     }
@@ -37,7 +56,6 @@ class MetaContext(
         return newLines.joinToString("\n")
     }
 
-    val thisType = ctx.thisType
     val returnValue: Expr<*>?
         get() {
             return getVar(ReturnKey(ctx.returnValue?.ind ?: return null))
@@ -48,7 +66,8 @@ class MetaContext(
             flowExpr.replaceTypeInLeaves<ContextExpr>(ContextExpr().ind) {
                 if (it.ctx != null) ContextExpr(operation(it.ctx)) else it
             },
-            operation(ctx)
+            operation(ctx),
+            thisType
         )
     }
 
@@ -61,7 +80,7 @@ class MetaContext(
     }
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext =
-        MetaContext(flowExpr, ctx.withVar(lExpr, rExpr))
+        MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType)
 
     fun stack(other: MetaContext): MetaContext {
         val otherResolvedFlowExpr =
@@ -81,7 +100,8 @@ class MetaContext(
                     otherResolvedFlowExpr
                 }
             },
-            ctx.stack(other.ctx)
+            ctx.stack(other.ctx),
+            thisType
         )
 
         return afterStack
@@ -104,7 +124,8 @@ class MetaContext(
 
         return MetaContext(
             ContextExpr(),
-            Context(newVars, thisType, ctx.idx)
+            Context(newVars, ctx.idx),
+            thisType
         )
     }
 
@@ -117,7 +138,8 @@ class MetaContext(
                     ContextExpr(ctx)
                 }
             },
-            Context.brandNew(thisType)
+            Context.brandNew(),
+            thisType
         )
     }
 

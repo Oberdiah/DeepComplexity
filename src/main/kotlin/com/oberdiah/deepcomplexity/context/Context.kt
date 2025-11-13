@@ -1,13 +1,11 @@
 package com.oberdiah.deepcomplexity.context
 
-import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import kotlin.test.assertEquals
 
 typealias Vars = Map<UnknownKey, Expr<*>>
 
@@ -33,18 +31,6 @@ typealias Vars = Map<UnknownKey, Expr<*>>
  */
 class Context(
     variables: Vars,
-    /**
-     * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
-     * it in the key of the `this` object? What would we do when we don't know that expression yet, though?)
-     *
-     * The reason this is needed is when we're doing aliasing resolution inside a method with no
-     * additional context, we need to know if `this` has the same type as any of the parameters, in case
-     * they alias.
-     *
-     * Imagine a case where we're evaluating an expression like `int t = this.q`. `this`'s type needs to be known
-     * to at least some degree to perform alias protection, and the only place to store that is in the context.
-     */
-    val thisType: PsiType?,
     val idx: ContextId
 ) {
     /**
@@ -115,7 +101,7 @@ class Context(
     }
 
     companion object {
-        fun brandNew(thisType: PsiType?): Context = Context(mapOf(), thisType, ContextId.new())
+        fun brandNew(): Context = Context(mapOf(), ContextId.new())
 
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
@@ -125,11 +111,6 @@ class Context(
          * You must define how to resolve conflicts.
          */
         fun combine(a: Context, b: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
-            assertEquals(
-                a.thisType,
-                b.thisType,
-                "Cannot combine contexts with different 'this' types."
-            )
             return Context(
                 (a.variables.keys + b.variables.keys)
                     .associateWith { key ->
@@ -145,7 +126,6 @@ class Context(
 
                         finalDynExpr.castOrThrow(doNothingExpr.ind)
                     },
-                a.thisType,
                 a.idx + b.idx
             )
         }
@@ -188,7 +168,7 @@ class Context(
         }
         return Context(ContextVarsAssistant.withVar(variables, lExpr, rExpr) {
             KeyBackreference(it, this.idx)
-        }, thisType, idx)
+        }, idx)
     }
 
     /**
@@ -232,8 +212,5 @@ class Context(
     fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
 
     private fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
-        Context(variables.filterKeys(predicate), thisType, idx)
-
-    private fun mapVariables(transform: (UnknownKey, Expr<*>) -> Expr<*>): Context =
-        Context(variables.mapValues { transform(it.key, it.value) }, thisType, idx)
+        Context(variables.filterKeys(predicate), idx)
 }
