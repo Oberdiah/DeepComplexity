@@ -618,7 +618,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(51)
+	@ExpectedExpressionSize(37)
 	public static short returnTest2(short x) {
 		int a = -5;
 		
@@ -1739,6 +1739,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short earlyReturnTest2(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest2Method(nested, x);
@@ -1758,6 +1759,8 @@ public class MyTestData {
 		nested.x++;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(52)
 	public static short earlyReturnTest3(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest3Method(nested, x);
@@ -1779,6 +1782,8 @@ public class MyTestData {
 		nested.x++;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(10)
 	public static short earlyReturnTest4(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest4Method(nested, x);
@@ -1793,6 +1798,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(20)
 	public static short earlyReturnTest5(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest5Method(nested, x);
@@ -1813,6 +1819,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short earlyReturnTest6(short x) {
 		MyClass nested = new MyClass(2);
 		MyClass nested2 = new MyClass(3);
@@ -1830,6 +1837,8 @@ public class MyTestData {
 		nested.x++;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(14)
 	public static short earlyReturnTest7(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest7Method(nested, x);

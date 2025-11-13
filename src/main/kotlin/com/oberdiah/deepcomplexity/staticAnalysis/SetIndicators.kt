@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis
 
+import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
@@ -13,7 +14,6 @@ import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
-import com.intellij.psi.PsiType
 import java.math.BigInteger
 import kotlin.reflect.KClass
 

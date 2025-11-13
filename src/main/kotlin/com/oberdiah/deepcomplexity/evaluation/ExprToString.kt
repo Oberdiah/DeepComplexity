@@ -30,7 +30,7 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
-            is DynamicExpr -> "Dyn"
+            is ContextExpr -> if (expr.ctx != null) expr.ctx.toString() else ContextExpr.STRING_PLACEHOLDER
         }
     }
 
@@ -47,9 +47,9 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is NumIterationTimesExpr -> "'for'"
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
-            is LValueFieldExpr<*> -> "${expr.qualifier}.${expr.field}"
-            is LValueKeyExpr<*> -> "${expr.key}"
-            is DynamicExpr -> "Dyn"
+            is LValueFieldExpr<*> -> "LFieldExpr"
+            is LValueKeyExpr<*> -> "LKeyExpr"
+            is ContextExpr -> "CtxExpr"
         }
     }
 
@@ -96,7 +96,7 @@ object ExprToString {
 
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
-            is DynamicExpr -> "Dyn"
+            is ContextExpr -> "CtxExpr"
         }
     }
 }
