@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.evaluation.ContextExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeavesTyped
 import com.oberdiah.deepcomplexity.evaluation.LValueExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.ContextMarker
 import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
@@ -60,7 +59,7 @@ class MetaContext(
 
     private fun mapContexts(operation: (Context) -> Context): MetaContext {
         return MetaContext(
-            flowExpr.replaceTypeInLeavesTyped<ContextExpr, ContextMarker> {
+            flowExpr.replaceTypeInTree<ContextExpr> {
                 if (it.ctx != null) ContextExpr(operation(it.ctx)) else it
             },
             operation(ctx),
@@ -80,7 +79,7 @@ class MetaContext(
         val stacked = other.mapContexts { ctx.stack(it) }
 
         val afterStack = MetaContext(
-            flowExpr.replaceTypeInLeavesTyped<ContextExpr, ContextMarker> {
+            flowExpr.replaceTypeInTree<ContextExpr> {
                 if (it.ctx != null) {
                     it
                 } else {
@@ -118,7 +117,7 @@ class MetaContext(
 
     fun haveHitReturn(): MetaContext {
         return MetaContext(
-            flowExpr.replaceTypeInLeavesTyped<ContextExpr, ContextMarker> {
+            flowExpr.replaceTypeInTree<ContextExpr> {
                 if (it.ctx != null) {
                     it
                 } else {
