@@ -6,8 +6,8 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -108,7 +108,7 @@ data class NumberVariances<T : Number> private constructor(
             acc.add(multiplier.multiply(grabConstraint(constraints, key)))
         }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>? {
+    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q>? {
         if (newInd !is NumberIndicator<*>) {
             return null
         }

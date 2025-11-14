@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 typealias Vars = Map<UnknownKey, Expr<*>>
 
@@ -71,7 +71,7 @@ class Context(
         override fun equals(other: Any?): Boolean = other is KeyBackreference && this.key == other.key
         override fun hashCode(): Int = key.hashCode()
 
-        override val ind: SetIndicator<*> = key.ind
+        override val ind: Indicator<*> = key.ind
         fun withAddedContextId(newId: ContextId): KeyBackreference =
             KeyBackreference(key.withAddedContextId(newId), contextId + newId)
 

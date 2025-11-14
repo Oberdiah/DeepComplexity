@@ -1,12 +1,12 @@
 package com.oberdiah.deepcomplexity.solver
 
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 
 object CastSolver {
     fun <T : Any> castFrom(
         from: Bundle<*>,
-        targetType: SetIndicator<T>,
+        targetType: Indicator<T>,
         implicit: Boolean
     ): Bundle<T> {
         if (from.ind == targetType) {

@@ -4,8 +4,8 @@ import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
@@ -17,7 +17,7 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
 
     fun invert(): ObjectVariances = ObjectVariances(value.invert().into(), ind)
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q> =
+    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> =
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
 
     override fun collapse(constraints: Constraints): ISet<HeapMarker> = value

@@ -26,7 +26,7 @@ sealed class Expr<T : Any>() {
     /**
      * The indicator represents what the expression will be once evaluated.
      */
-    abstract val ind: SetIndicator<T>
+    abstract val ind: Indicator<T>
 
     final override fun toString(): String {
         return ExprToString.toString(this)
@@ -99,7 +99,7 @@ sealed class Expr<T : Any>() {
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
-fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberIndicator<T>
+fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
 
 /**
  * Represents a link to an entire context. If it's null it represents the meta context's
@@ -124,7 +124,7 @@ data class ArithmeticExpr<T : Number>(
         }
     }
 
-    override val ind: SetIndicator<T>
+    override val ind: Indicator<T>
         get() = lhs.ind
 }
 
@@ -157,7 +157,7 @@ data class ComparisonExpr<T : Any> private constructor(
         }
     }
 
-    override val ind: SetIndicator<Boolean>
+    override val ind: Indicator<Boolean>
         get() = BooleanIndicator
 }
 
@@ -170,7 +170,7 @@ data class ComparisonExpr<T : Any> private constructor(
  */
 data class TypeCastExpr<T : Any, Q : Any>(
     val expr: Expr<Q>,
-    override val ind: SetIndicator<T>,
+    override val ind: Indicator<T>,
     val explicit: Boolean,
 ) : Expr<T>()
 
@@ -186,7 +186,7 @@ data class IfExpr<T : Any> private constructor(
         }
     }
 
-    override val ind: SetIndicator<T>
+    override val ind: Indicator<T>
         get() = trueExpr.ind
 
     override fun simplify(): Expr<T> = new(trueExpr, falseExpr, thisCondition)
@@ -234,7 +234,7 @@ data class UnionExpr<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
         }
     }
 
-    override val ind: SetIndicator<T>
+    override val ind: Indicator<T>
         get() = lhs.ind
 }
 
@@ -247,7 +247,7 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
         }
     }
 
-    override val ind: SetIndicator<Boolean>
+    override val ind: Indicator<Boolean>
         get() = BooleanIndicator
 
     companion object {
@@ -278,7 +278,7 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
  * a [QualifiedFieldKey] or not.
  */
-data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndicator<T>) : LValueExpr<T>() {
+data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: Indicator<T>) : LValueExpr<T>() {
     companion object {
         fun new(key: UnknownKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
     }
@@ -296,7 +296,7 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: SetIndi
 data class LValueFieldExpr<T : Any>(
     val field: QualifiedFieldKey.Field,
     val qualifier: Expr<HeapMarker>,
-    override val ind: SetIndicator<T>
+    override val ind: Indicator<T>
 ) : LValueExpr<T>() {
     companion object {
         fun new(field: QualifiedFieldKey.Field, qualifier: Expr<HeapMarker>): LValueFieldExpr<*> =
@@ -309,12 +309,12 @@ data class LValueFieldExpr<T : Any>(
 }
 
 data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
-    override val ind: SetIndicator<Boolean>
+    override val ind: Indicator<Boolean>
         get() = BooleanIndicator
 }
 
 data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
-    override val ind: SetIndicator<T>
+    override val ind: Indicator<T>
         get() = expr.ind
 }
 
@@ -327,7 +327,7 @@ data class NumIterationTimesExpr<T : Number>(
     // How the variable is changing each iteration.
     val terms: ConstraintSolver.CollectedTerms<T>,
 ) : Expr<T>() {
-    override val ind: SetIndicator<T>
+    override val ind: Indicator<T>
         get() = TODO("Not yet implemented")
 
     companion object {
@@ -336,12 +336,12 @@ data class NumIterationTimesExpr<T : Number>(
             variable: VariableExpr<out Number>,
             terms: ConstraintSolver.CollectedTerms<out Number>
         ): NumIterationTimesExpr<T> {
-            val setIndicator = constraint.ind
+            val indicator = constraint.ind
 
-            assert(setIndicator == variable.ind) {
-                "Variable and constraint have different set indicators: ${variable.ind} and $setIndicator"
+            assert(indicator == variable.ind) {
+                "Variable and constraint have different set indicators: ${variable.ind} and $indicator"
             }
-            assert(setIndicator == terms.ind) {
+            assert(indicator == terms.ind) {
                 "Variable and terms have different set indicators: ${variable.ind} and ${terms.ind}"
             }
 
@@ -371,7 +371,7 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
     override val underlying: Context.KeyBackreference,
-    override val ind: SetIndicator<T>
+    override val ind: Indicator<T>
 ) : LeafExpr<T>() {
     val key: Context.KeyBackreference = underlying
 
@@ -388,7 +388,7 @@ data class VariableExpr<T : Any> private constructor(
 /**
  * Objects are represented as a [ConstExpr] with an underlying [com.oberdiah.deepcomplexity.context.HeapMarker].
  */
-data class ConstExpr<T : Any>(override val underlying: T, override val ind: SetIndicator<T>) : LeafExpr<T>() {
+data class ConstExpr<T : Any>(override val underlying: T, override val ind: Indicator<T>) : LeafExpr<T>() {
     val value: T = underlying
 
     companion object {
@@ -403,7 +403,7 @@ data class ConstExpr<T : Any>(override val underlying: T, override val ind: SetI
         fun <T : Number> one(ind: NumberIndicator<T>): ConstExpr<T> =
             ConstExpr(ind.getOne(), ind)
 
-        fun <T : Any> fromAny(value: T): ConstExpr<T> = ConstExpr(value, SetIndicator.fromValue(value))
+        fun <T : Any> fromAny(value: T): ConstExpr<T> = ConstExpr(value, Indicator.fromValue(value))
         fun fromHeapMarker(marker: HeapMarker): ConstExpr<HeapMarker> = fromAny(marker)
     }
 }

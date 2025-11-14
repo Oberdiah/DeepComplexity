@@ -1,11 +1,11 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 interface ISet<T : Any> {
-    val ind: SetIndicator<T>
+    val ind: Indicator<T>
 
     /**
      * The number of elements in the set, if it can be easily computed.
@@ -13,7 +13,7 @@ interface ISet<T : Any> {
      */
     fun size(): Long?
     fun invert(): ISet<T>
-    fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>?
+    fun <Q : Any> cast(newInd: Indicator<Q>): ISet<Q>?
     fun contains(element: T): Boolean
     fun isEmpty(): Boolean
 

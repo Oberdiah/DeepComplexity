@@ -7,7 +7,7 @@ object ExprTreeRebuilder {
     /**
      * `ind` is the indicator of the type that the expression will be converted to.
      */
-    class LeafReplacer<T : Any>(val ind: SetIndicator<T>, val replacer: (Expr<*>) -> Expr<T>)
+    class LeafReplacer<T : Any>(val ind: Indicator<T>, val replacer: (Expr<*>) -> Expr<T>)
 
     /**
      * There is a reason to have both this and `rebuildTree`.

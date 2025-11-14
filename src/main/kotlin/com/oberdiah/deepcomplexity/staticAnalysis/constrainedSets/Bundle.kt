@@ -2,7 +2,7 @@ package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
  * ```
  */
 class Bundle<T : Any> private constructor(
-    val ind: SetIndicator<T>,
+    val ind: Indicator<T>,
     val variances: Set<ConstrainedVariances<T>>
 ) {
     init {
@@ -44,7 +44,7 @@ class Bundle<T : Any> private constructor(
     }
 
     companion object {
-        fun <T : Any> empty(ind: SetIndicator<T>): Bundle<T> {
+        fun <T : Any> empty(ind: Indicator<T>): Bundle<T> {
             return Bundle(ind, setOf())
         }
 
@@ -134,7 +134,7 @@ class Bundle<T : Any> private constructor(
     }
 
     fun <Q : Any> unaryMapAndUnion(
-        newInd: SetIndicator<Q>,
+        newInd: Indicator<Q>,
         op: (Variances<T>, Constraints) -> Bundle<Q>
     ): Bundle<Q> =
         Bundle(newInd, variances.flatMap { oldVariances ->
@@ -158,7 +158,7 @@ class Bundle<T : Any> private constructor(
 
     fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): Bundle<T> = unaryMap(ind, op)
 
-    fun <Q : Any> unaryMap(newInd: SetIndicator<Q>, op: (Variances<T>) -> Variances<Q>): Bundle<Q> {
+    fun <Q : Any> unaryMap(newInd: Indicator<Q>, op: (Variances<T>) -> Variances<Q>): Bundle<Q> {
         return Bundle(newInd, variances.mapToSet {
             ConstrainedVariances.new(op(it.variances), it.constraints)
         })
@@ -172,7 +172,7 @@ class Bundle<T : Any> private constructor(
         binaryMapToVariances(ind, other, exprKey, op)
 
     fun <Q : Any> binaryMapToVariances(
-        newInd: SetIndicator<Q>,
+        newInd: Indicator<Q>,
         other: Bundle<T>,
         exprKey: Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
@@ -262,7 +262,7 @@ class Bundle<T : Any> private constructor(
         }
     }
 
-    fun <Q : Any> cast(indicator: SetIndicator<Q>): Bundle<Q>? {
+    fun <Q : Any> cast(indicator: Indicator<Q>): Bundle<Q>? {
         val cast = Bundle(
             indicator, variances.mapToSet {
                 ConstrainedVariances.new(it.variances.cast(indicator, it.constraints) ?: return null, it.constraints)

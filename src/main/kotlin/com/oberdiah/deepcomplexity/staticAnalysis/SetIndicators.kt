@@ -21,17 +21,12 @@ import kotlin.reflect.KClass
 /**
  * Can be useful when you want to cast two things to the same indicator<*>.
  */
-fun <T : Any, S : SetIndicator<T>, Q> S.with(doIt: (S) -> Q) = doIt(this)
-
-/**
- * An indicator for a type.
- */
-sealed class Indicator<T : Any>(val clazz: KClass<T>)
+fun <T : Any, S : Indicator<T>, Q> S.with(doIt: (S) -> Q) = doIt(this)
 
 /**
  * An indicator for values that can be held in a set.
  */
-sealed class SetIndicator<T : Any>(clazz: KClass<T>) : Indicator<T>(clazz) {
+sealed class Indicator<T : Any>(val clazz: KClass<T>) {
     /**
      * Instantiate a set with no valid values.
      */
@@ -50,7 +45,7 @@ sealed class SetIndicator<T : Any>(clazz: KClass<T>) : Indicator<T>(clazz) {
     abstract fun newVariance(key: Key): Variances<T>
 
     companion object {
-        fun fromClass(clazz: KClass<*>): SetIndicator<*> {
+        fun fromClass(clazz: KClass<*>): Indicator<*> {
             return when (clazz) {
                 Double::class -> DoubleIndicator
                 Float::class -> FloatIndicator
@@ -64,7 +59,7 @@ sealed class SetIndicator<T : Any>(clazz: KClass<T>) : Indicator<T>(clazz) {
             }
         }
 
-        fun <T : Any> fromValue(value: T): SetIndicator<T> {
+        fun <T : Any> fromValue(value: T): Indicator<T> {
             val ind = when (value) {
                 is Number -> NumberIndicator.fromValue(value)
                 is Boolean -> BooleanIndicator
@@ -77,12 +72,12 @@ sealed class SetIndicator<T : Any>(clazz: KClass<T>) : Indicator<T>(clazz) {
             }
             // Safety: We checked the class matches.
             @Suppress("UNCHECKED_CAST")
-            return ind as SetIndicator<T>
+            return ind as Indicator<T>
         }
     }
 }
 
-sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
+sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz) {
     companion object {
         fun <T : Number> fromValue(value: T): NumberIndicator<T> {
             val ind = when (value) {
@@ -92,7 +87,7 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(cla
                 is Long -> LongIndicator
                 is Short -> ShortIndicator
                 is Byte -> ByteIndicator
-                else -> TODO("No NumberSetIndicator for ${value::class}")
+                else -> TODO("No NumberIndicator for ${value::class}")
             }
 
             assert(ind.clazz == value::class) {
@@ -189,7 +184,7 @@ data object ByteIndicator : NumberIndicator<Byte>(Byte::class) {
     override fun getInt(int: Int): Byte = int.toByte()
 }
 
-data object BooleanIndicator : SetIndicator<Boolean>(Boolean::class) {
+data object BooleanIndicator : Indicator<Boolean>(Boolean::class) {
     override fun newVariance(key: Key): Variances<Boolean> = BooleanVariances(BooleanSet.BOTH)
     override fun newFullSet(): ISet<Boolean> = BooleanSet.BOTH
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
@@ -197,7 +192,7 @@ data object BooleanIndicator : SetIndicator<Boolean>(Boolean::class) {
         BooleanSet.fromBoolean(constant)
 }
 
-data class ObjectIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarker::class) {
+data class ObjectIndicator(val type: PsiType) : Indicator<HeapMarker>(HeapMarker::class) {
     override fun toString(): String = "ObjectIndicator(${type.toStringPretty()})"
 
     override fun newVariance(key: Key): Variances<HeapMarker> =
@@ -211,7 +206,7 @@ data class ObjectIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMar
 }
 
 object ContextMarker
-object ContextIndicator : SetIndicator<ContextMarker>(ContextMarker::class) {
+object ContextIndicator : Indicator<ContextMarker>(ContextMarker::class) {
     override fun toString(): String = "ContextIndicator"
     override fun newEmptySet(): ISet<ContextMarker> = WONT_IMPLEMENT()
     override fun newConstantSet(constant: ContextMarker): ISet<ContextMarker> = WONT_IMPLEMENT()

@@ -306,7 +306,7 @@ object MethodProcessing {
                 )
 
                 val psiType = psi.castType ?: throw ExpressionIncompleteException()
-                val setInd = Utilities.psiTypeToSetIndicator(psiType.type)
+                val setInd = Utilities.psiTypeToIndicator(psiType.type)
                 return TypeCastExpr(expr, setInd, false)
             }
 

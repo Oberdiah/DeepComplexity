@@ -5,8 +5,8 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -95,14 +95,14 @@ data class NumberSet<T : Number> private constructor(
     /**
      * Like a regular cast, but rather than wrapping it will clamp instead.
      */
-    fun <Q : Any> clampCast(newInd: SetIndicator<Q>): ISet<Q>? {
+    fun <Q : Any> clampCast(newInd: Indicator<Q>): ISet<Q>? {
         // Intersect with the new indicator's full set, removing anything that might
         // result in wrapping, and then cast to the new indicator, guaranteed wrap-free.
         val newIndFullSet = newInd.newFullSet().cast(ind) ?: return null
         return this.intersect(newIndFullSet).cast(newInd)
     }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
+    override fun <Q : Any> cast(newInd: Indicator<Q>): ISet<Q>? {
         if (newInd !is NumberIndicator<*>) {
             return null
         }

@@ -2,7 +2,7 @@ package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.utilities.Functional
@@ -65,7 +65,7 @@ data class Constraints private constructor(
         return constraints.isEmpty()
     }
 
-    fun <T : Any> getConstraint(ind: SetIndicator<T>, key: Key): ISet<T> {
+    fun <T : Any> getConstraint(ind: Indicator<T>, key: Key): ISet<T> {
         return constraints[key]?.cast(ind) ?: ind.newFullSet()
     }
 

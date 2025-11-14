@@ -4,8 +4,8 @@ import com.intellij.psi.*
 import com.oberdiah.deepcomplexity.context.LocalVariableKey
 import com.oberdiah.deepcomplexity.context.ParameterKey
 import com.oberdiah.deepcomplexity.context.ReturnKey
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -70,9 +70,9 @@ object Utilities {
         return null
     }
 
-    fun psiTypeToSetIndicator(type: PsiType): SetIndicator<*> {
+    fun psiTypeToIndicator(type: PsiType): Indicator<*> {
         val clazz = psiTypeToKClass(type) ?: return ObjectIndicator(type)
-        return SetIndicator.fromClass(clazz)
+        return Indicator.fromClass(clazz)
     }
 
     fun PsiMethod.getThisType(): PsiType? {
@@ -112,7 +112,7 @@ object Utilities {
             ?: throw IllegalArgumentException("Return statement is not inside a method or lambda")
 
         return ReturnKey(
-            psiTypeToSetIndicator(((returnMethod as? PsiMethod)?.returnType)!!)
+            psiTypeToIndicator(((returnMethod as? PsiMethod)?.returnType)!!)
         )
     }
 

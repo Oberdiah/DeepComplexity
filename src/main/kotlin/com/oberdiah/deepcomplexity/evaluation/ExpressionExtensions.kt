@@ -2,9 +2,9 @@ package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
 object ExpressionExtensions {
@@ -36,7 +36,7 @@ object ExpressionExtensions {
     /**
      * Basically a nicer way of doing `this as Expr<T>`, but with type checking :)
      */
-    fun <T : Any> Expr<*>.tryCastTo(indicator: SetIndicator<T>): Expr<T>? {
+    fun <T : Any> Expr<*>.tryCastTo(indicator: Indicator<T>): Expr<T>? {
         return if (this.ind == indicator) {
             @Suppress("UNCHECKED_CAST")
             this as Expr<T>
@@ -54,7 +54,7 @@ object ExpressionExtensions {
         }
     }
 
-    fun <T : Any> Expr<*>.castOrThrow(indicator: SetIndicator<T>): Expr<T> {
+    fun <T : Any> Expr<*>.castOrThrow(indicator: Indicator<T>): Expr<T> {
         return this.tryCastTo(indicator)
             ?: throw IllegalStateException("Failed to cast '$this' to $indicator; (${this.ind} != $indicator)")
     }
@@ -67,7 +67,7 @@ object ExpressionExtensions {
     /**
      * Wrap the expression in a type cast to the given indicator.
      */
-    fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: SetIndicator<T>, explicit: Boolean): Expr<T> {
+    fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: Indicator<T>, explicit: Boolean): Expr<T> {
         return if (this.ind == indicator) {
             this.castOrThrow(indicator)
         } else {
@@ -97,12 +97,12 @@ object ExpressionExtensions {
      * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
      */
     inline fun <reified Q : Any> Expr<*>.replaceTypeInLeaves(
-        newInd: SetIndicator<*>,
+        newInd: Indicator<*>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<*> {
         return object {
             operator fun <T : Any> invoke(
-                newInd: SetIndicator<T>,
+                newInd: Indicator<T>,
             ): Expr<T> {
                 return this@replaceTypeInLeaves.replaceTypeInLeavesTyped<Q, T>(newInd, replacement)
             }
@@ -110,7 +110,7 @@ object ExpressionExtensions {
     }
 
     inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesTyped(
-        newInd: SetIndicator<T>,
+        newInd: Indicator<T>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<T> {
         return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->

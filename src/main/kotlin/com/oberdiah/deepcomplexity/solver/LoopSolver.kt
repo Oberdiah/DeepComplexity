@@ -53,7 +53,7 @@ object LoopSolver {
     ): Expr<T> {
         val gaveUp =
             // Put this zero here just to compile, not supposed to be .zero()
-            ConstExpr.zero(expr.getNumberSetIndicator()) // ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.ConstantKey)
+            ConstExpr.zero(expr.getNumberIndicator()) // ConstantExpression.fullExprFromExprAndKey(expr, Context.Key.ConstantKey)
 
         if (numLoops == null) {
             // If we don't know the number of loops, we've got absolutely no chance.

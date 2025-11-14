@@ -6,8 +6,8 @@ import com.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.LeafExpr
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 
@@ -55,7 +55,7 @@ sealed class UnknownKey : Key() {
 }
 
 sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {
-    override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(variable.type)
+    override val ind: Indicator<*> = Utilities.psiTypeToIndicator(variable.type)
     override fun toString(): String = variable.toStringPretty()
     override fun equals(other: Any?): Boolean = other is VariableKey && this.variable == other.variable
     override fun hashCode(): Int = variable.hashCode()
@@ -66,13 +66,13 @@ class ParameterKey(variable: PsiParameter, override val lifetime: Lifetime = Lif
 
 data class ThisKey(val type: PsiType) : UnknownKey() {
     override val lifetime: Lifetime = Lifetime.METHOD
-    override val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(type)
+    override val ind: Indicator<*> = Utilities.psiTypeToIndicator(type)
     override fun toString(): String = "this"
     override fun hashCode(): Int = 0
     override fun equals(other: Any?): Boolean = other is ThisKey
 }
 
-data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
+data class ReturnKey(override val ind: Indicator<*>) : UnknownKey() {
     override fun toString(): String = "Return value"
 }
 
@@ -107,7 +107,7 @@ data class PlaceholderKey(
  * Things that can be qualifiers in a [QualifiedFieldKey]. This is really just [HeapMarker]s and [Context.KeyBackreference]s.
  */
 sealed interface Qualifier {
-    val ind: SetIndicator<*>
+    val ind: Indicator<*>
 
     val lifetime: UnknownKey.Lifetime
         get() = UnknownKey.Lifetime.FOREVER
@@ -129,7 +129,7 @@ sealed interface Qualifier {
 }
 
 data class QualifiedFieldKey(val qualifier: Qualifier, val field: Field) : UnknownKey() {
-    override val ind: SetIndicator<*> = field.ind
+    override val ind: Indicator<*> = field.ind
     val qualifierInd: ObjectIndicator = qualifier.ind as ObjectIndicator
     override val lifetime: Lifetime = qualifier.lifetime
 
@@ -141,6 +141,6 @@ data class QualifiedFieldKey(val qualifier: Qualifier, val field: Field) : Unkno
     data class Field(private val field: PsiField) {
         override fun toString(): String = field.toStringPretty()
         fun getElement(): PsiElement = field
-        val ind: SetIndicator<*> = Utilities.psiTypeToSetIndicator(field.type)
+        val ind: Indicator<*> = Utilities.psiTypeToIndicator(field.type)
     }
 }

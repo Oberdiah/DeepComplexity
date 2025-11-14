@@ -1,8 +1,8 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.oberdiah.deepcomplexity.utilities.MathematicalSet
@@ -35,7 +35,7 @@ class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>, ove
 
     override fun union(other: ISet<HeapMarker>): ISet<HeapMarker> = ObjectSet(values.union(other.into().values), ind)
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q> {
+    override fun <Q : Any> cast(newInd: Indicator<Q>): ISet<Q> {
         TODO("Not yet implemented")
     }
 }

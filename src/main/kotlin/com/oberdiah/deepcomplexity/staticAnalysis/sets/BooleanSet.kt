@@ -3,7 +3,7 @@ package com.oberdiah.deepcomplexity.staticAnalysis.sets
 import com.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
@@ -87,7 +87,7 @@ enum class BooleanSet : ISet<Boolean> {
         return this == BOTH
     }
 
-    override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
+    override fun <Q : Any> cast(newInd: Indicator<Q>): ISet<Q>? {
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
     }
 

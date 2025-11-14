@@ -1,9 +1,9 @@
 package com.oberdiah.deepcomplexity.context
 
+import com.intellij.psi.PsiElement
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
-import com.intellij.psi.PsiElement
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 /**
  * If [temporary] is true this key will be removed from the context
@@ -11,13 +11,13 @@ import com.intellij.psi.PsiElement
  * added to aid resolution, such as parameters and `this`.
  */
 sealed class Key() {
-    abstract val ind: SetIndicator<*>
+    abstract val ind: Indicator<*>
 
     /**
      * Used to allow us to equate expressions.
      */
     data class ExpressionKey(val expr: Expr<*>) : Key() {
-        override val ind: SetIndicator<*>
+        override val ind: Indicator<*>
             get() = expr.ind
 
         override fun toString(): String = ExprToString.toExprKeyString(expr)
@@ -27,7 +27,7 @@ sealed class Key() {
      * Purely used to represent the constant value in a NumberVariance
      */
     object ConstantKey : Key() {
-        override val ind: SetIndicator<*>
+        override val ind: Indicator<*>
             get() = throw IllegalStateException("Constant keys don't have a type.")
 
         override fun toString(): String = "C"

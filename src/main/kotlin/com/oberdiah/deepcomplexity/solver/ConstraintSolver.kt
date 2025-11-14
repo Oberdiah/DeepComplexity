@@ -3,8 +3,8 @@ package com.oberdiah.deepcomplexity.solver
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
@@ -14,7 +14,7 @@ import kotlin.test.assertIs
 
 object ConstraintSolver {
     data class CollectedTerms<T : Number>(
-        val ind: SetIndicator<T>,
+        val ind: Indicator<T>,
         val terms: MutableMap<Int, NumberSet<T>>,
     ) {
         override fun toString(): String {
@@ -31,12 +31,12 @@ object ConstraintSolver {
             }
         }
 
-        fun <Q : Number> castTo(setIndicator: SetIndicator<Q>): CollectedTerms<Q> =
+        fun <Q : Number> castTo(indicator: Indicator<Q>): CollectedTerms<Q> =
             CollectedTerms(
-                setIndicator,
+                indicator,
                 // I'm suspicious of this. It feels like the most obvious thing to do,
                 // but I'm not 100% sure it's actually fine.
-                terms.mapValues { (_, term) -> term.cast(setIndicator)!!.into() }.toMutableMap()
+                terms.mapValues { (_, term) -> term.cast(indicator)!!.into() }.toMutableMap()
             )
 
         fun negate(): CollectedTerms<T> {
@@ -154,7 +154,7 @@ object ConstraintSolver {
             val (exponent, coefficient) = lhs.terms.entries.first()
 
             val shouldFlip = coefficient.comparisonOperation(
-                variable.getNumberSetIndicator().onlyZeroSet(),
+                variable.getNumberIndicator().onlyZeroSet(),
                 ComparisonOp.LESS_THAN
             )
 
@@ -199,7 +199,7 @@ object ConstraintSolver {
         // Subtract right from left
         val lhs = leftTerms.combine(rightTerms, SUBTRACTION)
 
-        val ind = variable.getNumberSetIndicator()
+        val ind = variable.getNumberIndicator()
         val constant = (lhs.terms.remove(0) ?: ind.onlyZeroSet()).negate()
 
         return lhs to constant
@@ -210,7 +210,7 @@ object ConstraintSolver {
         variable: VariableExpr<T>,
         condition: Expr<Boolean>
     ): CollectedTerms<T>? {
-        val ind = variable.getNumberSetIndicator()
+        val ind = variable.getNumberIndicator()
 
         return when (expr) {
             is ArithmeticExpr -> {
