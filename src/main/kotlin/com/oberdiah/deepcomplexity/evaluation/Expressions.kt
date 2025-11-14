@@ -9,10 +9,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 
@@ -108,13 +105,12 @@ fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
  * Represents a link to an entire context. If it's null it represents the meta context's
  * personal `ctx` value.
  */
-data class ContextExpr(val ctx: Context? = null) : Expr<HeapMarker>() {
+data class ContextExpr(val ctx: Context? = null) : Expr<ContextMarker>() {
     companion object {
-        val STRING_PLACEHOLDER = "##ContextExpr##"
+        const val STRING_PLACEHOLDER = "##ContextExpr##"
     }
 
-    override val ind: SetIndicator<HeapMarker>
-        get() = ObjectSetIndicator(PsiTypes.voidType())
+    override val ind: ContextSetIndicator = ContextSetIndicator
 }
 
 data class ArithmeticExpr<T : Number>(

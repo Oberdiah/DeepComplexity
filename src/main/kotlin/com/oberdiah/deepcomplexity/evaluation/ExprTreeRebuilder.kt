@@ -1,10 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.*
 
 object ExprTreeRebuilder {
     /**
@@ -55,7 +52,7 @@ object ExprTreeRebuilder {
 
             is LeafExpr<*> -> replacer.replacer(expr)
             is ContextExpr -> replacer.replacer(expr)
-            
+
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
@@ -85,8 +82,9 @@ object ExprTreeRebuilder {
         @Suppress("UNCHECKED_CAST")
         val rebuiltExpr = when (expr.ind) {
             is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer, includeIfCondition) as Expr<T>
-            is ObjectSetIndicator -> rebuildTreeGenerics(expr as Expr<*>, replacer, includeIfCondition) as Expr<T>
             BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer, includeIfCondition) as Expr<T>
+            is ObjectSetIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
+            ContextSetIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
         }
 
         return replacer.replace(rebuiltExpr)
@@ -145,14 +143,6 @@ object ExprTreeRebuilder {
 
             else -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
         }
-    }
-
-    private fun <T : Any> rebuildTreeGenerics(
-        expr: Expr<T>,
-        replacer: Replacer,
-        includeIfCondition: Boolean
-    ): Expr<T> {
-        return rebuildTreeAnythings(expr, replacer, includeIfCondition)
     }
 
     private fun <T : Any> rebuildTreeAnythings(

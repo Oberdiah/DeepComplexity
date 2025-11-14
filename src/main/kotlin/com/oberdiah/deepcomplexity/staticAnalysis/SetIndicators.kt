@@ -12,6 +12,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import java.math.BigInteger
@@ -201,4 +202,14 @@ data class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(Heap
 
     override fun newEmptySet(): ISet<HeapMarker> = ObjectSet.newEmptySet(this)
     override fun newFullSet(): ISet<HeapMarker> = ObjectSet.newFullSet(this)
+}
+
+
+object ContextMarker
+object ContextSetIndicator : SetIndicator<ContextMarker>(ContextMarker::class) {
+    override fun toString(): String = "ContextSetIndicator"
+    override fun newEmptySet(): ISet<ContextMarker> = WONT_IMPLEMENT()
+    override fun newConstantSet(constant: ContextMarker): ISet<ContextMarker> = WONT_IMPLEMENT()
+    override fun newFullSet(): ISet<ContextMarker> = WONT_IMPLEMENT()
+    override fun newVariance(key: Key): Variances<ContextMarker> = WONT_IMPLEMENT()
 }

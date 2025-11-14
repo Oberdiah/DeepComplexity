@@ -5,11 +5,13 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.solver.CastSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ContextSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
     data class Scope(
@@ -60,6 +62,8 @@ object ExprEvaluate {
                 val castExpr = expr.castToBoolean()
                 evaluateBools(castExpr, scope)
             }
+
+            ContextSetIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
 
         return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)
