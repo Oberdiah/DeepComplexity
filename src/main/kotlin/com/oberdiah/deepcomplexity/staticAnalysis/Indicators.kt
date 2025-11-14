@@ -45,8 +45,8 @@ sealed class Indicator<T : Any>(val clazz: KClass<T>) {
     abstract fun newVariance(key: Key): Variances<T>
 
     companion object {
-        fun fromClass(clazz: KClass<*>): Indicator<*> {
-            return when (clazz) {
+        fun <T : Any> fromClass(clazz: KClass<T>): Indicator<T> {
+            val ind = when (clazz) {
                 Double::class -> DoubleIndicator
                 Float::class -> FloatIndicator
                 Int::class -> IntIndicator
@@ -55,8 +55,16 @@ sealed class Indicator<T : Any>(val clazz: KClass<T>) {
                 Byte::class -> ByteIndicator
                 Char::class -> TODO()
                 Boolean::class -> BooleanIndicator
+                ContextMarker::class -> ContextIndicator
                 else -> TODO()
             }
+
+            assert(ind.clazz == clazz) {
+                "Mismatched class: ${ind.clazz} != $clazz"
+            }
+            // Safety: We checked the class matches.
+            @Suppress("UNCHECKED_CAST")
+            return ind as Indicator<T>
         }
 
         fun <T : Any> fromValue(value: T): Indicator<T> {

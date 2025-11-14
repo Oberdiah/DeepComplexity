@@ -1,10 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.*
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
 object ExpressionExtensions {
@@ -15,13 +12,13 @@ object ExpressionExtensions {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<out Number>
         } else {
-            throw IllegalStateException("Failed to cast to a number: $this ($ind)")
+            throw IllegalStateException("Failed to cast to a number expr: $this ($ind)")
         }
     }
 
     fun Expr<*>.castToBoolean(): Expr<Boolean> {
         return this.tryCastTo(BooleanIndicator)
-            ?: throw IllegalStateException("Failed to cast to a boolean: $this ($ind)")
+            ?: throw IllegalStateException("Failed to cast to a boolean expr: $this ($ind)")
     }
 
     fun Expr<*>.castToObject(): Expr<HeapMarker> {
@@ -29,7 +26,16 @@ object ExpressionExtensions {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<HeapMarker>
         } else {
-            throw IllegalStateException("Failed to cast to an object: $this ($ind)")
+            throw IllegalStateException("Failed to cast to an object expr: $this ($ind)")
+        }
+    }
+
+    fun Expr<*>.castToContext(): Expr<ContextMarker> {
+        if (this.ind is ContextIndicator) {
+            @Suppress("UNCHECKED_CAST")
+            return this as Expr<ContextMarker>
+        } else {
+            throw IllegalStateException("Failed to cast to a context expr: $this ($ind)")
         }
     }
 
@@ -96,7 +102,7 @@ object ExpressionExtensions {
      * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
      * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
      */
-    inline fun <reified Q : Any> Expr<*>.replaceTypeInLeaves(
+    internal inline fun <reified Q : Any> Expr<*>.replaceTypeInLeaves(
         newInd: Indicator<*>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<*> {
@@ -104,12 +110,18 @@ object ExpressionExtensions {
             operator fun <T : Any> invoke(
                 newInd: Indicator<T>,
             ): Expr<T> {
-                return this@replaceTypeInLeaves.replaceTypeInLeavesTyped<Q, T>(newInd, replacement)
+                return this@replaceTypeInLeaves.replaceTypeInLeavesWithInd<Q, T>(newInd, replacement)
             }
         }(newInd)
     }
 
-    inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesTyped(
+    internal inline fun <reified Q : Any, reified T : Any> Expr<*>.replaceTypeInLeavesTyped(
+        crossinline replacement: (Q) -> Expr<*>
+    ): Expr<T> {
+        return replaceTypeInLeavesWithInd<Q, T>(Indicator.fromClass(T::class), replacement)
+    }
+
+    private inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesWithInd(
         newInd: Indicator<T>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<T> {

@@ -3,14 +3,16 @@ package com.oberdiah.deepcomplexity.context
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.ContextExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeavesTyped
 import com.oberdiah.deepcomplexity.evaluation.LValueExpr
-import com.oberdiah.deepcomplexity.staticAnalysis.ContextIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ContextMarker
 import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
 import kotlin.test.assertEquals
 
 class MetaContext(
-    private val flowExpr: Expr<*>,
+    private val flowExpr: Expr<ContextMarker>,
     private val ctx: Context,
     /**
      * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
@@ -36,7 +38,7 @@ class MetaContext(
                 "Cannot combine contexts with different 'this' types."
             )
             return MetaContext(
-                how(lhs.flowExpr, rhs.flowExpr),
+                how(lhs.flowExpr, rhs.flowExpr).castToContext(),
                 Context.combine(lhs.ctx, rhs.ctx, how),
                 lhs.thisType
             )
@@ -58,7 +60,7 @@ class MetaContext(
 
     private fun mapContexts(operation: (Context) -> Context): MetaContext {
         return MetaContext(
-            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextIndicator) {
+            flowExpr.replaceTypeInLeavesTyped<ContextExpr, ContextMarker> {
                 if (it.ctx != null) ContextExpr(operation(it.ctx)) else it
             },
             operation(ctx),
@@ -78,7 +80,7 @@ class MetaContext(
         val stacked = other.mapContexts { ctx.stack(it) }
 
         val afterStack = MetaContext(
-            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextIndicator) {
+            flowExpr.replaceTypeInLeavesTyped<ContextExpr, ContextMarker> {
                 if (it.ctx != null) {
                     it
                 } else {
@@ -116,7 +118,7 @@ class MetaContext(
 
     fun haveHitReturn(): MetaContext {
         return MetaContext(
-            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextIndicator) {
+            flowExpr.replaceTypeInLeavesTyped<ContextExpr, ContextMarker> {
                 if (it.ctx != null) {
                     it
                 } else {
