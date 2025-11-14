@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.context.ContextVarsAssistant.withVar
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
 object ContextVarsAssistant {
     fun getVar(vars: Vars, key: UnknownKey, makeBackreference: (UnknownKey) -> KeyBackreference): Expr<*> {
@@ -15,7 +15,7 @@ object ContextVarsAssistant {
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedFieldKey) {
             val placeholderQualifierKey =
-                makeBackreference(PlaceholderKey(key.qualifier.ind as ObjectSetIndicator))
+                makeBackreference(PlaceholderKey(key.qualifier.ind as ObjectIndicator))
 
             val replacementQualified = VariableExpr.new(makeBackreference(key))
             val replacementRaw = key.qualifier.toLeafExpr()

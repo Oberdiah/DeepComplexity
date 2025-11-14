@@ -23,7 +23,15 @@ import kotlin.reflect.KClass
  */
 fun <T : Any, S : SetIndicator<T>, Q> S.with(doIt: (S) -> Q) = doIt(this)
 
-sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
+/**
+ * An indicator for a type.
+ */
+sealed class Indicator<T : Any>(val clazz: KClass<T>)
+
+/**
+ * An indicator for values that can be held in a set.
+ */
+sealed class SetIndicator<T : Any>(clazz: KClass<T>) : Indicator<T>(clazz) {
     /**
      * Instantiate a set with no valid values.
      */
@@ -44,23 +52,23 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     companion object {
         fun fromClass(clazz: KClass<*>): SetIndicator<*> {
             return when (clazz) {
-                Double::class -> DoubleSetIndicator
-                Float::class -> FloatSetIndicator
-                Int::class -> IntSetIndicator
-                Long::class -> LongSetIndicator
-                Short::class -> ShortSetIndicator
-                Byte::class -> ByteSetIndicator
+                Double::class -> DoubleIndicator
+                Float::class -> FloatIndicator
+                Int::class -> IntIndicator
+                Long::class -> LongIndicator
+                Short::class -> ShortIndicator
+                Byte::class -> ByteIndicator
                 Char::class -> TODO()
-                Boolean::class -> BooleanSetIndicator
+                Boolean::class -> BooleanIndicator
                 else -> TODO()
             }
         }
 
         fun <T : Any> fromValue(value: T): SetIndicator<T> {
             val ind = when (value) {
-                is Number -> NumberSetIndicator.fromValue(value)
-                is Boolean -> BooleanSetIndicator
-                is HeapMarker -> ObjectSetIndicator(value.type)
+                is Number -> NumberIndicator.fromValue(value)
+                is Boolean -> BooleanIndicator
+                is HeapMarker -> ObjectIndicator(value.type)
                 else -> TODO()
             }
 
@@ -74,16 +82,16 @@ sealed class SetIndicator<T : Any>(val clazz: KClass<T>) {
     }
 }
 
-sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
+sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(clazz) {
     companion object {
-        fun <T : Number> fromValue(value: T): NumberSetIndicator<T> {
+        fun <T : Number> fromValue(value: T): NumberIndicator<T> {
             val ind = when (value) {
-                is Double -> DoubleSetIndicator
-                is Float -> FloatSetIndicator
-                is Int -> IntSetIndicator
-                is Long -> LongSetIndicator
-                is Short -> ShortSetIndicator
-                is Byte -> ByteSetIndicator
+                is Double -> DoubleIndicator
+                is Float -> FloatIndicator
+                is Int -> IntIndicator
+                is Long -> LongIndicator
+                is Short -> ShortIndicator
+                is Byte -> ByteIndicator
                 else -> TODO("No NumberSetIndicator for ${value::class}")
             }
 
@@ -92,7 +100,7 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
             }
             // Safety: We checked the class matches.
             @Suppress("UNCHECKED_CAST")
-            return ind as NumberSetIndicator<T>
+            return ind as NumberIndicator<T>
         }
     }
 
@@ -129,10 +137,10 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
     }
 
     fun isWholeNum(): Boolean {
-        return this is IntSetIndicator
-                || this is LongSetIndicator
-                || this is ShortSetIndicator
-                || this is ByteSetIndicator
+        return this is IntIndicator
+                || this is LongIndicator
+                || this is ShortIndicator
+                || this is ByteIndicator
     }
 
     fun onlyZeroSet(): NumberSet<T> = newConstantSet(getZero())
@@ -145,43 +153,43 @@ sealed class NumberSetIndicator<T : Number>(clazz: KClass<T>) : SetIndicator<T>(
     fun castToMe(v: Number): T = v.castInto(clazz)
 }
 
-data object DoubleSetIndicator : NumberSetIndicator<Double>(Double::class) {
+data object DoubleIndicator : NumberIndicator<Double>(Double::class) {
     override fun getMaxValue(): Double = Double.MAX_VALUE
     override fun getMinValue(): Double = Double.MIN_VALUE
     override fun getInt(int: Int): Double = int.toDouble()
 }
 
-data object FloatSetIndicator : NumberSetIndicator<Float>(Float::class) {
+data object FloatIndicator : NumberIndicator<Float>(Float::class) {
     override fun getMaxValue(): Float = Float.MAX_VALUE
     override fun getMinValue(): Float = Float.MIN_VALUE
     override fun getInt(int: Int): Float = int.toFloat()
 }
 
-data object IntSetIndicator : NumberSetIndicator<Int>(Int::class) {
+data object IntIndicator : NumberIndicator<Int>(Int::class) {
     override fun getMaxValue(): Int = Int.MAX_VALUE
     override fun getMinValue(): Int = Int.MIN_VALUE
     override fun getInt(int: Int): Int = int
 }
 
-data object LongSetIndicator : NumberSetIndicator<Long>(Long::class) {
+data object LongIndicator : NumberIndicator<Long>(Long::class) {
     override fun getMaxValue(): Long = Long.MAX_VALUE
     override fun getMinValue(): Long = Long.MIN_VALUE
     override fun getInt(int: Int): Long = int.toLong()
 }
 
-data object ShortSetIndicator : NumberSetIndicator<Short>(Short::class) {
+data object ShortIndicator : NumberIndicator<Short>(Short::class) {
     override fun getMaxValue(): Short = Short.MAX_VALUE
     override fun getMinValue(): Short = Short.MIN_VALUE
     override fun getInt(int: Int): Short = int.toShort()
 }
 
-data object ByteSetIndicator : NumberSetIndicator<Byte>(Byte::class) {
+data object ByteIndicator : NumberIndicator<Byte>(Byte::class) {
     override fun getMaxValue(): Byte = Byte.MAX_VALUE
     override fun getMinValue(): Byte = Byte.MIN_VALUE
     override fun getInt(int: Int): Byte = int.toByte()
 }
 
-data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
+data object BooleanIndicator : SetIndicator<Boolean>(Boolean::class) {
     override fun newVariance(key: Key): Variances<Boolean> = BooleanVariances(BooleanSet.BOTH)
     override fun newFullSet(): ISet<Boolean> = BooleanSet.BOTH
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
@@ -189,10 +197,8 @@ data object BooleanSetIndicator : SetIndicator<Boolean>(Boolean::class) {
         BooleanSet.fromBoolean(constant)
 }
 
-data class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarker::class) {
-    override fun toString(): String {
-        return "ObjectSetIndicator(${type.toStringPretty()})"
-    }
+data class ObjectIndicator(val type: PsiType) : SetIndicator<HeapMarker>(HeapMarker::class) {
+    override fun toString(): String = "ObjectIndicator(${type.toStringPretty()})"
 
     override fun newVariance(key: Key): Variances<HeapMarker> =
         ObjectVariances(ObjectSet.newEmptySet(this), this)
@@ -204,10 +210,9 @@ data class ObjectSetIndicator(val type: PsiType) : SetIndicator<HeapMarker>(Heap
     override fun newFullSet(): ISet<HeapMarker> = ObjectSet.newFullSet(this)
 }
 
-
 object ContextMarker
-object ContextSetIndicator : SetIndicator<ContextMarker>(ContextMarker::class) {
-    override fun toString(): String = "ContextSetIndicator"
+object ContextIndicator : SetIndicator<ContextMarker>(ContextMarker::class) {
+    override fun toString(): String = "ContextIndicator"
     override fun newEmptySet(): ISet<ContextMarker> = WONT_IMPLEMENT()
     override fun newConstantSet(constant: ContextMarker): ISet<ContextMarker> = WONT_IMPLEMENT()
     override fun newFullSet(): ISet<ContextMarker> = WONT_IMPLEMENT()

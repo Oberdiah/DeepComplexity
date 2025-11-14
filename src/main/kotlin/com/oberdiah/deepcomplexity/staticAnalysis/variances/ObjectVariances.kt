@@ -4,14 +4,14 @@ import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
-data class ObjectVariances(private val value: ObjectSet, override val ind: ObjectSetIndicator) :
+data class ObjectVariances(private val value: ObjectSet, override val ind: ObjectIndicator) :
     Variances<HeapMarker> {
     override fun toString(): String = value.toString()
 

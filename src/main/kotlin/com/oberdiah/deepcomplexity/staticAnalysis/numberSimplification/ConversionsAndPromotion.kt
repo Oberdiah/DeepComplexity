@@ -32,7 +32,7 @@ object ConversionsAndPromotion {
     fun <T : Number> castBothNumbersTo(
         exprA: Expr<out Number>,
         exprB: Expr<out Number>,
-        indicator: NumberSetIndicator<T>,
+        indicator: NumberIndicator<T>,
         explicit: Boolean
     ): TypedPair<T> {
         val castExprA: Expr<T> = exprA.castToUsingTypeCast(indicator, explicit)
@@ -50,8 +50,8 @@ object ConversionsAndPromotion {
         // Java Spec 5.6.1:
         // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
         return when (expr.ind) {
-            DoubleSetIndicator, FloatSetIndicator, LongSetIndicator, IntSetIndicator -> expr
-            else -> expr.castToUsingTypeCast(IntSetIndicator, false)
+            DoubleIndicator, FloatIndicator, LongIndicator, IntIndicator -> expr
+            else -> expr.castToUsingTypeCast(IntIndicator, false)
         }
     }
 
@@ -65,10 +65,10 @@ object ConversionsAndPromotion {
         // Otherwise, if either operand is of type long, the other is converted to long.
         // Otherwise, both operands are converted to type int.
         val targetIndicator = when {
-            exprA.ind == DoubleSetIndicator || exprB.ind == DoubleSetIndicator -> DoubleSetIndicator
-            exprA.ind == FloatSetIndicator || exprB.ind == FloatSetIndicator -> FloatSetIndicator
-            exprA.ind == LongSetIndicator || exprB.ind == LongSetIndicator -> LongSetIndicator
-            else -> IntSetIndicator
+            exprA.ind == DoubleIndicator || exprB.ind == DoubleIndicator -> DoubleIndicator
+            exprA.ind == FloatIndicator || exprB.ind == FloatIndicator -> FloatIndicator
+            exprA.ind == LongIndicator || exprB.ind == LongIndicator -> LongIndicator
+            else -> IntIndicator
         }
 
         return castBothNumbersTo(exprA, exprB, targetIndicator, false)

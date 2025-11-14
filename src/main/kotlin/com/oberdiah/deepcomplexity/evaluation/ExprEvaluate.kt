@@ -4,10 +4,10 @@ import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.solver.CastSolver
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ContextSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ContextIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
@@ -51,19 +51,19 @@ object ExprEvaluate {
     fun <T : Any> evaluate(expr: Expr<T>, scope: Scope, skipSimplify: Boolean = false): Bundle<T> {
         @Suppress("UNCHECKED_CAST")
         val evaluatedBundle = when (expr.ind) {
-            is NumberSetIndicator<*> -> {
+            is NumberIndicator<*> -> {
                 // Split into two lines for nicer debugging
                 val castExpr = expr.castToNumbers()
                 evaluateNums(castExpr, scope)
             }
 
-            is ObjectSetIndicator -> evaluateGenerics(expr as Expr<*>, scope)
-            BooleanSetIndicator -> {
+            is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, scope)
+            BooleanIndicator -> {
                 val castExpr = expr.castToBoolean()
                 evaluateBools(castExpr, scope)
             }
 
-            ContextSetIndicator -> WONT_IMPLEMENT()
+            ContextIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
 
         return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)

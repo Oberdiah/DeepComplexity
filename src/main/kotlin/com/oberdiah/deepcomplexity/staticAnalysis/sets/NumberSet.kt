@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
 
 @ConsistentCopyVisibility
 data class NumberSet<T : Number> private constructor(
-    override val ind: NumberSetIndicator<T>,
+    override val ind: NumberIndicator<T>,
     val hasThrownDivideByZero: Boolean,
     // In order, and non-overlapping
     val ranges: List<NumberRange<T>>
@@ -103,11 +103,11 @@ data class NumberSet<T : Number> private constructor(
     }
 
     override fun <Q : Any> cast(newInd: SetIndicator<Q>): ISet<Q>? {
-        if (newInd !is NumberSetIndicator<*>) {
+        if (newInd !is NumberIndicator<*>) {
             return null
         }
 
-        fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberSet<OutT> {
+        fun <OutT : Number> extra(newInd: NumberIndicator<OutT>): NumberSet<OutT> {
             assert(newInd.isWholeNum() && ind.isWholeNum()) {
                 "Attempted to cast to a floating point number."
             }
@@ -404,13 +404,13 @@ data class NumberSet<T : Number> private constructor(
     }
 
     companion object {
-        fun <T : Number> zero(ind: NumberSetIndicator<T>): NumberSet<T> = NumberSet(
+        fun <T : Number> zero(ind: NumberIndicator<T>): NumberSet<T> = NumberSet(
             ind,
             false,
             listOf(NumberRange.fromConstant(ind.getZero())),
         )
 
-        fun <T : Number> one(ind: NumberSetIndicator<T>): NumberSet<T> = NumberSet(
+        fun <T : Number> one(ind: NumberIndicator<T>): NumberSet<T> = NumberSet(
             ind,
             false,
             listOf(NumberRange.fromConstant(ind.getOne())),
@@ -419,7 +419,7 @@ data class NumberSet<T : Number> private constructor(
         fun <T : Number> newFromConstant(
             constant: T
         ): NumberSet<T> {
-            val ind = NumberSetIndicator.fromValue(constant)
+            val ind = NumberIndicator.fromValue(constant)
             return NumberSet(
                 ind,
                 false,
@@ -427,10 +427,10 @@ data class NumberSet<T : Number> private constructor(
             )
         }
 
-        fun <T : Number> newEmpty(ind: NumberSetIndicator<T>): NumberSet<T> =
+        fun <T : Number> newEmpty(ind: NumberIndicator<T>): NumberSet<T> =
             NumberSet(ind, false, emptyList())
 
-        fun <T : Number> newFull(ind: NumberSetIndicator<T>): NumberSet<T> =
+        fun <T : Number> newFull(ind: NumberIndicator<T>): NumberSet<T> =
             NumberSet(ind, false, listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue())))
     }
 }

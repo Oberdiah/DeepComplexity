@@ -6,7 +6,7 @@ import com.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.LeafExpr
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
@@ -97,7 +97,7 @@ data class ReturnKey(override val ind: SetIndicator<*>) : UnknownKey() {
  * ```
  */
 data class PlaceholderKey(
-    override val ind: ObjectSetIndicator,
+    override val ind: ObjectIndicator,
     override val lifetime: Lifetime = Lifetime.BLOCK
 ) : UnknownKey() {
     override fun toString(): String = "PK(${ind.type.toStringPretty()})"
@@ -130,7 +130,7 @@ sealed interface Qualifier {
 
 data class QualifiedFieldKey(val qualifier: Qualifier, val field: Field) : UnknownKey() {
     override val ind: SetIndicator<*> = field.ind
-    val qualifierInd: ObjectSetIndicator = qualifier.ind as ObjectSetIndicator
+    val qualifierInd: ObjectIndicator = qualifier.ind as ObjectIndicator
     override val lifetime: Lifetime = qualifier.lifetime
 
     override fun toString(): String = "$qualifier.$field"

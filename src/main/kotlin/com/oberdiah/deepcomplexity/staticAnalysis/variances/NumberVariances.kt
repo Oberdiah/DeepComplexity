@@ -6,7 +6,7 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
@@ -36,7 +36,7 @@ import com.oberdiah.deepcomplexity.utilities.Functional
  */
 @ConsistentCopyVisibility
 data class NumberVariances<T : Number> private constructor(
-    override val ind: NumberSetIndicator<T>,
+    override val ind: NumberIndicator<T>,
     private val multipliers: Map<Key, NumberSet<T>> = mapOf()
 ) : Variances<T> {
     override fun toString(): String {
@@ -49,7 +49,7 @@ data class NumberVariances<T : Number> private constructor(
         fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
             NumberVariances(constant.ind, mapOf(Key.ConstantKey to constant))
 
-        fun <T : Number> newFromVariance(ind: NumberSetIndicator<T>, key: Key): NumberVariances<T> =
+        fun <T : Number> newFromVariance(ind: NumberIndicator<T>, key: Key): NumberVariances<T> =
             NumberVariances(ind, mapOf(key to ind.onlyOneSet()))
     }
 
@@ -109,7 +109,7 @@ data class NumberVariances<T : Number> private constructor(
         }
 
     override fun <Q : Any> cast(newInd: SetIndicator<Q>, constraints: Constraints): Variances<Q>? {
-        if (newInd !is NumberSetIndicator<*>) {
+        if (newInd !is NumberIndicator<*>) {
             return null
         }
         if (newInd == ind) {
@@ -118,7 +118,7 @@ data class NumberVariances<T : Number> private constructor(
             return this as Variances<Q>
         }
 
-        fun <OutT : Number> extra(newInd: NumberSetIndicator<OutT>): NumberVariances<OutT>? {
+        fun <OutT : Number> extra(newInd: NumberIndicator<OutT>): NumberVariances<OutT>? {
             // If we're only tracking a single variable with a multiplier of 1, and there's no constant offset,
             // we can safely cast ourselves directly to the new indicator.
             if (multipliers.size == 1) {

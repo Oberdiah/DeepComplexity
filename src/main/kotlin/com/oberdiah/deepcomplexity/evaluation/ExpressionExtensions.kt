@@ -1,9 +1,9 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.*
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
@@ -11,7 +11,7 @@ object ExpressionExtensions {
     fun Expr<Boolean>.inverted(): Expr<Boolean> = ExprConstrain.invert(this)
 
     fun Expr<*>.castToNumbers(): Expr<out Number> {
-        if (this.ind is NumberSetIndicator<*>) {
+        if (this.ind is NumberIndicator<*>) {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<out Number>
         } else {
@@ -20,12 +20,12 @@ object ExpressionExtensions {
     }
 
     fun Expr<*>.castToBoolean(): Expr<Boolean> {
-        return this.tryCastTo(BooleanSetIndicator)
+        return this.tryCastTo(BooleanIndicator)
             ?: throw IllegalStateException("Failed to cast to a boolean: $this ($ind)")
     }
 
     fun Expr<*>.castToObject(): Expr<HeapMarker> {
-        if (this.ind is ObjectSetIndicator) {
+        if (this.ind is ObjectIndicator) {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<HeapMarker>
         } else {

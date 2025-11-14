@@ -81,10 +81,10 @@ object ExprTreeRebuilder {
     ): Expr<T> {
         @Suppress("UNCHECKED_CAST")
         val rebuiltExpr = when (expr.ind) {
-            is NumberSetIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer, includeIfCondition) as Expr<T>
-            BooleanSetIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer, includeIfCondition) as Expr<T>
-            is ObjectSetIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
-            ContextSetIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
+            is NumberIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer, includeIfCondition) as Expr<T>
+            BooleanIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer, includeIfCondition) as Expr<T>
+            is ObjectIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
+            ContextIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
         }
 
         return replacer.replace(rebuiltExpr)

@@ -1,12 +1,12 @@
 package com.oberdiah.deepcomplexity
 
+import com.intellij.psi.PsiMethod
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
-import com.oberdiah.deepcomplexity.staticAnalysis.ShortSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ShortIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
-import com.intellij.psi.PsiMethod
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
@@ -176,7 +176,7 @@ object TestUtilities {
             }
 
             val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope())
-            val castBundle = bundle.cast(ShortSetIndicator)!!
+            val castBundle = bundle.cast(ShortIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle
         } catch (e: Throwable) {

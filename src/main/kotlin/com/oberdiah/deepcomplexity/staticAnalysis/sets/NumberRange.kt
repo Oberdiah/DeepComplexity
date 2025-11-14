@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
@@ -17,7 +17,7 @@ import kotlin.reflect.KClass
 
 @ConsistentCopyVisibility
 data class NumberRange<T : Number> private constructor(
-    val ind: NumberSetIndicator<T>,
+    val ind: NumberIndicator<T>,
     val start: T,
     val end: T
 ) {
@@ -31,11 +31,11 @@ data class NumberRange<T : Number> private constructor(
 
     companion object {
         fun <T : Number> fromConstant(constant: T): NumberRange<T> {
-            return NumberRange(NumberSetIndicator.fromValue(constant), constant, constant)
+            return NumberRange(NumberIndicator.fromValue(constant), constant, constant)
         }
 
         fun <T : Number> new(lower: T, upper: T): NumberRange<T> {
-            return NumberRange(NumberSetIndicator.fromValue(lower), lower, upper)
+            return NumberRange(NumberIndicator.fromValue(lower), lower, upper)
         }
     }
 
@@ -57,7 +57,7 @@ data class NumberRange<T : Number> private constructor(
         }
     }
 
-    fun <Q : Number> castTo(newInd: NumberSetIndicator<Q>): Iterable<NumberRange<Q>> {
+    fun <Q : Number> castTo(newInd: NumberIndicator<Q>): Iterable<NumberRange<Q>> {
         if (newInd.clazz.isFloatingPoint() || ind.clazz.isFloatingPoint()) {
             TODO("Not implemented FP casting yet.")
         }

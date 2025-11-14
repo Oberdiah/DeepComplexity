@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.ContextExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.evaluation.LValueExpr
-import com.oberdiah.deepcomplexity.staticAnalysis.ContextSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ContextIndicator
 import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
 import kotlin.test.assertEquals
 
@@ -58,7 +58,7 @@ class MetaContext(
 
     private fun mapContexts(operation: (Context) -> Context): MetaContext {
         return MetaContext(
-            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextSetIndicator) {
+            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextIndicator) {
                 if (it.ctx != null) ContextExpr(operation(it.ctx)) else it
             },
             operation(ctx),
@@ -78,7 +78,7 @@ class MetaContext(
         val stacked = other.mapContexts { ctx.stack(it) }
 
         val afterStack = MetaContext(
-            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextSetIndicator) {
+            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextIndicator) {
                 if (it.ctx != null) {
                     it
                 } else {
@@ -116,7 +116,7 @@ class MetaContext(
 
     fun haveHitReturn(): MetaContext {
         return MetaContext(
-            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextSetIndicator) {
+            flowExpr.replaceTypeInLeaves<ContextExpr>(ContextIndicator) {
                 if (it.ctx != null) {
                     it
                 } else {

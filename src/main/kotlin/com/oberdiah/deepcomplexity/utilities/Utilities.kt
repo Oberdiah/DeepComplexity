@@ -4,7 +4,7 @@ import com.intellij.psi.*
 import com.oberdiah.deepcomplexity.context.LocalVariableKey
 import com.oberdiah.deepcomplexity.context.ParameterKey
 import com.oberdiah.deepcomplexity.context.ReturnKey
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
@@ -71,7 +71,7 @@ object Utilities {
     }
 
     fun psiTypeToSetIndicator(type: PsiType): SetIndicator<*> {
-        val clazz = psiTypeToKClass(type) ?: return ObjectSetIndicator(type)
+        val clazz = psiTypeToKClass(type) ?: return ObjectIndicator(type)
         return SetIndicator.fromClass(clazz)
     }
 

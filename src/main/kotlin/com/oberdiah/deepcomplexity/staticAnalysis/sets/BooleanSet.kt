@@ -2,7 +2,7 @@ package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -95,7 +95,7 @@ enum class BooleanSet : ISet<Boolean> {
         TODO("Not yet implemented")
     }
 
-    override val ind = BooleanSetIndicator
+    override val ind = BooleanIndicator
 
     override fun invert(): BooleanSet {
         // This is a set invert, not a boolean invert

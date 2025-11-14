@@ -1,7 +1,7 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
@@ -26,5 +26,5 @@ fun Variances<Boolean>.into(): BooleanVariances =
 fun Variances<HeapMarker>.into(): ObjectVariances =
     this as ObjectVariances
 
-fun <T : Number> SetIndicator<T>.into(): NumberSetIndicator<T> =
-    this as NumberSetIndicator<T>
+fun <T : Number> SetIndicator<T>.into(): NumberIndicator<T> =
+    this as NumberIndicator<T>

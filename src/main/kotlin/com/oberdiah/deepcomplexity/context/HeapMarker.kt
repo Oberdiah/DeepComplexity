@@ -1,10 +1,10 @@
 package com.oberdiah.deepcomplexity.context
 
-import com.oberdiah.deepcomplexity.evaluation.ConstExpr
-import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectSetIndicator
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
+import com.oberdiah.deepcomplexity.evaluation.ConstExpr
+import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
 /**
  * A marker representing a heap-allocated object. (i.e. its location in memory)
@@ -26,7 +26,7 @@ data class HeapMarker private constructor(
         }
     }
 
-    override val ind: ObjectSetIndicator = ObjectSetIndicator(type)
+    override val ind: ObjectIndicator = ObjectIndicator(type)
     override fun toString(): String {
         if (this == NULL) return "null"
         if (this == VOID) return "void"

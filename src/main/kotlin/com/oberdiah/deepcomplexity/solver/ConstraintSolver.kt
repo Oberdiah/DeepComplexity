@@ -3,7 +3,7 @@ package com.oberdiah.deepcomplexity.solver
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.SetIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
@@ -111,7 +111,7 @@ object ConstraintSolver {
 
         val variables = expr.getVariables()
         for (variable in variables) {
-            assertIs<NumberSetIndicator<*>>(
+            assertIs<NumberIndicator<*>>(
                 variable.ind,
                 "All variables must be number sets. This requires more thought if we've hit this."
             )

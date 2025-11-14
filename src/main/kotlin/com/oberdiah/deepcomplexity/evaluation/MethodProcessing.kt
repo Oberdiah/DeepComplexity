@@ -9,8 +9,8 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.utilities.Utilities
@@ -147,7 +147,7 @@ object MethodProcessing {
                             // This is the easy case, we can always handle this.
                             IfExpr.new(trueResult, falseResult, condition)
                         } else {
-                            if (trueResult.ind !is NumberSetIndicator<*> || falseResult.ind !is NumberSetIndicator<*>) {
+                            if (trueResult.ind !is NumberIndicator<*> || falseResult.ind !is NumberIndicator<*>) {
                                 TODO(
                                     "As-yet unsupported conditional expression with non-numeric types: " +
                                             "${trueResult.ind}, ${falseResult.ind}"
@@ -190,7 +190,7 @@ object MethodProcessing {
 
                 val conditionExpr = psi.condition?.let { condition ->
                     processPsiExpression(condition, bodyContext)
-                        .tryCastTo(BooleanSetIndicator)
+                        .tryCastTo(BooleanIndicator)
                 }.orElse {
                     ConstExpr.TRUE
                 }
@@ -552,7 +552,7 @@ object MethodProcessing {
         } else {
             val rhsPrecast = processPsiExpression(rhsPsi, context)
 
-            return if (lhsPrecast.ind is NumberSetIndicator || rhsPrecast.ind is NumberSetIndicator) {
+            return if (lhsPrecast.ind is NumberIndicator || rhsPrecast.ind is NumberIndicator) {
                 ConversionsAndPromotion.binaryNumericPromotion(
                     lhsPrecast.castToNumbers(),
                     rhsPrecast.castToNumbers()

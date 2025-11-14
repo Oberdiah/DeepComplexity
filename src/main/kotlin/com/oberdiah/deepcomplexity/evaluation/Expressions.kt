@@ -99,7 +99,7 @@ sealed class Expr<T : Any>() {
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
-fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberSetIndicator<T>
+fun <T : Number> Expr<T>.getNumberSetIndicator() = ind as NumberIndicator<T>
 
 /**
  * Represents a link to an entire context. If it's null it represents the meta context's
@@ -110,7 +110,7 @@ data class ContextExpr(val ctx: Context? = null) : Expr<ContextMarker>() {
         const val STRING_PLACEHOLDER = "##ContextExpr##"
     }
 
-    override val ind: ContextSetIndicator = ContextSetIndicator
+    override val ind: ContextIndicator = ContextIndicator
 }
 
 data class ArithmeticExpr<T : Number>(
@@ -158,7 +158,7 @@ data class ComparisonExpr<T : Any> private constructor(
     }
 
     override val ind: SetIndicator<Boolean>
-        get() = BooleanSetIndicator
+        get() = BooleanIndicator
 }
 
 /**
@@ -248,7 +248,7 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
     }
 
     override val ind: SetIndicator<Boolean>
-        get() = BooleanSetIndicator
+        get() = BooleanIndicator
 
     companion object {
         fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanExpr =
@@ -310,7 +310,7 @@ data class LValueFieldExpr<T : Any>(
 
 data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
     override val ind: SetIndicator<Boolean>
-        get() = BooleanSetIndicator
+        get() = BooleanIndicator
 }
 
 data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
@@ -392,15 +392,15 @@ data class ConstExpr<T : Any>(override val underlying: T, override val ind: SetI
     val value: T = underlying
 
     companion object {
-        val TRUE = ConstExpr(true, BooleanSetIndicator)
-        val FALSE = ConstExpr(false, BooleanSetIndicator)
+        val TRUE = ConstExpr(true, BooleanIndicator)
+        val FALSE = ConstExpr(false, BooleanIndicator)
         val VOID = fromHeapMarker(HeapMarker.new(PsiTypes.voidType()))
         val NULL = fromHeapMarker(HeapMarker.new(PsiTypes.nullType()))
 
-        fun <T : Number> zero(ind: NumberSetIndicator<T>): ConstExpr<T> =
+        fun <T : Number> zero(ind: NumberIndicator<T>): ConstExpr<T> =
             ConstExpr(ind.getZero(), ind)
 
-        fun <T : Number> one(ind: NumberSetIndicator<T>): ConstExpr<T> =
+        fun <T : Number> one(ind: NumberIndicator<T>): ConstExpr<T> =
             ConstExpr(ind.getOne(), ind)
 
         fun <T : Any> fromAny(value: T): ConstExpr<T> = ConstExpr(value, SetIndicator.fromValue(value))

@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanSetIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
@@ -49,7 +49,7 @@ fun <T : Any> Bundle<T>.comparisonOperation(
     comparisonOp: ComparisonOp,
     exprKey: Key
 ): Bundle<Boolean> {
-    return this.binaryMapToVariances(BooleanSetIndicator, other, exprKey) { a, b, constraints ->
+    return this.binaryMapToVariances(BooleanIndicator, other, exprKey) { a, b, constraints ->
         a.comparisonOperation(b, comparisonOp, constraints)
     }
 }
@@ -59,7 +59,7 @@ fun <T : Number> Bundle<T>.numberComparisonOperation(
     comparisonOp: ComparisonOp,
     exprKey: Key
 ): Bundle<Boolean> {
-    return this.binaryMapToVariances(BooleanSetIndicator, other, exprKey) { a, b, constraints ->
+    return this.binaryMapToVariances(BooleanIndicator, other, exprKey) { a, b, constraints ->
         a.into().comparisonOperation(b.into(), comparisonOp, constraints)
     }
 }
