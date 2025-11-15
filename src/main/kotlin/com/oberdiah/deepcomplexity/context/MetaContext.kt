@@ -9,8 +9,6 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
-import com.oberdiah.deepcomplexity.utilities.Utilities
-import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
 import kotlin.test.assertEquals
 
 class MetaContext(
@@ -39,13 +37,13 @@ class MetaContext(
             assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
             return MetaContext(
                 InnerCtx(
-                    how(lhs.i.flowExpr, rhs.i.flowExpr).castToContext(),
-                    (lhs.i.vars.keys + rhs.i.vars.keys)
+                    how(lhs.i.staticExpr, rhs.i.staticExpr).castToContext(),
+                    (lhs.i.dynamicVars.keys + rhs.i.dynamicVars.keys)
                         .associateWith { key ->
                             val doNothingExpr = VariableExpr.new(KeyBackreference(key, lhs.idx + rhs.idx))
 
-                            val rhsExpr = rhs.i.vars[key] ?: doNothingExpr
-                            val lhsExpr = lhs.i.vars[key] ?: doNothingExpr
+                            val rhsExpr = rhs.i.dynamicVars[key] ?: doNothingExpr
+                            val lhsExpr = lhs.i.dynamicVars[key] ?: doNothingExpr
 
                             val finalDynExpr = how(lhsExpr, rhsExpr)
 
@@ -58,39 +56,17 @@ class MetaContext(
         }
     }
 
-    override fun toString(): String = i.flowExpr.toString()
-        .lines()
-        .joinToString("\n") { line ->
-            if (line.contains(VarsExpr.STRING_PLACEHOLDER)) {
-                val indent = "# " + line.takeWhile { c -> c.isWhitespace() }
-                Utilities.varsToString(i.vars).betterPrependIndent(indent)
-            } else {
-                line
-            }
-        }
+    override fun toString(): String = i.toString()
 
-    val keys = i.flowExpr.iterateTree<VarsExpr>().flatMap { (it.vars ?: i.vars).keys }.toSet()
-    val returnValue: Expr<*>? = i.vars.filterKeys { it is ReturnKey }.values.firstOrNull()
+    val returnValue: Expr<*>? = i.dynamicVars.filterKeys { it is ReturnKey }.values.firstOrNull()
 
-    private fun mapVars(operation: (Vars) -> Vars): MetaContext {
-        return MetaContext(
-            InnerCtx(
-                i.flowExpr.replaceTypeInTree<VarsExpr> {
-                    if (it.vars != null) VarsExpr(operation(it.vars)) else it
-                },
-                operation(i.vars)
-            ),
-            thisType,
-            idx
-        )
-    }
+    private fun mapVars(operation: (Vars) -> Vars): MetaContext =
+        MetaContext(i.mapAllVars(operation), thisType, idx)
 
     fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }
 
     fun stripKeys(lifetime: UnknownKey.Lifetime) =
-        mapVars { vars ->
-            vars.filterKeys { it: UnknownKey -> !it.shouldBeStripped(lifetime) }
-        }
+        mapVars { vars -> vars.filterKeys { !it.shouldBeStripped(lifetime) } }
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
         return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
@@ -98,7 +74,7 @@ class MetaContext(
         }.optimise()
     }
 
-    fun getVar(key: UnknownKey): Expr<*> = ContextVarsAssistant.getVar(i.vars, key) {
+    fun getVar(key: UnknownKey): Expr<*> = ContextVarsAssistant.getVar(i.dynamicVars, key) {
         KeyBackreference(it, idx)
     }
 
@@ -107,15 +83,21 @@ class MetaContext(
         assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
-        return MetaContext(InnerCtx(i.flowExpr, ContextVarsAssistant.withVar(i.vars, lExpr, rExpr) {
-            KeyBackreference(it, idx)
-        }), thisType, idx)
+        return MetaContext(
+            i.mapDynamicVars { vars ->
+                ContextVarsAssistant.withVar(vars, lExpr, rExpr) {
+                    KeyBackreference(it, idx)
+                }
+            },
+            thisType,
+            idx
+        )
     }
 
     fun stack(other: MetaContext): MetaContext {
         val other = other.stripKeys(UnknownKey.Lifetime.BLOCK)
         val stacked = other.mapVars { other ->
-            var newVars = i.vars
+            var newVars = i.dynamicVars
             for ((key, expr) in other) {
                 // Resolve the expression...
                 val expr = this.resolveKnownVariables(expr)
@@ -138,14 +120,14 @@ class MetaContext(
 
         val afterStack = MetaContext(
             InnerCtx(
-                i.flowExpr.replaceTypeInTree<VarsExpr> {
+                i.staticExpr.replaceTypeInTree<VarsExpr> {
                     if (it.vars != null) {
                         it
                     } else {
-                        resolveKnownVariables(stacked.i.flowExpr)
+                        resolveKnownVariables(stacked.i.staticExpr)
                     }
                 },
-                stacked.i.vars
+                stacked.i.dynamicVars
             ),
             thisType,
             idx + other.idx
@@ -158,9 +140,9 @@ class MetaContext(
         return MetaContext(
             InnerCtx(
                 VarsExpr(),
-                keys.associateWith { key ->
-                    i.flowExpr.replaceTypeInLeaves<VarsExpr>(key.ind) {
-                        val context = (it.vars ?: i.vars)
+                i.keys.associateWith { key ->
+                    i.staticExpr.replaceTypeInLeaves<VarsExpr>(key.ind) {
+                        val context = (it.vars ?: i.dynamicVars)
                         ContextVarsAssistant.getVar(context, key) { key ->
                             KeyBackreference(key, idx)
                         }
@@ -175,8 +157,8 @@ class MetaContext(
     fun haveHitReturn(): MetaContext {
         return MetaContext(
             InnerCtx(
-                i.flowExpr.replaceTypeInTree<VarsExpr> {
-                    if (it.vars != null) it else VarsExpr(i.vars)
+                i.staticExpr.replaceTypeInTree<VarsExpr> {
+                    if (it.vars != null) it else VarsExpr(i.dynamicVars)
                 },
                 mapOf()
             ),
