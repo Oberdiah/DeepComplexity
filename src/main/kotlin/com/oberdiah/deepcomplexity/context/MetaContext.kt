@@ -2,7 +2,9 @@ package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.context.Context.ContextId
+import com.oberdiah.deepcomplexity.context.Context.KeyBackreference
 import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
@@ -41,7 +43,20 @@ class MetaContext(
             )
             return MetaContext(
                 how(lhs.flowExpr, rhs.flowExpr).castToContext(),
-                Context.combine(lhs.ctx, rhs.ctx, how),
+                Context(
+                    (lhs.ctx.variables.keys + rhs.ctx.variables.keys)
+                        .associateWith { key ->
+                            val doNothingExpr = VariableExpr.new(KeyBackreference(key, lhs.ctx.idx + rhs.ctx.idx))
+
+                            val rhsExpr = rhs.ctx.variables[key] ?: doNothingExpr
+                            val lhsExpr = lhs.ctx.variables[key] ?: doNothingExpr
+
+                            val finalDynExpr = how(lhsExpr, rhsExpr)
+
+                            finalDynExpr.castOrThrow(doNothingExpr.ind)
+                        },
+                    lhs.ctx.idx + rhs.ctx.idx
+                ),
                 lhs.thisType,
                 lhs.idx + rhs.idx
             )
@@ -72,8 +87,10 @@ class MetaContext(
         )
     }
 
-    fun withoutReturnValue() = mapContexts { it.withoutReturnValue() }
-    fun stripKeys(lifetime: UnknownKey.Lifetime) = mapContexts { it.stripKeys(lifetime) }
+    fun withoutReturnValue() = mapContexts { ctx -> ctx.filterVariables { it !is ReturnKey } }
+    fun stripKeys(lifetime: UnknownKey.Lifetime) =
+        mapContexts { ctx -> ctx.filterVariables { !it.shouldBeStripped(lifetime) } }
+
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
         return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
             varExpr.key.safelyResolveUsing(this)
@@ -86,9 +103,9 @@ class MetaContext(
         MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType, idx)
 
     fun stack(other: MetaContext): MetaContext {
-        val stacked = other.mapContexts {
+        val other = other.stripKeys(UnknownKey.Lifetime.BLOCK)
+        val stacked = other.mapContexts { other ->
             var newContext = ctx
-            val other = it.stripKeys(UnknownKey.Lifetime.BLOCK)
             for ((key, expr) in other.variables) {
                 // Resolve the expression...
                 val expr = this.resolveKnownVariables(expr)

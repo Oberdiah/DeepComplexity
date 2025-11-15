@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.evaluation.LValueExpr
@@ -101,35 +100,6 @@ class Context(
             get() = key.lifetime
     }
 
-    companion object {
-        /**
-         * Combines two contexts at the same 'point in time' e.g. a branching if statement.
-         * This does not and cannot resolve any unresolved expressions as these two statements
-         * are independent of each other.
-         *
-         * You must define how to resolve conflicts.
-         */
-        fun combine(a: Context, b: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
-            return Context(
-                (a.variables.keys + b.variables.keys)
-                    .associateWith { key ->
-                        val lhs = a.variables[key]
-                        val rhs = b.variables[key]
-
-                        val doNothingExpr = VariableExpr.new(KeyBackreference(key, a.idx + b.idx))
-
-                        val rhsExpr = rhs ?: doNothingExpr
-                        val lhsExpr = lhs ?: doNothingExpr
-
-                        val finalDynExpr = how(lhsExpr, rhsExpr)
-
-                        finalDynExpr.castOrThrow(doNothingExpr.ind)
-                    },
-                a.idx + b.idx
-            )
-        }
-    }
-
     val returnValue: Expr<*>?
         get() = variables.filterKeys { it is ReturnKey }.values.firstOrNull()
 
@@ -170,9 +140,6 @@ class Context(
         }, idx)
     }
 
-    fun stripKeys(lifetime: UnknownKey.Lifetime): Context = this.filterVariables { !it.shouldBeStripped(lifetime) }
-    fun withoutReturnValue(): Context = this.filterVariables { it !is ReturnKey }
-
-    private fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
+    fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
         Context(variables.filterKeys(predicate), idx)
 }
