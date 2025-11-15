@@ -1,10 +1,11 @@
 package com.oberdiah.deepcomplexity.context
 
-import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
+import com.oberdiah.deepcomplexity.evaluation.LValueExpr
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 typealias Vars = Map<UnknownKey, Expr<*>>
@@ -82,7 +83,7 @@ class Context(
          */
         fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
 
-        override fun safelyResolveUsing(context: Context): Expr<*> {
+        override fun safelyResolveUsing(context: MetaContext): Expr<*> {
             assert(!contextId.collidesWith(context.idx)) {
                 "Cannot resolve a KeyBackreference in the context it was created in."
             }
@@ -167,43 +168,6 @@ class Context(
         return Context(ContextVarsAssistant.withVar(variables, lExpr, rExpr) {
             KeyBackreference(it, this.idx)
         }, idx)
-    }
-
-    /**
-     * Resolves all variables in the expression that are known of in this context.
-     */
-    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
-            varExpr.key.safelyResolveUsing(this)
-        }.optimise()
-
-    /**
-     * Stacks the later context on top of this one.
-     *
-     * That is, prioritise the later context and fall back to this one if the key doesn't exist.
-     */
-    fun stack(other: Context): Context {
-        var newContext = this
-
-        val other = other.stripKeys(UnknownKey.Lifetime.BLOCK)
-
-        for ((key, expr) in other.variables) {
-            // Resolve the expression...
-            val expr = resolveKnownVariables(expr)
-
-            // ...and any keys that might also need resolved...
-            val lValue = if (key is QualifiedFieldKey) {
-                LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
-            } else {
-                LValueKeyExpr.new(key)
-            }
-
-            // ...and then assign to us.
-            newContext = newContext.withVar(lValue, expr)
-        }
-
-        // Simple!
-        return newContext
     }
 
     fun stripKeys(lifetime: UnknownKey.Lifetime): Context = this.filterVariables { !it.shouldBeStripped(lifetime) }

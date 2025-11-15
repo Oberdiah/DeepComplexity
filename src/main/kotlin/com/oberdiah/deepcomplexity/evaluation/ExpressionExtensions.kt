@@ -1,6 +1,9 @@
 package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.context.*
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.MetaContext
+import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
+import com.oberdiah.deepcomplexity.context.Qualifier
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
@@ -83,13 +86,6 @@ object ExpressionExtensions {
 
     // We should be able to de-dupe this one day in the fairly near future
     fun Expr<*>.getField(context: MetaContext, field: QualifiedFieldKey.Field): Expr<*> {
-        return replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
-            context.getVar(QualifiedFieldKey(it.underlying as Qualifier, field))
-        }
-    }
-
-    // We should be able to de-dupe this one day in the fairly near future
-    fun Expr<*>.getField(context: Context, field: QualifiedFieldKey.Field): Expr<*> {
         return replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
             context.getVar(QualifiedFieldKey(it.underlying as Qualifier, field))
         }
