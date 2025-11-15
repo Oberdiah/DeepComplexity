@@ -7,6 +7,7 @@ import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ContextMarker
 import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
@@ -89,9 +90,20 @@ class MetaContext(
         )
     }
 
-    fun withoutReturnValue() = mapContexts { ctx -> ctx.filterVariables { it !is ReturnKey } }
+    fun withoutReturnValue() = mapContexts { ctx ->
+        Context(
+            ctx.variables.filterKeys { it: UnknownKey -> it !is ReturnKey },
+            ctx.idx
+        )
+    }
+
     fun stripKeys(lifetime: UnknownKey.Lifetime) =
-        mapContexts { ctx -> ctx.filterVariables { !it.shouldBeStripped(lifetime) } }
+        mapContexts { ctx ->
+            Context(
+                ctx.variables.filterKeys { it: UnknownKey -> !it.shouldBeStripped(lifetime) },
+                ctx.idx
+            )
+        }
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
         return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
@@ -99,10 +111,19 @@ class MetaContext(
         }.optimise()
     }
 
-    fun getVar(key: UnknownKey): Expr<*> = ctx.getVar(key)
+    fun getVar(key: UnknownKey): Expr<*> = ContextVarsAssistant.getVar(ctx.variables, key) {
+        KeyBackreference(it, ctx.idx)
+    }
 
-    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext =
-        MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType, idx)
+    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext {
+        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
+        assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
+            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
+        }
+        return MetaContext(flowExpr, Context(ContextVarsAssistant.withVar(ctx.variables, lExpr, rExpr) {
+            KeyBackreference(it, ctx.idx)
+        }, ctx.idx), thisType, idx)
+    }
 
     fun stack(other: MetaContext): MetaContext {
         val other = other.stripKeys(UnknownKey.Lifetime.BLOCK)
@@ -120,7 +141,9 @@ class MetaContext(
                 }
 
                 // ...and then assign to us.
-                newContext = newContext.withVar(lValue, expr)
+                newContext = Context(ContextVarsAssistant.withVar(newContext.variables, lValue, expr) {
+                    KeyBackreference(it, newContext.idx)
+                }, newContext.idx)
             }
             // Simple!
             newContext
@@ -145,7 +168,10 @@ class MetaContext(
     fun forcedDynamic(): MetaContext {
         val newVars: Vars = keys.associateWith { key ->
             flowExpr.replaceTypeInLeaves<ContextExpr>(key.ind) {
-                (it.ctx ?: ctx).getVar(key)
+                val context = (it.ctx ?: ctx)
+                ContextVarsAssistant.getVar(context.variables, key) {
+                    KeyBackreference(it, context.idx)
+                }
             }
         }
 

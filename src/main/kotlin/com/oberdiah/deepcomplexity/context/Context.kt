@@ -1,9 +1,7 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
-import com.oberdiah.deepcomplexity.evaluation.LValueExpr
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
@@ -115,28 +113,4 @@ class Context(
                 "${placeholderVariablesString.prependIndent()}\n" +
                 "}"
     }
-
-    fun getVar(key: UnknownKey): Expr<*> {
-        return ContextVarsAssistant.getVar(variables, key) {
-            KeyBackreference(it, this.idx)
-        }
-    }
-
-    /**
-     * Sets the given l-value expression to the provided [rExpr], returning a new context.
-     * This operation may not just update a single variable; if the l-value expression
-     * is a field expression, we may end up doing quite a bit of work.
-     */
-    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
-        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
-        assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
-            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
-        }
-        return Context(ContextVarsAssistant.withVar(variables, lExpr, rExpr) {
-            KeyBackreference(it, this.idx)
-        }, idx)
-    }
-
-    fun filterVariables(predicate: (UnknownKey) -> Boolean): Context =
-        Context(variables.filterKeys(predicate), idx)
 }
