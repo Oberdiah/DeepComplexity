@@ -74,7 +74,9 @@ class MetaContext(
             }
         }
 
-    val returnValue: Expr<*>? = ctx.returnValue
+    val keys = flowExpr.iterateTree<ContextExpr>().flatMap { (it.ctx ?: ctx).variables.keys }.toSet()
+
+    val returnValue: Expr<*>? = ctx.variables.filterKeys { it is ReturnKey }.values.firstOrNull()
 
     private fun mapContexts(operation: (Context) -> Context): MetaContext {
         return MetaContext(
@@ -141,15 +143,7 @@ class MetaContext(
     }
 
     fun forcedDynamic(): MetaContext {
-        val allKeys = mutableSetOf<UnknownKey>()
-        allKeys.addAll(ctx.variables.keys)
-        flowExpr.iterateTree<ContextExpr>().forEach {
-            if (it.ctx != null) {
-                allKeys.addAll(it.ctx.variables.keys)
-            }
-        }
-
-        val newVars: Vars = allKeys.associateWith { key ->
+        val newVars: Vars = keys.associateWith { key ->
             flowExpr.replaceTypeInLeaves<ContextExpr>(key.ind) {
                 (it.ctx ?: ctx).getVar(key)
             }
@@ -166,11 +160,7 @@ class MetaContext(
     fun haveHitReturn(): MetaContext {
         return MetaContext(
             flowExpr.replaceTypeInTree<ContextExpr> {
-                if (it.ctx != null) {
-                    it
-                } else {
-                    ContextExpr(ctx)
-                }
+                if (it.ctx != null) it else ContextExpr(ctx)
             },
             Context(mapOf(), idx),
             thisType,

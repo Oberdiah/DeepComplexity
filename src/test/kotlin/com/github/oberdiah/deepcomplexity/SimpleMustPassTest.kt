@@ -32,7 +32,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
             .filter { it.isFile && it.extension == "java" }
             .map { it.invariantSeparatorsPath.replace(testDirectory, "") }
 
-        // Run on all files in the ai directory, plus MyTestData.java
+        // Run on all files in the AI directory, plus MyTestData.java
         val outputFilesPreFilter: List<PsiFile?> = fixture.configureByFiles(
             *allFiles.toList().toTypedArray()
         ).toList()
