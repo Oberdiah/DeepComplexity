@@ -94,28 +94,27 @@ class MetaContext(
     }
 
     fun stack(other: MetaContext): MetaContext {
-        val other = other.stripKeys(UnknownKey.Lifetime.BLOCK)
-        val stacked = other.mapVars { other ->
-            var newVars = i.dynamicVars
-            for ((key, expr) in other) {
-                // Resolve the expression...
-                val expr = this.resolveKnownVariables(expr)
+        val other = other
+            .stripKeys(UnknownKey.Lifetime.BLOCK)
+            .mapVars { it.mapValues { (_, expr) -> resolveKnownVariables(expr) } }
+            .mapVars { other ->
+                var newVars = i.dynamicVars
+                for ((key, expr) in other) {
+                    // ...and any keys that might also need resolved...
+                    val lValue = if (key is QualifiedFieldKey) {
+                        LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
+                    } else {
+                        LValueKeyExpr.new(key)
+                    }
 
-                // ...and any keys that might also need resolved...
-                val lValue = if (key is QualifiedFieldKey) {
-                    LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
-                } else {
-                    LValueKeyExpr.new(key)
+                    // ...and then assign to us.
+                    newVars = ContextVarsAssistant.withVar(newVars, lValue, expr) {
+                        KeyBackreference(it, idx)
+                    }
                 }
-
-                // ...and then assign to us.
-                newVars = ContextVarsAssistant.withVar(newVars, lValue, expr) {
-                    KeyBackreference(it, idx)
-                }
+                // Simple!
+                newVars
             }
-            // Simple!
-            newVars
-        }
 
         val afterStack = MetaContext(
             InnerCtx(
@@ -123,10 +122,10 @@ class MetaContext(
                     if (it.vars != null) {
                         it
                     } else {
-                        resolveKnownVariables(stacked.i.staticExpr)
+                        resolveKnownVariables(other.i.staticExpr)
                     }
                 },
-                stacked.i.dynamicVars
+                other.i.dynamicVars
             ),
             thisType,
             idx + other.idx
