@@ -5,9 +5,9 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.solver.CastSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ContextIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
@@ -63,7 +63,7 @@ object ExprEvaluate {
                 evaluateBools(castExpr, scope)
             }
 
-            ContextIndicator -> WONT_IMPLEMENT()
+            VarsIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
 
         return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)

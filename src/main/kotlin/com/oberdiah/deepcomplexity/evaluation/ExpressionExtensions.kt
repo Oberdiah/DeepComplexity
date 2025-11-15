@@ -33,10 +33,10 @@ object ExpressionExtensions {
         }
     }
 
-    fun Expr<*>.castToContext(): Expr<ContextMarker> {
-        if (this.ind is ContextIndicator) {
+    fun Expr<*>.castToContext(): Expr<VarsMarker> {
+        if (this.ind is VarsIndicator) {
             @Suppress("UNCHECKED_CAST")
-            return this as Expr<ContextMarker>
+            return this as Expr<VarsMarker>
         } else {
             throw IllegalStateException("Failed to cast to a context expr: $this ($ind)")
         }

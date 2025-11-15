@@ -32,7 +32,7 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
-            is ContextExpr -> if (expr.ctx != null) Utilities.varsToString(expr.ctx.variables) else ContextExpr.STRING_PLACEHOLDER
+            is VarsExpr -> if (expr.vars != null) Utilities.varsToString(expr.vars) else VarsExpr.STRING_PLACEHOLDER
         }
     }
 
@@ -51,7 +51,7 @@ object ExprToString {
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is LValueFieldExpr<*> -> "LFieldExpr"
             is LValueKeyExpr<*> -> "LKeyExpr"
-            is ContextExpr -> "CtxExpr"
+            is VarsExpr -> "CtxExpr"
         }
     }
 
@@ -98,7 +98,7 @@ object ExprToString {
 
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
-            is ContextExpr -> "CtxExpr"
+            is VarsExpr -> "CtxExpr"
         }
     }
 }

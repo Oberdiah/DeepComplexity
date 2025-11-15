@@ -106,12 +106,12 @@ fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
  * Represents a link to an entire context. If it's null it represents the meta context's
  * personal `ctx` value.
  */
-data class ContextExpr(val ctx: Context? = null) : Expr<ContextMarker>() {
+data class VarsExpr(val vars: Vars? = null) : Expr<VarsMarker>() {
     companion object {
-        const val STRING_PLACEHOLDER = "##ContextExpr##"
+        const val STRING_PLACEHOLDER = "##VarsExpr##"
     }
 
-    override val ind: ContextIndicator = ContextIndicator
+    override val ind: VarsIndicator = VarsIndicator
 }
 
 data class ArithmeticExpr<T : Number>(

@@ -55,7 +55,7 @@ sealed class Indicator<T : Any>(val clazz: KClass<T>) {
                 Byte::class -> ByteIndicator
                 Char::class -> TODO()
                 Boolean::class -> BooleanIndicator
-                ContextMarker::class -> ContextIndicator
+                VarsMarker::class -> VarsIndicator
                 else -> TODO()
             }
 
@@ -213,11 +213,11 @@ data class ObjectIndicator(val type: PsiType) : Indicator<HeapMarker>(HeapMarker
     override fun newFullSet(): ISet<HeapMarker> = ObjectSet.newFullSet(this)
 }
 
-object ContextMarker
-object ContextIndicator : Indicator<ContextMarker>(ContextMarker::class) {
-    override fun toString(): String = "ContextIndicator"
-    override fun newEmptySet(): ISet<ContextMarker> = WONT_IMPLEMENT()
-    override fun newConstantSet(constant: ContextMarker): ISet<ContextMarker> = WONT_IMPLEMENT()
-    override fun newFullSet(): ISet<ContextMarker> = WONT_IMPLEMENT()
-    override fun newVariance(key: Key): Variances<ContextMarker> = WONT_IMPLEMENT()
+object VarsMarker
+object VarsIndicator : Indicator<VarsMarker>(VarsMarker::class) {
+    override fun toString(): String = "VarsIndicator"
+    override fun newEmptySet(): ISet<VarsMarker> = WONT_IMPLEMENT()
+    override fun newConstantSet(constant: VarsMarker): ISet<VarsMarker> = WONT_IMPLEMENT()
+    override fun newFullSet(): ISet<VarsMarker> = WONT_IMPLEMENT()
+    override fun newVariance(key: Key): Variances<VarsMarker> = WONT_IMPLEMENT()
 }

@@ -51,7 +51,7 @@ object ExprTreeRebuilder {
             }
 
             is LeafExpr<*> -> replacer.replacer(expr)
-            is ContextExpr -> replacer.replacer(expr)
+            is VarsExpr -> replacer.replacer(expr)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
@@ -84,7 +84,7 @@ object ExprTreeRebuilder {
             is NumberIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer, includeIfCondition) as Expr<T>
             BooleanIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer, includeIfCondition) as Expr<T>
             is ObjectIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
-            ContextIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
+            VarsIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
         }
 
         return replacer.replace(rebuiltExpr)
@@ -181,7 +181,7 @@ object ExprTreeRebuilder {
                 newFieldExpr as Expr<T>
             }
 
-            is ContextExpr -> expr
+            is VarsExpr -> expr
             is LeafExpr -> expr
             is LValueExpr -> expr
 
