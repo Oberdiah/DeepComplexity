@@ -10,6 +10,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ContextMarker
+import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
 import kotlin.test.assertEquals
 
@@ -65,7 +66,7 @@ class MetaContext(
         .joinToString("\n") { line ->
             if (line.contains(ContextExpr.STRING_PLACEHOLDER)) {
                 val indent = "# " + line.takeWhile { c -> c.isWhitespace() }
-                ctx.toString().betterPrependIndent(indent)
+                Utilities.varsToString(ctx.variables).betterPrependIndent(indent)
             } else {
                 line
             }
