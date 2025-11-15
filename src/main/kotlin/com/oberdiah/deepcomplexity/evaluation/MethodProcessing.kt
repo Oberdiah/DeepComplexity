@@ -29,14 +29,14 @@ object MethodProcessing {
      */
     var CURRENT_LINE: PsiElement? = null
 
-    fun getMethodContext(method: PsiMethod): Context {
+    fun getMethodContext(method: PsiMethod): MetaContext {
         val wrapper = newContext(method.getThisType())
 
         method.body?.let { body ->
             processPsiStatement(body, wrapper)
         }
 
-        return wrapper.c.forcedDynamic().grabContext()
+        return wrapper.c.forcedDynamic()
     }
 
     fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(MetaContext.brandNew(thisType))

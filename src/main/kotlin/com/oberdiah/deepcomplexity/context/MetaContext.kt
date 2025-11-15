@@ -72,7 +72,6 @@ class MetaContext(
         )
     }
 
-    fun grabContext(): Context = ctx
     fun withoutReturnValue() = mapContexts { it.withoutReturnValue() }
     fun stripKeys(lifetime: UnknownKey.Lifetime) = mapContexts { it.stripKeys(lifetime) }
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
@@ -82,7 +81,7 @@ class MetaContext(
     }
 
     fun getVar(key: UnknownKey): Expr<*> = ctx.getVar(key)
-    
+
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext =
         MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType, idx)
 
