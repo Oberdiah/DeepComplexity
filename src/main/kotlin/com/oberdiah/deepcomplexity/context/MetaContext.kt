@@ -37,11 +37,7 @@ class MetaContext(
         }
 
         fun combine(lhs: MetaContext, rhs: MetaContext, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): MetaContext {
-            assertEquals(
-                lhs.thisType,
-                rhs.thisType,
-                "Cannot combine contexts with different 'this' types."
-            )
+            assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
             return MetaContext(
                 how(lhs.flowExpr, rhs.flowExpr).castToContext(),
                 Context(

@@ -97,20 +97,4 @@ class Context(
         override val lifetime: UnknownKey.Lifetime
             get() = key.lifetime
     }
-
-    override fun toString(): String {
-        val nonPlaceholderVariablesString =
-            variables.filterKeys { !it.isPlaceholder() }.entries.joinToString("\n") { entry ->
-                "${entry.key}:\n${entry.value.toString().prependIndent()}"
-            }
-        val placeholderVariablesString =
-            variables.filterKeys { it.isPlaceholder() }.entries.joinToString("\n") { entry ->
-                "${entry.key}:\n${entry.value.toString().prependIndent()}"
-            }
-
-        return "Context: {\n" +
-                "${nonPlaceholderVariablesString.prependIndent()}\n" +
-                "${placeholderVariablesString.prependIndent()}\n" +
-                "}"
-    }
 }
