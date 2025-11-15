@@ -164,8 +164,7 @@ object TestUtilities {
                 println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
             }
 
-            val unknownsInReturn = returnValue.iterateTree(true)
-                .filterIsInstance<VariableExpr<*>>()
+            val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>(true)
                 .map { it.key }
                 .toSet()
 

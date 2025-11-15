@@ -143,8 +143,8 @@ class MetaContext(
     fun forcedDynamic(): MetaContext {
         val allKeys = mutableSetOf<UnknownKey>()
         allKeys.addAll(ctx.variables.keys)
-        flowExpr.iterateTree(false).forEach {
-            if (it is ContextExpr && it.ctx != null) {
+        flowExpr.iterateTree<ContextExpr>().forEach {
+            if (it.ctx != null) {
                 allKeys.addAll(it.ctx.variables.keys)
             }
         }

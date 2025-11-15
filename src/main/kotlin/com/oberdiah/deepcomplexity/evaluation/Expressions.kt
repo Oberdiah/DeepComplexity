@@ -46,9 +46,10 @@ sealed class Expr<T : Any>() {
     fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition)
 
-    fun getVariables(): Set<VariableExpr<*>> = iterateTree()
-        .filterIsInstance<VariableExpr<*>>()
-        .toSet()
+    internal inline fun <reified T : Expr<*>> iterateTree(includeIfCondition: Boolean = false): Sequence<T> =
+        ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<T>()
+
+    fun getVariables(): Set<VariableExpr<*>> = iterateTree<VariableExpr<*>>().toSet()
 
     fun resolveUnknowns(mCtx: MetaContext): Expr<T> =
         mCtx.resolveKnownVariables(this)

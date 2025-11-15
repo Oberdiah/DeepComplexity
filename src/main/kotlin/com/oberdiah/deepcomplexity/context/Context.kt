@@ -132,7 +132,7 @@ class Context(
      */
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
         val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
-        assert(rExpr.iterateTree().none { it is LValueExpr }) {
+        assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
         return Context(ContextVarsAssistant.withVar(variables, lExpr, rExpr) {

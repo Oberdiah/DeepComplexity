@@ -82,8 +82,7 @@ object ContextVarsAssistant {
         val field = lExpr.field
 
         val qualifiersMentionedInQualifierExpr: Set<Qualifier> =
-            qualifierExpr.iterateTree()
-                .filterIsInstance<LeafExpr<*>>()
+            qualifierExpr.iterateTree<LeafExpr<*>>()
                 .map { it.underlying }
                 .filterIsInstance<Qualifier>()
                 .toSet()
