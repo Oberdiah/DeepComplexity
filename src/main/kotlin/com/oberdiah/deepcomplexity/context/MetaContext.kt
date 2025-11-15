@@ -8,7 +8,6 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import kotlin.test.assertEquals
 
 class MetaContext(
@@ -136,34 +135,15 @@ class MetaContext(
         return afterStack
     }
 
-    fun forcedDynamic(): MetaContext {
-        return MetaContext(
-            InnerCtx(
-                VarsExpr(),
-                i.keys.associateWith { key ->
-                    i.staticExpr.replaceTypeInLeaves<VarsExpr>(key.ind) {
-                        val context = (it.vars ?: i.dynamicVars)
-                        ContextVarsAssistant.getVar(context, key) { key ->
-                            KeyBackreference(key, idx)
-                        }
-                    }
-                }
-            ),
-            thisType,
-            idx
-        )
-    }
+    fun forcedDynamic(): MetaContext = MetaContext(
+        i.forcedDynamic { vars, key ->
+            ContextVarsAssistant.getVar(vars, key) { key ->
+                KeyBackreference(key, idx)
+            }
+        },
+        thisType,
+        idx
+    )
 
-    fun haveHitReturn(): MetaContext {
-        return MetaContext(
-            InnerCtx(
-                i.staticExpr.replaceTypeInTree<VarsExpr> {
-                    if (it.vars != null) it else VarsExpr(i.dynamicVars)
-                },
-                mapOf()
-            ),
-            thisType,
-            idx
-        )
-    }
+    fun haveHitReturn(): MetaContext = MetaContext(i.forcedStatic(), thisType, idx)
 }

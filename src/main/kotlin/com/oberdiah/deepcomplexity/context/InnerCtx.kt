@@ -10,17 +10,15 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
 /**
  * Handles the combined static and dynamic variables in a context.
  *
- * Shouldn't care about any of the specifics of what the expressions are or how they combine,
- * should just be a thin layer managing static expressions, dynamic expressions, and converting between them.
+ * Shouldn't care about any of what the expressions are or how they combine, should just be a thin
+ * layer managing static expressions, dynamic expressions, and converting between them.
  */
 class InnerCtx(
     val staticExpr: Expr<VarsMarker>,
     val dynamicVars: Vars,
 ) {
     companion object {
-        fun new(): InnerCtx {
-            return InnerCtx(VarsExpr(), mapOf())
-        }
+        fun new(): InnerCtx = InnerCtx(VarsExpr(), mapOf())
     }
 
     override fun toString(): String = staticExpr.toString()
@@ -57,12 +55,11 @@ class InnerCtx(
         mapOf()
     )
 
-    fun forcedDynamic(emptyExpr: (UnknownKey) -> Expr<*>): InnerCtx = InnerCtx(
+    fun forcedDynamic(getExpr: (Vars, UnknownKey) -> Expr<*>): InnerCtx = InnerCtx(
         VarsExpr(),
         keys.associateWith { key ->
             staticExpr.replaceTypeInLeaves<VarsExpr>(key.ind) {
-                val context = (it.vars ?: dynamicVars)
-                context[key] ?: emptyExpr(key)
+                getExpr(it.vars ?: dynamicVars, key)
             }
         }
     )

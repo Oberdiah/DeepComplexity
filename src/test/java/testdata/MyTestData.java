@@ -1820,7 +1820,7 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(12)
-	public static short earlyReturnTest6(short x) {
+	public static short go(short x) {
 		MyClass nested = new MyClass(2);
 		MyClass nested2 = new MyClass(3);
 		earlyReturnTest6Method(nested, nested, x);
