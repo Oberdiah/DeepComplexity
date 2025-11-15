@@ -101,8 +101,6 @@ class Context(
     }
 
     companion object {
-        fun brandNew(): Context = Context(mapOf(), ContextId.new())
-
         /**
          * Combines two contexts at the same 'point in time' e.g. a branching if statement.
          * This does not and cannot resolve any unresolved expressions as these two statements

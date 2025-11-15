@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
+import com.oberdiah.deepcomplexity.context.Context.ContextId
 import com.oberdiah.deepcomplexity.evaluation.ContextExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
@@ -24,11 +25,14 @@ class MetaContext(
      * Imagine a case where we're evaluating an expression like `int t = this.q`. `this`'s type needs to be known
      * to at least some degree to perform alias protection, and the only place to store that is in the context.
      */
-    val thisType: PsiType?
+    val thisType: PsiType?,
+    val idx: ContextId
 ) {
     companion object {
-        fun brandNew(thisType: PsiType?): MetaContext =
-            MetaContext(ContextExpr(), Context.brandNew(), thisType)
+        fun brandNew(thisType: PsiType?): MetaContext {
+            val contextIdx = ContextId.new()
+            return MetaContext(ContextExpr(), Context(mapOf(), contextIdx), thisType, contextIdx)
+        }
 
         fun combine(lhs: MetaContext, rhs: MetaContext, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): MetaContext {
             assertEquals(
@@ -39,7 +43,8 @@ class MetaContext(
             return MetaContext(
                 how(lhs.flowExpr, rhs.flowExpr).castToContext(),
                 Context.combine(lhs.ctx, rhs.ctx, how),
-                lhs.thisType
+                lhs.thisType,
+                lhs.idx + rhs.idx
             )
         }
     }
@@ -63,7 +68,8 @@ class MetaContext(
                 if (it.ctx != null) ContextExpr(operation(it.ctx)) else it
             },
             operation(ctx),
-            thisType
+            thisType,
+            idx
         )
     }
 
@@ -73,7 +79,7 @@ class MetaContext(
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = ctx.resolveKnownVariables(expr)
     fun getVar(key: UnknownKey): Expr<*> = ctx.getVar(key)
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext =
-        MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType)
+        MetaContext(flowExpr, ctx.withVar(lExpr, rExpr), thisType, idx)
 
     fun stack(other: MetaContext): MetaContext {
         val stacked = other.mapContexts { ctx.stack(it) }
@@ -87,7 +93,8 @@ class MetaContext(
                 }
             },
             stacked.ctx,
-            thisType
+            thisType,
+            idx + other.idx
         )
 
         return afterStack
@@ -110,8 +117,9 @@ class MetaContext(
 
         return MetaContext(
             ContextExpr(),
-            Context(newVars, ctx.idx),
-            thisType
+            Context(newVars, idx),
+            thisType,
+            idx
         )
     }
 
@@ -124,8 +132,9 @@ class MetaContext(
                     ContextExpr(ctx)
                 }
             },
-            Context.brandNew(),
-            thisType
+            Context(mapOf(), idx),
+            thisType,
+            idx
         )
     }
 }
