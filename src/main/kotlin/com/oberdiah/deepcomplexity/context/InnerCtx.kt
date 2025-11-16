@@ -17,7 +17,7 @@ class InnerCtx private constructor(
     val dynamicVars: Vars,
 ) {
     companion object {
-        fun new(idx: ContextId): InnerCtx = InnerCtx(VarsExpr(), Vars(idx, mapOf()))
+        fun new(idx: ContextId): InnerCtx = InnerCtx(VarsExpr(), Vars.new(idx))
 
         fun combine(
             lhs: InnerCtx,

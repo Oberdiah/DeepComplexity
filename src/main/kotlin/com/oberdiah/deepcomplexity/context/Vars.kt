@@ -23,8 +23,11 @@ class Vars(
 
     companion object {
         fun new(idx: ContextId): Vars = Vars(idx, mapOf())
-        fun combine(lhs: Vars, rhs: Vars, operation: (VarsMap, VarsMap) -> VarsMap): Vars =
-            Vars(rhs.idx + lhs.idx, operation(lhs.map, rhs.map))
+        fun combine(lhs: Vars, rhs: Vars, operation: (Expr<*>, Expr<*>) -> Expr<*>): Vars =
+            Vars(
+                rhs.idx + lhs.idx,
+                (lhs.keys + rhs.keys).associateWith { key -> operation(lhs.get(key), rhs.get(key)) }
+            )
     }
 
     override fun toString(): String {

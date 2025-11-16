@@ -2,7 +2,6 @@ package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
@@ -57,18 +56,8 @@ class Context private constructor(
                     lhs.inner, rhs.inner,
                     { lhs, rhs -> how(lhs, rhs).castToContext() },
                     { vars1, vars2 ->
-                        Vars.combine(vars1, vars2) { lhsVars, rhsVars ->
-                            (lhsVars.keys + rhsVars.keys)
-                                .associateWith { key ->
-                                    val doNothingExpr = VariableExpr.new(KeyBackreference(key, lhs.idx + rhs.idx))
-
-                                    val lhsExpr = lhsVars[key] ?: doNothingExpr
-                                    val rhsExpr = rhsVars[key] ?: doNothingExpr
-
-                                    val finalDynExpr = how(lhsExpr, rhsExpr)
-
-                                    finalDynExpr.castOrThrow(doNothingExpr.ind)
-                                }
+                        Vars.combine(vars1, vars2) { expr1, expr2 ->
+                            how(expr1, expr2)
                         }
                     }
                 ),
