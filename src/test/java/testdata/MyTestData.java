@@ -1563,6 +1563,16 @@ public class MyTestData {
 		return -5;
 	}
 	
+	public static short simpleClassTest40(short x) {
+		MyClass foo = new MyClass(50);
+		if (x > 100) {
+			if (x > 200) {
+				foo = new MyClass(100);
+			}
+		}
+		return (short) foo.getX();
+	}
+	
 	private static void updateNesting(MyNestingClass nesting, int val) {
 		nesting.nested.x = val;
 	}
