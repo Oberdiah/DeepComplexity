@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.*
-import com.oberdiah.deepcomplexity.context.Context.KeyBackreference
 import com.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.LeafExpr
@@ -36,7 +35,7 @@ sealed class UnknownKey : Key() {
         FOREVER
     }
 
-    fun withAddedContextId(id: Context.ContextId): UnknownKey {
+    fun withAddedContextId(id: ContextId): UnknownKey {
         return when (this) {
             is QualifiedFieldKey if qualifier is KeyBackreference ->
                 QualifiedFieldKey(qualifier.withAddedContextId(id), field)
@@ -115,7 +114,7 @@ sealed interface Qualifier {
     /**
      * Turns this [Qualifier] into an expression by trying to resolve it against the given context.
      */
-    fun safelyResolveUsing(context: MetaContext): Expr<*>
+    fun safelyResolveUsing(context: Context): Expr<*>
 
     /**
      * Turns this [Qualifier] directly into a leaf expression, so either it'll be a

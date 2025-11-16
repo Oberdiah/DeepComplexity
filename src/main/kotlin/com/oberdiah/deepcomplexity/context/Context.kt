@@ -1,11 +1,10 @@
 package com.oberdiah.deepcomplexity.context
 
-import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
-import com.oberdiah.deepcomplexity.evaluation.VariableExpr
-import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
-
-typealias Vars = Map<UnknownKey, Expr<*>>
+import com.intellij.psi.PsiType
+import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
+import kotlin.test.assertEquals
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never
@@ -27,74 +26,109 @@ typealias Vars = Map<UnknownKey, Expr<*>>
  *    `a.x` is also actually `a'.x`.
  *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
-class Context(
-    variables: Vars,
+class Context private constructor(
+    val inner: InnerCtx,
+    /**
+     * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
+     * it in the key of the `this` object? What would we do when we don't know that expression yet, though?)
+     *
+     * The reason this is needed is when we're doing aliasing resolution inside a method with no
+     * additional context, we need to know if `this` has the same type as any of the parameters, in case
+     * they alias.
+     *
+     * Imagine a case where we're evaluating an expression like `int t = this.q`. `this`'s type needs to be known
+     * to at least some degree to perform alias protection, and the only place to store that is in the context.
+     */
+    val thisType: PsiType?,
     val idx: ContextId
 ) {
-    /**
-     * All the variables in this context.
-     *
-     * We map all the expressions to our own context id as now that they're here, they must
-     * never be resolved with us either, alongside anything they were previously forbidden to resolve.
-     */
-    val variables: Vars = variables.mapValues { expr ->
-        expr.value.replaceTypeInTree<VariableExpr<*>> {
-            VariableExpr.new(it.key.withAddedContextId(idx))
+    companion object {
+        fun brandNew(thisType: PsiType?): Context {
+            val contextIdx = ContextId.new()
+            return Context(InnerCtx.new(contextIdx), thisType, contextIdx)
         }
-    }.mapKeys { it.key.withAddedContextId(idx) }
 
-    init {
-        assert(variables.keys.filterIsInstance<ReturnKey>().size <= 1) {
-            "A context cannot have multiple return keys."
-        }
-    }
-
-    @JvmInline
-    value class ContextId(private val ids: Set<Int>) {
-        operator fun plus(other: ContextId): ContextId = ContextId(this.ids + other.ids)
-        fun collidesWith(other: ContextId): Boolean = this.ids.any { it in other.ids }
-
-        companion object {
-            var ID_INDEX = 0
-            fun new(): ContextId = ContextId(setOf(ID_INDEX++))
+        fun combine(lhs: Context, rhs: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
+            assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
+            return Context(
+                InnerCtx.combine(
+                    lhs.inner, rhs.inner,
+                    { lhs, rhs -> how(lhs, rhs).castToContext() },
+                    { vars1, vars2 ->
+                        Vars.combine(vars1, vars2) { expr1, expr2 ->
+                            how(expr1, expr2)
+                        }
+                    }
+                ),
+                lhs.thisType,
+                lhs.idx + rhs.idx
+            )
         }
     }
 
-    /**
-     * [KeyBackreference]s must be very carefully resolved; they cannot be resolved in any context
-     * they were created in. Only [Context]s have the ability to create and resolve them.
-     */
-    data class KeyBackreference(private val key: UnknownKey, private val contextId: ContextId) : Qualifier {
-        override fun toString(): String = "$key'"
-        override fun equals(other: Any?): Boolean = other is KeyBackreference && this.key == other.key
-        override fun hashCode(): Int = key.hashCode()
+    val returnValue: Expr<*>? = inner.dynamicVars.returnValue
 
-        override val ind: Indicator<*> = key.ind
-        fun withAddedContextId(newId: ContextId): KeyBackreference =
-            KeyBackreference(key.withAddedContextId(newId), contextId + newId)
+    override fun toString(): String = inner.toString()
+    fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
+    fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
 
-        /**
-         * This shouldn't be used unless you know for certain you're in the evaluation stage;
-         * using this in the method processing stage may lead to you resolving a key using your
-         * own context, which is a recipe for disaster.
-         */
-        fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
+    fun getVar(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
-        override fun safelyResolveUsing(context: MetaContext): Expr<*> {
-            assert(!contextId.collidesWith(context.idx)) {
-                "Cannot resolve a KeyBackreference in the context it was created in."
+    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context =
+        Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
+
+    private fun mapVars(operation: (Vars) -> Vars): Context =
+        Context(inner.mapAllVars(operation), thisType, idx)
+
+    fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }
+
+    fun stripKeys(lifetime: UnknownKey.Lifetime) =
+        mapVars { vars -> vars.filterKeys { !it.shouldBeStripped(lifetime) } }
+
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
+        return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
+            varExpr.key.safelyResolveUsing(this)
+        }.optimise()
+    }
+
+    fun stack(other: Context): Context {
+        val other = other
+            .stripKeys(UnknownKey.Lifetime.BLOCK)
+            .mapVars { other ->
+                var newVars = inner.dynamicVars
+                other.forEach { key, expr ->
+                    // First, resolve any unknown variables in the expression...
+                    val expr = resolveKnownVariables(expr)
+
+                    // ...and in any keys that might also need resolved...
+                    val lValue = if (key is QualifiedFieldKey) {
+                        LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
+                    } else {
+                        LValueKeyExpr.new(key)
+                    }
+
+                    // ...and then assign to us.
+                    newVars = newVars.with(lValue, expr)
+                }
+
+                // Simple!
+                newVars
             }
 
-            return if (key is QualifiedFieldKey && key.qualifier is KeyBackreference) {
-                val q = key.qualifier.safelyResolveUsing(context)
-                q.getField(context, key.field)
-            } else {
-                context.getVar(key)
-            }
-        }
+        val afterStack = Context(
+            InnerCtx.combine(
+                inner, other.inner,
+                { thisExpr, otherExpr ->
+                    thisExpr.replaceTypeInTree<VarsExpr> {
+                        if (it.vars != null) it else resolveKnownVariables(otherExpr)
+                    }
+                },
+                { _, otherVars -> otherVars }
+            ),
+            thisType,
+            idx + other.idx
+        )
 
-        fun isPlaceholder(): Boolean = key.isPlaceholder()
-        override val lifetime: UnknownKey.Lifetime
-            get() = key.lifetime
+        return afterStack
     }
 }

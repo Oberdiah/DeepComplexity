@@ -51,7 +51,7 @@ sealed class Expr<T : Any>() {
 
     fun getVariables(): Set<VariableExpr<*>> = iterateTree<VariableExpr<*>>().toSet()
 
-    fun resolveUnknowns(mCtx: MetaContext): Expr<T> =
+    fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)
 
     /**
@@ -270,7 +270,7 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
      * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
      * into whatever underlying expr it represents.
      */
-    abstract fun resolve(context: MetaContext): Expr<T>
+    abstract fun resolve(context: Context): Expr<T>
 }
 
 /**
@@ -284,7 +284,7 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: Indicat
         fun new(key: UnknownKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
     }
 
-    override fun resolve(context: MetaContext): Expr<T> {
+    override fun resolve(context: Context): Expr<T> {
         return context.getVar(key).castOrThrow(ind)
     }
 }
@@ -304,7 +304,7 @@ data class LValueFieldExpr<T : Any>(
             LValueFieldExpr(field, qualifier, field.ind)
     }
 
-    override fun resolve(context: MetaContext): Expr<T> {
+    override fun resolve(context: Context): Expr<T> {
         return qualifier.getField(context, field).castOrThrow(ind)
     }
 }
@@ -371,18 +371,18 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
  */
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
-    override val underlying: Context.KeyBackreference,
+    override val underlying: KeyBackreference,
     override val ind: Indicator<T>
 ) : LeafExpr<T>() {
-    val key: Context.KeyBackreference = underlying
+    val key: KeyBackreference = underlying
 
     companion object {
         /**
          * This should only ever be called from a [Context]. Only contexts are allowed
          * to create [VariableExpr]s. Only contexts really can, anyway, because they've got control
-         * of the [Context.KeyBackreference]s.
+         * of the [KeyBackreference]s.
          */
-        fun new(key: Context.KeyBackreference): VariableExpr<*> = VariableExpr(key, key.ind)
+        fun new(key: KeyBackreference): VariableExpr<*> = VariableExpr(key, key.ind)
     }
 }
 

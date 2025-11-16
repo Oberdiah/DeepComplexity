@@ -1,28 +1,67 @@
 package com.oberdiah.deepcomplexity.context
 
-import com.oberdiah.deepcomplexity.context.Context.KeyBackreference
-import com.oberdiah.deepcomplexity.context.ContextVarsAssistant.withVar
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
-object ContextVarsAssistant {
-    fun getVar(vars: Vars, key: UnknownKey, makeBackreference: (UnknownKey) -> KeyBackreference): Expr<*> {
+typealias VarsMap = Map<UnknownKey, Expr<*>>
+
+class Vars(
+    private val idx: ContextId,
+    map: VarsMap
+) {
+    private val map: VarsMap = map.mapValues { expr ->
+        expr.value.replaceTypeInTree<VariableExpr<*>> {
+            VariableExpr.new(it.key.withAddedContextId(idx))
+        }
+    }.mapKeys { it.key.withAddedContextId(idx) }
+    val keys = map.keys
+    val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
+    fun forEach(operation: (UnknownKey, Expr<*>) -> Unit) = map.forEach(operation)
+    fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
+
+    companion object {
+        fun new(idx: ContextId): Vars = Vars(idx, mapOf())
+        fun combine(lhs: Vars, rhs: Vars, operation: (Expr<*>, Expr<*>) -> Expr<*>): Vars =
+            Vars(
+                rhs.idx + lhs.idx,
+                (lhs.keys + rhs.keys).associateWith { key -> operation(lhs.get(key), rhs.get(key)) }
+            )
+    }
+
+    override fun toString(): String {
+        val nonPlaceholderVariablesString =
+            map.filterKeys { !it.isPlaceholder() }.entries.joinToString("\n") { entry ->
+                "${entry.key}:\n${entry.value.toString().prependIndent()}"
+            }
+        val placeholderVariablesString =
+            map.filterKeys { it.isPlaceholder() }.entries.joinToString("\n") { entry ->
+                "${entry.key}:\n${entry.value.toString().prependIndent()}"
+            }
+
+        return "{\n" +
+                "${nonPlaceholderVariablesString.prependIndent()}\n" +
+                "${placeholderVariablesString.prependIndent()}\n" +
+                "}"
+    }
+
+    fun get(key: UnknownKey): Expr<*> {
         // If we have it, return it.
-        vars[key]?.let { return it }
+        map[key]?.let { return it }
 
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedFieldKey) {
             val placeholderQualifierKey =
-                makeBackreference(PlaceholderKey(key.qualifier.ind as ObjectIndicator))
+                KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectIndicator), idx)
 
-            val replacementQualified = VariableExpr.new(makeBackreference(key))
+            val replacementQualified = VariableExpr.new(KeyBackreference(key, idx))
             val replacementRaw = key.qualifier.toLeafExpr()
             val placeholderVersionOfTheKey = QualifiedFieldKey(placeholderQualifierKey, key.field)
-            val p = makeBackreference(placeholderVersionOfTheKey)
+            val p = KeyBackreference(placeholderVersionOfTheKey, idx)
 
-            vars[placeholderVersionOfTheKey]?.let {
+            map[placeholderVersionOfTheKey]?.let {
                 val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
                     when (expr.key) {
                         p -> replacementQualified
@@ -36,12 +75,11 @@ object ContextVarsAssistant {
         }
 
         // OK, now we really do have no choice
-        return VariableExpr.new(makeBackreference(key))
+        return VariableExpr.new(KeyBackreference(key, idx))
     }
 
-
     /**
-     * This first private [withVar] deals with complex qualifier expressions.
+     * This first private [with] deals with complex qualifier expressions.
      *
      * The core of this does look a bit scary, so I'll try to walk you through it:
      * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
@@ -66,14 +104,14 @@ object ContextVarsAssistant {
      *      `b.x = { (x > 0) ? 2 : 5 }`
      *  which is exactly as desired.
      */
-    fun withVar(
-        vars: Vars,
-        lExpr: LValueExpr<*>,
-        rExpr: Expr<*>,
-        makeBackreference: (UnknownKey) -> KeyBackreference
-    ): Vars {
+    fun with(lExpr: LValueExpr<*>, rExpr: Expr<*>): Vars {
+        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
+        assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
+            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
+        }
+
         if (lExpr is LValueKeyExpr) {
-            return withVar(vars, lExpr.key, rExpr, makeBackreference)
+            return with(lExpr.key, rExpr)
         } else if (lExpr !is LValueFieldExpr) {
             throw IllegalArgumentException("This cannot happen")
         }
@@ -87,13 +125,13 @@ object ContextVarsAssistant {
                 .filterIsInstance<Qualifier>()
                 .toSet()
 
-        var vars = vars
+        var vars = this
 
         // For every distinct qualifier we mention...
         for (qualifier in qualifiersMentionedInQualifierExpr) {
             val thisVarKey = QualifiedFieldKey(qualifier, field)
             // grab whatever it's currently set to,
-            val existingExpr = getVar(vars, thisVarKey, makeBackreference)
+            val existingExpr = vars.get(thisVarKey)
 
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
@@ -107,27 +145,22 @@ object ContextVarsAssistant {
 
             // In the simple cases this will just perform a basic assignment, but
             // in reality under the hood it may do other stuff due to aliasing.
-            vars = withVar(vars, thisVarKey, newValue, makeBackreference)
+            vars = vars.with(thisVarKey, newValue)
         }
 
         return vars
     }
 
     /**
-     * This second private [withVar] handles any potential aliasing.
+     * This second private [with] handles any potential aliasing.
      * Using this alone should be perfectly correct.
      */
-    private fun withVar(
-        vars: Vars,
-        key: UnknownKey,
-        rExpr: Expr<*>,
-        makeBackreference: (UnknownKey) -> KeyBackreference
-    ): Vars {
-        var newVariables = vars + (key to rExpr)
+    fun with(key: UnknownKey, rExpr: Expr<*>): Vars {
+        var newVars = Vars(idx, map + (key to rExpr))
 
         if (key !is QualifiedFieldKey) {
             // No need to do anything further if there's no risk of aliasing.
-            return newVariables
+            return newVars
         }
 
         val qualifier = key.qualifier
@@ -135,7 +168,7 @@ object ContextVarsAssistant {
         val qualifierInd = key.qualifierInd
 
         // Collect a list of all objects we know of that could alias with the object we're trying to set.
-        val potentialAliasers: Set<QualifiedFieldKey> = vars.keys
+        val potentialAliasers: Set<QualifiedFieldKey> = map.keys
             .filterIsInstance<QualifiedFieldKey>()
             .filter {
                 !it.isPlaceholder()
@@ -143,7 +176,7 @@ object ContextVarsAssistant {
                         && fieldKey == it.field
                         && qualifier.ind == it.qualifier.ind
             }
-            .toSet() + QualifiedFieldKey(makeBackreference(PlaceholderKey(qualifierInd)), fieldKey)
+            .toSet() + QualifiedFieldKey(KeyBackreference(PlaceholderKey(qualifierInd), idx), fieldKey)
 
         for (aliasingKey in potentialAliasers) {
             val condition = ComparisonExpr.new(
@@ -156,11 +189,11 @@ object ContextVarsAssistant {
             // as they may have been affected if it turns out they were equal.
             // If the objects turn out to be the same, the aliasing object is set to whatever value we're
             // setting. Otherwise, we leave it alone.
-            val newRExpr = IfExpr.new(rExpr, getVar(newVariables, aliasingKey, makeBackreference), condition)
+            val newRExpr = IfExpr.new(rExpr, newVars.get(aliasingKey), condition)
 
-            newVariables += aliasingKey to newRExpr
+            newVars = Vars(idx, newVars.map + (aliasingKey to newRExpr))
         }
 
-        return newVariables
+        return newVars
     }
 }
