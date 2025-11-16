@@ -1,8 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
-import com.oberdiah.deepcomplexity.context.Context.ContextId
-import com.oberdiah.deepcomplexity.context.Context.KeyBackreference
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
@@ -12,6 +10,28 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeIn
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import kotlin.test.assertEquals
 
+typealias Vars = Map<UnknownKey, Expr<*>>
+
+/**
+ * A potentially subtle but important point is that an unknown variable in a context never
+ * refers to another variable within that same context.
+ *
+ * For example, in a context `{ x: y + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
+ *
+ * We encode this with the [KeyBackreference] class, representing an unknown that this context will never manage
+ * to resolve.
+ *
+ * Vars are the currently understood values for things that can be modified.
+ *
+ * How objects are stored:
+ *  - Every object's field will be stored as its own variable.
+ *  - An object itself (the heap reference) may also be an unknown. e.g. { x: a }
+ *  - Critically: HeapMarkers are not unknowns. They are constants that point to a specific object, so they do
+ *    not have a previous or future state. E.g. in { #1.x: 2, x: #1 }, it is completely OK to resolve `x.x` to `2`.
+ *    Confusingly it is also OK to resolve `b.x` using { b: a', a'.x: 2 } to `2` - although `b` is `a'` and not `a`,
+ *    `a.x` is also actually `a'.x`.
+ *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
+ */
 class MetaContext private constructor(
     val i: InnerCtx,
     /**
@@ -31,13 +51,14 @@ class MetaContext private constructor(
     companion object {
         fun brandNew(thisType: PsiType?): MetaContext {
             val contextIdx = ContextId.new()
-            return MetaContext(InnerCtx.new(), thisType, contextIdx)
+            return MetaContext(InnerCtx.new(contextIdx), thisType, contextIdx)
         }
 
         fun combine(lhs: MetaContext, rhs: MetaContext, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): MetaContext {
             assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
             return MetaContext(
                 InnerCtx.combine(
+                    lhs.idx + rhs.idx,
                     lhs.i, rhs.i,
                     { lhs, rhs -> how(lhs, rhs).castToContext() },
                     { lhsVars, rhsVars ->
@@ -103,6 +124,7 @@ class MetaContext private constructor(
 
         val afterStack = MetaContext(
             InnerCtx.combine(
+                idx + other.idx,
                 i, other.i,
                 { thisExpr, otherExpr ->
                     thisExpr.replaceTypeInTree<VarsExpr> {

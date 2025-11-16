@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.*
-import com.oberdiah.deepcomplexity.context.Context.KeyBackreference
 import com.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.LeafExpr
@@ -36,7 +35,7 @@ sealed class UnknownKey : Key() {
         FOREVER
     }
 
-    fun withAddedContextId(id: Context.ContextId): UnknownKey {
+    fun withAddedContextId(id: ContextId): UnknownKey {
         return when (this) {
             is QualifiedFieldKey if qualifier is KeyBackreference ->
                 QualifiedFieldKey(qualifier.withAddedContextId(id), field)
