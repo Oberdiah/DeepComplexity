@@ -1,9 +1,11 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
-import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
+import com.oberdiah.deepcomplexity.evaluation.LValueExpr
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
+import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import kotlin.test.assertEquals
 
 /**
@@ -90,39 +92,24 @@ class Context private constructor(
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
         return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
             varExpr.key.safelyResolveUsing(this)
+        }.replaceTypeInTree<VarsExpr> { varsExpr ->
+            varsExpr.map { it.resolveUsing(this) }
         }.optimise()
     }
 
     fun stack(other: Context): Context {
-        val other = other
+        val otherInner = other
             .stripKeys(UnknownKey.Lifetime.BLOCK)
-            .mapVars { other ->
-                var newVars = inner.dynamicVars
-                other.forEach { key, expr ->
-                    // First, resolve any unknown variables in the expression...
-                    val expr = resolveKnownVariables(expr)
-
-                    // ...and in any keys that might also need resolved...
-                    val lValue = if (key is QualifiedFieldKey) {
-                        LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
-                    } else {
-                        LValueKeyExpr.new(key)
-                    }
-
-                    // ...and then assign to us.
-                    newVars = newVars.with(lValue, expr)
-                }
-
-                // Simple!
-                newVars
-            }
+            .inner
+            .resolveUsing(this)
+            .mapAllVars { other -> this.inner.dynamicVars.stack(this, other) }
 
         val afterStack = Context(
             InnerCtx.combine(
-                inner, other.inner,
+                inner, otherInner,
                 { thisExpr, otherExpr ->
                     thisExpr.replaceTypeInTree<VarsExpr> {
-                        if (it.vars != null) it else resolveKnownVariables(otherExpr)
+                        if (it.vars != null) it else otherExpr
                     }
                 },
                 { _, otherVars -> otherVars }

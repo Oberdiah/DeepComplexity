@@ -68,6 +68,11 @@ class InnerCtx private constructor(
             }
         }
 
+    fun resolveUsing(context: Context): InnerCtx = InnerCtx(
+        context.resolveKnownVariables(staticExpr),
+        dynamicVars.resolveUsing(context)
+    )
+
     val keys: Set<UnknownKey> = staticExpr.iterateTree<VarsExpr>().flatMap { (it.vars ?: dynamicVars).keys }.toSet()
 
     fun mapDynamicVars(operation: (Vars) -> Vars): InnerCtx = InnerCtx(
@@ -76,9 +81,7 @@ class InnerCtx private constructor(
     )
 
     fun mapStaticVars(operation: (Vars) -> Vars): InnerCtx = InnerCtx(
-        staticExpr.replaceTypeInTree<VarsExpr> {
-            if (it.vars != null) VarsExpr(operation(it.vars)) else it
-        },
+        staticExpr.replaceTypeInTree<VarsExpr> { it.map(operation) },
         dynamicVars
     )
 

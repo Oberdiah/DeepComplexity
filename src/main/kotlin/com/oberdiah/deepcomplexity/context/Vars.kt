@@ -2,6 +2,7 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
@@ -17,8 +18,28 @@ class Vars(
     }.mapKeys { it.key.withAddedContextId(idx) }
     val keys = map.keys
     val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
-    fun forEach(operation: (UnknownKey, Expr<*>) -> Unit) = map.forEach(operation)
     fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
+    fun resolveUsing(context: Context): Vars =
+        Vars(idx, map.mapValues { (_, expr) -> context.resolveKnownVariables(expr) })
+
+    fun stack(context: Context, other: Vars): Vars {
+        var newVars = this
+        
+        for ((key, expr) in other.map) {
+            // First, get their new LValues...
+            val lValue = if (key is QualifiedFieldKey) {
+                LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(context).castToObject())
+            } else {
+                LValueKeyExpr.new(key)
+            }
+
+            // ...and then assign to us.
+            newVars = newVars.with(lValue, expr)
+        }
+
+        // Simple!
+        return newVars
+    }
 
     companion object {
         fun new(idx: ContextId): Vars = Vars(idx, mapOf())

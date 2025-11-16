@@ -111,6 +111,8 @@ data class VarsExpr(val vars: Vars? = null) : Expr<VarsMarker>() {
         const val STRING_PLACEHOLDER = "##VarsExpr##"
     }
 
+    fun map(operation: (Vars) -> Vars): VarsExpr = VarsExpr(vars?.let { operation(it) })
+
     override val ind: VarsIndicator = VarsIndicator
 }
 
