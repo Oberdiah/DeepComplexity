@@ -38,6 +38,8 @@ class InnerCtx private constructor(
          * Only this should call the base constructor.
          */
         fun init(idx: ContextId, staticExpr: Expr<VarsMarker>, dynamicVars: Vars): InnerCtx {
+            // NOTE: This does not offer full protection! It doesn't run on the staticExpression vars.
+            // This should be changed ASAP.
             val variables: Vars = dynamicVars.mapValues { expr ->
                 expr.value.replaceTypeInTree<VariableExpr<*>> {
                     VariableExpr.new(it.key.withAddedContextId(idx))
