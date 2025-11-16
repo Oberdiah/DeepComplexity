@@ -5,16 +5,39 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
-class Vars2(
+typealias VarsMap = Map<UnknownKey, Expr<*>>
+
+class Vars(
     val idx: ContextId,
-    map: Map<UnknownKey, Expr<*>>
+    map: VarsMap
 ) {
-    val map: Map<UnknownKey, Expr<*>> = map.mapValues { expr ->
+    val map: VarsMap = map.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
             VariableExpr.new(it.key.withAddedContextId(idx))
         }
     }.mapKeys { it.key.withAddedContextId(idx) }
-    
+    val keys = map.keys
+
+    companion object {
+        fun new(idx: ContextId): Vars = Vars(idx, mapOf())
+    }
+
+    override fun toString(): String {
+        val nonPlaceholderVariablesString =
+            map.filterKeys { !it.isPlaceholder() }.entries.joinToString("\n") { entry ->
+                "${entry.key}:\n${entry.value.toString().prependIndent()}"
+            }
+        val placeholderVariablesString =
+            map.filterKeys { it.isPlaceholder() }.entries.joinToString("\n") { entry ->
+                "${entry.key}:\n${entry.value.toString().prependIndent()}"
+            }
+
+        return "{\n" +
+                "${nonPlaceholderVariablesString.prependIndent()}\n" +
+                "${placeholderVariablesString.prependIndent()}\n" +
+                "}"
+    }
+
     fun get(key: UnknownKey): Expr<*> {
         // If we have it, return it.
         map[key]?.let { return it }
@@ -72,7 +95,7 @@ class Vars2(
      *      `b.x = { (x > 0) ? 2 : 5 }`
      *  which is exactly as desired.
      */
-    fun with(lExpr: LValueExpr<*>, rExpr: Expr<*>): Vars2 {
+    fun with(lExpr: LValueExpr<*>, rExpr: Expr<*>): Vars {
         if (lExpr is LValueKeyExpr) {
             return with(lExpr.key, rExpr)
         } else if (lExpr !is LValueFieldExpr) {
@@ -118,8 +141,8 @@ class Vars2(
      * This second private [addToVars] handles any potential aliasing.
      * Using this alone should be perfectly correct.
      */
-    fun with(key: UnknownKey, rExpr: Expr<*>): Vars2 {
-        var newVars = Vars2(idx, map + (key to rExpr))
+    fun with(key: UnknownKey, rExpr: Expr<*>): Vars {
+        var newVars = Vars(idx, map + (key to rExpr))
 
         if (key !is QualifiedFieldKey) {
             // No need to do anything further if there's no risk of aliasing.
@@ -154,7 +177,7 @@ class Vars2(
             // setting. Otherwise, we leave it alone.
             val newRExpr = IfExpr.new(rExpr, newVars.get(aliasingKey), condition)
 
-            newVars = Vars2(idx, newVars.map + (aliasingKey to newRExpr))
+            newVars = Vars(idx, newVars.map + (aliasingKey to newRExpr))
         }
 
         return newVars

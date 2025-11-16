@@ -1,7 +1,5 @@
 package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.utilities.Utilities
-
 object ExprToString {
     fun <T : Any> toString(expr: Expr<T>): String {
         return when (expr) {
@@ -32,7 +30,7 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
             is LValueKeyExpr -> "${expr.key}"
-            is VarsExpr -> if (expr.vars != null) Utilities.varsToString(expr.vars) else VarsExpr.STRING_PLACEHOLDER
+            is VarsExpr -> if (expr.vars != null) expr.vars.toString() else VarsExpr.STRING_PLACEHOLDER
         }
     }
 

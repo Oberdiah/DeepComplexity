@@ -4,7 +4,6 @@ import com.intellij.psi.*
 import com.oberdiah.deepcomplexity.context.LocalVariableKey
 import com.oberdiah.deepcomplexity.context.ParameterKey
 import com.oberdiah.deepcomplexity.context.ReturnKey
-import com.oberdiah.deepcomplexity.context.Vars
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import org.apache.commons.numbers.core.DD
@@ -434,21 +433,5 @@ object Utilities {
 
     fun WONT_IMPLEMENT(reason: String = "This function is intentionally unimplemented."): Nothing {
         throw NotImplementedError(reason)
-    }
-
-    fun varsToString(vars: Vars): String {
-        val nonPlaceholderVariablesString =
-            vars.filterKeys { !it.isPlaceholder() }.entries.joinToString("\n") { entry ->
-                "${entry.key}:\n${entry.value.toString().prependIndent()}"
-            }
-        val placeholderVariablesString =
-            vars.filterKeys { it.isPlaceholder() }.entries.joinToString("\n") { entry ->
-                "${entry.key}:\n${entry.value.toString().prependIndent()}"
-            }
-
-        return "Context: {\n" +
-                "${nonPlaceholderVariablesString.prependIndent()}\n" +
-                "${placeholderVariablesString.prependIndent()}\n" +
-                "}"
     }
 }
