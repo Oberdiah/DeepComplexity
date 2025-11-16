@@ -57,18 +57,20 @@ class MetaContext private constructor(
                     lhs.idx + rhs.idx,
                     lhs.i, rhs.i,
                     { lhs, rhs -> how(lhs, rhs).castToContext() },
-                    { lhsVars, rhsVars ->
-                        (lhsVars.keys + rhsVars.keys)
-                            .associateWith { key ->
-                                val doNothingExpr = VariableExpr.new(KeyBackreference(key, lhs.idx + rhs.idx))
+                    { vars1, vars2 ->
+                        Vars.combine(vars1, vars2) { lhsVars, rhsVars ->
+                            (lhsVars.keys + rhsVars.keys)
+                                .associateWith { key ->
+                                    val doNothingExpr = VariableExpr.new(KeyBackreference(key, lhs.idx + rhs.idx))
 
-                                val lhsExpr = lhsVars[key] ?: doNothingExpr
-                                val rhsExpr = rhsVars[key] ?: doNothingExpr
+                                    val lhsExpr = lhsVars[key] ?: doNothingExpr
+                                    val rhsExpr = rhsVars[key] ?: doNothingExpr
 
-                                val finalDynExpr = how(lhsExpr, rhsExpr)
+                                    val finalDynExpr = how(lhsExpr, rhsExpr)
 
-                                finalDynExpr.castOrThrow(doNothingExpr.ind)
-                            }
+                                    finalDynExpr.castOrThrow(doNothingExpr.ind)
+                                }
+                        }
                     }
                 ),
                 lhs.thisType,
@@ -77,7 +79,7 @@ class MetaContext private constructor(
         }
     }
 
-    val returnValue: Expr<*>? = i.dynamicVars.map.filterKeys { it is ReturnKey }.values.firstOrNull()
+    val returnValue: Expr<*>? = i.dynamicVars.returnValue
 
     override fun toString(): String = i.toString()
     fun forcedDynamic(): MetaContext = MetaContext(i.forcedDynamic(), thisType, idx)
@@ -93,8 +95,8 @@ class MetaContext private constructor(
         return MetaContext(i.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
     }
 
-    private fun mapVars(operation: (VarsMap) -> VarsMap): MetaContext =
-        MetaContext(i.mapAllVars({ vars -> Vars(idx, operation(vars.map)) }), thisType, idx)
+    private fun mapVars(operation: (Vars) -> Vars): MetaContext =
+        MetaContext(i.mapAllVars(operation), thisType, idx)
 
     fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }
 
@@ -110,11 +112,13 @@ class MetaContext private constructor(
     fun stack(other: MetaContext): MetaContext {
         val other = other
             .stripKeys(UnknownKey.Lifetime.BLOCK)
-            .mapVars { it.mapValues { (_, expr) -> resolveKnownVariables(expr) } }
             .mapVars { other ->
                 var newVars = i.dynamicVars
-                for ((key, expr) in other) {
-                    // ...and any keys that might also need resolved...
+                other.forEach { key, expr ->
+                    // First, resolve any unknown variables in the expression...
+                    val expr = resolveKnownVariables(expr)
+
+                    // ...and in any keys that might also need resolved...
                     val lValue = if (key is QualifiedFieldKey) {
                         LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
                     } else {
@@ -124,8 +128,9 @@ class MetaContext private constructor(
                     // ...and then assign to us.
                     newVars = newVars.with(lValue, expr)
                 }
+
                 // Simple!
-                newVars.map
+                newVars
             }
 
         val afterStack = MetaContext(

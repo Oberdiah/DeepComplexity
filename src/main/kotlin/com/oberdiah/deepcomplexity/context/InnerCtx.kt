@@ -25,11 +25,11 @@ class InnerCtx private constructor(
             lhs: InnerCtx,
             rhs: InnerCtx,
             howStatic: (Expr<VarsMarker>, Expr<VarsMarker>) -> Expr<VarsMarker>,
-            howDynamic: (VarsMap, VarsMap) -> VarsMap
+            howDynamic: (Vars, Vars) -> Vars
         ): InnerCtx = InnerCtx(
             idx,
             howStatic(lhs.staticExpr, rhs.staticExpr),
-            Vars(idx, howDynamic(lhs.dynamicVars.map, rhs.dynamicVars.map))
+            howDynamic(lhs.dynamicVars, rhs.dynamicVars)
         )
     }
 

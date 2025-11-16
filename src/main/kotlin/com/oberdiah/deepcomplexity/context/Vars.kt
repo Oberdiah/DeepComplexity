@@ -8,18 +8,23 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 typealias VarsMap = Map<UnknownKey, Expr<*>>
 
 class Vars(
-    val idx: ContextId,
+    private val idx: ContextId,
     map: VarsMap
 ) {
-    val map: VarsMap = map.mapValues { expr ->
+    private val map: VarsMap = map.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
             VariableExpr.new(it.key.withAddedContextId(idx))
         }
     }.mapKeys { it.key.withAddedContextId(idx) }
     val keys = map.keys
+    val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
+    fun forEach(operation: (UnknownKey, Expr<*>) -> Unit) = map.forEach(operation)
+    fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
 
     companion object {
         fun new(idx: ContextId): Vars = Vars(idx, mapOf())
+        fun combine(lhs: Vars, rhs: Vars, operation: (VarsMap, VarsMap) -> VarsMap): Vars =
+            Vars(rhs.idx + lhs.idx, operation(lhs.map, rhs.map))
     }
 
     override fun toString(): String {
@@ -70,7 +75,7 @@ class Vars(
     }
 
     /**
-     * This first private [addToVars] deals with complex qualifier expressions.
+     * This first private [with] deals with complex qualifier expressions.
      *
      * The core of this does look a bit scary, so I'll try to walk you through it:
      * Essentially, a qualifier may not just be a simple VariableExpression with a HeapKey.
@@ -138,7 +143,7 @@ class Vars(
     }
 
     /**
-     * This second private [addToVars] handles any potential aliasing.
+     * This second private [with] handles any potential aliasing.
      * Using this alone should be perfectly correct.
      */
     fun with(key: UnknownKey, rExpr: Expr<*>): Vars {
