@@ -6,13 +6,11 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTy
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
-typealias VarsMap = Map<UnknownKey, Expr<*>>
-
 class Vars(
     private val idx: ContextId,
-    map: VarsMap
+    map: Map<UnknownKey, Expr<*>>
 ) {
-    private val map: VarsMap = map.mapValues { expr ->
+    private val map = map.mapValues { expr ->
         expr.value.replaceTypeInTree<VariableExpr<*>> {
             VariableExpr.new(it.key.withAddedContextId(idx))
         }
@@ -24,10 +22,14 @@ class Vars(
 
     companion object {
         fun new(idx: ContextId): Vars = Vars(idx, mapOf())
-        fun combine(lhs: Vars, rhs: Vars, operation: (Expr<*>, Expr<*>) -> Expr<*>): Vars =
+
+        /**
+         * Merges the two variable maps, combining variables with identical [UnknownKey]s using [how].
+         */
+        fun combine(lhs: Vars, rhs: Vars, how: (Expr<*>, Expr<*>) -> Expr<*>): Vars =
             Vars(
                 rhs.idx + lhs.idx,
-                (lhs.keys + rhs.keys).associateWith { key -> operation(lhs.get(key), rhs.get(key)) }
+                (lhs.keys + rhs.keys).associateWith { key -> how(lhs.get(key), rhs.get(key)) }
             )
     }
 
@@ -47,6 +49,9 @@ class Vars(
                 "}"
     }
 
+    /**
+     * Grab the variable expression assigned to the given key.
+     */
     fun get(key: UnknownKey): Expr<*> {
         // If we have it, return it.
         map[key]?.let { return it }
