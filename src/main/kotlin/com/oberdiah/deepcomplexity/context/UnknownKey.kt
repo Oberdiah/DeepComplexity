@@ -114,7 +114,7 @@ sealed interface Qualifier {
     /**
      * Turns this [Qualifier] into an expression by trying to resolve it against the given context.
      */
-    fun safelyResolveUsing(context: MetaContext): Expr<*>
+    fun safelyResolveUsing(context: Context): Expr<*>
 
     /**
      * Turns this [Qualifier] directly into a leaf expression, so either it'll be a

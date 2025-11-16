@@ -29,7 +29,7 @@ object MethodProcessing {
      */
     var CURRENT_LINE: PsiElement? = null
 
-    fun getMethodContext(method: PsiMethod): MetaContext {
+    fun getMethodContext(method: PsiMethod): Context {
         val wrapper = newContext(method.getThisType())
 
         method.body?.let { body ->
@@ -39,20 +39,20 @@ object MethodProcessing {
         return wrapper.c.forcedDynamic()
     }
 
-    fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(MetaContext.brandNew(thisType))
+    fun newContext(thisType: PsiType?): ContextWrapper = ContextWrapper(Context.brandNew(thisType))
 
     /**
      * This feels a bit silly, but in some ways it's nice to keep all of our mutability
      * contained to this single location.
      */
-    data class ContextWrapper(var c: MetaContext) {
+    data class ContextWrapper(var c: Context) {
         override fun toString(): String = c.toString()
 
         fun addVar(lExpr: LValueExpr<*>, rExpr: Expr<*>) {
             c = c.withVar(lExpr, rExpr)
         }
 
-        fun stack(other: MetaContext) {
+        fun stack(other: Context) {
             c = c.stack(other)
         }
     }
@@ -122,7 +122,7 @@ object MethodProcessing {
                 val falseBranchContext = ifContext.copy()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
-                val combined = MetaContext.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
+                val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpr.new(a, b, condition)
                 }
 
@@ -169,7 +169,7 @@ object MethodProcessing {
                         // side effects.
                         ).resolveUnknowns(context.c)
 
-                val combined = MetaContext.combine(trueExprContext.c, falseExprContext.c) { a, b ->
+                val combined = Context.combine(trueExprContext.c, falseExprContext.c) { a, b ->
                     IfExpr.new(a, b, condition)
                 }
 
@@ -423,7 +423,7 @@ object MethodProcessing {
     private fun processMethod(
         callExpr: PsiCallExpression,
         getQualifierExpr: (methodCtx: ContextWrapper) -> Expr<HeapMarker>?
-    ): MetaContext {
+    ): Context {
         val method = callExpr.resolveMethod() ?: throw ExpressionIncompleteException(
             "Failed to resolve method for call: ${callExpr.text}"
         )
@@ -536,13 +536,13 @@ object MethodProcessing {
              */
             context.c = when (booleanOp) {
                 BooleanOp.AND -> {
-                    MetaContext.combine(rhsContext.c, context.copy().c) { a, b ->
+                    Context.combine(rhsContext.c, context.copy().c) { a, b ->
                         IfExpr.new(a, b, lhs)
                     }
                 }
 
                 BooleanOp.OR -> {
-                    MetaContext.combine(context.copy().c, rhsContext.c) { a, b ->
+                    Context.combine(context.copy().c, rhsContext.c) { a, b ->
                         IfExpr.new(a, b, lhs)
                     }
                 }

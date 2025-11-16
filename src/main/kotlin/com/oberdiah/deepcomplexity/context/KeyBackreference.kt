@@ -6,7 +6,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 /**
  * [KeyBackreference]s must be very carefully resolved; they cannot be resolved in any context
- * they were created in. Only [MetaContext]s have the ability to create and resolve them.
+ * they were created in. Only [Context]s have the ability to create and resolve them.
  */
 data class KeyBackreference(private val key: UnknownKey, private val contextId: ContextId) : Qualifier {
     override fun toString(): String = "$key'"
@@ -24,7 +24,7 @@ data class KeyBackreference(private val key: UnknownKey, private val contextId: 
      */
     fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
 
-    override fun safelyResolveUsing(context: MetaContext): Expr<*> {
+    override fun safelyResolveUsing(context: Context): Expr<*> {
         assert(!contextId.collidesWith(context.idx)) {
             "Cannot resolve a KeyBackreference in the context it was created in."
         }

@@ -22,7 +22,6 @@ updates on that.
 If you've changed a method signature in the main project, the tests may no longer run. Their .class files don't seem
 to update correctly.
 To resolve this, run `./gradlew clean build --rerun-tasks`.
-Some of those steps may be redundant, feel free to experiment.
 
 ```shell
 

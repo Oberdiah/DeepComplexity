@@ -1,14 +1,14 @@
 package com.oberdiah.deepcomplexity.solver
 
 import com.intellij.psi.PsiElement
-import com.oberdiah.deepcomplexity.context.MetaContext
+import com.oberdiah.deepcomplexity.context.Context
 import com.oberdiah.deepcomplexity.evaluation.*
 
 object LoopSolver {
     /**
      * Given the context for the loop body, and the condition, figure out our new context.
      */
-    fun processLoopContext(context: MetaContext, condition: Expr<Boolean>) {
+    fun processLoopContext(context: Context, condition: Expr<Boolean>) {
 
         condition.getVariables()
 //        for ((key, expr) in context.variables) {

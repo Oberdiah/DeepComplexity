@@ -28,8 +28,8 @@ import kotlin.test.assertEquals
  *    `a.x` is also actually `a'.x`.
  *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
-class MetaContext private constructor(
-    val i: InnerCtx,
+class Context private constructor(
+    val inner: InnerCtx,
     /**
      * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
      * it in the key of the `this` object? What would we do when we don't know that expression yet, though?)
@@ -45,17 +45,17 @@ class MetaContext private constructor(
     val idx: ContextId
 ) {
     companion object {
-        fun brandNew(thisType: PsiType?): MetaContext {
+        fun brandNew(thisType: PsiType?): Context {
             val contextIdx = ContextId.new()
-            return MetaContext(InnerCtx.new(contextIdx), thisType, contextIdx)
+            return Context(InnerCtx.new(contextIdx), thisType, contextIdx)
         }
 
-        fun combine(lhs: MetaContext, rhs: MetaContext, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): MetaContext {
+        fun combine(lhs: Context, rhs: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
             assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
-            return MetaContext(
+            return Context(
                 InnerCtx.combine(
                     lhs.idx + rhs.idx,
-                    lhs.i, rhs.i,
+                    lhs.inner, rhs.inner,
                     { lhs, rhs -> how(lhs, rhs).castToContext() },
                     { vars1, vars2 ->
                         Vars.combine(vars1, vars2) { lhsVars, rhsVars ->
@@ -79,24 +79,24 @@ class MetaContext private constructor(
         }
     }
 
-    val returnValue: Expr<*>? = i.dynamicVars.returnValue
+    val returnValue: Expr<*>? = inner.dynamicVars.returnValue
 
-    override fun toString(): String = i.toString()
-    fun forcedDynamic(): MetaContext = MetaContext(i.forcedDynamic(), thisType, idx)
-    fun haveHitReturn(): MetaContext = MetaContext(i.forcedStatic(), thisType, idx)
+    override fun toString(): String = inner.toString()
+    fun forcedDynamic(): Context = Context(inner.forcedDynamic(), thisType, idx)
+    fun haveHitReturn(): Context = Context(inner.forcedStatic(), thisType, idx)
 
-    fun getVar(key: UnknownKey): Expr<*> = i.dynamicVars.get(key)
+    fun getVar(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
-    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): MetaContext {
+    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
         val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
         assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
             "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
         }
-        return MetaContext(i.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
+        return Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
     }
 
-    private fun mapVars(operation: (Vars) -> Vars): MetaContext =
-        MetaContext(i.mapAllVars(operation), thisType, idx)
+    private fun mapVars(operation: (Vars) -> Vars): Context =
+        Context(inner.mapAllVars(operation), thisType, idx)
 
     fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }
 
@@ -109,11 +109,11 @@ class MetaContext private constructor(
         }.optimise()
     }
 
-    fun stack(other: MetaContext): MetaContext {
+    fun stack(other: Context): Context {
         val other = other
             .stripKeys(UnknownKey.Lifetime.BLOCK)
             .mapVars { other ->
-                var newVars = i.dynamicVars
+                var newVars = inner.dynamicVars
                 other.forEach { key, expr ->
                     // First, resolve any unknown variables in the expression...
                     val expr = resolveKnownVariables(expr)
@@ -133,10 +133,10 @@ class MetaContext private constructor(
                 newVars
             }
 
-        val afterStack = MetaContext(
+        val afterStack = Context(
             InnerCtx.combine(
                 idx + other.idx,
-                i, other.i,
+                inner, other.inner,
                 { thisExpr, otherExpr ->
                     thisExpr.replaceTypeInTree<VarsExpr> {
                         if (it.vars != null) it else resolveKnownVariables(otherExpr)
