@@ -10,7 +10,34 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
  * Handles the combined static and dynamic variables in a context.
  *
  * Shouldn't care about any of what the expressions are or how they combine, should just be a thin
- * layer managing static expressions, dynamic expressions, and converting between them.
+ * layer managing the static and dynamic expressions.
+ *
+ * The [staticExpr] is an expression with information about return values we've encountered, and the [dynamicVars] are
+ * in effect the 'current' state of the variables that we modify as we continue to process the program.
+ *
+ * For example, the code
+ * ```
+ * y = 0;
+ * if (x > 5) {
+ *  return;
+ * }
+ * y += 1;
+ * ```
+ * would result in an [InnerCtx] that looks like:
+ * ```
+ * staticExpr:
+ *  if (x > 5) {
+ *      {
+ *          y: 0
+ *      }
+ *  } else {
+ *      ##DynamicVars##
+ *  }
+ * dynamicVars:
+ *  {
+ *      y: 1
+ *  }
+ * ```
  */
 class InnerCtx private constructor(
     private val staticExpr: Expr<VarsMarker>,

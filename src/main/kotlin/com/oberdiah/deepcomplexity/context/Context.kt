@@ -10,19 +10,17 @@ import kotlin.test.assertEquals
  * A potentially subtle but important point is that an unknown variable in a context never
  * refers to another variable within that same context.
  *
- * For example, in a context `{ x: y + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
+ * For example, in a context `{ x: y' + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
  *
  * We encode this with the [KeyBackreference] class, representing an unknown that this context will never manage
  * to resolve.
- *
- * Vars are the currently understood values for things that can be modified.
  *
  * How objects are stored:
  *  - Every object's field will be stored as its own variable.
  *  - An object itself (the heap reference) may also be an unknown. e.g. { x: a }
  *  - Critically: HeapMarkers are not unknowns. They are constants that point to a specific object, so they do
  *    not have a previous or future state. E.g. in { #1.x: 2, x: #1 }, it is completely OK to resolve `x.x` to `2`.
- *    Confusingly it is also OK to resolve `b.x` using { b: a', a'.x: 2 } to `2` - although `b` is `a'` and not `a`,
+ *    This means it is also OK to resolve `b.x` using { b: a', a'.x: 2 } to `2` - although `b` is `a'` and not `a`,
  *    `a.x` is also actually `a'.x`.
  *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
@@ -48,6 +46,10 @@ class Context private constructor(
             return Context(InnerCtx.new(contextIdx), thisType, contextIdx)
         }
 
+        /**
+         * Merges the two contexts, combining variables with identical [UnknownKey]s using [how]. This is
+         * primarily used to combine two branches of an if-statement.
+         */
         fun combine(lhs: Context, rhs: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
             assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
             return Context(
