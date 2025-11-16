@@ -4,7 +4,6 @@ import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import kotlin.test.assertEquals
 
 /**
@@ -75,13 +74,8 @@ class Context private constructor(
 
     fun getVar(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
-    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context {
-        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
-        assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
-            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
-        }
-        return Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
-    }
+    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context =
+        Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
 
     private fun mapVars(operation: (Vars) -> Vars): Context =
         Context(inner.mapAllVars(operation), thisType, idx)

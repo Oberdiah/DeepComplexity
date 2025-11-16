@@ -2,6 +2,7 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
@@ -104,6 +105,11 @@ class Vars(
      *  which is exactly as desired.
      */
     fun with(lExpr: LValueExpr<*>, rExpr: Expr<*>): Vars {
+        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
+        assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
+            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
+        }
+
         if (lExpr is LValueKeyExpr) {
             return with(lExpr.key, rExpr)
         } else if (lExpr !is LValueFieldExpr) {
