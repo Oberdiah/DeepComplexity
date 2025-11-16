@@ -12,7 +12,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeIn
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import kotlin.test.assertEquals
 
-class MetaContext(
+class MetaContext private constructor(
     val i: InnerCtx,
     /**
      * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
@@ -37,19 +37,22 @@ class MetaContext(
         fun combine(lhs: MetaContext, rhs: MetaContext, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): MetaContext {
             assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
             return MetaContext(
-                InnerCtx(
-                    how(lhs.i.staticExpr, rhs.i.staticExpr).castToContext(),
-                    (lhs.i.dynamicVars.keys + rhs.i.dynamicVars.keys)
-                        .associateWith { key ->
-                            val doNothingExpr = VariableExpr.new(KeyBackreference(key, lhs.idx + rhs.idx))
+                InnerCtx.combine(
+                    lhs.i, rhs.i,
+                    { lhs, rhs -> how(lhs, rhs).castToContext() },
+                    { lhsVars, rhsVars ->
+                        (lhsVars.keys + rhsVars.keys)
+                            .associateWith { key ->
+                                val doNothingExpr = VariableExpr.new(KeyBackreference(key, lhs.idx + rhs.idx))
 
-                            val rhsExpr = rhs.i.dynamicVars[key] ?: doNothingExpr
-                            val lhsExpr = lhs.i.dynamicVars[key] ?: doNothingExpr
+                                val lhsExpr = lhsVars[key] ?: doNothingExpr
+                                val rhsExpr = rhsVars[key] ?: doNothingExpr
 
-                            val finalDynExpr = how(lhsExpr, rhsExpr)
+                                val finalDynExpr = how(lhsExpr, rhsExpr)
 
-                            finalDynExpr.castOrThrow(doNothingExpr.ind)
-                        }
+                                finalDynExpr.castOrThrow(doNothingExpr.ind)
+                            }
+                    }
                 ),
                 lhs.thisType,
                 lhs.idx + rhs.idx
@@ -57,9 +60,11 @@ class MetaContext(
         }
     }
 
-    override fun toString(): String = i.toString()
-
     val returnValue: Expr<*>? = i.dynamicVars.filterKeys { it is ReturnKey }.values.firstOrNull()
+
+    override fun toString(): String = i.toString()
+    fun forcedDynamic(): MetaContext = MetaContext(i.forcedDynamic(::getVarFromVars), thisType, idx)
+    fun haveHitReturn(): MetaContext = MetaContext(i.forcedStatic(), thisType, idx)
 
     private fun mapVars(operation: (Vars) -> Vars): MetaContext =
         MetaContext(i.mapAllVars(operation), thisType, idx)
@@ -97,15 +102,14 @@ class MetaContext(
             }
 
         val afterStack = MetaContext(
-            InnerCtx(
-                i.staticExpr.replaceTypeInTree<VarsExpr> {
-                    if (it.vars != null) {
-                        it
-                    } else {
-                        resolveKnownVariables(other.i.staticExpr)
+            InnerCtx.combine(
+                i, other.i,
+                { thisExpr, otherExpr ->
+                    thisExpr.replaceTypeInTree<VarsExpr> {
+                        if (it.vars != null) it else resolveKnownVariables(otherExpr)
                     }
                 },
-                other.i.dynamicVars
+                { _, otherVars -> otherVars }
             ),
             thisType,
             idx + other.idx
@@ -113,9 +117,6 @@ class MetaContext(
 
         return afterStack
     }
-
-    fun forcedDynamic(): MetaContext = MetaContext(i.forcedDynamic(::getVarFromVars), thisType, idx)
-    fun haveHitReturn(): MetaContext = MetaContext(i.forcedStatic(), thisType, idx)
 
     // ######################
     // ###  Get Var & Co  ###
