@@ -54,7 +54,6 @@ class Context private constructor(
             assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
             return Context(
                 InnerCtx.combine(
-                    lhs.idx + rhs.idx,
                     lhs.inner, rhs.inner,
                     { lhs, rhs -> how(lhs, rhs).castToContext() },
                     { vars1, vars2 ->
@@ -82,8 +81,8 @@ class Context private constructor(
     val returnValue: Expr<*>? = inner.dynamicVars.returnValue
 
     override fun toString(): String = inner.toString()
-    fun forcedDynamic(): Context = Context(inner.forcedDynamic(), thisType, idx)
-    fun haveHitReturn(): Context = Context(inner.forcedStatic(), thisType, idx)
+    fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
+    fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
 
     fun getVar(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
@@ -135,7 +134,6 @@ class Context private constructor(
 
         val afterStack = Context(
             InnerCtx.combine(
-                idx + other.idx,
                 inner, other.inner,
                 { thisExpr, otherExpr ->
                     thisExpr.replaceTypeInTree<VarsExpr> {
