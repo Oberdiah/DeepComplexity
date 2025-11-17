@@ -1,11 +1,10 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
-import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
-import com.oberdiah.deepcomplexity.evaluation.LValueExpr
-import com.oberdiah.deepcomplexity.evaluation.VariableExpr
-import com.oberdiah.deepcomplexity.evaluation.VarsExpr
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import kotlin.test.assertEquals
 
 /**
@@ -81,6 +80,13 @@ class Context private constructor(
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
 
+    fun <T : Any> getLValue(expr: LValueExpr<T>): Expr<T> {
+        return when (expr) {
+            is LValueFieldExpr<*> -> expr.qualifier.getField(inner.dynamicVars, expr.field)
+            is LValueKeyExpr<*> -> getVar(expr.key)
+        }.castOrThrow(expr.ind)
+    }
+
     private fun mapVars(operation: (Vars) -> Vars): Context =
         Context(inner.mapAllVars(operation), thisType, idx)
 
@@ -91,7 +97,7 @@ class Context private constructor(
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
         return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
-            varExpr.key.safelyResolveUsing(this)
+            varExpr.key.safelyResolveUsing(inner.dynamicVars)
         }.replaceTypeInTree<VarsExpr> { varsExpr ->
             varsExpr.map { it.resolveUsing(this) }
         }.optimise()
@@ -102,7 +108,7 @@ class Context private constructor(
             .stripKeys(UnknownKey.Lifetime.BLOCK)
             .inner
             .resolveUsing(this)
-            .mapAllVars { other -> this.inner.dynamicVars.stack(this, other) }
+            .mapAllVars { other -> inner.dynamicVars.stack(other) }
 
         val afterStack = Context(
             InnerCtx.combine(

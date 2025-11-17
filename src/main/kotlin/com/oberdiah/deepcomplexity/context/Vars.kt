@@ -8,7 +8,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeIn
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
 class Vars(
-    private val idx: ContextId,
+    val idx: ContextId,
     map: Map<UnknownKey, Expr<*>>
 ) {
     private val map = map.mapValues { expr ->
@@ -22,13 +22,13 @@ class Vars(
     fun resolveUsing(context: Context): Vars =
         Vars(idx, map.mapValues { (_, expr) -> context.resolveKnownVariables(expr) })
 
-    fun stack(context: Context, other: Vars): Vars {
+    fun stack(other: Vars): Vars {
         var newVars = this
-        
+
         for ((key, expr) in other.map) {
             // First, get their new LValues...
             val lValue = if (key is QualifiedFieldKey) {
-                LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(context).castToObject())
+                LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
             } else {
                 LValueKeyExpr.new(key)
             }

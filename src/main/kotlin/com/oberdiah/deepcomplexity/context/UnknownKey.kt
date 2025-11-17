@@ -103,7 +103,7 @@ data class PlaceholderKey(
 }
 
 /**
- * Things that can be qualifiers in a [QualifiedFieldKey]. This is really just [HeapMarker]s and [Context.KeyBackreference]s.
+ * Things that can be qualifiers in a [QualifiedFieldKey]. This is really just [HeapMarker]s and [KeyBackreference]s.
  */
 sealed interface Qualifier {
     val ind: Indicator<*>
@@ -114,7 +114,7 @@ sealed interface Qualifier {
     /**
      * Turns this [Qualifier] into an expression by trying to resolve it against the given context.
      */
-    fun safelyResolveUsing(context: Context): Expr<*>
+    fun safelyResolveUsing(vars: Vars): Expr<*>
 
     /**
      * Turns this [Qualifier] directly into a leaf expression, so either it'll be a

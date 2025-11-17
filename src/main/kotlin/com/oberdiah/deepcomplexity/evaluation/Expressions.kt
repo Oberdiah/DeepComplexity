@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
@@ -272,7 +271,7 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
      * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
      * into whatever underlying expr it represents.
      */
-    abstract fun resolve(context: Context): Expr<T>
+    fun resolve(context: Context): Expr<T> = context.getLValue(this)
 }
 
 /**
@@ -284,10 +283,6 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
 data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: Indicator<T>) : LValueExpr<T>() {
     companion object {
         fun new(key: UnknownKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
-    }
-
-    override fun resolve(context: Context): Expr<T> {
-        return context.getVar(key).castOrThrow(ind)
     }
 }
 
@@ -304,10 +299,6 @@ data class LValueFieldExpr<T : Any>(
     companion object {
         fun new(field: QualifiedFieldKey.Field, qualifier: Expr<HeapMarker>): LValueFieldExpr<*> =
             LValueFieldExpr(field, qualifier, field.ind)
-    }
-
-    override fun resolve(context: Context): Expr<T> {
-        return qualifier.getField(context, field).castOrThrow(ind)
     }
 }
 

@@ -33,5 +33,5 @@ data class HeapMarker private constructor(
         return "#$idx"
     }
 
-    override fun safelyResolveUsing(context: Context): Expr<HeapMarker> = ConstExpr.fromHeapMarker(this)
+    override fun safelyResolveUsing(vars: Vars): Expr<HeapMarker> = ConstExpr.fromHeapMarker(this)
 }

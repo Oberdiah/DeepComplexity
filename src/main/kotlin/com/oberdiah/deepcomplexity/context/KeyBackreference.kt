@@ -24,16 +24,16 @@ data class KeyBackreference(private val key: UnknownKey, private val contextId: 
      */
     fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
 
-    override fun safelyResolveUsing(context: Context): Expr<*> {
-        assert(!contextId.collidesWith(context.idx)) {
+    override fun safelyResolveUsing(vars: Vars): Expr<*> {
+        assert(!contextId.collidesWith(vars.idx)) {
             "Cannot resolve a KeyBackreference in the context it was created in."
         }
 
         return if (key is QualifiedFieldKey && key.qualifier is KeyBackreference) {
-            val q = key.qualifier.safelyResolveUsing(context)
-            q.getField(context, key.field)
+            val q = key.qualifier.safelyResolveUsing(vars)
+            q.getField(vars, key.field)
         } else {
-            context.getVar(key)
+            vars.get(key)
         }
     }
 
