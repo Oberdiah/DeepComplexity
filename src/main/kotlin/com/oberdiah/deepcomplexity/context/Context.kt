@@ -3,7 +3,7 @@ package com.oberdiah.deepcomplexity.context
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
-import com.oberdiah.deepcomplexity.evaluation.LValueExpr
+import com.oberdiah.deepcomplexity.evaluation.LValue
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import kotlin.test.assertEquals
@@ -76,10 +76,10 @@ class Context private constructor(
     fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
 
-    fun <T : Any> get(lValue: LValueExpr<T>): Expr<T> = inner.dynamicVars.get(lValue)
+    fun <T : Any> get(lValue: LValue<T>): Expr<T> = inner.dynamicVars.get(lValue)
     fun get(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
-    fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context =
+    fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
 
 

@@ -4,7 +4,6 @@ import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.solver.ConstraintSolver
@@ -264,8 +263,8 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
     override fun simplify(): Expr<Boolean> = new(lhs, rhs, op)
 }
 
-sealed class LValueExpr<T : Any> : Expr<T>() {
-    fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>
+sealed class LValue<T : Any> {
+    abstract val ind: Indicator<T>
 }
 
 /**
@@ -274,9 +273,9 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
  * a [QualifiedFieldKey] or not.
  */
-data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: Indicator<T>) : LValueExpr<T>() {
+data class LValueKey<T : Any>(val key: UnknownKey, override val ind: Indicator<T>) : LValue<T>() {
     companion object {
-        fun new(key: UnknownKey): LValueKeyExpr<*> = LValueKeyExpr(key, key.ind)
+        fun new(key: UnknownKey): LValueKey<*> = LValueKey(key, key.ind)
     }
 }
 
@@ -285,14 +284,14 @@ data class LValueKeyExpr<T : Any>(val key: UnknownKey, override val ind: Indicat
  *
  * For example, the LValue `((x > 2) ? a : b).y`
  */
-data class LValueFieldExpr<T : Any>(
+data class LValueField<T : Any>(
     val field: QualifiedFieldKey.Field,
     val qualifier: Expr<HeapMarker>,
     override val ind: Indicator<T>
-) : LValueExpr<T>() {
+) : LValue<T>() {
     companion object {
-        fun new(field: QualifiedFieldKey.Field, qualifier: Expr<HeapMarker>): LValueFieldExpr<*> =
-            LValueFieldExpr(field, qualifier, field.ind)
+        fun new(field: QualifiedFieldKey.Field, qualifier: Expr<HeapMarker>): LValueField<*> =
+            LValueField(field, qualifier, field.ind)
     }
 }
 

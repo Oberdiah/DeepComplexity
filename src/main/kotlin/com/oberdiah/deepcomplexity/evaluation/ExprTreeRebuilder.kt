@@ -171,19 +171,8 @@ object ExprTreeRebuilder {
                 expr.explicit,
             )
 
-            is LValueFieldExpr<*> -> {
-                val newFieldExpr = LValueFieldExpr.new(
-                    expr.field,
-                    rebuildTree(expr.qualifier, replacer),
-                )
-                // Safety: RebuildTree doesn't change types.
-                @Suppress("UNCHECKED_CAST")
-                newFieldExpr as Expr<T>
-            }
-
             is VarsExpr -> expr
             is LeafExpr -> expr
-            is LValueExpr -> expr
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

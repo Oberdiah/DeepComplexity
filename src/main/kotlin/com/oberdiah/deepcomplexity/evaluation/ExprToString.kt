@@ -28,8 +28,6 @@ object ExprToString {
             }
 
             is VariableExpr -> expr.key.toString()
-            is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
-            is LValueKeyExpr -> "${expr.key}"
             is VarsExpr -> if (expr.vars != null) expr.vars.toString() else VarsExpr.STRING_PLACEHOLDER
         }
     }
@@ -47,8 +45,6 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is NumIterationTimesExpr -> "'for'"
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
-            is LValueFieldExpr<*> -> "LFieldExpr"
-            is LValueKeyExpr<*> -> "LKeyExpr"
             is VarsExpr -> "CtxExpr"
         }
     }
@@ -94,8 +90,6 @@ object ExprToString {
                 }
             }
 
-            is LValueFieldExpr -> "${expr.qualifier}.${expr.field}"
-            is LValueKeyExpr -> "${expr.key}"
             is VarsExpr -> "CtxExpr"
         }
     }

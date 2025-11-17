@@ -22,11 +22,11 @@ class Vars(
     fun resolveUsing(context: Context): Vars =
         Vars(idx, map.mapValues { (_, expr) -> context.resolveKnownVariables(expr) })
 
-    fun resolveKey(key: UnknownKey): LValueExpr<*> {
+    fun resolveKey(key: UnknownKey): LValue<*> {
         return if (key is QualifiedFieldKey) {
-            LValueFieldExpr.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
+            LValueField.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
         } else {
-            LValueKeyExpr.new(key)
+            LValueKey.new(key)
         }
     }
 
@@ -70,13 +70,13 @@ class Vars(
                 "}"
     }
 
-    fun <T : Any> get(expr: LValueExpr<T>): Expr<T> {
+    fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueFieldExpr<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<*>>(expr.field.ind) {
+            is LValueField<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<*>>(expr.field.ind) {
                 get(QualifiedFieldKey(it.underlying as Qualifier, expr.field))
             }
 
-            is LValueKeyExpr<*> -> get(expr.key)
+            is LValueKey<*> -> get(expr.key)
         }.castOrThrow(expr.ind)
     }
 
@@ -140,15 +140,12 @@ class Vars(
      *      `b.x = { (x > 0) ? 2 : 5 }`
      *  which is exactly as desired.
      */
-    fun with(lExpr: LValueExpr<*>, rExpr: Expr<*>): Vars {
+    fun with(lExpr: LValue<*>, rExpr: Expr<*>): Vars {
         val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
-        assert(rExpr.iterateTree<LValueExpr<*>>().none()) {
-            "Cannot assign an LValueExpr to a variable: $lExpr = $rExpr. Try using `.resolve(context)` on it first."
-        }
 
-        if (lExpr is LValueKeyExpr) {
+        if (lExpr is LValueKey) {
             return with(lExpr.key, rExpr)
-        } else if (lExpr !is LValueFieldExpr) {
+        } else if (lExpr !is LValueField) {
             throw IllegalArgumentException("This cannot happen")
         }
 

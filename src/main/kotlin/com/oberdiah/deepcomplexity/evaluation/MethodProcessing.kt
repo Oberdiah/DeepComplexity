@@ -48,7 +48,7 @@ object MethodProcessing {
     data class ContextWrapper(var c: Context) {
         override fun toString(): String = c.toString()
 
-        fun addVar(lExpr: LValueExpr<*>, rExpr: Expr<*>) {
+        fun addVar(lExpr: LValue<*>, rExpr: Expr<*>) {
             c = c.withVar(lExpr, rExpr)
         }
 
@@ -88,7 +88,7 @@ object MethodProcessing {
                         val rExpression = element.initializer
                         if (rExpression != null) {
                             context.addVar(
-                                LValueKeyExpr.new(element.toKey()),
+                                LValueKey.new(element.toKey()),
                                 processPsiExpression(rExpression, context)
                             )
                         } else {
@@ -209,7 +209,7 @@ object MethodProcessing {
                         .castToUsingTypeCast(returnKey.ind, false)
                 } ?: ConstExpr.VOID
 
-                context.addVar(LValueKeyExpr.new(returnKey), returnExpr)
+                context.addVar(LValueKey.new(returnKey), returnExpr)
 
                 context.c = context.c.haveHitReturn()
             }
@@ -258,11 +258,11 @@ object MethodProcessing {
                     }
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
-                        val lValue = processReference(operand, context).castToNumbers()
+                        val lValue = processReference(operand, context)
 
                         context.addVar(
                             lValue,
-                            unaryOp.applyToExpr(context.c.get(lValue))
+                            unaryOp.applyToExpr(context.c.get(lValue).castToNumbers())
                         )
 
                         // Build the expression after the assignment for a prefix increment/decrement
@@ -281,10 +281,10 @@ object MethodProcessing {
                 val builtExpr = processPsiExpression(psi.operand, context)
 
                 // Assign the value to the variable
-                val lValue = processReference(psi.operand, context).castToNumbers()
+                val lValue = processReference(psi.operand, context)
                 context.addVar(
                     lValue,
-                    unaryOp.applyToExpr(context.c.get(lValue))
+                    unaryOp.applyToExpr(context.c.get(lValue).castToNumbers())
                 )
 
                 return builtExpr.castToNumbers()
@@ -389,7 +389,7 @@ object MethodProcessing {
         return null
     }
 
-    private fun processReference(psi: PsiExpression, context: ContextWrapper): LValueExpr<*> {
+    private fun processReference(psi: PsiExpression, context: ContextWrapper): LValue<*> {
         assertIs<PsiReferenceExpression>(psi, "Expected PsiReferenceExpression, but got ${psi::class}")
 
         return when (val resolved = psi.resolveIfNeeded()) {
@@ -405,12 +405,12 @@ object MethodProcessing {
                     context.c.get(ThisKey(thisType))
                 }.castToObject()
 
-                LValueFieldExpr.new(QualifiedFieldKey.Field(resolved), qualifierExpr)
+                LValueField.new(QualifiedFieldKey.Field(resolved), qualifierExpr)
             }
 
-            is PsiLocalVariable -> LValueKeyExpr.new(resolved.toKey())
-            is PsiReturnStatement -> LValueKeyExpr.new(resolved.toKey())
-            is PsiParameter -> LValueKeyExpr.new(resolved.toKey())
+            is PsiLocalVariable -> LValueKey.new(resolved.toKey())
+            is PsiReturnStatement -> LValueKey.new(resolved.toKey())
+            is PsiParameter -> LValueKey.new(resolved.toKey())
 
             else -> {
                 throw IllegalArgumentException(
@@ -443,13 +443,13 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             methodCallSiteContext.addVar(
-                LValueKeyExpr.new(ParameterKey(param, UnknownKey.Lifetime.METHOD)),
+                LValueKey.new(ParameterKey(param, UnknownKey.Lifetime.METHOD)),
                 processPsiExpression(arg, methodCallSiteContext)
             )
         }
 
         getQualifierExpr(methodCallSiteContext)?.let {
-            methodCallSiteContext.addVar(LValueKeyExpr.new(ThisKey(it.ind.into().type)), it)
+            methodCallSiteContext.addVar(LValueKey.new(ThisKey(it.ind.into().type)), it)
         }
 
         // We keep [methodContext] separate from [methodCallSiteContext] because we want to be able to
