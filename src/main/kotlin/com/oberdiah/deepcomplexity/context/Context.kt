@@ -1,10 +1,11 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
-import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
+import com.oberdiah.deepcomplexity.evaluation.LValueExpr
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
+import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import kotlin.test.assertEquals
 
 /**
@@ -26,7 +27,7 @@ import kotlin.test.assertEquals
  *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
 class Context private constructor(
-    val inner: InnerCtx,
+    private val inner: InnerCtx,
     /**
      * Unfortunately necessary, and I don't think there's any way around it (though I guess we could store
      * it in the key of the `this` object? What would we do when we don't know that expression yet, though?)
@@ -39,7 +40,7 @@ class Context private constructor(
      * to at least some degree to perform alias protection, and the only place to store that is in the context.
      */
     val thisType: PsiType?,
-    val idx: ContextId
+    private val idx: ContextId
 ) {
     companion object {
         fun brandNew(thisType: PsiType?): Context {
@@ -75,17 +76,12 @@ class Context private constructor(
     fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
 
+    fun <T : Any> getLValue(expr: LValueExpr<T>): Expr<T> = inner.dynamicVars.getLValue(expr)
     fun getVar(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
 
-    fun <T : Any> getLValue(expr: LValueExpr<T>): Expr<T> {
-        return when (expr) {
-            is LValueFieldExpr<*> -> expr.qualifier.getField(inner.dynamicVars, expr.field)
-            is LValueKeyExpr<*> -> getVar(expr.key)
-        }.castOrThrow(expr.ind)
-    }
 
     private fun mapVars(operation: (Vars) -> Vars): Context =
         Context(inner.mapAllVars(operation), thisType, idx)

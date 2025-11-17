@@ -1,9 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
-import com.oberdiah.deepcomplexity.context.Qualifier
-import com.oberdiah.deepcomplexity.context.Vars
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
@@ -81,12 +78,6 @@ object ExpressionExtensions {
             this.castOrThrow(indicator)
         } else {
             TypeCastExpr(this, indicator, explicit)
-        }
-    }
-
-    fun Expr<*>.getField(vars: Vars, field: QualifiedFieldKey.Field): Expr<*> {
-        return replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
-            vars.get(QualifiedFieldKey(it.underlying as Qualifier, field))
         }
     }
 

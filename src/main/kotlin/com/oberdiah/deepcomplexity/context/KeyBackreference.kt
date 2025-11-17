@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.getField
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 /**
@@ -30,8 +29,7 @@ data class KeyBackreference(private val key: UnknownKey, private val contextId: 
         }
 
         return if (key is QualifiedFieldKey && key.qualifier is KeyBackreference) {
-            val q = key.qualifier.safelyResolveUsing(vars)
-            q.getField(vars, key.field)
+            vars.getExprCombiningQualifierAndField(key.qualifier.safelyResolveUsing(vars), key.field)
         } else {
             vars.get(key)
         }
