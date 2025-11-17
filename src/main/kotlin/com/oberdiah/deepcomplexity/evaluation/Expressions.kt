@@ -266,12 +266,6 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
 
 sealed class LValueExpr<T : Any> : Expr<T>() {
     fun castToNumbers(): LValueExpr<out Number> = (this as Expr<*>).castToNumbers() as LValueExpr<out Number>
-
-    /**
-     * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
-     * into whatever underlying expr it represents.
-     */
-    fun resolve(context: Context): Expr<T> = context.get(this)
 }
 
 /**

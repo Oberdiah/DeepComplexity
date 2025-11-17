@@ -258,11 +258,11 @@ object MethodProcessing {
                     }
 
                     UnaryNumberOp.INCREMENT, UnaryNumberOp.DECREMENT -> {
-                        val operandExpr = processReference(operand, context).castToNumbers()
+                        val lValue = processReference(operand, context).castToNumbers()
 
                         context.addVar(
-                            operandExpr,
-                            unaryOp.applyToExpr(operandExpr.resolve(context.c))
+                            lValue,
+                            unaryOp.applyToExpr(context.c.get(lValue))
                         )
 
                         // Build the expression after the assignment for a prefix increment/decrement
@@ -281,10 +281,10 @@ object MethodProcessing {
                 val builtExpr = processPsiExpression(psi.operand, context)
 
                 // Assign the value to the variable
-                val operandLValue = processReference(psi.operand, context).castToNumbers()
+                val lValue = processReference(psi.operand, context).castToNumbers()
                 context.addVar(
-                    operandLValue,
-                    unaryOp.applyToExpr(operandLValue.resolve(context.c))
+                    lValue,
+                    unaryOp.applyToExpr(context.c.get(lValue))
                 )
 
                 return builtExpr.castToNumbers()
@@ -315,7 +315,7 @@ object MethodProcessing {
             }
 
             is PsiReferenceExpression -> {
-                return processReference(psi, context).resolve(context.c)
+                return context.c.get(processReference(psi, context))
             }
 
             is PsiAssignmentExpression -> {
@@ -334,7 +334,7 @@ object MethodProcessing {
 
                     JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
                         val rhs = processPsiExpression(rExpression, context).castToNumbers()
-                        val lhs = lhsLvalue.resolve(context.c).castToNumbers()
+                        val lhs = context.c.get(lhsLvalue).castToNumbers()
 
                         ConversionsAndPromotion.castNumbersAToB(
                             rhs,
