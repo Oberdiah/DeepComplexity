@@ -219,7 +219,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return context.c.getVar(ThisKey(psi.type!!))
+                return context.c.get(ThisKey(psi.type!!))
             }
 
             is PsiMethodCallExpression -> {
@@ -281,10 +281,10 @@ object MethodProcessing {
                 val builtExpr = processPsiExpression(psi.operand, context)
 
                 // Assign the value to the variable
-                val operandExpr = processReference(psi.operand, context).castToNumbers()
+                val operandLValue = processReference(psi.operand, context).castToNumbers()
                 context.addVar(
-                    operandExpr,
-                    unaryOp.applyToExpr(operandExpr.resolve(context.c))
+                    operandLValue,
+                    unaryOp.applyToExpr(operandLValue.resolve(context.c))
                 )
 
                 return builtExpr.castToNumbers()
@@ -402,7 +402,7 @@ object MethodProcessing {
                         thisType,
                         "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                     )
-                    context.c.getVar(ThisKey(thisType))
+                    context.c.get(ThisKey(thisType))
                 }.castToObject()
 
                 LValueFieldExpr.new(QualifiedFieldKey.Field(resolved), qualifierExpr)

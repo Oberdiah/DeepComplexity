@@ -70,17 +70,14 @@ class Vars(
                 "}"
     }
 
-    fun <T : Any> getLValue(expr: LValueExpr<T>): Expr<T> {
+    fun <T : Any> get(expr: LValueExpr<T>): Expr<T> {
         return when (expr) {
-            is LValueFieldExpr<*> -> getExprCombiningQualifierAndField(expr.qualifier, expr.field)
+            is LValueFieldExpr<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<*>>(expr.field.ind) {
+                get(QualifiedFieldKey(it.underlying as Qualifier, expr.field))
+            }
+
             is LValueKeyExpr<*> -> get(expr.key)
         }.castOrThrow(expr.ind)
-    }
-
-    fun getExprCombiningQualifierAndField(qualifier: Expr<*>, field: QualifiedFieldKey.Field): Expr<*> {
-        return qualifier.replaceTypeInLeaves<LeafExpr<*>>(field.ind) {
-            get(QualifiedFieldKey(it.underlying as Qualifier, field))
-        }
     }
 
     /**

@@ -271,7 +271,7 @@ sealed class LValueExpr<T : Any> : Expr<T>() {
      * Resolves the expression in the given context, converting it from an LValueExpr that can be assigned to,
      * into whatever underlying expr it represents.
      */
-    fun resolve(context: Context): Expr<T> = context.getLValue(this)
+    fun resolve(context: Context): Expr<T> = context.get(this)
 }
 
 /**

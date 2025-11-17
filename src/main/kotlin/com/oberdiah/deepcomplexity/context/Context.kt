@@ -76,8 +76,8 @@ class Context private constructor(
     fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
 
-    fun <T : Any> getLValue(expr: LValueExpr<T>): Expr<T> = inner.dynamicVars.getLValue(expr)
-    fun getVar(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
+    fun <T : Any> get(lValue: LValueExpr<T>): Expr<T> = inner.dynamicVars.get(lValue)
+    fun get(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
     fun withVar(lExpr: LValueExpr<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
