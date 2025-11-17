@@ -27,12 +27,7 @@ data class KeyBackreference(private val key: UnknownKey, private val contextId: 
         assert(!contextId.collidesWith(vars.idx)) {
             "Cannot resolve a KeyBackreference in the context it was created in."
         }
-
-        return if (key is QualifiedFieldKey && key.qualifier is KeyBackreference) {
-            vars.getExprCombiningQualifierAndField(key.qualifier.safelyResolveUsing(vars), key.field)
-        } else {
-            vars.get(key)
-        }
+        return vars.getLValue(vars.resolveKey(key))
     }
 
     fun isPlaceholder(): Boolean = key.isPlaceholder()
