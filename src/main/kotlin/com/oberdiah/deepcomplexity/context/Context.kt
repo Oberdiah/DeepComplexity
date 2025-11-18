@@ -3,7 +3,6 @@ package com.oberdiah.deepcomplexity.context
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
-import com.oberdiah.deepcomplexity.evaluation.LValue
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import kotlin.test.assertEquals

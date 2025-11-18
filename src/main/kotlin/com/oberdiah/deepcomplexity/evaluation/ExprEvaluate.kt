@@ -169,10 +169,9 @@ object ExprEvaluate {
 
             is VariableExpr ->
                 Bundle.constrained(
-                    expr.ind.newVariance(expr.key.grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()),
+                    expr.ind.newVariance(expr.key.key),
                     Constraints.completelyUnconstrained()
-                )
-                    .constrainWith(scope)
+                ).constrainWith(scope)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

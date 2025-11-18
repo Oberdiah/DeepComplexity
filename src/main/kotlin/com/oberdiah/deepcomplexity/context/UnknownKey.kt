@@ -37,7 +37,7 @@ sealed class UnknownKey : Key() {
 
     fun withAddedContextId(id: ContextId): UnknownKey {
         return when (this) {
-            is QualifiedFieldKey if qualifier is KeyBackreference ->
+            is QualifiedFieldKey if qualifier is LValueKey<*> ->
                 QualifiedFieldKey(qualifier.withAddedContextId(id), field)
 
             else -> this
@@ -47,7 +47,7 @@ sealed class UnknownKey : Key() {
     fun isPlaceholder(): Boolean {
         return when (this) {
             is PlaceholderKey -> true
-            is QualifiedFieldKey if qualifier is KeyBackreference -> qualifier.isPlaceholder()
+            is QualifiedFieldKey if qualifier is LValueKey<*> -> qualifier.key.isPlaceholder()
             else -> false
         }
     }
@@ -123,7 +123,7 @@ sealed interface Qualifier {
      */
     fun toLeafExpr(): LeafExpr<*> = when (this) {
         is HeapMarker -> ConstExpr.fromHeapMarker(this)
-        is KeyBackreference -> VariableExpr.new(this)
+        is LValueKey<*> -> VariableExpr.new(this)
     }
 }
 

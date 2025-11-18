@@ -24,9 +24,9 @@ class Vars(
 
     fun resolveKey(key: UnknownKey): LValue<*> {
         return if (key is QualifiedFieldKey) {
-            LValueField.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
+            LValueField.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject(), idx)
         } else {
-            LValueKey.new(key)
+            LValueKey.new(key, idx)
         }
     }
 
@@ -37,7 +37,6 @@ class Vars(
             newVars = newVars.with(resolveKey(key), expr)
         }
 
-        // Simple!
         return newVars
     }
 
@@ -77,6 +76,7 @@ class Vars(
             }
 
             is LValueKey<*> -> get(expr.key)
+            is LValueObject -> ConstExpr.fromHeapMarker(expr.marker)
         }.castOrThrow(expr.ind)
     }
 
@@ -90,12 +90,12 @@ class Vars(
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedFieldKey) {
             val placeholderQualifierKey =
-                KeyBackreference(PlaceholderKey(key.qualifier.ind as ObjectIndicator), idx)
+                LValueKey.new(PlaceholderKey(key.qualifier.ind as ObjectIndicator), idx)
 
-            val replacementQualified = VariableExpr.new(KeyBackreference(key, idx))
+            val replacementQualified = VariableExpr.new(LValueKey.new(key, idx))
             val replacementRaw = key.qualifier.toLeafExpr()
             val placeholderVersionOfTheKey = QualifiedFieldKey(placeholderQualifierKey, key.field)
-            val p = KeyBackreference(placeholderVersionOfTheKey, idx)
+            val p = LValueKey.new(placeholderVersionOfTheKey, idx)
 
             map[placeholderVersionOfTheKey]?.let {
                 val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
@@ -111,7 +111,7 @@ class Vars(
         }
 
         // OK, now we really do have no choice
-        return VariableExpr.new(KeyBackreference(key, idx))
+        return VariableExpr.new(LValueKey.new(key, idx))
     }
 
     /**
@@ -209,7 +209,7 @@ class Vars(
                         && fieldKey == it.field
                         && qualifier.ind == it.qualifier.ind
             }
-            .toSet() + QualifiedFieldKey(KeyBackreference(PlaceholderKey(qualifierInd), idx), fieldKey)
+            .toSet() + QualifiedFieldKey(LValueKey.new(PlaceholderKey(qualifierInd), idx), fieldKey)
 
         for (aliasingKey in potentialAliasers) {
             val condition = ComparisonExpr.new(
