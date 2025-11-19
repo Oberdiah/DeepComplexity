@@ -1,15 +1,9 @@
 package com.oberdiah.deepcomplexity.context
 
-import com.intellij.psi.PsiElement
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
-/**
- * If [temporary] is true this key will be removed from the context
- * after stacking. This is useful for tidying up keys that are only
- * added to aid resolution, such as parameters and `this`.
- */
 sealed class Key() {
     abstract val ind: Indicator<*>
 
@@ -50,25 +44,5 @@ sealed class Key() {
             is ConstantKey -> 0
             is PlaceholderKey -> 0
         }
-    }
-
-    /**
-     * If the key is a variable (i.e. a Local Variable, Field, etc.), returns the variable.
-     * If the key is a return statement, returns the method we're returning from.
-     */
-    fun getElement(): PsiElement {
-        return when (this) {
-            is VariableKey -> variable
-            is QualifiedFieldKey -> field.getElement()
-            is ThisKey -> throw IllegalArgumentException("Cannot get element of this key")
-            is PlaceholderKey -> throw IllegalArgumentException("Cannot get element of placeholder key")
-            is ReturnKey -> throw IllegalArgumentException("Cannot get element of return key")
-            is ConstantKey -> throw IllegalArgumentException("Cannot get element of arbitrary key")
-            is ExpressionKey -> throw IllegalArgumentException("Cannot get element of expression key")
-        }
-    }
-
-    fun matchesElement(element: PsiElement): Boolean {
-        return getElement() == element
     }
 }

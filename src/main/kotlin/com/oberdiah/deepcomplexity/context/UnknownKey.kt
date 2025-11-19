@@ -139,7 +139,6 @@ data class QualifiedFieldKey(val qualifier: Qualifier, val field: Field) : Unkno
      */
     data class Field(private val field: PsiField) {
         override fun toString(): String = field.toStringPretty()
-        fun getElement(): PsiElement = field
         val ind: Indicator<*> = Utilities.psiTypeToIndicator(field.type)
     }
 }

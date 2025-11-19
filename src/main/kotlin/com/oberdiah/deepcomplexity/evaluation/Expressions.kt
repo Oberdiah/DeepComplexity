@@ -10,6 +10,7 @@ import com.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import kotlin.test.assertEquals
 
 sealed class Expr<T : Any>() {
     /**
@@ -360,6 +361,10 @@ data class VariableExpr<T : Any> private constructor(
     override val underlying: KeyBackreference,
     override val ind: Indicator<T>
 ) : LeafExpr<T>() {
+    init {
+        assertEquals(underlying.ind, ind)
+    }
+
     val key: KeyBackreference = underlying
 
     companion object {
