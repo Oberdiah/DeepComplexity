@@ -219,7 +219,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return context.c.get(ThisKey(psi.type!!))
+                return context.c.get(LValueKey.new(ThisKey(psi.type!!)))
             }
 
             is PsiMethodCallExpression -> {
@@ -402,7 +402,7 @@ object MethodProcessing {
                         thisType,
                         "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                     )
-                    context.c.get(ThisKey(thisType))
+                    context.c.get(LValueKey.new(ThisKey(thisType)))
                 }.castToObject()
 
                 LValueField.new(QualifiedFieldKey.Field(resolved), qualifierExpr)

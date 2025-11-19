@@ -22,14 +22,6 @@ class Vars(
     fun resolveUsing(context: Context): Vars =
         Vars(idx, map.mapValues { (_, expr) -> context.resolveKnownVariables(expr) })
 
-    fun resolveKey(key: UnknownKey): LValue<*> {
-        return if (key is QualifiedFieldKey) {
-            LValueField.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
-        } else {
-            LValueKey.new(key)
-        }
-    }
-
     fun stack(other: Vars): Vars {
         var newVars = this
 
@@ -70,6 +62,14 @@ class Vars(
                 "}"
     }
 
+    fun resolveKey(key: UnknownKey): LValue<*> {
+        return if (key is QualifiedFieldKey) {
+            LValueField.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
+        } else {
+            LValueKey.new(key)
+        }
+    }
+
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
             is LValueField<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<*>>(expr.field.ind) {
@@ -83,7 +83,7 @@ class Vars(
     /**
      * Grab the variable expression assigned to the given key.
      */
-    fun get(key: UnknownKey): Expr<*> {
+    private fun get(key: UnknownKey): Expr<*> {
         // If we have it, return it.
         map[key]?.let { return it }
 

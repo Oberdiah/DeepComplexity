@@ -2,6 +2,7 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
+import com.oberdiah.deepcomplexity.evaluation.LValueKey
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsMarker
 import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
@@ -98,7 +99,7 @@ class InnerCtx private constructor(
         VarsExpr(),
         Vars(idx, keys.associateWith { key ->
             staticExpr.replaceTypeInLeaves<VarsExpr>(key.ind) {
-                (it.vars ?: dynamicVars).get(key)
+                (it.vars ?: dynamicVars).get(LValueKey.new(key))
             }
         })
     )

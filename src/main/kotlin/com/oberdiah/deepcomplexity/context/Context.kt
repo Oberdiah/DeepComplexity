@@ -77,7 +77,6 @@ class Context private constructor(
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
 
     fun <T : Any> get(lValue: LValue<T>): Expr<T> = inner.dynamicVars.get(lValue)
-    fun get(key: UnknownKey): Expr<*> = inner.dynamicVars.get(key)
 
     fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
