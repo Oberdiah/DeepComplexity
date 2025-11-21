@@ -1650,12 +1650,8 @@ public class MyTestData {
 	}
 	
 	private static void aliasingMethod(MyClass a, MyClass b) {
-		// a.x = 0;
-		// b.x = if (a == b) 0 else b.x
 		a.x = 0;
 		if (b.x == 0) {
-			// a.x = 5;
-			// b.x = if (a == b) 5 else (if (a == b) 0 else b.x)
 			a.x = 5;
 		}
 	}
@@ -2194,5 +2190,45 @@ public class MyTestData {
 		}
 		
 		return (short) a.x;
+	}
+	
+	@RequiredScore(1.0)
+	public static short aliasingTest4(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = a;
+		
+		if (x > 0) {
+			a.x = 1;
+			b.x = 2;
+			a.x = 3;
+			
+			if (b.x == 2) {
+				return 1;
+			} else {
+				return 2;
+			}
+		}
+		
+		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	public static short aliasingTest5(short x) {
+		MyClass a = new MyClass(-1);
+		MyClass b = new MyClass(-1);
+		
+		if (x > 0) {
+			a.x = 1;
+			b.x = 2;
+			a.x = 3;
+			
+			if (b.x == 2) {
+				return 1;
+			} else {
+				return 2;
+			}
+		}
+		
+		return 0;
 	}
 }
