@@ -14,7 +14,7 @@ import kotlin.test.assertEquals
  *
  * For example, in a context `{ x: y' + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
  *
- * We encode this with the [KeyBackreference] class, representing an unknown that this context will never manage
+ * We encode this with the [ResolvesTo] class, representing an unknown that this context will never manage
  * to resolve.
  *
  * How objects are stored:
@@ -92,7 +92,7 @@ class Context private constructor(
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
         return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
-            varExpr.key.safelyResolveUsing(inner.dynamicVars)
+            varExpr.resolvesTo.safelyResolveUsing(inner.dynamicVars)
         }.replaceTypeInTree<VarsExpr> { varsExpr ->
             varsExpr.map { it.resolveUsing(this) }
         }.optimise()

@@ -163,13 +163,13 @@ object ExprEvaluate {
             }
 
             is ConstExpr -> Bundle.constrained(
-                expr.ind.newConstantSet(expr.underlying).toConstVariance(),
+                expr.ind.newConstantSet(expr.value).toConstVariance(),
                 Constraints.completelyUnconstrained()
             ).constrainWith(scope)
 
             is VariableExpr ->
                 Bundle.constrained(
-                    expr.ind.newVariance(expr.key.grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()),
+                    expr.ind.newVariance(expr.resolvesTo.grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()),
                     Constraints.completelyUnconstrained()
                 )
                     .constrainWith(scope)

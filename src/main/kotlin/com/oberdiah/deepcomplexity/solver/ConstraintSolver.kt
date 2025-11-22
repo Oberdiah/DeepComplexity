@@ -137,7 +137,7 @@ object ConstraintSolver {
         variable: VariableExpr<T>,
         condition: Expr<Boolean>,
     ): ISet<T>? {
-        if (expr.getVariables().none { it.key == variable.key }) {
+        if (expr.getVariables().none { it.resolvesTo == variable.resolvesTo }) {
             // The variable wasn't found in the expression.
             return null
         }
@@ -233,7 +233,7 @@ object ConstraintSolver {
             is IfExpr<*> -> null
 
             is ConstExpr, is VariableExpr -> {
-                if (expr is VariableExpr && expr.key == variable.key) {
+                if (expr is VariableExpr && expr.resolvesTo == variable.resolvesTo) {
                     CollectedTerms(ind, terms = mutableMapOf(1 to ind.onlyOneSet()))
                 } else {
 //                    val bundle = expr.evaluate(ExprEvaluate.Scope(condition = condition)).collapse()

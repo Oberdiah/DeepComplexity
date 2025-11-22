@@ -27,7 +27,7 @@ object ExprToString {
                 }
             }
 
-            is VariableExpr -> expr.key.toString()
+            is VariableExpr -> expr.resolvesTo.toString()
             is VarsExpr -> if (expr.vars != null) expr.vars.toString() else VarsExpr.STRING_PLACEHOLDER
         }
     }
@@ -42,7 +42,7 @@ object ExprToString {
             is NegateExpr -> "'-'"
             is UnionExpr -> "'∪'"
             is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
-            is VariableExpr -> expr.key.toString()
+            is VariableExpr -> expr.resolvesTo.toString()
             is NumIterationTimesExpr -> "'for'"
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
@@ -80,7 +80,7 @@ object ExprToString {
             is NegateExpr -> "-${expr.expr.dStr()}"
             is UnionExpr -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
             is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
-            is VariableExpr -> expr.key.toString()
+            is VariableExpr -> expr.resolvesTo.toString()
             is NumIterationTimesExpr -> "(initial: ${expr.variable.dStr()}, update: ${expr.terms} condition: ${expr.constraint}) = $myResult"
             is TypeCastExpr<*, *> -> {
                 return if (expr.explicit) {

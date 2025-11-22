@@ -1,11 +1,8 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.intellij.psi.PsiTypes
-import com.oberdiah.deepcomplexity.context.Context
-import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
-import com.oberdiah.deepcomplexity.context.KeyBackreference
-import com.oberdiah.deepcomplexity.context.Vars
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
@@ -13,7 +10,6 @@ import com.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import kotlin.test.assertEquals
 
 sealed class Expr<T : Any>() {
     /**
@@ -358,10 +354,7 @@ data class NumIterationTimesExpr<T : Number>(
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>() {
-    /**
-     * The value that represents whichever value is at the leaf of this leaf expression.
-     */
-    abstract val underlying: Any
+    abstract fun calculateResolvesTo(): ResolvesTo<T>
 }
 
 /**
@@ -372,30 +365,26 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
  */
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
-    override val underlying: KeyBackreference,
-    override val ind: Indicator<T>
+    val resolvesTo: ResolvesTo<T>
 ) : LeafExpr<T>() {
-    init {
-        assertEquals(underlying.ind, ind)
-    }
-
-    val key: KeyBackreference = underlying
-
     companion object {
         /**
          * This should only ever be called from a [Context]. Only contexts are allowed
          * to create [VariableExpr]s. Only contexts really can, anyway, because they've got control
-         * of the [KeyBackreference]s.
+         * of the [ResolvesTo]s.
          */
-        fun new(key: KeyBackreference): VariableExpr<*> = VariableExpr(key, key.ind)
+        fun <T : Any> new(resolvesTo: ResolvesTo<T>): VariableExpr<T> = VariableExpr(resolvesTo)
     }
+
+    override val ind: Indicator<T> = resolvesTo.ind
+    override fun calculateResolvesTo(): ResolvesTo<T> = resolvesTo
 }
 
 /**
  * Objects are represented as a [ConstExpr] with an underlying [com.oberdiah.deepcomplexity.context.HeapMarker].
  */
-data class ConstExpr<T : Any>(override val underlying: T, override val ind: Indicator<T>) : LeafExpr<T>() {
-    val value: T = underlying
+data class ConstExpr<T : Any>(val value: T, override val ind: Indicator<T>) : LeafExpr<T>() {
+    override fun calculateResolvesTo(): ResolvesTo<T> = ResolvesTo.fromValue(value, ContextId.new())
 
     companion object {
         val TRUE = ConstExpr(true, BooleanIndicator)

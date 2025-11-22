@@ -2,8 +2,6 @@ package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
-import com.oberdiah.deepcomplexity.evaluation.ConstExpr
-import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
 /**
@@ -14,7 +12,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 data class HeapMarker private constructor(
     private val idx: Int,
     val type: PsiType,
-) : Qualifier {
+) {
     companion object {
         val NULL = HeapMarker(0, PsiTypes.nullType())
         val VOID = HeapMarker(1, PsiTypes.voidType())
@@ -26,12 +24,10 @@ data class HeapMarker private constructor(
         }
     }
 
-    override val ind: ObjectIndicator = ObjectIndicator(type)
+    val ind: ObjectIndicator = ObjectIndicator(type)
     override fun toString(): String {
         if (this == NULL) return "null"
         if (this == VOID) return "void"
         return "#$idx"
     }
-
-    override fun safelyResolveUsing(vars: Vars): Expr<HeapMarker> = ConstExpr.fromHeapMarker(this)
 }

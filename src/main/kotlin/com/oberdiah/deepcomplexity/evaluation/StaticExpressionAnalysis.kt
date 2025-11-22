@@ -83,7 +83,7 @@ object StaticExpressionAnalysis {
             return lhs.value == rhs.value
         }
         if (lhs is VariableExpr<*> && rhs is VariableExpr<*>) {
-            return lhs.key == rhs.key
+            return lhs.resolvesTo == rhs.resolvesTo
         }
         if (lhs is TypeCastExpr<*, *> && rhs is TypeCastExpr<*, *>) {
             if (lhs.ind == rhs.ind && lhs.explicit == rhs.explicit) {

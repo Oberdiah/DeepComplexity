@@ -165,7 +165,7 @@ object TestUtilities {
             }
 
             val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>(true)
-                .map { it.key }
+                .map { it.resolvesTo }
                 .toSet()
 
             // For every test we have, there is no reason for unknowns to be present by the time we return.

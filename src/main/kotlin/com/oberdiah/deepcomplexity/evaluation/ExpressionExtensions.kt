@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.Qualifier
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
@@ -81,7 +80,4 @@ object ExpressionExtensions {
             TypeCastExpr(this, indicator, explicit)
         }
     }
-
-    val LeafExpr<HeapMarker>.qualifier: Qualifier
-        get() = this.underlying as Qualifier
 }
