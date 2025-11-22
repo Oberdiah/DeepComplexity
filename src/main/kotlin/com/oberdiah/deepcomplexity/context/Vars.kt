@@ -21,16 +21,10 @@ class Vars(
     fun resolveUsing(context: Context): Vars =
         Vars(idx, map.mapValues { (_, expr) -> context.resolveKnownVariables(expr) })
 
-    fun stack(other: Vars): Vars {
-        var newVars = this
-
-        for ((key, expr) in other.map) {
-            newVars = newVars.with(resolveKey(key), expr)
+    fun stack(other: Vars): Vars =
+        other.map.entries.fold(this) { acc, (key, expr) ->
+            acc.with(acc.resolveKey(key), expr)
         }
-
-        // Simple!
-        return newVars
-    }
 
     companion object {
         fun new(idx: ContextId): Vars = Vars(idx, mapOf())
