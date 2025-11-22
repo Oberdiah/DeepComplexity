@@ -38,7 +38,7 @@ sealed class Expr<T : Any>() {
     fun rebuildTree(replacer: ExprTreeRebuilder.Replacer, includeIfCondition: Boolean = true) =
         ExprTreeRebuilder.rebuildTree(this, replacer, includeIfCondition)
 
-    fun <NewT : Any> replaceLeaves(replacer: ExprTreeRebuilder.LeafReplacer<NewT>): Expr<NewT> =
+    fun <NewT : Any> replaceLeaves(replacer: ExprReplacer<NewT>): Expr<NewT> =
         ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
 
     fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
@@ -105,7 +105,7 @@ sealed class Expr<T : Any>() {
         newInd: Indicator<B>,
         crossinline replacement: (Q) -> Expr<*>
     ): Expr<B> {
-        return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->
+        return replaceLeaves { expr ->
             val newExpr = if (expr is Q) {
                 replacement(expr)
             } else {
@@ -117,7 +117,7 @@ sealed class Expr<T : Any>() {
             newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
                 "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
             )
-        })
+        }
     }
 
     /**

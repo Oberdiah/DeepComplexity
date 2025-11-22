@@ -1,14 +1,14 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.oberdiah.deepcomplexity.staticAnalysis.*
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
+
+typealias ExprReplacer<T> = (Expr<*>) -> Expr<T>
 
 object ExprTreeRebuilder {
-    /**
-     * `ind` is the indicator of the type that the expression will be converted to.
-     */
-    class LeafReplacer<T : Any>(val ind: Indicator<T>, val replacer: (Expr<*>) -> Expr<T>)
-
     /**
      * There is a reason to have both this and `rebuildTree`.
      *
@@ -19,10 +19,10 @@ object ExprTreeRebuilder {
      * This replacement only works on a subset of all expressions (only expressions where every node can
      * take any type, so no `ArithmeticExpression`, `ComparisonExpression`, etc.).
      */
-    fun <T : Any> replaceTreeLeaves(
+    fun <To : Any> replaceTreeLeaves(
         expr: Expr<*>,
-        replacer: LeafReplacer<T>
-    ): Expr<T> {
+        replacer: ExprReplacer<To>
+    ): Expr<To> {
         return when (expr) {
             is UnionExpr -> UnionExpr(
                 replaceTreeLeaves(expr.lhs, replacer),
@@ -47,11 +47,11 @@ object ExprTreeRebuilder {
                 }
 
                 @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
-                extra(expr) as Expr<T>
+                extra(expr) as Expr<To>
             }
 
-            is LeafExpr<*> -> replacer.replacer(expr)
-            is VarsExpr -> replacer.replacer(expr)
+            is LeafExpr<*> -> replacer(expr)
+            is VarsExpr -> replacer(expr)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
