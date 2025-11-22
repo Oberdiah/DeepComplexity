@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder
 import com.oberdiah.deepcomplexity.evaluation.LValueKey
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsMarker
@@ -72,6 +73,11 @@ class InnerCtx private constructor(
         vars.resolveKnownVariables(staticExpr),
         dynamicVars.resolveUsing(vars)
     )
+
+    fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacer): InnerCtx = InnerCtx(
+        operation.replace(staticExpr),
+        dynamicVars.mapExpressions(operation)
+    ).mapStaticVars { it.mapExpressions(operation) }
 
     val keys: Set<UnknownKey> = staticExpr.iterateTree<VarsExpr>().flatMap { (it.vars ?: dynamicVars).keys }.toSet()
 

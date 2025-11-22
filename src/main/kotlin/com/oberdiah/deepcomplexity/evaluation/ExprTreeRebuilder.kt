@@ -1,14 +1,31 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 
-typealias ExprReplacer<T> = (Expr<*>) -> Expr<T>
+// Leaf replacers change the leaves' types.
+typealias LeafReplacer<T> = (Expr<*>) -> Expr<T>
 
 object ExprTreeRebuilder {
+    // Standard expression replacers keep them the same
+    interface ExprReplacer {
+        fun <T : Any> replace(expr: Expr<T>): Expr<T>
+
+        companion object {
+            operator fun invoke(block: (Expr<*>) -> Expr<*>): ExprReplacer {
+                return object : ExprReplacer {
+                    override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
+                        return block(expr).castOrThrow(expr.ind)
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * There is a reason to have both this and `rebuildTree`.
      *
@@ -21,7 +38,7 @@ object ExprTreeRebuilder {
      */
     fun <To : Any> replaceTreeLeaves(
         expr: Expr<*>,
-        replacer: ExprReplacer<To>
+        replacer: LeafReplacer<To>
     ): Expr<To> {
         return when (expr) {
             is UnionExpr -> UnionExpr(
@@ -59,12 +76,8 @@ object ExprTreeRebuilder {
         }
     }
 
-    interface Replacer {
-        fun <T : Any> replace(expr: Expr<T>): Expr<T>
-    }
-
     /**
-     * Rebuilds the expression tree, replacing nodes using the given [Replacer].
+     * Rebuilds the expression tree, replacing nodes using the given [ExprReplacer].
      *
      * This performs a post-order traversal (bottom-up replacement) of the tree. This means children are
      * always fully replaced before their parents, and parents operate on the results of their children's
@@ -76,7 +89,7 @@ object ExprTreeRebuilder {
      */
     fun <T : Any> rebuildTree(
         expr: Expr<T>,
-        replacer: Replacer,
+        replacer: ExprReplacer,
         includeIfCondition: Boolean = true
     ): Expr<T> {
         @Suppress("UNCHECKED_CAST")
@@ -92,7 +105,7 @@ object ExprTreeRebuilder {
 
     private fun <T : Number> rebuildTreeNums(
         expr: Expr<T>,
-        replacer: Replacer,
+        replacer: ExprReplacer,
         includeIfCondition: Boolean
     ): Expr<T> {
         return when (expr) {
@@ -118,7 +131,7 @@ object ExprTreeRebuilder {
 
     private fun rebuildTreeBooleans(
         expr: Expr<Boolean>,
-        replacer: Replacer,
+        replacer: ExprReplacer,
         includeIfCondition: Boolean
     ): Expr<Boolean> {
         return when (expr) {
@@ -147,7 +160,7 @@ object ExprTreeRebuilder {
 
     private fun <T : Any> rebuildTreeAnythings(
         expr: Expr<T>,
-        replacer: Replacer,
+        replacer: ExprReplacer,
         includeIfCondition: Boolean
     ): Expr<T> {
         return when (expr) {

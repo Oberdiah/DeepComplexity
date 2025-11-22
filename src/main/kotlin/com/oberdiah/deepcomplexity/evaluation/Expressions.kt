@@ -35,10 +35,10 @@ sealed class Expr<T : Any>() {
      * As it's doing that, it calls the replacer on every expression so you can make any modifications
      * you want.
      */
-    fun rebuildTree(replacer: ExprTreeRebuilder.Replacer, includeIfCondition: Boolean = true) =
+    fun rebuildTree(replacer: ExprTreeRebuilder.ExprReplacer, includeIfCondition: Boolean = true) =
         ExprTreeRebuilder.rebuildTree(this, replacer, includeIfCondition)
 
-    fun <NewT : Any> replaceLeaves(replacer: ExprReplacer<NewT>): Expr<NewT> =
+    fun <NewT : Any> replaceLeaves(replacer: LeafReplacer<NewT>): Expr<NewT> =
         ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
 
     fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
@@ -58,24 +58,15 @@ sealed class Expr<T : Any>() {
     /**
      * Rebuilds every expression in the tree.
      * As it's doing that, whenever it encounters an expression of type [Q],
-     * it replaces it with the result of calling [replacement] on it. The replacement expression
-     * has a wild generic type for ergonomic reasons because you're likely not going to have
-     * a typed replacement on hand, so we do the type check and cast at runtime for you.
+     * it replaces it with the result of calling [replacement] on it. If [replacement] returns null,
+     * it will skip the replacement.
      */
     inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): Expr<T> {
-        return rebuildTree(object : ExprTreeRebuilder.Replacer {
-            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
-                if (expr is Q) {
-                    val resolved = replacement(expr)
-                    if (resolved != null) {
-                        return resolved.tryCastTo(expr.ind)
-                            ?: throw IllegalStateException(
-                                "(${resolved.ind} != ${expr.ind}) ${resolved.dStr()} does not match ${expr.dStr()}"
-                            )
-                    }
-                }
-
-                return expr
+        return rebuildTree(ExprTreeRebuilder.ExprReplacer { expr ->
+            if (expr is Q) {
+                replacement(expr) ?: expr
+            } else {
+                expr
             }
         })
     }
@@ -123,13 +114,7 @@ sealed class Expr<T : Any>() {
     /**
      * Recursively calls [simplify] on every node in the tree, rebuilding the tree as it goes.
      */
-    fun optimise(): Expr<T> {
-        return rebuildTree(object : ExprTreeRebuilder.Replacer {
-            override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
-                return expr.simplify()
-            }
-        })
-    }
+    fun optimise(): Expr<T> = rebuildTree(ExprTreeRebuilder.ExprReplacer { it.simplify() })
 
     /**
      * Simplifies the expression if possible.

@@ -18,9 +18,16 @@ class Vars(
 
     val keys = map.keys
     val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
+
+    /**
+     * Retains all entries that satisfy the given predicate.
+     */
     fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
     fun resolveUsing(vars: Vars): Vars =
-        Vars(idx, map.mapValues { (_, expr) -> vars.resolveKnownVariables(expr) })
+        mapExpressions(ExprTreeRebuilder.ExprReplacer { vars.resolveKnownVariables(it) })
+
+    fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacer): Vars =
+        Vars(idx, map.mapValues { (_, expr) -> operation.replace(expr) })
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
