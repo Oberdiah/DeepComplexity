@@ -4,7 +4,6 @@ import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.LValue
-import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import kotlin.test.assertEquals
 
@@ -70,17 +69,16 @@ class Context private constructor(
         }
     }
 
-    val returnValue: Expr<*>? = inner.dynamicVars.returnValue
-
     override fun toString(): String = inner.toString()
     fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
 
+    val returnValue: Expr<*>? = inner.dynamicVars.returnValue
     fun <T : Any> get(lValue: LValue<T>): Expr<T> = inner.dynamicVars.get(lValue)
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = inner.dynamicVars.resolveKnownVariables(expr)
 
     fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
-
 
     private fun mapVars(operation: (Vars) -> Vars): Context =
         Context(inner.mapAllVars(operation), thisType, idx)
@@ -90,19 +88,12 @@ class Context private constructor(
     fun stripKeys(lifetime: UnknownKey.Lifetime) =
         mapVars { vars -> vars.filterKeys { !it.shouldBeStripped(lifetime) } }
 
-    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> {
-        return expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
-            varExpr.resolvesTo.safelyResolveUsing(inner.dynamicVars)
-        }.replaceTypeInTree<VarsExpr> { varsExpr ->
-            varsExpr.map { it.resolveUsing(this) }
-        }.optimise()
-    }
 
     fun stack(other: Context): Context {
         val otherInner = other
             .stripKeys(UnknownKey.Lifetime.BLOCK)
             .inner
-            .resolveUsing(this)
+            .resolveUsing(this.inner.dynamicVars)
             .mapAllVars { other -> inner.dynamicVars.stack(other) }
 
         val afterStack = Context(

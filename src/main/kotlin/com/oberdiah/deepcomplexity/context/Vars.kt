@@ -15,11 +15,19 @@ class Vars(
             VariableExpr.new(it.resolvesTo.withAddedContextId(idx))
         }
     }.mapKeys { it.key.withAddedContextId(idx) }
+
     val keys = map.keys
     val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
     fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
-    fun resolveUsing(context: Context): Vars =
-        Vars(idx, map.mapValues { (_, expr) -> context.resolveKnownVariables(expr) })
+    fun resolveUsing(vars: Vars): Vars =
+        Vars(idx, map.mapValues { (_, expr) -> vars.resolveKnownVariables(expr) })
+
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
+        expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
+            varExpr.resolvesTo.safelyResolveUsing(this)
+        }.replaceTypeInTree<VarsExpr> { varsExpr ->
+            varsExpr.map { vars -> vars.resolveUsing(this) }
+        }.optimise()
 
     fun stack(other: Vars): Vars =
         other.map.entries.fold(this) { acc, (key, expr) ->
