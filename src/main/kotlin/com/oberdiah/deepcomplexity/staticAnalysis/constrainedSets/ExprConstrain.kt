@@ -35,7 +35,7 @@ object ExprConstrain {
             }
 
             is ComparisonExpr<*> -> ComparisonExpr.new(expr.lhs, expr.rhs, expr.comp.invert())
-            is ConstExpr -> ConstExpr(!expr.value, expr.ind)
+            is ConstExpr -> ConstExpr.new(!expr.value, expr.ind)
             is IfExpr -> IfExpr.new(
                 expr.trueExpr.inverted(),
                 expr.falseExpr.inverted(),

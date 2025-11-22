@@ -354,7 +354,9 @@ data class NumIterationTimesExpr<T : Number>(
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>() {
-    abstract fun calculateResolvesTo(): ResolvesTo<T>
+    abstract val resolvesTo: ResolvesTo<T>
+    override val ind: Indicator<T>
+        get() = resolvesTo.ind
 }
 
 /**
@@ -365,40 +367,80 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
  */
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
-    val resolvesTo: ResolvesTo<T>
+    override val resolvesTo: KeyBackreference<T>
 ) : LeafExpr<T>() {
     companion object {
         /**
          * This should only ever be called from a [Context]. Only contexts are allowed
          * to create [VariableExpr]s. Only contexts really can, anyway, because they've got control
-         * of the [ResolvesTo]s.
+         * of the [KeyBackreference]s.
          */
-        fun <T : Any> new(resolvesTo: ResolvesTo<T>): VariableExpr<T> = VariableExpr(resolvesTo)
+        fun <T : Any> new(resolvesTo: KeyBackreference<T>): VariableExpr<T> = VariableExpr(resolvesTo)
+        fun new(key: UnknownKey, contextId: ContextId): VariableExpr<*> =
+            VariableExpr(KeyBackreference.new(key, contextId))
     }
 
-    override val ind: Indicator<T> = resolvesTo.ind
-    override fun calculateResolvesTo(): ResolvesTo<T> = resolvesTo
+    data class KeyBackreference<T : Any>(
+        private val key: UnknownKey,
+        private val contextId: ContextId,
+        override val ind: Indicator<T>
+    ) : ResolvesTo<T> {
+        companion object {
+            fun new(key: UnknownKey, contextId: ContextId): KeyBackreference<*> =
+                KeyBackreference(key, contextId, key.ind)
+
+            fun <T : Any> new(key: UnknownKey, contextId: ContextId, indicator: Indicator<T>): KeyBackreference<T> =
+                KeyBackreference(key, contextId, indicator)
+        }
+
+        override fun toLeafExpr(): Expr<T> = new(this)
+        override fun toString(): String = "$key'"
+        override fun equals(other: Any?): Boolean = other is KeyBackreference<*> && this.key == other.key
+        override fun hashCode(): Int = key.hashCode()
+        override fun isPlaceholder() = key.isPlaceholder()
+        override val lifetime = key.lifetime
+
+        override fun withAddedContextId(newId: ContextId): KeyBackreference<T> =
+            KeyBackreference(key.withAddedContextId(newId), contextId + newId, ind)
+
+        /**
+         * This shouldn't be used unless you know for certain you're in the evaluation stage;
+         * using this in the method processing stage may lead to you resolving a key using your
+         * own context, which is a recipe for disaster.
+         */
+        fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
+
+        override fun safelyResolveUsing(vars: Vars): Expr<*> {
+            assert(!contextId.collidesWith(vars.idx)) {
+                "Cannot resolve a KeyBackreference in the context it was created in."
+            }
+            return vars.get(vars.resolveKey(key))
+        }
+    }
 }
 
 /**
  * Objects are represented as a [ConstExpr] with an underlying [com.oberdiah.deepcomplexity.context.HeapMarker].
  */
-data class ConstExpr<T : Any>(val value: T, override val ind: Indicator<T>) : LeafExpr<T>() {
-    override fun calculateResolvesTo(): ResolvesTo<T> = ResolvesTo.fromValue(value, ContextId.new())
+@ConsistentCopyVisibility
+data class ConstExpr<T : Any> private constructor(override val resolvesTo: DataContainer<T>) : LeafExpr<T>() {
+    data class DataContainer<T : Any>(val v: T, override val ind: Indicator<T>) : ResolvesTo<T> {
+        override fun toString(): String = v.toString()
+        override fun toLeafExpr(): Expr<T> = ConstExpr(this)
+    }
+
+    val value = resolvesTo.v
 
     companion object {
-        val TRUE = ConstExpr(true, BooleanIndicator)
-        val FALSE = ConstExpr(false, BooleanIndicator)
+        fun <T : Any> new(value: T, indicator: Indicator<T>): ConstExpr<T> = ConstExpr(DataContainer(value, indicator))
+
+        val TRUE = new(true, BooleanIndicator)
+        val FALSE = new(false, BooleanIndicator)
         val VOID = fromHeapMarker(HeapMarker.new(PsiTypes.voidType()))
-        val NULL = fromHeapMarker(HeapMarker.new(PsiTypes.nullType()))
 
-        fun <T : Number> zero(ind: NumberIndicator<T>): ConstExpr<T> =
-            ConstExpr(ind.getZero(), ind)
-
-        fun <T : Number> one(ind: NumberIndicator<T>): ConstExpr<T> =
-            ConstExpr(ind.getOne(), ind)
-
-        fun <T : Any> fromAny(value: T): ConstExpr<T> = ConstExpr(value, Indicator.fromValue(value))
+        fun <T : Number> zero(ind: NumberIndicator<T>): ConstExpr<T> = new(ind.getZero(), ind)
+        fun <T : Number> one(ind: NumberIndicator<T>): ConstExpr<T> = new(ind.getOne(), ind)
+        fun <T : Any> fromAny(value: T): ConstExpr<T> = new(value, Indicator.fromValue(value))
         fun fromHeapMarker(marker: HeapMarker): ConstExpr<HeapMarker> = fromAny(marker)
     }
 }

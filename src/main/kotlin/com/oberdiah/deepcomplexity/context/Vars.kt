@@ -4,7 +4,7 @@ import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.into
 
 class Vars(
     val idx: ContextId,
@@ -72,7 +72,7 @@ class Vars(
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
             is LValueField<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<HeapMarker>>(expr.field.ind) {
-                get(QualifiedFieldKey(it.calculateResolvesTo(), expr.field))
+                get(QualifiedFieldKey(it.resolvesTo, expr.field))
             }
 
             is LValueKey<*> -> get(expr.key)
@@ -89,12 +89,12 @@ class Vars(
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedFieldKey) {
             val placeholderQualifierKey =
-                ResolvesTo.new(PlaceholderKey(key.qualifier.ind as ObjectIndicator), idx, key.qualifier.ind)
+                VariableExpr.KeyBackreference.new(PlaceholderKey(key.qualifier.ind.into()), idx, key.qualifier.ind)
 
-            val replacementQualified = VariableExpr.new(ResolvesTo.new(key, idx))
+            val replacementQualified = VariableExpr.new(key, idx)
             val replacementRaw = key.qualifier.toLeafExpr()
             val placeholderVersionOfTheKey = QualifiedFieldKey(placeholderQualifierKey, key.field)
-            val p = ResolvesTo.new(placeholderVersionOfTheKey, idx)
+            val p = VariableExpr.KeyBackreference.new(placeholderVersionOfTheKey, idx)
 
             map[placeholderVersionOfTheKey]?.let {
                 val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
@@ -110,7 +110,7 @@ class Vars(
         }
 
         // OK, now we really do have no choice
-        return VariableExpr.new(ResolvesTo.new(key, idx))
+        return VariableExpr.new(key, idx)
     }
 
     /**
@@ -152,7 +152,7 @@ class Vars(
         val field = lExpr.field
 
         val qualifiersMentionedInQualifierExpr: Set<ResolvesTo<HeapMarker>> =
-            qualifierExpr.iterateLeaves().map { it.calculateResolvesTo() }.toSet()
+            qualifierExpr.iterateLeaves().map { it.resolvesTo }.toSet()
 
         var vars = this
 
@@ -165,7 +165,7 @@ class Vars(
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
             val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<HeapMarker>>(field.ind) { expr ->
-                if (expr.calculateResolvesTo() == resolvesTo) {
+                if (expr.resolvesTo == resolvesTo) {
                     rExpr
                 } else {
                     existingExpr
@@ -206,7 +206,7 @@ class Vars(
                         && qualifier.ind == it.qualifier.ind
             }
             .toSet() + QualifiedFieldKey(
-            ResolvesTo.new(PlaceholderKey(qualifierInd), idx, qualifierInd),
+            VariableExpr.KeyBackreference.new(PlaceholderKey(qualifierInd), idx, qualifierInd),
             fieldKey
         )
 
