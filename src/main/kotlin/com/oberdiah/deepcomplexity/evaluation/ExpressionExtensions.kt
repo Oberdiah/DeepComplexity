@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.Qualifier
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
@@ -81,48 +82,6 @@ object ExpressionExtensions {
         }
     }
 
-    /**
-     * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
-     * An ergonomic and slightly constrained version of [com.oberdiah.deepcomplexity.evaluation.Expr.replaceLeaves].
-     *
-     * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
-     * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
-     */
-    internal inline fun <reified Q : Any> Expr<*>.replaceTypeInLeaves(
-        newInd: Indicator<*>,
-        crossinline replacement: (Q) -> Expr<*>
-    ): Expr<*> {
-        return object {
-            operator fun <T : Any> invoke(
-                newInd: Indicator<T>,
-            ): Expr<T> {
-                return this@replaceTypeInLeaves.replaceTypeInLeavesWithInd<Q, T>(newInd, replacement)
-            }
-        }(newInd)
-    }
-
-    internal inline fun <reified Q : Any, reified T : Any> Expr<*>.replaceTypeInLeavesTyped(
-        crossinline replacement: (Q) -> Expr<*>
-    ): Expr<T> {
-        return replaceTypeInLeavesWithInd<Q, T>(Indicator.fromClass(T::class), replacement)
-    }
-
-    private inline fun <reified Q : Any, T : Any> Expr<*>.replaceTypeInLeavesWithInd(
-        newInd: Indicator<T>,
-        crossinline replacement: (Q) -> Expr<*>
-    ): Expr<T> {
-        return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->
-            val newExpr = if (expr is Q) {
-                replacement(expr)
-            } else {
-                throw IllegalArgumentException(
-                    "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
-                )
-            }
-
-            newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
-                "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
-            )
-        })
-    }
+    val LeafExpr<HeapMarker>.qualifier: Qualifier
+        get() = this.underlying as Qualifier
 }

@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
 import com.oberdiah.deepcomplexity.evaluation.LValueKey
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsMarker

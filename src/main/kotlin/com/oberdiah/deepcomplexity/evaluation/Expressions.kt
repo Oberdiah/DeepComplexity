@@ -48,8 +48,11 @@ sealed class Expr<T : Any>() {
     fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition)
 
-    internal inline fun <reified T : Expr<*>> iterateTree(includeIfCondition: Boolean = false): Sequence<T> =
-        ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<T>()
+    internal inline fun <reified Q : Expr<*>> iterateTree(includeIfCondition: Boolean = false): Sequence<Q> =
+        ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<Q>()
+
+    fun iterateLeaves(includeIfCondition: Boolean = false): Sequence<LeafExpr<T>> =
+        ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<LeafExpr<T>>()
 
     fun getVariables(): Set<VariableExpr<*>> = iterateTree<VariableExpr<*>>().toSet()
 
@@ -78,6 +81,46 @@ sealed class Expr<T : Any>() {
 
                 return expr
             }
+        })
+    }
+
+
+    /**
+     * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
+     * An ergonomic and slightly constrained version of [com.oberdiah.deepcomplexity.evaluation.Expr.replaceLeaves].
+     *
+     * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
+     * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
+     */
+    internal inline fun <reified Q : Expr<T>> replaceTypeInLeaves(
+        newInd: Indicator<*>,
+        crossinline replacement: (Q) -> Expr<*>
+    ): Expr<*> {
+        return object {
+            operator fun <T : Any> invoke(
+                newInd: Indicator<T>,
+            ): Expr<T> {
+                return replaceTypeInLeavesWithInd<Q, T>(newInd, replacement)
+            }
+        }(newInd)
+    }
+
+    private inline fun <reified Q : Expr<T>, B : Any> replaceTypeInLeavesWithInd(
+        newInd: Indicator<B>,
+        crossinline replacement: (Q) -> Expr<*>
+    ): Expr<B> {
+        return replaceLeaves(ExprTreeRebuilder.LeafReplacer(newInd) { expr ->
+            val newExpr = if (expr is Q) {
+                replacement(expr)
+            } else {
+                throw IllegalArgumentException(
+                    "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
+                )
+            }
+
+            newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
+                "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
+            )
         })
     }
 

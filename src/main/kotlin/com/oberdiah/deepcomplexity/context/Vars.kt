@@ -4,7 +4,7 @@ import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.replaceTypeInLeaves
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.qualifier
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
 class Vars(
@@ -72,8 +72,8 @@ class Vars(
 
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueField<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<*>>(expr.field.ind) {
-                get(QualifiedFieldKey(it.underlying as Qualifier, expr.field))
+            is LValueField<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<HeapMarker>>(expr.field.ind) {
+                get(QualifiedFieldKey(it.qualifier, expr.field))
             }
 
             is LValueKey<*> -> get(expr.key)
@@ -153,10 +153,7 @@ class Vars(
         val field = lExpr.field
 
         val qualifiersMentionedInQualifierExpr: Set<Qualifier> =
-            qualifierExpr.iterateTree<LeafExpr<*>>()
-                .map { it.underlying }
-                .filterIsInstance<Qualifier>()
-                .toSet()
+            qualifierExpr.iterateLeaves().map { it.qualifier }.toSet()
 
         var vars = this
 
@@ -168,8 +165,8 @@ class Vars(
 
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
-            val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<*>>(field.ind) { expr ->
-                if (expr.underlying == qualifier) {
+            val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<HeapMarker>>(field.ind) { expr ->
+                if (expr.qualifier == qualifier) {
                     rExpr
                 } else {
                     existingExpr
