@@ -2193,6 +2193,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(9)
 	public static short aliasingTest4(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = a;
@@ -2213,6 +2214,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(9)
 	public static short aliasingTest5(short x) {
 		MyClass a = new MyClass(-1);
 		MyClass b = new MyClass(-1);
