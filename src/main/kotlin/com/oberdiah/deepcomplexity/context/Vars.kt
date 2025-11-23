@@ -98,7 +98,7 @@ class Vars(
         // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedFieldKey) {
             val placeholderQualifierKey =
-                VariableExpr.KeyBackreference.new(PlaceholderKey(key.qualifier.ind.into()), idx, key.qualifier.ind)
+                ResolvesTo.PlaceholderResolvesTo(key.qualifier.ind.into())
 
             val replacementQualified = VariableExpr.new(key, idx)
             val replacementRaw = key.qualifier.toLeafExpr()
@@ -214,10 +214,7 @@ class Vars(
                         && fieldKey == it.field
                         && qualifier.ind == it.qualifier.ind
             }
-            .toSet() + QualifiedFieldKey(
-            VariableExpr.KeyBackreference.new(PlaceholderKey(qualifierInd), idx, qualifierInd),
-            fieldKey
-        )
+            .toSet() + QualifiedFieldKey(ResolvesTo.PlaceholderResolvesTo(qualifierInd), fieldKey)
 
         for (aliasingKey in potentialAliasers) {
             val condition = ComparisonExpr.new(

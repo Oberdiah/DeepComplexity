@@ -42,7 +42,6 @@ sealed class Key() {
             is ReturnKey -> 2
             is ExpressionKey -> 1
             is ConstantKey -> 0
-            is PlaceholderKey -> 0
         }
     }
 }

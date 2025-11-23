@@ -352,7 +352,7 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
  */
 @ConsistentCopyVisibility
 data class VariableExpr<T : Any> private constructor(
-    override val resolvesTo: KeyBackreference<T>
+    override val resolvesTo: ResolvesTo<T>
 ) : LeafExpr<T>() {
     companion object {
         /**
@@ -360,7 +360,7 @@ data class VariableExpr<T : Any> private constructor(
          * to create [VariableExpr]s. Only contexts really can, anyway, because they've got control
          * of the [KeyBackreference]s.
          */
-        fun <T : Any> new(resolvesTo: KeyBackreference<T>): VariableExpr<T> = VariableExpr(resolvesTo)
+        fun <T : Any> new(resolvesTo: ResolvesTo<T>): VariableExpr<T> = VariableExpr(resolvesTo)
         fun new(key: UnknownKey, contextId: ContextId): VariableExpr<*> =
             VariableExpr(KeyBackreference.new(key, contextId))
     }

@@ -12,7 +12,8 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 sealed class UnknownKey : Key() {
     open val lifetime: Lifetime = Lifetime.FOREVER
 
-    fun shouldBeStripped(lifetimeToStrip: Lifetime): Boolean = this.lifetime.ordinal <= lifetimeToStrip.ordinal
+    fun shouldBeStripped(lifetimeToStrip: Lifetime): Boolean =
+        isPlaceholder() || this.lifetime.ordinal <= lifetimeToStrip.ordinal
 
     enum class Lifetime {
         /**
@@ -42,7 +43,6 @@ sealed class UnknownKey : Key() {
 
     fun isPlaceholder(): Boolean {
         return when (this) {
-            is PlaceholderKey -> true
             is QualifiedFieldKey -> qualifier.isPlaceholder()
             else -> false
         }
@@ -69,33 +69,6 @@ data class ThisKey(val type: PsiType) : UnknownKey() {
 
 data class ReturnKey(override val ind: Indicator<*>) : UnknownKey() {
     override fun toString(): String = "Return value"
-}
-
-/**
- * Solely used to store any placeholder expression a type may have picked up
- * due to aliasing. Thrown away after stacking.
- *
- * This is needed to allow relatively simple cases to work correctly, e.g.
- * ```
- * a.x = 5;
- * if (b.x == 5) {
- * 	// foo
- * }
- * ```
- *
- * In that example, the context would look as follows after a.x was assigned:
- * ```
- * {
- *     a.x -> 5
- *     Placeholder(T).x -> if (a == Placeholder(T)) ? 5 : Placeholder(T).x
- * }
- * ```
- */
-data class PlaceholderKey(
-    override val ind: ObjectIndicator,
-    override val lifetime: Lifetime = Lifetime.BLOCK
-) : UnknownKey() {
-    override fun toString(): String = "PK(${ind.type.toStringPretty()})"
 }
 
 data class QualifiedFieldKey(val qualifier: ResolvesTo<HeapMarker>, val field: Field) : UnknownKey() {

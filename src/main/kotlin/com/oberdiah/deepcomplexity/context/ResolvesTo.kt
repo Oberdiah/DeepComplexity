@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 /**
@@ -16,4 +17,29 @@ interface ResolvesTo<T : Any> {
     fun safelyResolveUsing(vars: Vars): Expr<*> = toLeafExpr()
     fun withAddedContextId(newId: ContextId): ResolvesTo<T> = this
     fun isPlaceholder(): Boolean = false
+
+    /**
+     * Solely used to store any placeholder expression a type may have picked up
+     * due to aliasing. Thrown away after stacking.
+     *
+     * This is needed to allow relatively simple cases to work correctly, e.g.
+     * ```
+     * a.x = 5;
+     * if (b.x == 5) {
+     * 	// foo
+     * }
+     * ```
+     *
+     * In that example, the context would look as follows after a.x was assigned:
+     * ```
+     * {
+     *     a.x -> 5
+     *     Placeholder(T).x -> if (a == Placeholder(T)) ? 5 : Placeholder(T).x
+     * }
+     * ```
+     */
+    data class PlaceholderResolvesTo<T : Any>(override val ind: Indicator<T>) : ResolvesTo<T> {
+        override fun toLeafExpr(): Expr<T> = VariableExpr.new(this)
+        override fun isPlaceholder(): Boolean = true
+    }
 }
