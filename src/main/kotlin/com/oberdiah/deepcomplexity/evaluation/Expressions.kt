@@ -61,14 +61,17 @@ sealed class Expr<T : Any>() {
      * it replaces it with the result of calling [replacement] on it. If [replacement] returns null,
      * it will skip the replacement.
      */
-    inline fun <reified Q> replaceTypeInTree(crossinline replacement: (Q) -> Expr<*>?): Expr<T> {
+    inline fun <reified Q> replaceTypeInTree(
+        includeIfCondition: Boolean = true,
+        crossinline replacement: (Q) -> Expr<*>?
+    ): Expr<T> {
         return rebuildTree(ExprTreeRebuilder.ExprReplacer { expr ->
             if (expr is Q) {
                 replacement(expr) ?: expr
             } else {
                 expr
             }
-        })
+        }, includeIfCondition)
     }
 
 
