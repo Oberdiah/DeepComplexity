@@ -102,20 +102,22 @@ class Vars(
     }
 
     private fun getPlaceholderFor(key: UnknownKey): Expr<*>? {
-        // If we don't, before we create a new variable expression, we need to check in case there's a placeholder
         if (key is QualifiedFieldKey) {
-            val placeholderQualifierKey =
-                ResolvesTo.PlaceholderResolvesTo(key.qualifier.ind.into())
+            // This is straightforward; wherever the placeholder for the entire key exists,
+            // we replace it with the key itself.
+            val placeholderKey = VariableExpr.KeyBackreference.new(key.toPlaceholderKey(), idx)
+            val placeholderKeyReplacement = VariableExpr.new(key, idx)
 
-            val qualifierReplacement = key.qualifier.toLeafExpr()
-            val replacementQualified = VariableExpr.new(key, idx)
-            val p = VariableExpr.KeyBackreference.new(key.toPlaceholderKey(), idx)
+            // Slightly more complicated; wherever the placeholder for the qualifier alone exists,
+            // we also need to replace that with the qualifier itself.
+            val placeholderQualifier = ResolvesTo.PlaceholderResolvesTo(key.qualifier.ind.into())
+            val placeholderQualifierReplacement = key.qualifier.toLeafExpr()
 
             map[key.toPlaceholderKey()]?.let {
                 val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
                     when (expr.resolvesTo) {
-                        p -> replacementQualified
-                        placeholderQualifierKey -> qualifierReplacement
+                        placeholderKey -> placeholderKeyReplacement
+                        placeholderQualifier -> placeholderQualifierReplacement
                         else -> null
                     }
                 }
