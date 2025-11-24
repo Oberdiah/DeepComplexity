@@ -1630,6 +1630,10 @@ public class MyTestData {
 			nestedArg.x++;
 			this.nested = nestedArg;
 		}
+		
+		public MyNestingClass(int x) {
+			this.nested = new MyClass(x);
+		}
 	}
 	
 	public static class MyDoubleNestingClass {
@@ -1638,21 +1642,6 @@ public class MyTestData {
 		public MyDoubleNestingClass(MyNestingClass nestingClass) {
 			nestingClass.nested.addAndGet(5);
 			this.doubleNested = nestingClass;
-		}
-	}
-	
-	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
-	public static short aliasingTest(short x) {
-		MyClass a = new MyClass(1);
-		aliasingMethod(a, a);
-		return (short) a.getX();
-	}
-	
-	private static void aliasingMethod(MyClass a, MyClass b) {
-		a.x = 0;
-		if (b.x == 0) {
-			a.x = 5;
 		}
 	}
 	
@@ -2092,58 +2081,58 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(2)
 	public static short aliasingAllDifferent(short x) {
-		MyClass a = new MyClass(1);
-		MyClass b = new MyClass(2);
-		MyClass c = new MyClass(3);
+		MyNestingClass a = new MyNestingClass(1);
+		MyNestingClass b = new MyNestingClass(2);
+		MyNestingClass c = new MyNestingClass(3);
 		return (short) aliasingStresser(a, b, c);
 	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(2)
 	public static short aliasingAeqB(short x) {
-		MyClass a = new MyClass(1);
-		MyClass b = a;
-		MyClass c = new MyClass(3);
+		MyNestingClass a = new MyNestingClass(1);
+		MyNestingClass b = a;
+		MyNestingClass c = new MyNestingClass(3);
 		return (short) aliasingStresser(a, b, c);
 	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(2)
 	public static short aliasingAeqC(short x) {
-		MyClass a = new MyClass(1);
-		MyClass b = new MyClass(2);
-		MyClass c = a;
+		MyNestingClass a = new MyNestingClass(1);
+		MyNestingClass b = new MyNestingClass(2);
+		MyNestingClass c = a;
 		return (short) aliasingStresser(a, b, c);
 	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(2)
 	public static short aliasingBeqC(short x) {
-		MyClass a = new MyClass(1);
-		MyClass b = new MyClass(2);
-		MyClass c = b;
+		MyNestingClass a = new MyNestingClass(1);
+		MyNestingClass b = new MyNestingClass(2);
+		MyNestingClass c = b;
 		return (short) aliasingStresser(a, b, c);
 	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(2)
 	public static short aliasingAllSame(short x) {
-		MyClass a = new MyClass(1);
-		MyClass b = a;
-		MyClass c = a;
+		MyNestingClass a = new MyNestingClass(1);
+		MyNestingClass b = a;
+		MyNestingClass c = a;
 		return (short) aliasingStresser(a, b, c);
 	}
 	
-	private static int aliasingStresser(MyClass a, MyClass b, MyClass c) {
-		a.x = 1;
-		b.x = 2;
-		c.x = 3;
+	private static int aliasingStresser(MyNestingClass a, MyNestingClass b, MyNestingClass c) {
+		a.nested.x = 1;
+		b.nested.x = 2;
+		c.nested.x = 3;
 		
-		if (a.x == 1 && b.x == 2) return 1; // all different
-		if (a.x == 2 && b.x == 2) return 2; // a == b
-		if (a.x == 3 && b.x == 2) return 3; // a == c
-		if (a.x == 1 && b.x == 3) return 4; // b == c
-		if (a.x == 3 && b.x == 3) return 5; // all same
+		if (a.nested.x == 1 && b.nested.x == 2) return 1; // all different
+		if (a.nested.x == 2 && b.nested.x == 2) return 2; // a == b
+		if (a.nested.x == 3 && b.nested.x == 2) return 3; // a == c
+		if (a.nested.x == 1 && b.nested.x == 3) return 4; // b == c
+		if (a.nested.x == 3 && b.nested.x == 3) return 5; // all same
 		
 		return -1; // shouldn't happen
 	}
@@ -2151,59 +2140,74 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(12)
 	public static short simpleModifyAliasing(short x) {
-		MyClass obj = new MyClass(5);
+		MyNestingClass obj = new MyNestingClass(5);
 		directModify(obj, obj);
-		return (short) obj.x;
+		return (short) obj.nested.x;
 	}
 	
-	private static void directModify(MyClass a, MyClass b) {
-		a.x++;
-		b.x++;
-		a.x++;
-		a.x++;
-		a.x++;
+	private static void directModify(MyNestingClass a, MyNestingClass b) {
+		a.nested.x++;
+		b.nested.x++;
+		a.nested.x++;
+		a.nested.x++;
+		a.nested.x++;
 	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(8)
 	public static short methodCallAliasing(short x) {
-		MyClass obj = new MyClass(5);
+		MyNestingClass obj = new MyNestingClass(5);
 		methodCallModify(obj, obj);
-		return (short) obj.x;
+		return (short) obj.nested.x;
 	}
 	
-	private static void methodCallModify(MyClass a, MyClass b) {
-		a.addOne();
-		b.addOne();
-		a.addAndGet(8);
+	private static void methodCallModify(MyNestingClass a, MyNestingClass b) {
+		a.nested.addOne();
+		b.nested.addOne();
+		a.nested.addAndGet(8);
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
+	public static short aliasingTest1(short x) {
+		MyNestingClass a = new MyNestingClass(1);
+		aliasingMethod(a, a);
+		return (short) a.nested.getX();
+	}
+	
+	private static void aliasingMethod(MyNestingClass a, MyNestingClass b) {
+		a.nested.x = 0;
+		if (b.nested.x == 0) {
+			a.nested.x = 5;
+		}
 	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(12)
 	public static short aliasingTest3(short x) {
-		MyClass a = new MyClass(1);
-		MyClass b = a;
+		MyNestingClass a = new MyNestingClass(1);
+		MyNestingClass b = a;
 		
 		if (x > 0) {
-			a.x++;
-			b.x++;
+			a.nested.x++;
+			b.nested.x++;
 		}
 		
-		return (short) a.x;
+		return (short) a.nested.x;
 	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(9)
 	public static short aliasingTest4(short x) {
-		MyClass a = new MyClass(1);
-		MyClass b = a;
+		MyNestingClass a = new MyNestingClass(1);
+		MyNestingClass b = a;
 		
 		if (x > 0) {
-			a.x = 1;
-			b.x = 2;
-			a.x = 3;
+			a.nested.x = 1;
+			b.nested.x = 2;
+			a.nested.x = 3;
 			
-			if (b.x == 2) {
+			if (b.nested.x == 2) {
 				return 1;
 			} else {
 				return 2;
@@ -2216,15 +2220,15 @@ public class MyTestData {
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(9)
 	public static short aliasingTest5(short x) {
-		MyClass a = new MyClass(-1);
-		MyClass b = new MyClass(-1);
+		MyNestingClass a = new MyNestingClass(-1);
+		MyNestingClass b = new MyNestingClass(-1);
 		
 		if (x > 0) {
-			a.x = 1;
-			b.x = 2;
-			a.x = 3;
+			a.nested.x = 1;
+			b.nested.x = 2;
+			a.nested.x = 3;
 			
-			if (b.x == 2) {
+			if (b.nested.x == 2) {
 				return 1;
 			} else {
 				return 2;
