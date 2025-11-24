@@ -109,10 +109,9 @@ class Vars(
 
             val qualifierReplacement = key.qualifier.toLeafExpr()
             val replacementQualified = VariableExpr.new(key, idx)
-            val placeholderVersionOfTheKey = QualifiedFieldKey(placeholderQualifierKey, key.field)
-            val p = VariableExpr.KeyBackreference.new(placeholderVersionOfTheKey, idx)
+            val p = VariableExpr.KeyBackreference.new(key.toPlaceholderKey(), idx)
 
-            map[placeholderVersionOfTheKey]?.let {
+            map[key.toPlaceholderKey()]?.let {
                 val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
                     when (expr.resolvesTo) {
                         p -> replacementQualified
@@ -208,7 +207,6 @@ class Vars(
 
         val qualifier = key.qualifier
         val fieldKey = key.field
-        val qualifierInd = key.qualifierInd
 
         // Collect a list of all objects we know of that could alias with the object we're trying to set.
         val potentialAliasers: Set<QualifiedFieldKey> = map.keys
@@ -219,7 +217,7 @@ class Vars(
                         && fieldKey == it.field
                         && qualifier.ind == it.qualifier.ind
             }
-            .toSet() + QualifiedFieldKey(ResolvesTo.PlaceholderResolvesTo(qualifierInd), fieldKey)
+            .toSet() + QualifiedFieldKey(ResolvesTo.PlaceholderResolvesTo(key.qualifier.ind.into()), fieldKey)
 
         for (aliasingKey in potentialAliasers) {
             val condition = ComparisonExpr.new(

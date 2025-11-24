@@ -2,7 +2,7 @@ package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.*
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 
@@ -73,10 +73,12 @@ data class ReturnKey(override val ind: Indicator<*>) : UnknownKey() {
 
 data class QualifiedFieldKey(val qualifier: ResolvesTo<HeapMarker>, val field: Field) : UnknownKey() {
     override val ind: Indicator<*> = field.ind
-    val qualifierInd: ObjectIndicator = qualifier.ind as ObjectIndicator
     override val lifetime: Lifetime = qualifier.lifetime
 
     override fun toString(): String = "$qualifier.$field"
+
+    fun toPlaceholderKey(): QualifiedFieldKey =
+        QualifiedFieldKey(ResolvesTo.PlaceholderResolvesTo(qualifier.ind.into()), field)
 
     /**
      * This isn't a full key by itself, you'll need a qualifier as well and then will want to make a [QualifiedFieldKey].

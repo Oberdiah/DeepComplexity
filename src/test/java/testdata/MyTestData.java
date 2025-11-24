@@ -2184,7 +2184,7 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(12)
-	public static short aliasingTest3(short x) {
+	public static short aliasingTest2(short x) {
 		MyNestingClass a = new MyNestingClass(1);
 		MyNestingClass b = a;
 		
@@ -2198,7 +2198,7 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(9)
-	public static short aliasingTest4(short x) {
+	public static short aliasingTest3(short x) {
 		MyNestingClass a = new MyNestingClass(1);
 		MyNestingClass b = a;
 		
@@ -2219,7 +2219,7 @@ public class MyTestData {
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(9)
-	public static short aliasingTest5(short x) {
+	public static short aliasingTest4(short x) {
 		MyNestingClass a = new MyNestingClass(-1);
 		MyNestingClass b = new MyNestingClass(-1);
 		
@@ -2229,6 +2229,48 @@ public class MyTestData {
 			a.nested.x = 3;
 			
 			if (b.nested.x == 2) {
+				return 1;
+			} else {
+				return 2;
+			}
+		}
+		
+		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(9)
+	public static short aliasingTest5(short x) {
+		MyNestingClass a = new MyNestingClass(-1);
+		MyClass b = new MyClass(-1);
+		
+		if (x > 0) {
+			a.nested.x = 1;
+			b.x = 2;
+			a.nested.x = 3;
+			
+			if (b.x == 2) {
+				return 1;
+			} else {
+				return 2;
+			}
+		}
+		
+		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(9)
+	public static short aliasingTest6(short x) {
+		MyClass b = new MyClass(-1);
+		MyNestingClass a = new MyNestingClass(b);
+		
+		if (x > 0) {
+			a.nested.x = 1;
+			b.x = 2;
+			a.nested.x = 3;
+			
+			if (b.x == 2) {
 				return 1;
 			} else {
 				return 2;
