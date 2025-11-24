@@ -3,6 +3,8 @@ package com.oberdiah.deepcomplexity.context
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 
 /**
  * [ResolvesTo]s must be very carefully resolved; they cannot be resolved in any context
@@ -38,8 +40,9 @@ interface ResolvesTo<T : Any> {
      * }
      * ```
      */
-    data class PlaceholderResolvesTo<T : Any>(override val ind: Indicator<T>) : ResolvesTo<T> {
-        override fun toLeafExpr(): Expr<T> = VariableExpr.new(this)
+    data class PlaceholderResolvesTo(override val ind: ObjectIndicator) : ResolvesTo<HeapMarker> {
+        override fun toLeafExpr(): VariableExpr<HeapMarker> = VariableExpr.new(this)
         override fun isPlaceholder(): Boolean = true
+        override fun toString(): String = "P(${ind.type.toStringPretty()})"
     }
 }

@@ -121,6 +121,8 @@ object StaticExpressionAnalysis {
         }
         // EXPR_EQUALITY_PERF_ISSUE
         val falseExpr = if (falseExpr is IfExpr && falseExpr.thisCondition == condition) {
+            // If my condition is equal to the condition of the false branch's inner `if`'s condition, we know that that
+            // inner `if` can never be true, so we can safely return its false branch.
             falseExpr.falseExpr
         } else {
             falseExpr
