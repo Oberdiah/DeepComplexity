@@ -2050,6 +2050,17 @@ public class MyTestData {
 		return (short) p.x;
 	}
 	
+	public static short forLoops13(short x) {
+		MyClass a = new MyClass(1);
+		MyClass b = new MyClass(1);
+		for (int i = 0; i++ < 10; i++) {
+			a.x++;
+			b.x++;
+		}
+		
+		return (short) (a.x + b.x);
+	}
+	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(4)
 	public static short sharedState1(short x) {
