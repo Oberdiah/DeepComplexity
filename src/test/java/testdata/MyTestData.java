@@ -1934,7 +1934,7 @@ public class MyTestData {
 		}
 	}
 	
-	public static short go(short x) {
+	public static short forLoops0(short x) {
 		if (x < 0 || x > 10) {
 			return 0;
 		}
