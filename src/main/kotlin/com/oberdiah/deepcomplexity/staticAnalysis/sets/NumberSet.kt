@@ -4,7 +4,6 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
-import com.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
@@ -253,14 +252,6 @@ data class NumberSet<T : Number> private constructor(
         }
 
         return BooleanSet.BOTH
-    }
-
-    fun evaluateLoopingRange(
-        changeTerms: ConstraintSolver.CollectedTerms<T>,
-        valid: NumberSet<T>
-    ): NumberSet<T> {
-        // This was half-implemented in the old version.
-        TODO("Not yet implemented")
     }
 
     override fun toConstVariance(): Variances<T> = NumberVariances.newFromConstant(this)

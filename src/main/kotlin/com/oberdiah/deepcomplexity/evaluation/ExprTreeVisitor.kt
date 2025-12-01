@@ -51,7 +51,6 @@ object ExprTreeVisitor {
             visitor(expr.rhs)
         }
 
-        is NumIterationTimesExpr -> visitor(expr.variable)
         is TypeCastExpr<*, *> -> visitor(expr.expr)
         is VarsExpr -> {}
         is LeafExpr<*> -> {}

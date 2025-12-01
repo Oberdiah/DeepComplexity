@@ -9,6 +9,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
+import com.oberdiah.deepcomplexity.solver.LoopSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
@@ -184,8 +185,6 @@ object MethodProcessing {
                     processPsiStatement(initialization, context)
                 }
 
-                // In this case we specifically don't want to inherit the variables, because in this case
-                // the context may be repeated many times, and we want to analyse its effects over time.
                 val bodyContext = newContext(context.c.thisType)
 
                 val conditionExpr = psi.condition?.let { condition ->
@@ -198,7 +197,7 @@ object MethodProcessing {
                 psi.body?.let { processPsiStatement(it, bodyContext) }
                 psi.update?.let { processPsiStatement(it, bodyContext) }
 
-//                LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
+                LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
                 TODO("Loops haven't been implemented yet")
             }
 

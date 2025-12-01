@@ -6,10 +6,8 @@ import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
-import com.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 
 sealed class Expr<T : Any>() {
     /**
@@ -302,43 +300,6 @@ data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
 data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
     override val ind: Indicator<T>
         get() = expr.ind
-}
-
-data class NumIterationTimesExpr<T : Number>(
-    // How the variable is constrained; if the variable changes such that this returns false,
-    // the loop will end.
-    val constraint: NumberSet<T>,
-    // The variable that's being modified as it changes inside the loop.
-    val variable: VariableExpr<T>,
-    // How the variable is changing each iteration.
-    val terms: ConstraintSolver.CollectedTerms<T>,
-) : Expr<T>() {
-    override val ind: Indicator<T>
-        get() = TODO("Not yet implemented")
-
-    companion object {
-        fun <T : Number> new(
-            constraint: NumberSet<T>,
-            variable: VariableExpr<out Number>,
-            terms: ConstraintSolver.CollectedTerms<out Number>
-        ): NumIterationTimesExpr<T> {
-            val indicator = constraint.ind
-
-            assert(indicator == variable.ind) {
-                "Variable and constraint have different set indicators: ${variable.ind} and $indicator"
-            }
-            assert(indicator == terms.ind) {
-                "Variable and terms have different set indicators: ${variable.ind} and ${terms.ind}"
-            }
-
-            @Suppress("UNCHECKED_CAST")
-            return NumIterationTimesExpr(
-                constraint,
-                variable as VariableExpr<T>,
-                terms as ConstraintSolver.CollectedTerms<T>
-            )
-        }
-    }
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>() {

@@ -119,12 +119,6 @@ object ExprTreeRebuilder {
                 rebuildTree(expr.expr, replacer),
             )
 
-            is NumIterationTimesExpr -> NumIterationTimesExpr(
-                expr.constraint,
-                rebuildTree(expr.variable, replacer) as VariableExpr<T>,
-                expr.terms,
-            )
-
             else -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
         }
     }

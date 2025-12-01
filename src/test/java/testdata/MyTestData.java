@@ -1934,10 +1934,23 @@ public class MyTestData {
 		}
 	}
 	
-	public static short forLoops1(short x) {
+	public static short go(short x) {
+		if (x < 0 || x > 10) {
+			return 0;
+		}
+		
 		int a = 0;
 		for (int i = 0; i < x; i++) {
 			a += 1;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops1(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			i++;
+			a++;
 		}
 		return (short) a;
 	}

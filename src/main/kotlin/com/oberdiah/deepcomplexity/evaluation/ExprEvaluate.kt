@@ -79,15 +79,6 @@ object ExprEvaluate {
             }
 
             is NegateExpr -> evaluate(expr.expr, scope).negate()
-            is NumIterationTimesExpr -> {
-                val terms = expr.terms
-                // The plan here is to figure out, based on the set of numbers we are allowed to have,
-                // the maximum number of times this could occur.
-                // This could get pretty complex, but we'll keep it relatively simple for now.
-
-                val startingValue = expr.variable.evaluate(scope)
-                startingValue.evaluateLoopingRange(terms, expr.constraint)
-            }
 
             else -> evaluateAnythings(expr, scope)
         }

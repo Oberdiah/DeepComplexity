@@ -4,9 +4,7 @@ import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 fun <T : Number> Bundle<T>.arithmeticOperation(
@@ -67,12 +65,4 @@ fun <T : Number> Bundle<T>.numberComparisonOperation(
 fun <T : Number> Bundle<T>.negate(): Bundle<T> =
     this.performUnaryOperation { a ->
         a.into().negate()
-    }
-
-fun <T : Number> Bundle<T>.evaluateLoopingRange(
-    evaluate: ConstraintSolver.CollectedTerms<T>,
-    constraint: NumberSet<T>
-): Bundle<T> =
-    this.performUnaryOperation { a ->
-        a.into().evaluateLoopingRange(evaluate, constraint)
     }

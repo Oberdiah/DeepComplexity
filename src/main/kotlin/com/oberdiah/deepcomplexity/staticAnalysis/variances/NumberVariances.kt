@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.oberdiah.deepcomplexity.solver.ConstraintSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
@@ -294,9 +293,4 @@ data class NumberVariances<T : Number> private constructor(
 
         return constraints
     }
-
-    fun evaluateLoopingRange(
-        changeTerms: ConstraintSolver.CollectedTerms<T>,
-        valid: NumberSet<T>
-    ): NumberVariances<T> = TODO("Not yet implemented")
 }
