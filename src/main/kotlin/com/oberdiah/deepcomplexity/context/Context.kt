@@ -80,7 +80,7 @@ class Context private constructor(
     fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
 
-    private fun mapVars(operation: (Vars) -> Vars): Context =
+    fun mapVars(operation: (Vars) -> Vars): Context =
         Context(inner.mapAllVars(operation), thisType, idx)
 
     fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }

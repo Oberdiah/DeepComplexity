@@ -76,8 +76,8 @@ class InnerCtx private constructor(
 
     fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacer): InnerCtx = InnerCtx(
         operation.replace(staticExpr),
-        dynamicVars.mapExpressions(operation)
-    ).mapStaticVars { it.mapExpressions(operation) }
+        dynamicVars.mapExpressions(operation.toWithKey())
+    ).mapStaticVars { it.mapExpressions(operation.toWithKey()) }
 
     val keys: Set<UnknownKey> = staticExpr.iterateTree<VarsExpr>().flatMap { (it.vars ?: dynamicVars).keys }.toSet()
 

@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
@@ -7,19 +8,38 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 
-// Leaf replacers change the leaves' types.
+// Leaf replacers change the leaves' types...
 typealias LeafReplacer<T> = (Expr<*>) -> Expr<T>
 
 object ExprTreeRebuilder {
-    // Standard expression replacers keep them the same
+    // ...standard expression replacers keep them the same
     interface ExprReplacer {
         fun <T : Any> replace(expr: Expr<T>): Expr<T>
+        fun toWithKey(): ExprReplacerWithKey = ExprReplacerWithKey { key, expr -> replace(expr) }
 
         companion object {
             operator fun invoke(block: (Expr<*>) -> Expr<*>): ExprReplacer {
                 return object : ExprReplacer {
                     override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
                         return block(expr).castOrThrow(expr.ind)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * This is just a standard expression replacer that will only be called
+     * from the root of an expression tree where the key of the expression is also known.
+     */
+    interface ExprReplacerWithKey {
+        fun <T : Any> replace(key: UnknownKey, expr: Expr<T>): Expr<T>
+
+        companion object {
+            operator fun invoke(block: (UnknownKey, Expr<*>) -> Expr<*>): ExprReplacerWithKey {
+                return object : ExprReplacerWithKey {
+                    override fun <T : Any> replace(key: UnknownKey, expr: Expr<T>): Expr<T> {
+                        return block(key, expr).castOrThrow(expr.ind)
                     }
                 }
             }

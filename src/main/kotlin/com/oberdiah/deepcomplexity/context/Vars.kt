@@ -24,10 +24,10 @@ class Vars(
      */
     fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
     fun resolveUsing(vars: Vars): Vars =
-        mapExpressions(ExprTreeRebuilder.ExprReplacer { vars.resolveKnownVariables(it) })
+        mapExpressions(ExprTreeRebuilder.ExprReplacerWithKey { _, e -> vars.resolveKnownVariables(e) })
 
-    fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacer): Vars =
-        Vars(idx, map.mapValues { (_, expr) -> operation.replace(expr) })
+    fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacerWithKey): Vars =
+        Vars(idx, map.mapValues { (key, expr) -> operation.replace(key, expr) })
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
