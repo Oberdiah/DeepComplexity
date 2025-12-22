@@ -8,7 +8,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 
 /**
  * [ResolvesTo]s must be very carefully resolved; they cannot be resolved in any context
- * they were created in. Only [Context]s have the ability to create and resolve them.
+ * they were created in. Only [Context]s can create and resolve them.
  */
 interface ResolvesTo<T : Any> {
     val lifetime: UnknownKey.Lifetime

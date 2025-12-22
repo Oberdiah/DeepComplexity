@@ -2074,6 +2074,50 @@ public class MyTestData {
 		return (short) (a.x + b.x);
 	}
 	
+	public static short forLoops14(short x) {
+		int a = 0;
+		int b = 0;
+		for (int i = 0; i < 10; i++) {
+			a = b + 1;
+			b = a + 1;
+		}
+		
+		return (short) (a + b);
+	}
+	
+	public static short forLoops15(short x) {
+		int a = 0;
+		int b = 1;
+		for (int i = 0; i < 10; i += 2) {
+			a = a + b + 1;
+			b = b * 2;
+		}
+		
+		// Ideal final IR:
+		//
+		//	LoopFor(
+		//		count: LoopWhile(
+		//			condition: $body < 10
+		//			body: LoopBody(
+		//				initial: 'i as $i,
+		//				step: $i + 2
+		//			)
+		//		).numIterations as $idx,
+		//		body: LoopBody(
+		//			initial: 'a as $a,
+		//			step: $a + LoopFor(
+		//				count: $idx,
+		//				body: LoopBody(
+		//					initial: 'b as $b,
+		//					step: $b * 2,
+		//				)
+		//			).body
+		//		)
+		//	).body
+		
+		return (short) (a + b);
+	}
+	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(4)
 	public static short sharedState1(short x) {

@@ -2,8 +2,8 @@ package com.oberdiah.deepcomplexity.solver
 
 import com.oberdiah.deepcomplexity.context.Context
 import com.oberdiah.deepcomplexity.context.UnknownKey
-import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.staticAnalysis.IntIndicator
+import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder
 
 object LoopSolver {
     private data class SolverInformation(
@@ -39,47 +39,13 @@ object LoopSolver {
         // we can ignore for now.
 
         val newContext = loopContext.forcedDynamic().mapVars {
-            val myKeys = it.keys
+            val allKeysInLoop = it.keys
 
             it.mapExpressions(ExprTreeRebuilder.ExprReplacerWithKey { key, expr ->
-                val solverInformation = SolverInformation(
-                    key,
-                    myKeys,
-                    ConstExpr.new(1, IntIndicator)
-                )
-                loopExpression(expr, solverInformation)
+                expr
             })
         }
 
         return newContext
-    }
-
-    /**
-     * Let's try to define this recursively. The output of this expression is the same expression again,
-     * but looped.
-     */
-    private fun loopExpression(expr: Expr<*>, solverInformation: SolverInformation): Expr<*> {
-        when (expr) {
-            is ArithmeticExpr<*> -> {
-                when (expr.op) {
-                    BinaryNumberOp.ADDITION -> TODO()
-                    BinaryNumberOp.SUBTRACTION -> TODO()
-                    BinaryNumberOp.MULTIPLICATION -> TODO()
-                    BinaryNumberOp.DIVISION -> TODO()
-                    BinaryNumberOp.MODULO -> TODO()
-                }
-            }
-
-            is BooleanExpr -> TODO()
-            is BooleanInvertExpr -> TODO()
-            is ComparisonExpr<*> -> TODO()
-            is IfExpr<*> -> TODO()
-            is ConstExpr<*> -> TODO()
-            is VariableExpr<*> -> TODO()
-            is NegateExpr<*> -> TODO()
-            is TypeCastExpr<*, *> -> TODO()
-            is UnionExpr<*> -> TODO()
-            is VarsExpr -> TODO()
-        }
     }
 }
