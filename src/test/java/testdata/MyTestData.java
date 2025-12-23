@@ -2093,29 +2093,43 @@ public class MyTestData {
 			b = b * 2;
 		}
 		
-		// Ideal final IR:
+		// 	Ideal final IR:
 		//
-		//	LoopFor(
-		//		count: LoopWhile(
-		//			condition: $body < 10
-		//			body: LoopBody(
-		//				initial: 'i as $i,
-		//				step: $i + 2
-		//			)
-		//		).numIterations as $idx,
-		//		body: LoopBody(
-		//			initial: 'a as $a,
-		//			step: $a + LoopFor(
-		//				count: $idx,
-		//				body: LoopBody(
-		//					initial: 'b as $b,
-		//					step: $b * 2,
-		//				)
-		//			).body
-		//		)
-		//	).body
+		//	Loop(
+		//	    target: $a
+		//		condition: $i < 10
+		//		variables: {
+		//			a: { initial: a', next: $a + $b + 1 }
+		//			b: { initial: b', next: $b * 2 }
+		//		}
+		//	)
 		
 		return (short) (a + b);
+	}
+	
+	public static short forLoops16(short x) {
+		int i1 = 0;
+		int i2 = -3;
+		int b = 1;
+		while (i1 + i2 + b < 10) {
+			b = b * 2;
+			i1 += 1;
+			i2 += 2;
+		}
+		
+		// 	Ideal final IR:
+		//
+		//	Loop(
+		//	    target: $b
+		//		condition: $i1 + $i2 + $b < 10
+		//		variables: {
+		//			b: { initial: b', next: $b * 2 }
+		//			i1: { initial: i1', next: $i1 + 1 }
+		//			i2: { initial: i2', next: $i2 + 2 }
+		//		}
+		//	)
+		
+		return (short) b;
 	}
 	
 	@RequiredScore(1.0)

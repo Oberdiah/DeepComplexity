@@ -154,8 +154,7 @@ data class ArithmeticExpr<T : Number>(
         }
     }
 
-    override val ind: Indicator<T>
-        get() = lhs.ind
+    override val ind: Indicator<T> = lhs.ind
 }
 
 
@@ -179,6 +178,8 @@ data class ComparisonExpr<T : Any> private constructor(
         }
     }
 
+    override val ind: Indicator<Boolean> = BooleanIndicator
+
     override fun simplify(): Expr<Boolean> = new(lhs, rhs, comp)
 
     init {
@@ -187,8 +188,6 @@ data class ComparisonExpr<T : Any> private constructor(
         }
     }
 
-    override val ind: Indicator<Boolean>
-        get() = BooleanIndicator
 }
 
 /**
@@ -216,8 +215,7 @@ data class IfExpr<T : Any> private constructor(
         }
     }
 
-    override val ind: Indicator<T>
-        get() = trueExpr.ind
+    override val ind: Indicator<T> = trueExpr.ind
 
     override fun simplify(): Expr<T> = new(trueExpr, falseExpr, thisCondition)
 
@@ -264,8 +262,7 @@ data class UnionExpr<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
         }
     }
 
-    override val ind: Indicator<T>
-        get() = lhs.ind
+    override val ind: Indicator<T> = lhs.ind
 }
 
 @ConsistentCopyVisibility
@@ -277,8 +274,7 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
         }
     }
 
-    override val ind: Indicator<Boolean>
-        get() = BooleanIndicator
+    override val ind: Indicator<Boolean> = BooleanIndicator
 
     companion object {
         fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanExpr =
@@ -293,13 +289,11 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
 }
 
 data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
-    override val ind: Indicator<Boolean>
-        get() = BooleanIndicator
+    override val ind: Indicator<Boolean> = BooleanIndicator
 }
 
 data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
-    override val ind: Indicator<T>
-        get() = expr.ind
+    override val ind: Indicator<T> = expr.ind
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>() {
@@ -309,7 +303,8 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
 }
 
 /**
- * This represents a standard primitive which we do not know the value of yet.
+ * This represents a variable in code which we do not know the value of yet within our scope. Variable expressions
+ * are resolved at method processing time.
  *
  * Related to a specific context (The context that created it).
  * This context is only used for ensuring proper usage, it's never used within the logic.
