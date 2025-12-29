@@ -47,11 +47,50 @@ class Vars(
         /**
          * Merges the two variable maps, combining variables with identical [UnknownKey]s using [how].
          */
-        fun combine(lhs: Vars, rhs: Vars, how: (Expr<*>, Expr<*>) -> Expr<*>): Vars =
-            Vars(
-                rhs.idx + lhs.idx,
-                (lhs.keys + rhs.keys).associateWith { key -> how(lhs.get(key), rhs.get(key)) }
-            )
+        fun combine(lhs: Vars, rhs: Vars, how: (Expr<*>, Expr<*>) -> Expr<*>): Vars {
+            val newKeys = (lhs.keys + rhs.keys) - lhs.keys.intersect(rhs.keys)
+            return Vars(rhs.idx + lhs.idx, (lhs.keys + rhs.keys).associateWith { key ->
+                val lhsResult = lhs.get(key)
+                val rhsResult = rhs.get(key)
+
+                /**
+                 * This is important, but removing it shouldn't technically result in any incorrect values,
+                 * just a lot of noise and impossible-to-reach parts of the evaluation tree with unresolved
+                 * variables.
+                 * To understand what this is solving, take the example
+                 * ```
+                 * Foo f = new Foo(5);
+                 * if (x > 5) {
+                 *     f = new Foo(10);
+                 * }
+                 * return f.x;
+                 * ```
+                 * Without this modification, here's how the `if` would end up looking:
+                 * ```
+                 * f: if (x > 5) { #2 } else { f' }
+                 * #2.x: if (x > 5) { 10 } else { #2.x' }
+                 * ```
+                 *
+                 * Now, that #2.x' produced there will never be resolved, as the #2 object was created in the true
+                 * branch so the other branch cannot contain the same instance of the object. If `if` branches
+                 * were always built on fresh contexts, checking to see if the qualifier was on an object instance
+                 * (a constant) would be enough (all other qualifiers would be references). However, we cannot assume
+                 * that; it is also acceptable for branches to be implemented by combining two clones of a context.
+                 * Given that, we need to additionally check that the qualified constant does not appear
+                 * on the other side too (if it does, both branches are both referencing an already-existing object
+                 * from earlier in the code path).
+                 */
+                if (key is QualifiedFieldKey && key.qualifier.isConstant() && key in newKeys) {
+                    return@associateWith when (key) {
+                        in lhs.keys -> lhsResult
+                        in rhs.keys -> rhsResult
+                        else -> throw IllegalStateException("How could the key not be in either map?")
+                    }
+                }
+
+                how(lhsResult, rhsResult)
+            })
+        }
     }
 
     override fun toString(): String {

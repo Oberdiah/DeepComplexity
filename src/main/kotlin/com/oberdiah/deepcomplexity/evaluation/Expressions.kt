@@ -394,6 +394,7 @@ data class ConstExpr<T : Any> private constructor(override val resolvesTo: DataC
     data class DataContainer<T : Any>(val v: T, override val ind: Indicator<T>) : ResolvesTo<T> {
         override fun toString(): String = v.toString()
         override fun toLeafExpr(): Expr<T> = ConstExpr(this)
+        override fun isConstant(): Boolean = true
     }
 
     val value = resolvesTo.v

@@ -808,6 +808,8 @@ public class MyTestData {
 		return (short) (a + b + c);
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(480)
 	public static short nastyPerformanceTest2(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
@@ -1563,6 +1565,8 @@ public class MyTestData {
 		return -5;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(14)
 	public static short simpleClassTest40(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {

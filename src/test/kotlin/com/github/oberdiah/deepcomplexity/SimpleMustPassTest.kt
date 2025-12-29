@@ -24,7 +24,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val testSettings: TestSettings
     )
 
-    data class TestSettings(val cloneContexts: Boolean)
+    data class TestSettings(val cloneContexts: Boolean, val updateAnnotations: Boolean)
 
     @Test
     @Order(1)
@@ -74,13 +74,19 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                                         psiMethod,
                                         psiMethod.name,
                                         relativeFile,
-                                        TestSettings(false)
+                                        TestSettings(
+                                            cloneContexts = false,
+                                            updateAnnotations = true
+                                        )
                                     ), TestInfo(
                                         psiMethod.name + " C.",
                                         psiMethod,
                                         psiMethod.name,
                                         relativeFile,
-                                        TestSettings(true)
+                                        TestSettings(
+                                            cloneContexts = true,
+                                            updateAnnotations = false
+                                        )
                                     )
                                 )
                             }

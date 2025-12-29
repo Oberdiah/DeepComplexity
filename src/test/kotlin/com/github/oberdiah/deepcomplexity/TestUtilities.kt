@@ -66,7 +66,7 @@ object TestUtilities {
             ?.virtualFile
             ?.path
             ?.replace("/src", "src/test/java/testdata")
-        if (filePath != null) {
+        if (filePath != null && testInfo.testSettings.updateAnnotations) {
             annotationInformation.add(
                 MethodAnnotationInfo(
                     filePath,

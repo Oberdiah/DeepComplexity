@@ -19,6 +19,7 @@ interface ResolvesTo<T : Any> {
     fun safelyResolveUsing(vars: Vars): Expr<*> = toLeafExpr()
     fun withAddedContextId(newId: ContextId): ResolvesTo<T> = this
     fun isPlaceholder(): Boolean = false
+    fun isConstant(): Boolean = false
 
     /**
      * Solely used to store any placeholder expression a type may have picked up
