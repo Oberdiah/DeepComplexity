@@ -18,24 +18,18 @@ object ConversionsAndPromotion {
         fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
     }
 
-    fun castAToB(exprA: Expr<*>, exprB: Expr<*>, nonTrivialBehaviour: Behaviour): TypedPair<*> {
-        fun <T : Any> castTo(exprB: Expr<T>): TypedPair<*> {
-            val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivialBehaviour)
-            return TypedPair(castExprA, exprB)
-        }
-        return castTo(exprB)
+    fun <T : Any> castAToB(exprA: Expr<*>, exprB: Expr<T>, nonTrivialBehaviour: Behaviour): TypedPair<T> {
+        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivialBehaviour)
+        return TypedPair(castExprA, exprB)
     }
 
-    fun castNumbersAToB(
+    fun <T : Number> castNumbersAToB(
         exprA: Expr<out Number>,
-        exprB: Expr<out Number>,
+        exprB: Expr<T>,
         nonTrivialBehaviour: Behaviour
-    ): TypedPair<out Number> {
-        fun <T : Number> castTo(exprB: Expr<T>): TypedPair<out Number> {
-            val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivialBehaviour)
-            return TypedPair(castExprA, exprB)
-        }
-        return castTo(exprB)
+    ): TypedPair<T> {
+        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivialBehaviour)
+        return TypedPair(castExprA, exprB)
     }
 
     fun <T : Number> castBothNumbersTo(
