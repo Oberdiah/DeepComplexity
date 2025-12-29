@@ -2,9 +2,10 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.into
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 class Vars(
     val idx: ContextId,
@@ -194,7 +195,7 @@ class Vars(
      *  which is exactly as desired.
      */
     fun with(lExpr: LValue<*>, rExpr: Expr<*>): Vars {
-        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
+        val rExpr = rExpr.castTo(lExpr.ind, Behaviour.WrapWithTypeCastImplicit)
 
         if (lExpr is LValueKey) {
             return with(lExpr.key, rExpr)

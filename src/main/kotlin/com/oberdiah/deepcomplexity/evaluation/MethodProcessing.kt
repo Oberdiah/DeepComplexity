@@ -3,16 +3,17 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 import com.oberdiah.deepcomplexity.context.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.oberdiah.deepcomplexity.solver.LoopSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.getThisType
@@ -220,7 +221,7 @@ object MethodProcessing {
                 val returnKey = psi.toKey()
                 val returnExpr = psi.returnValue?.let {
                     processPsiExpression(it, context)
-                        .castToUsingTypeCast(returnKey.ind, false)
+                        .castTo(returnKey.ind, Behaviour.WrapWithTypeCastImplicit)
                 } ?: ConstExpr.VOID
 
                 context.addVar(LValueKey.new(returnKey), returnExpr)
@@ -353,7 +354,7 @@ object MethodProcessing {
                         ConversionsAndPromotion.castNumbersAToB(
                             rhs,
                             lhs,
-                            false
+                            Behaviour.WrapWithTypeCastImplicit
                         ).map { innerRhs, innerLhs ->
                             val expr = ArithmeticExpr(
                                 innerLhs,
@@ -581,7 +582,7 @@ object MethodProcessing {
                 ConversionsAndPromotion.castAToB(
                     lhsPrecast,
                     rhsPrecast,
-                    false
+                    Behaviour.WrapWithTypeCastImplicit
                 ).map { lhs, rhs ->
                     return@map when {
                         comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)
