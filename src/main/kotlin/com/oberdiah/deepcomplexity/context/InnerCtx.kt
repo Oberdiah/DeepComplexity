@@ -86,7 +86,7 @@ class InnerCtx private constructor(
     /**
      * Returns the dynamic variables in this inner context. Returns a new Vars object if one is not possible.
      */
-    fun grabDynamicVars(idx: ContextId): Vars = dynamicVars ?: Vars.new(idx)
+    fun grabDynamicVars(): Vars? = dynamicVars
 
     fun resolveUsing(vars: Vars): InnerCtx = InnerCtx(
         vars.resolveKnownVariables(staticExpr),

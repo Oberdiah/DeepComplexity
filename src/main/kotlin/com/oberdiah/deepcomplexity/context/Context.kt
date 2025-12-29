@@ -72,15 +72,23 @@ class Context private constructor(
     override fun toString(): String = inner.toString()
     fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
-    val dynamicVars: Vars = inner.grabDynamicVars(idx)
+    val dynamicVars: Vars
+        get() = inner.grabDynamicVars()
+        // A context isn't in an invalid state when dynamic vars is null, but a lot of common
+        // operations stop having meaning; e.g. resolving variables or fetching variables use the dynamic
+            ?: throw IllegalStateException(
+                "Dynamic vars is null. This most likely means we're trying to interact " +
+                        "with this context in a meaningful way after a return statement has been hit, which is unlikely " +
+                        "to be what was intended."
+            )
 
-    val returnValue: Expr<*>? = dynamicVars.returnValue
+    val returnValue: Expr<*>? get() = dynamicVars.returnValue
 
     /**
      * Just grabs from the inner's dynamicVars.
      */
     fun <T : Any> get(lValue: LValue<T>): Expr<T> = dynamicVars.get(lValue)
-    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = dynamicVars.resolveKnownVariables(expr) ?: expr
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = dynamicVars.resolveKnownVariables(expr)
 
     fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
