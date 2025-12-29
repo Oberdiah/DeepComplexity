@@ -14,6 +14,18 @@ import kotlin.math.nextUp
 import kotlin.reflect.KClass
 
 object Utilities {
+    data class Globals(
+        var SHOULD_CLONE_CONTEXTS: Boolean
+    )
+
+    /**
+     * Definitely shouldn't be used by anything in the application itself, but can be handy for
+     * test frameworks.
+     */
+    val TEST_GLOBALS: Globals = Globals(
+        false
+    )
+
     val DD_POSITIVE_INFINITY: DD = DD.of(Double.POSITIVE_INFINITY)
     val DD_NEGATIVE_INFINITY: DD = DD.of(Double.NEGATIVE_INFINITY)
 

@@ -16,7 +16,15 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val summaryDescription = mutableListOf<String>()
     }
 
-    class TestInfo(val psiMethod: PsiMethod, val name: String, val file: String)
+    class TestInfo(
+        val testDisplayName: String,
+        val psiMethod: PsiMethod,
+        val className: String,
+        val file: String,
+        val testSettings: TestSettings
+    )
+
+    data class TestSettings(val cloneContexts: Boolean)
 
     @Test
     @Order(1)
@@ -47,23 +55,33 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
         val app = ApplicationManager.getApplication()
 
-        val methods = app.runReadAction<List<TestInfo>> {
+        var methods = app.runReadAction<List<TestInfo>> {
             val list = mutableListOf<TestInfo>()
             for (file in outputFiles) {
                 if (file is PsiJavaFile) {
                     list.addAll(file.classes.flatMap { psiClass ->
                         psiClass.methods
                             .filter { it.hasModifierProperty("public") }
-                            .map { psiMethod ->
+                            .flatMap { psiMethod ->
                                 val relativeFile = file.virtualFile.path
                                     .replace("/src/", "")
                                     .replace(".java", "")
                                     .replace("/", ".")
 
-                                TestInfo(
-                                    psiMethod,
-                                    psiMethod.name,
-                                    relativeFile
+                                listOf(
+                                    TestInfo(
+                                        psiMethod.name,
+                                        psiMethod,
+                                        psiMethod.name,
+                                        relativeFile,
+                                        TestSettings(false)
+                                    ), TestInfo(
+                                        psiMethod.name + " C.",
+                                        psiMethod,
+                                        psiMethod.name,
+                                        relativeFile,
+                                        TestSettings(true)
+                                    )
                                 )
                             }
                     })
@@ -74,24 +92,34 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
         val testToRun = System.getenv("TEST_FILTER")
 
-        val methodsToRun = if (testToRun != null) {
-            methods.filter { it.name.contains(testToRun) }
+        methods = if (testToRun != null) {
+            methods.filter { it.className.contains(testToRun) }
         } else {
             methods
         }
 
+        val ignoreClonedContextTests = System.getenv("IGNORE_CLONED_CONTEXTS") == "True"
+        val ignoreNonClonedContextTests = System.getenv("IGNORE_NON_CLONED_CONTEXTS") == "True"
+        methods = methods.filter {
+            if (it.testSettings.cloneContexts) {
+                !ignoreClonedContextTests
+            } else {
+                !ignoreNonClonedContextTests
+            }
+        }
+
         val tests = mutableListOf<DynamicTest>()
 
-        for (method in methodsToRun) {
+        for (method in methods) {
             val file = method.file
-            val testSourceUri = URI.create("method:testdata.${file}#${method.name}")
+            val testSourceUri = URI.create("method:testdata.${file}#${method.className}")
 
-            tests.add(DynamicTest.dynamicTest(method.name, testSourceUri) {
+            tests.add(DynamicTest.dynamicTest(method.testDisplayName, testSourceUri) {
                 app.runReadAction {
                     val (msg, passed) = TestUtilities.testMethod(method)
-                    summaryDescription.add("${method.name.padEnd(32)}: $msg")
+                    summaryDescription.add("${method.testDisplayName.padEnd(32)}: $msg")
                     if (!passed) {
-                        throw AssertionError("Test ${method.name} failed.")
+                        throw AssertionError("Test ${method.testDisplayName} failed.")
                     }
                 }
             })

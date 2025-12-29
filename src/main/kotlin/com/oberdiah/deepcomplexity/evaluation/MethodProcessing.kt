@@ -104,13 +104,19 @@ object MethodProcessing {
             }
 
             is PsiIfStatement -> {
-                // Important note: We create a new context here not because it wouldn't work if
-                // it was a clone of [context] (with `val combined =` swapped for `context.c =` below),
-                // but because stacking is a non-negotiable part of how loops and method calls work,
-                // and the more test coverage we can get of that operation the better.
+                // Important note: We want to create a new context here not because it wouldn't work if
+                // it was a clone of [context], but because stacking is a non-negotiable part of how loops
+                // and method calls work, and the more test coverage we can get of that operation the better.
                 // We don't bother, for example, to do it with short-circuiting boolean operations because
                 // of the complexity it would add.
-                val ifContext = newContext(context.c.thisType)
+                // To get the best possible coverage of these two modes of operation,
+                // we run all the tests twice, once in cloning and one in stacking mode.
+                val ifContext = if (Utilities.TEST_GLOBALS.SHOULD_CLONE_CONTEXTS) {
+                    context.copy()
+                } else {
+                    newContext(context.c.thisType)
+                }
+
                 val condition = processPsiExpression(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     ifContext
@@ -123,11 +129,17 @@ object MethodProcessing {
                 val falseBranchContext = ifContext.copy()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
+                // In the non-clone, non-stacking case, the static result can end up
                 val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpr.new(a, b, condition)
                 }
 
-                context.stack(combined)
+                if (Utilities.TEST_GLOBALS.SHOULD_CLONE_CONTEXTS) {
+                    context.c = combined
+                } else {
+                    context.stack(combined)
+                }
+                // Just for debugging
                 context
             }
 
