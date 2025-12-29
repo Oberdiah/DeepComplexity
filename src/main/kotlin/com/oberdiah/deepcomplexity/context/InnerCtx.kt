@@ -39,10 +39,12 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
  *      y: 1
  *  }
  * ```
+ *
+ * If [dynamicVars] is null, the static expression does not have any dynamic variables to link to.
  */
 class InnerCtx private constructor(
     private val staticExpr: Expr<VarsMarker>,
-    val dynamicVars: Vars,
+    private val dynamicVars: Vars?,
 ) {
     companion object {
         fun new(idx: ContextId): InnerCtx = InnerCtx(VarsExpr(), Vars.new(idx))
@@ -54,8 +56,20 @@ class InnerCtx private constructor(
             howDynamic: (Vars, Vars) -> Vars
         ): InnerCtx = InnerCtx(
             howStatic(lhs.staticExpr, rhs.staticExpr),
-            howDynamic(lhs.dynamicVars, rhs.dynamicVars)
+            when {
+                lhs.dynamicVars == null -> rhs.dynamicVars
+                rhs.dynamicVars == null -> lhs.dynamicVars
+                else -> howDynamic(lhs.dynamicVars, rhs.dynamicVars)
+            }
         )
+    }
+
+    init {
+        if (dynamicVars == null) {
+            require(staticExpr.iterateTree<VarsExpr>().none { it.isDynamic }) {
+                "Static expression contains dynamic references, but dynamicVars is null!"
+            }
+        }
     }
 
     override fun toString(): String = staticExpr.toString()
@@ -69,21 +83,28 @@ class InnerCtx private constructor(
             }
         }
 
+    /**
+     * Returns the dynamic variables in this inner context. Returns a new Vars object if one is not possible.
+     */
+    fun grabDynamicVars(idx: ContextId): Vars = dynamicVars ?: Vars.new(idx)
+
     fun resolveUsing(vars: Vars): InnerCtx = InnerCtx(
         vars.resolveKnownVariables(staticExpr),
-        dynamicVars.resolveUsing(vars)
+        dynamicVars?.resolveUsing(vars)
     )
 
     fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacer): InnerCtx = InnerCtx(
         operation.replace(staticExpr),
-        dynamicVars.mapExpressions(operation.toWithKey())
+        dynamicVars?.mapExpressions(operation.toWithKey())
     ).mapStaticVars { it.mapExpressions(operation.toWithKey()) }
 
-    val keys: Set<UnknownKey> = staticExpr.iterateTree<VarsExpr>().flatMap { (it.vars ?: dynamicVars).keys }.toSet()
+    val keys: Set<UnknownKey> = staticExpr.iterateTree<VarsExpr>().flatMap {
+        getVarsFromVarsExpr(it).keys
+    }.toSet()
 
     fun mapDynamicVars(operation: (Vars) -> Vars): InnerCtx = InnerCtx(
         staticExpr,
-        operation(dynamicVars)
+        dynamicVars?.let { operation(it) }
     )
 
     fun mapStaticVars(operation: (Vars) -> Vars): InnerCtx = InnerCtx(
@@ -95,17 +116,27 @@ class InnerCtx private constructor(
 
     fun forcedStatic(idx: ContextId): InnerCtx = InnerCtx(
         staticExpr.replaceTypeInTree<VarsExpr> {
-            if (it.vars != null) it else VarsExpr(dynamicVars)
+            // !! is safe by init {} check.
+            if (it.isDynamic) VarsExpr(VarsExpr.DynamicOrStatic.Static(dynamicVars!!)) else it
         },
-        Vars.new(idx)
+        null
     )
 
     fun forcedDynamic(idx: ContextId): InnerCtx = InnerCtx(
         VarsExpr(),
         Vars(idx, keys.associateWith { key ->
             staticExpr.replaceTypeInLeaves<VarsExpr>(key.ind) {
-                (it.vars ?: dynamicVars).get(LValueKey.new(key))
+                getVarsFromVarsExpr(it).get(LValueKey.new(key))
             }
         })
     )
+
+    private fun getVarsFromVarsExpr(varsExpr: VarsExpr): Vars {
+        return when (varsExpr.vars) {
+            is VarsExpr.DynamicOrStatic.Static -> varsExpr.vars.vars
+            // The init check should catch most cases of the exception - it could only be thrown
+            // if somehow called with a varsExpr that didn't come from our static expression.
+            is VarsExpr.DynamicOrStatic.Dynamic -> dynamicVars ?: throw IllegalStateException("Dynamic vars is null!")
+        }
+    }
 }

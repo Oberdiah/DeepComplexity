@@ -72,10 +72,15 @@ class Context private constructor(
     override fun toString(): String = inner.toString()
     fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
+    val dynamicVars: Vars = inner.grabDynamicVars(idx)
 
-    val returnValue: Expr<*>? = inner.dynamicVars.returnValue
-    fun <T : Any> get(lValue: LValue<T>): Expr<T> = inner.dynamicVars.get(lValue)
-    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = inner.dynamicVars.resolveKnownVariables(expr)
+    val returnValue: Expr<*>? = dynamicVars.returnValue
+
+    /**
+     * Just grabs from the inner's dynamicVars.
+     */
+    fun <T : Any> get(lValue: LValue<T>): Expr<T> = dynamicVars.get(lValue)
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = dynamicVars.resolveKnownVariables(expr) ?: expr
 
     fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
@@ -93,15 +98,18 @@ class Context private constructor(
         val otherInner = other
             .stripKeys(UnknownKey.Lifetime.BLOCK)
             .inner
-            .resolveUsing(this.inner.dynamicVars)
-            .mapAllVars { other -> inner.dynamicVars.stack(other) }
+            .resolveUsing(this.dynamicVars)
+            .mapAllVars { other -> dynamicVars.stack(other) }
 
         val afterStack = Context(
             InnerCtx.combine(
                 inner, otherInner,
                 { thisExpr, otherExpr ->
                     thisExpr.replaceTypeInTree<VarsExpr> {
-                        if (it.vars != null) it else otherExpr
+                        when (it.vars) {
+                            VarsExpr.DynamicOrStatic.Dynamic -> otherExpr
+                            is VarsExpr.DynamicOrStatic.Static -> it
+                        }
                     }
                 },
                 { _, otherVars -> otherVars }

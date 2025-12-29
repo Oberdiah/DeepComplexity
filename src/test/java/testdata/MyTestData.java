@@ -120,7 +120,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(127)
+	@ExpectedExpressionSize(101)
 	public static short test11(short x) {
 		int q = 0;
 		if ((q++ > 0) && (q++ > 1) && (q++ > 2)) {

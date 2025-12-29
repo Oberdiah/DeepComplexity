@@ -27,7 +27,7 @@ object ExprToString {
             }
 
             is VariableExpr -> expr.resolvesTo.toString()
-            is VarsExpr -> if (expr.vars != null) expr.vars.toString() else VarsExpr.STRING_PLACEHOLDER
+            is VarsExpr -> expr.vars.toString()
         }
     }
 

@@ -130,17 +130,40 @@ sealed class Expr<T : Any>() {
 fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
 
 /**
- * Represents a link to an entire context. If it's null it represents the meta context's
- * personal `ctx` value.
+ * Represents a link to an entire context of variables.
  */
-data class VarsExpr(val vars: Vars? = null) : Expr<VarsMarker>() {
+data class VarsExpr(val vars: DynamicOrStatic = DynamicOrStatic.Dynamic) : Expr<VarsMarker>() {
     companion object {
         const val STRING_PLACEHOLDER = "##VarsExpr##"
     }
 
-    fun map(operation: (Vars) -> Vars): VarsExpr = VarsExpr(vars?.let { operation(it) })
+    val isStatic = vars is DynamicOrStatic.Static
+    val isDynamic = vars is DynamicOrStatic.Dynamic
+
+    fun map(operation: (Vars) -> Vars): VarsExpr = VarsExpr(
+        when (vars) {
+            is DynamicOrStatic.Dynamic -> DynamicOrStatic.Dynamic
+            is DynamicOrStatic.Static -> DynamicOrStatic.Static(operation(vars.vars))
+        }
+    )
 
     override val ind: VarsIndicator = VarsIndicator
+
+    sealed class DynamicOrStatic {
+        /**
+         * Representing the dynamic variables already stored in the context.
+         */
+        object Dynamic : DynamicOrStatic() {
+            override fun toString(): String = STRING_PLACEHOLDER
+        }
+
+        /**
+         * A static set of variables that's been locked in by a 'return'.
+         */
+        data class Static(val vars: Vars) : DynamicOrStatic() {
+            override fun toString(): String = vars.toString()
+        }
+    }
 }
 
 data class ArithmeticExpr<T : Number>(

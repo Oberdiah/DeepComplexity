@@ -201,6 +201,7 @@ object MethodProcessing {
 
                 context.stack(loopedContext)
                 context
+                TODO("Not completed.")
             }
 
             is PsiReturnStatement -> {
