@@ -52,6 +52,9 @@ object ExprTreeRebuilder {
      * [includeIfCondition]: Whether to explore the condition of [IfExpr]s in the rebuild.
      */
     fun rebuildTree(expr: Expr<*>, includeIfCondition: Boolean = true, replacer: (Expr<*>) -> Expr<*>): Expr<*> {
+        // Note to self: If you're adding to this, remember that you want to call `rebuildTree` recursively,
+        // and not `replacer` as that gets called automatically at the end of the method. This should be
+        // obvious, but I've made the mistake before so thought it would be good to note.
         val replacedExpr: Expr<*> = when (expr) {
             is BooleanInvertExpr -> BooleanInvertExpr(
                 rebuildTree(expr.expr, includeIfCondition, replacer).castToBoolean()
@@ -59,6 +62,7 @@ object ExprTreeRebuilder {
 
             is VarsExpr -> expr
             is LeafExpr -> expr
+            is ExpressionChainPointer<*> -> expr
 
             is NegateExpr<*> -> NegateExpr(
                 rebuildTree(expr.expr, includeIfCondition, replacer).castToNumbers()
@@ -69,6 +73,20 @@ object ExprTreeRebuilder {
                 expr.ind,
                 expr.explicit
             )
+
+            is ExpressionChain<*> -> {
+                val newSupport = rebuildTree(expr.support, includeIfCondition, replacer)
+                val newExpr =
+                    rebuildTree(expr.expr, includeIfCondition, replacer).replaceTypeInTree<ExpressionChainPointer<*>> {
+                        if (it.supportKey == expr.supportKey) {
+                            // Change the chain pointer's indicator to match the new support indicator.
+                            ExpressionChainPointer(it.supportKey, newSupport.ind)
+                        } else {
+                            null
+                        }
+                    }
+                ExpressionChain(expr.supportKey, newSupport, newExpr)
+            }
 
             is AnyBinaryExpr<*> -> {
                 ConversionsAndPromotion.castAToB(

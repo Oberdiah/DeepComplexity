@@ -433,7 +433,7 @@ object Utilities {
         Pair(this.first, transform(this.second))
 
     fun String.betterPrependIndent(indent: String = "    "): String =
-        lineSequence().map { indent + it }.joinToString("\n")
+        lineSequence().joinToString("\n") { indent + it }
 
     fun WONT_IMPLEMENT(reason: String = "This function is intentionally unimplemented."): Nothing {
         throw NotImplementedError(reason)

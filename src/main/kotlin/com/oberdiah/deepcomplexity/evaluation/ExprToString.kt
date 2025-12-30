@@ -7,7 +7,7 @@ object ExprToString {
             is ComparisonExpr<*> -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
             is ConstExpr<*> -> expr.value.toString()
             is IfExpr -> {
-                return "if ${expr.thisCondition} {\n${
+                "if ${expr.thisCondition} {\n${
                     expr.trueExpr.toString().prependIndent()
                 }\n} else {\n${
                     expr.falseExpr.toString().prependIndent()
@@ -28,6 +28,11 @@ object ExprToString {
 
             is VariableExpr -> expr.resolvesTo.toString()
             is VarsExpr -> expr.vars.toString()
+            is ExpressionChain<*> -> {
+                "${expr.supportKey} = ${expr.support}\n${expr.expr}"
+            }
+
+            is ExpressionChainPointer<*> -> expr.supportKey.toString()
         }
     }
 
@@ -44,6 +49,8 @@ object ExprToString {
             is VariableExpr -> expr.resolvesTo.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
+            is ExpressionChain<*> -> "'${toExprKeyString(expr.support)}+${toExprKeyString(expr.expr)}'"
+            is ExpressionChainPointer<*> -> expr.toString()
         }
     }
 
@@ -80,7 +87,7 @@ object ExprToString {
             is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is VariableExpr -> expr.resolvesTo.toString()
             is TypeCastExpr<*, *> -> {
-                return if (expr.explicit) {
+                if (expr.explicit) {
                     "(${expr.ind}) ${expr.expr.dStr()}"
                 } else {
                     expr.expr.dStr()
@@ -88,6 +95,11 @@ object ExprToString {
             }
 
             is VarsExpr -> "CtxExpr"
+            is ExpressionChain<*> -> {
+                "${expr.supportKey} = ${expr.support.dStr()}\n${expr.expr.dStr()}"
+            }
+
+            is ExpressionChainPointer<*> -> expr.supportKey.toString()
         }
     }
 }

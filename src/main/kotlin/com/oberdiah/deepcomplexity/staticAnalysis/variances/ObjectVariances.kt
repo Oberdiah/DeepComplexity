@@ -17,8 +17,14 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
 
     fun invert(): ObjectVariances = ObjectVariances(value.invert().into(), ind)
 
-    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> =
-        throw IllegalArgumentException("Cannot cast boolean to $newInd")
+    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> {
+        if (newInd == ind) {
+            // Safety: newInd == ind.
+            @Suppress("UNCHECKED_CAST")
+            return this as Variances<Q>
+        }
+        throw IllegalArgumentException("Cannot cast object to $newInd")
+    }
 
     override fun collapse(constraints: Constraints): ISet<HeapMarker> = value
 

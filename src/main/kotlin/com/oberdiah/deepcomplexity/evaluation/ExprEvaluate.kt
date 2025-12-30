@@ -16,7 +16,8 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 object ExprEvaluate {
     data class Scope(
         val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
-        val scopesToKeep: Set<Key.ExpressionKey> = mutableSetOf(),
+        val scopesToKeep: Set<Key.ExpressionKey> = setOf(),
+        val supportKeyMap: Map<ExpressionChain.SupportKey, Bundle<*>> = mapOf()
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
@@ -32,13 +33,22 @@ object ExprEvaluate {
          */
         fun withScope(expr: Expr<*>): Scope {
             val newScopes = expr.iterateTree().map { it.exprKey }.toSet()
-            return Scope(constraints, scopesToKeep + newScopes)
+            return Scope(constraints, scopesToKeep + newScopes, supportKeyMap)
         }
 
         fun constrainWith(constraints: Set<Constraints>): Scope {
             return Scope(
                 ExprConstrain.combineConstraints(constraints, this.constraints),
-                scopesToKeep
+                scopesToKeep,
+                supportKeyMap
+            )
+        }
+
+        fun withSupport(key: ExpressionChain.SupportKey, bundle: Bundle<*>): Scope {
+            return Scope(
+                constraints,
+                scopesToKeep,
+                supportKeyMap + (key to bundle)
             )
         }
     }
@@ -165,8 +175,19 @@ object ExprEvaluate {
                             .grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()
                     ),
                     Constraints.completelyUnconstrained()
-                )
-                    .constrainWith(scope)
+                ).constrainWith(scope)
+
+            is ExpressionChain -> {
+                val supportBundle = evaluate(expr.support, scope)
+                val newScope = scope.withSupport(expr.supportKey, supportBundle)
+                evaluate(expr.expr, newScope)
+            }
+
+            is ExpressionChainPointer -> {
+                val keyResult = scope.supportKeyMap[expr.supportKey]
+                val castResult = keyResult!!.cast(expr.ind)
+                castResult!!
+            }
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

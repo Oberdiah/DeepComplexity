@@ -36,7 +36,7 @@ object StaticExpressionAnalysis {
     fun <T : Any> attemptToSimplifyComparison(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
         // To disable optimisations for testing purposes:
 //        if (true) {
-//            return null
+//            return ComparisonExpr.newRaw(lhs, rhs, comp)
 //        }
 
         val optimised = when (comp) {
