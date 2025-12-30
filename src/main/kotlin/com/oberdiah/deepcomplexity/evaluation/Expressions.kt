@@ -384,11 +384,11 @@ data class VariableExpr<T : Any> private constructor(
          */
         fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
 
-        override fun safelyResolveUsing(vars: Vars): Expr<*> {
+        fun safelyResolveUsing(vars: Vars): Expr<T> {
             assert(!contextId.collidesWith(vars.idx)) {
                 "Cannot resolve a KeyBackreference in the context it was created in."
             }
-            return vars.get(vars.resolveKey(key))
+            return vars.get(vars.resolveKey(key)).castOrThrow(ind)
         }
     }
 }

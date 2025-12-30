@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.*
+import com.oberdiah.deepcomplexity.evaluation.ResolvesTo
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into

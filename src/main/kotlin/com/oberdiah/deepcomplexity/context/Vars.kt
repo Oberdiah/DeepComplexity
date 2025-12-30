@@ -30,17 +30,35 @@ class Vars(
     fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacerWithKey): Vars =
         Vars(idx, map.mapValues { (key, expr) -> operation.replace(key, expr) })
 
+    private fun <T : Any> resolveResolvesTo(resolvesTo: ResolvesTo<T>): Expr<T> {
+        return when (resolvesTo) {
+            is VariableExpr.KeyBackreference -> resolvesTo.safelyResolveUsing(this)
+            else -> resolvesTo.toLeafExpr()
+        }
+    }
+
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.swapInplaceTypeInTree<VariableExpr<*>> { varExpr ->
-            varExpr.resolvesTo.safelyResolveUsing(this)
+            resolveResolvesTo(varExpr.resolvesTo)
         }.swapInplaceTypeInTree<VarsExpr> { varsExpr ->
             varsExpr.map { vars -> vars.resolveUsing(this) }
         }.optimise()
 
     fun stack(other: Vars): Vars =
-        other.map.entries.fold(this) { acc, (key, expr) ->
-            acc.with(acc.resolveKey(key), expr)
+        other.map.entries.fold(this) { updatingThis, (key, expr) ->
+            updatingThis.with(updatingThis.resolveKey(key), expr)
         }
+
+    /**
+     * Keys need resolved too, at least when they're qualified and have the possibility of containing variables.
+     */
+    fun resolveKey(key: UnknownKey): LValue<*> {
+        return if (key is QualifiedFieldKey) {
+            LValueField.new(key.field, resolveResolvesTo(key.qualifier).castToObject())
+        } else {
+            LValueKey.new(key)
+        }
+    }
 
     companion object {
         fun new(idx: ContextId): Vars = Vars(idx, mapOf())
@@ -108,14 +126,6 @@ class Vars(
                 "${nonPlaceholderVariablesString.prependIndent()}\n" +
                 "${placeholderVariablesString.prependIndent()}\n" +
                 "}"
-    }
-
-    fun resolveKey(key: UnknownKey): LValue<*> {
-        return if (key is QualifiedFieldKey) {
-            LValueField.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
-        } else {
-            LValueKey.new(key)
-        }
     }
 
     fun <T : Any> get(expr: LValue<T>): Expr<T> {

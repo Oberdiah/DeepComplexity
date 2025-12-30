@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
  *
  * For example, in a context `{ x: y' + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
  *
- * We encode this with the [ResolvesTo] class, representing an unknown that this context will never manage
+ * We encode this with the [com.oberdiah.deepcomplexity.evaluation.ResolvesTo] class, representing an unknown that this context will never manage
  * to resolve.
  *
  * How objects are stored:
