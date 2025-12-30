@@ -12,7 +12,7 @@ class Vars(
     map: Map<UnknownKey, Expr<*>>
 ) {
     private val map = map.mapValues { expr ->
-        expr.value.replaceTypeInTree<VariableExpr<*>> {
+        expr.value.swapInplaceTypeInTree<VariableExpr<*>> {
             VariableExpr.new(it.resolvesTo.withAddedContextId(idx))
         }
     }.mapKeys { it.key.withAddedContextId(idx) }
@@ -31,9 +31,9 @@ class Vars(
         Vars(idx, map.mapValues { (key, expr) -> operation.replace(key, expr) })
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
+        expr.swapInplaceTypeInTree<VariableExpr<*>> { varExpr ->
             varExpr.resolvesTo.safelyResolveUsing(this)
-        }.replaceTypeInTree<VarsExpr> { varsExpr ->
+        }.swapInplaceTypeInTree<VarsExpr> { varsExpr ->
             varsExpr.map { vars -> vars.resolveUsing(this) }
         }.optimise()
 
@@ -120,7 +120,7 @@ class Vars(
 
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueField<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<HeapMarker>>(expr.field.ind) {
+            is LValueField<*> -> expr.qualifier.replaceTypeInTree<LeafExpr<HeapMarker>>(false) {
                 get(QualifiedFieldKey(it.resolvesTo, expr.field))
             }
 
@@ -154,7 +154,7 @@ class Vars(
             val placeholderQualifierReplacement = key.qualifier.toLeafExpr()
 
             map[key.toPlaceholderKey()]?.let {
-                val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
+                val replacedExpr = it.swapInplaceTypeInTree<VariableExpr<*>> { expr ->
                     when (expr.resolvesTo) {
                         placeholderKey -> placeholderKeyReplacement
                         placeholderQualifier -> placeholderQualifierReplacement
@@ -219,7 +219,7 @@ class Vars(
 
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
-            val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<HeapMarker>>(field.ind) { expr ->
+            val newValue = qualifierExpr.replaceTypeInTree<LeafExpr<HeapMarker>>(false) { expr ->
                 if (expr.resolvesTo == resolvesTo) {
                     rExpr
                 } else {

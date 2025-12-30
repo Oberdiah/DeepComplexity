@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder
 import com.oberdiah.deepcomplexity.evaluation.LValueKey
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsMarker
@@ -93,11 +92,6 @@ class InnerCtx private constructor(
         dynamicVars?.resolveUsing(vars)
     )
 
-    fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacer): InnerCtx = InnerCtx(
-        operation.replace(staticExpr),
-        dynamicVars?.mapExpressions(operation.toWithKey())
-    ).mapStaticVars { it.mapExpressions(operation.toWithKey()) }
-
     val keys: Set<UnknownKey> = staticExpr.iterateTree<VarsExpr>().flatMap {
         getVarsFromVarsExpr(it).keys
     }.toSet()
@@ -108,14 +102,14 @@ class InnerCtx private constructor(
     )
 
     fun mapStaticVars(operation: (Vars) -> Vars): InnerCtx = InnerCtx(
-        staticExpr.replaceTypeInTree<VarsExpr> { it.map(operation) },
+        staticExpr.swapInplaceTypeInTree<VarsExpr> { it.map(operation) },
         dynamicVars
     )
 
     fun mapAllVars(operation: (Vars) -> Vars): InnerCtx = this.mapStaticVars(operation).mapDynamicVars(operation)
 
     fun forcedStatic(idx: ContextId): InnerCtx = InnerCtx(
-        staticExpr.replaceTypeInTree<VarsExpr> {
+        staticExpr.swapInplaceTypeInTree<VarsExpr> {
             // !! is safe by init {} check.
             if (it.isDynamic) VarsExpr(VarsExpr.DynamicOrStatic.Static(dynamicVars!!)) else it
         },
@@ -125,7 +119,7 @@ class InnerCtx private constructor(
     fun forcedDynamic(idx: ContextId): InnerCtx = InnerCtx(
         VarsExpr(),
         Vars(idx, keys.associateWith { key ->
-            staticExpr.replaceTypeInLeaves<VarsExpr>(key.ind) {
+            staticExpr.replaceTypeInTree<VarsExpr> {
                 getVarsFromVarsExpr(it).get(LValueKey.new(key))
             }
         })

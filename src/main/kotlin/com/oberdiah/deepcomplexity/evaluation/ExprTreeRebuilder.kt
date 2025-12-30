@@ -1,33 +1,14 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.UnknownKey
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rebuildTree
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
-
-// Leaf replacers change the leaves' types...
-typealias LeafReplacer<T> = (Expr<*>) -> Expr<T>
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 
 object ExprTreeRebuilder {
-    // ...standard expression replacers keep them the same
-    interface ExprReplacer {
-        fun <T : Any> replace(expr: Expr<T>): Expr<T>
-        fun toWithKey(): ExprReplacerWithKey = ExprReplacerWithKey { key, expr -> replace(expr) }
-
-        companion object {
-            operator fun invoke(block: (Expr<*>) -> Expr<*>): ExprReplacer {
-                return object : ExprReplacer {
-                    override fun <T : Any> replace(expr: Expr<T>): Expr<T> {
-                        return block(expr).castOrThrow(expr.ind)
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * This is just a standard expression replacer that will only be called
      * from the root of an expression tree where the key of the expression is also known.
@@ -47,163 +28,81 @@ object ExprTreeRebuilder {
     }
 
     /**
-     * There is a reason to have both this and `rebuildTree`.
-     *
-     * This is to be used when you want to swap the type of the whole expression by changing its leaves.
-     * If you don't want to change the type, use `rebuildTree` instead as it's more flexible (it can replace
-     * leaves too, just can't change their type).
-     *
-     * This replacement only works on a subset of all expressions (only expressions where every node can
-     * take any type, so no `ArithmeticExpression`, `ComparisonExpression`, etc.).
+     * Exactly the same as [rebuildTree], but imposes the constraint that each expression's indicator must not change
+     * after replacement, which in turn guarantees that the result will be of the same type as the original.
      */
-    fun <To : Any> replaceTreeLeaves(
-        expr: Expr<*>,
-        replacer: LeafReplacer<To>
-    ): Expr<To> {
-        return when (expr) {
-            is UnionExpr -> UnionExpr(
-                replaceTreeLeaves(expr.lhs, replacer),
-                replaceTreeLeaves(expr.rhs, replacer),
-            )
-
-            is IfExpr -> IfExpr.newRaw(
-                replaceTreeLeaves(expr.trueExpr, replacer),
-                replaceTreeLeaves(expr.falseExpr, replacer),
-                expr.thisCondition,
-            )
-
-            is TypeCastExpr<*, *> -> {
-                fun <T : Any, Q : Any> extra(
-                    expr: TypeCastExpr<T, Q>
-                ): TypeCastExpr<T, *> {
-                    return TypeCastExpr(
-                        replaceTreeLeaves(expr.expr, replacer),
-                        expr.ind,
-                        expr.explicit,
-                    )
-                }
-
-                @Suppress("UNCHECKED_CAST") // Safety: We put in the same type we get out.
-                extra(expr) as Expr<To>
-            }
-
-            is LeafExpr<*> -> replacer(expr)
-            is VarsExpr -> replacer(expr)
-
-            else -> {
-                throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
-            }
-        }
-    }
+    fun <T : Any> swapInplaceInTree(
+        expr: Expr<T>,
+        includeIfCondition: Boolean = true,
+        replacer: (Expr<*>) -> Expr<*>,
+    ): Expr<T> =
+        rebuildTree(expr, includeIfCondition) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(expr.ind)
 
     /**
-     * Rebuilds the expression tree, replacing nodes using the given [ExprReplacer].
+     * Iterates over the entire tree, allowing you to replace any expression with a new one.
+     * Verifies that the new expression is valid in whatever slot it goes in to, but it doesn't need be the same
+     * type as the original.
      *
-     * This performs a post-order traversal (bottom-up replacement) of the tree. This means children are
+     * This performs a post-order traversal (leaves-first replacement) of the tree. This means children are
      * always fully replaced before their parents, and parents operate on the results of their children's
      * replacements.
      *
-     * This can be very helpful for optimisations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
+     * This can be helpful for optimizations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
      *
      * [includeIfCondition]: Whether to explore the condition of [IfExpr]s in the rebuild.
      */
-    fun <T : Any> rebuildTree(
-        expr: Expr<T>,
-        replacer: ExprReplacer,
-        includeIfCondition: Boolean = true
-    ): Expr<T> {
-        @Suppress("UNCHECKED_CAST")
-        val rebuiltExpr = when (expr.ind) {
-            is NumberIndicator<*> -> rebuildTreeNums(expr.castToNumbers(), replacer, includeIfCondition) as Expr<T>
-            BooleanIndicator -> rebuildTreeBooleans(expr as Expr<Boolean>, replacer, includeIfCondition) as Expr<T>
-            is ObjectIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
-            VarsIndicator -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
-        }
-
-        return replacer.replace(rebuiltExpr)
-    }
-
-    private fun <T : Number> rebuildTreeNums(
-        expr: Expr<T>,
-        replacer: ExprReplacer,
-        includeIfCondition: Boolean
-    ): Expr<T> {
-        return when (expr) {
-            is ArithmeticExpr -> ArithmeticExpr(
-                rebuildTree(expr.lhs, replacer),
-                rebuildTree(expr.rhs, replacer),
-                expr.op,
-            )
-
-            is NegateExpr -> NegateExpr(
-                rebuildTree(expr.expr, replacer),
-            )
-
-            else -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
-        }
-    }
-
-    private fun rebuildTreeBooleans(
-        expr: Expr<Boolean>,
-        replacer: ExprReplacer,
-        includeIfCondition: Boolean
-    ): Expr<Boolean> {
-        return when (expr) {
-            is BooleanExpr -> BooleanExpr.newRaw(
-                rebuildTree(expr.lhs, replacer),
-                rebuildTree(expr.rhs, replacer),
-                expr.op,
-            )
-
+    fun rebuildTree(expr: Expr<*>, includeIfCondition: Boolean = true, replacer: (Expr<*>) -> Expr<*>): Expr<*> {
+        val replacedExpr: Expr<*> = when (expr) {
             is BooleanInvertExpr -> BooleanInvertExpr(
-                rebuildTree(expr.expr, replacer),
-            )
-
-            is ComparisonExpr<*> -> {
-                fun <T : Any> extra(expr: ComparisonExpr<T>): Expr<Boolean> = ComparisonExpr.newRaw(
-                    rebuildTree(expr.lhs, replacer),
-                    rebuildTree(expr.rhs, replacer),
-                    expr.comp,
-                )
-                extra(expr)
-            }
-
-            else -> rebuildTreeAnythings(expr, replacer, includeIfCondition)
-        }
-    }
-
-    private fun <T : Any> rebuildTreeAnythings(
-        expr: Expr<T>,
-        replacer: ExprReplacer,
-        includeIfCondition: Boolean
-    ): Expr<T> {
-        return when (expr) {
-            is UnionExpr -> UnionExpr(
-                rebuildTree(expr.lhs, replacer),
-                rebuildTree(expr.rhs, replacer),
-            )
-
-            is IfExpr -> IfExpr.newRaw(
-                rebuildTree(expr.trueExpr, replacer),
-                rebuildTree(expr.falseExpr, replacer),
-                if (includeIfCondition) rebuildTree(
-                    expr.thisCondition,
-                    replacer
-                ) else expr.thisCondition,
-            )
-
-            is TypeCastExpr<*, *> -> TypeCastExpr(
-                rebuildTree(expr.expr, replacer),
-                expr.ind,
-                expr.explicit,
+                rebuildTree(expr.expr, includeIfCondition, replacer).castToBoolean()
             )
 
             is VarsExpr -> expr
             is LeafExpr -> expr
 
-            else -> {
-                throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
+            is NegateExpr<*> -> NegateExpr(
+                rebuildTree(expr.expr, includeIfCondition, replacer).castToNumbers()
+            )
+
+            is TypeCastExpr<*, *> -> TypeCastExpr(
+                rebuildTree(expr.expr, includeIfCondition, replacer),
+                expr.ind,
+                expr.explicit
+            )
+
+            is AnyBinaryExpr<*> -> {
+                ConversionsAndPromotion.castAToB(
+                    rebuildTree(expr.lhs, includeIfCondition, replacer),
+                    rebuildTree(expr.rhs, includeIfCondition, replacer),
+                    Behaviour.Throw
+                ).map { lhs, rhs ->
+                    when (expr) {
+                        is ComparisonExpr<*> -> ComparisonExpr.new(lhs, rhs, expr.comp)
+                        is UnionExpr<*> -> UnionExpr(lhs, rhs)
+                        is ArithmeticExpr<*> ->
+                            ConversionsAndPromotion.castAToB(lhs, rhs.castToNumbers(), Behaviour.Throw).map { l, r ->
+                                ArithmeticExpr(l, r, expr.op)
+                            }
+
+                        is BooleanExpr ->
+                            ConversionsAndPromotion.castAToB(lhs, rhs.castToBoolean(), Behaviour.Throw).map { l, r ->
+                                BooleanExpr.newRaw(l, r, expr.op)
+                            }
+
+                        is IfExpr<*> -> IfExpr.newRaw(
+                            lhs,
+                            rhs,
+                            if (includeIfCondition) {
+                                rebuildTree(expr.thisCondition, replacer = replacer).castToBoolean()
+                            } else {
+                                expr.thisCondition
+                            }
+                        )
+                    }
+                }
             }
         }
+
+        return replacer(replacedExpr)
     }
 }

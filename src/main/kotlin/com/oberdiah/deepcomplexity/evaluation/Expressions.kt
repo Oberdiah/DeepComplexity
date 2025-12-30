@@ -4,7 +4,6 @@ import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -28,17 +27,6 @@ sealed class Expr<T : Any>() {
         return ExprToString.toString(this)
     }
 
-    /**
-     * Rebuilds every expression in the tree.
-     * As it's doing that, it calls the replacer on every expression so you can make any modifications
-     * you want.
-     */
-    fun rebuildTree(replacer: ExprTreeRebuilder.ExprReplacer, includeIfCondition: Boolean = true) =
-        ExprTreeRebuilder.rebuildTree(this, replacer, includeIfCondition)
-
-    fun <NewT : Any> replaceLeaves(replacer: LeafReplacer<NewT>): Expr<NewT> =
-        ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
-
     fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition)
 
@@ -48,8 +36,6 @@ sealed class Expr<T : Any>() {
     fun iterateLeaves(includeIfCondition: Boolean = false): Sequence<LeafExpr<T>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<LeafExpr<T>>()
 
-    fun getVariables(): Set<VariableExpr<*>> = iterateTree<VariableExpr<*>>().toSet()
-
     fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)
 
@@ -58,64 +44,40 @@ sealed class Expr<T : Any>() {
      * As it's doing that, whenever it encounters an expression of type [Q],
      * it replaces it with the result of calling [replacement] on it. If [replacement] returns null,
      * it will skip the replacement.
+     *
+     * [replacement] must return an expression with the same indicator as it consumes. If you don't want
+     * that constraint, use [replaceTypeInTree] instead.
      */
-    inline fun <reified Q> replaceTypeInTree(
+    inline fun <reified Q> swapInplaceTypeInTree(
         includeIfCondition: Boolean = true,
         crossinline replacement: (Q) -> Expr<*>?
     ): Expr<T> {
-        return rebuildTree(ExprTreeRebuilder.ExprReplacer { expr ->
+        return ExprTreeRebuilder.swapInplaceInTree(this, includeIfCondition) { expr: Expr<*> ->
             if (expr is Q) {
                 replacement(expr) ?: expr
             } else {
                 expr
             }
-        }, includeIfCondition)
+        }
     }
 
-
-    /**
-     * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
-     * An ergonomic and slightly constrained version of [com.oberdiah.deepcomplexity.evaluation.Expr.replaceLeaves].
-     *
-     * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
-     * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
-     */
-    internal inline fun <reified Q : Expr<T>> replaceTypeInLeaves(
-        newInd: Indicator<*>,
-        crossinline replacement: (Q) -> Expr<*>
+    inline fun <reified Q> replaceTypeInTree(
+        includeIfCondition: Boolean = true,
+        crossinline replacement: (Q) -> Expr<*>?
     ): Expr<*> {
-        return object {
-            operator fun <T : Any> invoke(
-                newInd: Indicator<T>,
-            ): Expr<T> {
-                return replaceTypeInLeavesWithInd<Q, T>(newInd, replacement)
-            }
-        }(newInd)
-    }
-
-    private inline fun <reified Q : Expr<T>, B : Any> replaceTypeInLeavesWithInd(
-        newInd: Indicator<B>,
-        crossinline replacement: (Q) -> Expr<*>
-    ): Expr<B> {
-        return replaceLeaves { expr ->
-            val newExpr = if (expr is Q) {
-                replacement(expr)
+        return ExprTreeRebuilder.rebuildTree(this, includeIfCondition) { expr: Expr<*> ->
+            if (expr is Q) {
+                replacement(expr) ?: expr
             } else {
-                throw IllegalArgumentException(
-                    "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
-                )
+                expr
             }
-
-            newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
-                "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
-            )
         }
     }
 
     /**
      * Recursively calls [simplify] on every node in the tree, rebuilding the tree as it goes.
      */
-    fun optimise(): Expr<T> = rebuildTree(ExprTreeRebuilder.ExprReplacer { it.simplify() })
+    fun optimise(): Expr<T> = ExprTreeRebuilder.swapInplaceInTree(this) { it.simplify() }
 
     /**
      * Simplifies the expression if possible.
@@ -130,7 +92,7 @@ sealed class Expr<T : Any>() {
 /**
  * An expression with an [lhs] and [rhs]
  */
-interface BinaryExpression<T : Any> {
+sealed interface AnyBinaryExpr<T : Any> {
     val lhs: Expr<T>
     val rhs: Expr<T>
 }
@@ -178,7 +140,7 @@ data class ArithmeticExpr<T : Number>(
     override val lhs: Expr<T>,
     override val rhs: Expr<T>,
     val op: BinaryNumberOp,
-) : Expr<T>(), BinaryExpression<T> {
+) : Expr<T>(), AnyBinaryExpr<T> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -194,7 +156,7 @@ data class ComparisonExpr<T : Any> private constructor(
     override val lhs: Expr<T>,
     override val rhs: Expr<T>,
     val comp: ComparisonOp,
-) : Expr<Boolean>(), BinaryExpression<T> {
+) : Expr<Boolean>(), AnyBinaryExpr<T> {
     companion object {
         fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> =
             ComparisonExpr(lhs, rhs, comp)
@@ -239,14 +201,16 @@ data class IfExpr<T : Any> private constructor(
     val trueExpr: Expr<T>,
     val falseExpr: Expr<T>,
     val thisCondition: Expr<Boolean>,
-) : Expr<T>() {
+) : Expr<T>(), AnyBinaryExpr<T> {
     init {
         assert(trueExpr.ind == falseExpr.ind) {
             "Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}"
         }
     }
 
-    override val ind: Indicator<T> = trueExpr.ind
+    override val lhs: Expr<T> get() = trueExpr
+    override val rhs: Expr<T> get() = falseExpr
+    override val ind: Indicator<T> get() = trueExpr.ind
 
     override fun simplify(): Expr<T> = new(trueExpr, falseExpr, thisCondition)
 
@@ -286,7 +250,7 @@ data class IfExpr<T : Any> private constructor(
     }
 }
 
-data class UnionExpr<T : Any>(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(), BinaryExpression<T> {
+data class UnionExpr<T : Any>(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(), AnyBinaryExpr<T> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -301,7 +265,7 @@ data class BooleanExpr private constructor(
     override val lhs: Expr<Boolean>,
     override val rhs: Expr<Boolean>,
     val op: BooleanOp
-) : Expr<Boolean>(), BinaryExpression<Boolean> {
+) : Expr<Boolean>(), AnyBinaryExpr<Boolean> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
