@@ -9,10 +9,10 @@ object ExpressionExtensions {
     fun Expr<Boolean>.inverted(): Expr<Boolean> = ExprConstrain.invert(this)
 
     /**
-     * Only supports [nonTrivialBehaviour] = [Behaviour.Throw].
+     * Only supports [nonTrivial] = [Behaviour.Throw].
      */
-    fun Expr<*>.castToNumbers(nonTrivialBehaviour: Behaviour = Behaviour.Throw): Expr<out Number> {
-        require(nonTrivialBehaviour == Behaviour.Throw)
+    fun Expr<*>.castToNumbers(nonTrivial: Behaviour = Behaviour.Throw): Expr<out Number> {
+        require(nonTrivial == Behaviour.Throw)
         if (this.ind is NumberIndicator<*>) {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<out Number>
@@ -22,10 +22,10 @@ object ExpressionExtensions {
     }
 
     /**
-     * Only supports [nonTrivialBehaviour] = [Behaviour.Throw].
+     * Only supports [nonTrivial] = [Behaviour.Throw].
      */
-    fun Expr<*>.castToObject(nonTrivialBehaviour: Behaviour = Behaviour.Throw): Expr<HeapMarker> {
-        require(nonTrivialBehaviour == Behaviour.Throw)
+    fun Expr<*>.castToObject(nonTrivial: Behaviour = Behaviour.Throw): Expr<HeapMarker> {
+        require(nonTrivial == Behaviour.Throw)
         if (this.ind is ObjectIndicator) {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<HeapMarker>
@@ -34,18 +34,18 @@ object ExpressionExtensions {
         }
     }
 
-    fun Expr<*>.castToBoolean(nonTrivialBehaviour: Behaviour = Behaviour.Throw): Expr<Boolean> =
-        castTo(BooleanIndicator, nonTrivialBehaviour)
+    fun Expr<*>.castToBoolean(nonTrivial: Behaviour = Behaviour.Throw): Expr<Boolean> =
+        castTo(BooleanIndicator, nonTrivial)
 
-    fun Expr<*>.castToContext(nonTrivialBehaviour: Behaviour = Behaviour.Throw): Expr<VarsMarker> =
-        castTo(VarsIndicator, nonTrivialBehaviour)
+    fun Expr<*>.castToContext(nonTrivial: Behaviour = Behaviour.Throw): Expr<VarsMarker> =
+        castTo(VarsIndicator, nonTrivial)
 
     fun <T : Any> Expr<*>.castOrThrow(indicator: Indicator<T>): Expr<T> = castTo(indicator, Behaviour.Throw)
 
-    fun <T : Any> Expr<*>.castTo(indicator: Indicator<T>, nonTrivialBehaviour: Behaviour): Expr<T> {
+    fun <T : Any> Expr<*>.castTo(indicator: Indicator<T>, nonTrivial: Behaviour): Expr<T> {
         tryCastTo(indicator)?.let { return it }
 
-        return when (nonTrivialBehaviour) {
+        return when (nonTrivial) {
             Behaviour.Throw -> throw IllegalStateException("Failed to cast '$this' to $indicator; (${this.ind} != $indicator)")
             Behaviour.WrapWithTypeCastExplicit -> TypeCastExpr(this, indicator, explicit = true)
             Behaviour.WrapWithTypeCastImplicit -> TypeCastExpr(this, indicator, explicit = false)

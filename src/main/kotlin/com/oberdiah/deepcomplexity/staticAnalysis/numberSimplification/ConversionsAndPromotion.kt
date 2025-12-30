@@ -18,17 +18,17 @@ object ConversionsAndPromotion {
         fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
     }
 
-    fun <T : Any> castAToB(exprA: Expr<*>, exprB: Expr<T>, nonTrivialBehaviour: Behaviour): TypedPair<T> {
-        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivialBehaviour)
+    fun <T : Any> castAToB(exprA: Expr<*>, exprB: Expr<T>, nonTrivial: Behaviour): TypedPair<T> {
+        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
         return TypedPair(castExprA, exprB)
     }
 
     fun <T : Number> castNumbersAToB(
         exprA: Expr<out Number>,
         exprB: Expr<T>,
-        nonTrivialBehaviour: Behaviour
+        nonTrivial: Behaviour
     ): TypedPair<T> {
-        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivialBehaviour)
+        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
         return TypedPair(castExprA, exprB)
     }
 
@@ -36,10 +36,10 @@ object ConversionsAndPromotion {
         exprA: Expr<out Number>,
         exprB: Expr<out Number>,
         indicator: NumberIndicator<T>,
-        nonTrivialBehaviour: Behaviour
+        nonTrivial: Behaviour
     ): TypedPair<T> {
-        val castExprA: Expr<T> = exprA.castTo(indicator, nonTrivialBehaviour)
-        val castExprB: Expr<T> = exprB.castTo(indicator, nonTrivialBehaviour)
+        val castExprA: Expr<T> = exprA.castTo(indicator, nonTrivial)
+        val castExprB: Expr<T> = exprB.castTo(indicator, nonTrivial)
         return TypedPair(castExprA, castExprB)
     }
 
