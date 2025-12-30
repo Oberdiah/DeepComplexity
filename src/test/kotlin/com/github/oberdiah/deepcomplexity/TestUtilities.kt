@@ -164,12 +164,6 @@ object TestUtilities {
         }.returnValue!!.optimise()
 
         val range = try {
-            if (System.getenv("DEBUG") != "false") {
-                println((returnValue.dStr()).prependIndent())
-            } else {
-                println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
-            }
-
             val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>(true)
                 .map { it.resolvesTo }
                 .toSet()
@@ -181,6 +175,9 @@ object TestUtilities {
             }
 
             val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope())
+
+            println((returnValue.dStr()).prependIndent())
+
             val castBundle = bundle.cast(ShortIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle

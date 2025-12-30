@@ -6,6 +6,7 @@ import com.oberdiah.deepcomplexity.context.ParameterKey
 import com.oberdiah.deepcomplexity.context.ReturnKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -14,8 +15,13 @@ import kotlin.math.nextUp
 import kotlin.reflect.KClass
 
 object Utilities {
+    @Suppress("PropertyName")
     data class Globals(
-        var SHOULD_CLONE_CONTEXTS: Boolean
+        var SHOULD_CLONE_CONTEXTS: Boolean,
+        /**
+         * Maps expression instance hashes to their corresponding Bundle. Only used in debug printing.
+         */
+        var EXPR_HASH_BUNDLES: MutableMap<Long, Bundle<*>> = mutableMapOf()
     )
 
     /**
@@ -23,7 +29,8 @@ object Utilities {
      * test frameworks.
      */
     val TEST_GLOBALS: Globals = Globals(
-        false
+        SHOULD_CLONE_CONTEXTS = false,
+        EXPR_HASH_BUNDLES = mutableMapOf()
     )
 
     val DD_POSITIVE_INFINITY: DD = DD.of(Double.POSITIVE_INFINITY)

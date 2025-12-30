@@ -24,6 +24,14 @@ sealed class Expr<T : Any>() {
      */
     abstract val ind: Indicator<T>
 
+    /**
+     * Concatenates the system hashcode and our general hashcode to get a unique long.
+     * Shouldn't be used in standard flow as we want expressions to be interchangeable for all normal purposes.
+     */
+    val completelyUniqueValueForDebugUseOnly: Long
+        get() =
+            (System.identityHashCode(this).toLong() shl 32) or (this.hashCode().toLong() and 0xFFFFFFFFL)
+
     final override fun toString(): String {
         return ExprToString.toString(this)
     }

@@ -11,6 +11,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
@@ -75,6 +76,8 @@ object ExprEvaluate {
 
             VarsIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
+
+        Utilities.TEST_GLOBALS.EXPR_HASH_BUNDLES[expr.completelyUniqueValueForDebugUseOnly] = evaluatedBundle
 
         return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)
     }
@@ -193,6 +196,7 @@ object ExprEvaluate {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
         }
+
         return toReturn
     }
 }

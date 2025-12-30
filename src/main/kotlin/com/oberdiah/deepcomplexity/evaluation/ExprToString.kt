@@ -1,5 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.utilities.Utilities
+
 object ExprToString {
     fun <T : Any> toString(expr: Expr<T>): String {
         return when (expr) {
@@ -55,7 +57,15 @@ object ExprToString {
     }
 
     fun <T : Any> toDebugString(expr: Expr<T>): String {
-        val myResult = "<| ${ExprEvaluate.evaluate(expr, ExprEvaluate.Scope(), true).toDebugString()} |>"
+        // Note: Although this looks sketchy, it's actually better than the old system of evaluating
+        // this bundle on the fly as it's more representative of what actually happened.
+        // Unless we generate more than 2 billion expressions, which we won't, this is absolutely fine.
+        // Even then, we won't collide unless those are the same exact expression. In short, it won't happen.
+        // The other failure mode is that we accidentally change the expression tree somehow, and that won't
+        // happen as it's read-only when entering the evaluate method.
+        val preCalculatedBundle =
+            Utilities.TEST_GLOBALS.EXPR_HASH_BUNDLES[expr.completelyUniqueValueForDebugUseOnly]
+        val myResult = "<| ${preCalculatedBundle?.toDebugString() ?: "Not evaluated"} |>"
         return when (expr) {
             is ArithmeticExpr -> {
                 val lhsStr = expr.lhs.dStr()
