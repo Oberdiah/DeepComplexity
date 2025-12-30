@@ -38,7 +38,7 @@ class Bundle<T : Any> private constructor(
     val variances: Set<ConstrainedVariances<T>>
 ) {
     init {
-        assert(variances.size < 50) {
+        require(variances.size < 50) {
             "Bundle has far too many variances: ${variances.size} ($variances)"
         }
     }
@@ -177,7 +177,7 @@ class Bundle<T : Any> private constructor(
         exprKey: Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
     ): Bundle<Q> {
-        assert(ind == other.ind)
+        require(ind == other.ind)
 
         val newBundles = mutableSetOf<ConstrainedVariances<Q>>()
         for (myBundle in variances) {

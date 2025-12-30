@@ -257,7 +257,6 @@ object Utilities {
             is Float -> this + other as Float
             is Double -> this + other as Double
             is BigInteger -> this.add(other as BigInteger)
-            is BigFraction -> this.add(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for addition")
         } as T // This cast shouldn't be necessary.
     }
@@ -276,7 +275,6 @@ object Utilities {
             is Float -> this - other as Float
             is Double -> this - other as Double
             is BigInteger -> this.subtract(other as BigInteger)
-            is BigFraction -> this.subtract(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for subtraction")
         } as T // This cast shouldn't be necessary.
     }
@@ -295,7 +293,6 @@ object Utilities {
             is Float -> this * other as Float
             is Double -> this * other as Double
             is BigInteger -> this.multiply(other as BigInteger)
-            is BigFraction -> this.multiply(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for multiplication")
         } as T // This cast shouldn't be necessary.
     }
@@ -314,7 +311,6 @@ object Utilities {
             is Float -> this / other as Float
             is Double -> this / other as Double
             is BigInteger -> this.divide(other as BigInteger)
-            is BigFraction -> this.divide(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for division")
         } as T // This cast shouldn't be necessary.
     }
@@ -357,7 +353,6 @@ object Utilities {
             is Long -> if (this < other.toLong()) this else other.toLong()
             is Float -> if (this < other.toFloat()) this else other.toFloat()
             is Double -> if (this < other.toDouble()) this else other.toDouble()
-            is BigFraction -> if (this < other as BigFraction) this else other as BigFraction
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for min")
         } as T
     }
@@ -375,7 +370,6 @@ object Utilities {
             is Long -> if (this > other.toLong()) this else other.toLong()
             is Float -> if (this > other.toFloat()) this else other.toFloat()
             is Double -> if (this > other.toDouble()) this else other.toDouble()
-            is BigFraction -> if (this > other as BigFraction) this else other as BigFraction
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for max")
         } as T
     }
@@ -437,8 +431,6 @@ object Utilities {
 
     fun <L : Any, ROld : Any, RNew : Any> Pair<L, ROld>.mapRight(transform: (ROld) -> RNew): Pair<L, RNew> =
         Pair(this.first, transform(this.second))
-
-    fun BigFraction.half(): BigFraction = this.divide(2)
 
     fun String.betterPrependIndent(indent: String = "    "): String =
         lineSequence().map { indent + it }.joinToString("\n")
