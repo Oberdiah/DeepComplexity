@@ -127,6 +127,14 @@ sealed class Expr<T : Any>() {
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
+/**
+ * An expression with an [lhs] and [rhs]
+ */
+interface BinaryExpression<T : Any> {
+    val lhs: Expr<T>
+    val rhs: Expr<T>
+}
+
 fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
 
 /**
@@ -167,10 +175,10 @@ data class VarsExpr(val vars: DynamicOrStatic = DynamicOrStatic.Dynamic) : Expr<
 }
 
 data class ArithmeticExpr<T : Number>(
-    val lhs: Expr<T>,
-    val rhs: Expr<T>,
+    override val lhs: Expr<T>,
+    override val rhs: Expr<T>,
     val op: BinaryNumberOp,
-) : Expr<T>() {
+) : Expr<T>(), BinaryExpression<T> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -183,10 +191,10 @@ data class ArithmeticExpr<T : Number>(
 
 @ConsistentCopyVisibility
 data class ComparisonExpr<T : Any> private constructor(
-    val lhs: Expr<T>,
-    val rhs: Expr<T>,
+    override val lhs: Expr<T>,
+    override val rhs: Expr<T>,
     val comp: ComparisonOp,
-) : Expr<Boolean>() {
+) : Expr<Boolean>(), BinaryExpression<T> {
     companion object {
         fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> =
             ComparisonExpr(lhs, rhs, comp)
@@ -278,7 +286,7 @@ data class IfExpr<T : Any> private constructor(
     }
 }
 
-data class UnionExpr<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
+data class UnionExpr<T : Any>(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(), BinaryExpression<T> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
@@ -289,8 +297,11 @@ data class UnionExpr<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
 }
 
 @ConsistentCopyVisibility
-data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) :
-    Expr<Boolean>() {
+data class BooleanExpr private constructor(
+    override val lhs: Expr<Boolean>,
+    override val rhs: Expr<Boolean>,
+    val op: BooleanOp
+) : Expr<Boolean>(), BinaryExpression<Boolean> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
