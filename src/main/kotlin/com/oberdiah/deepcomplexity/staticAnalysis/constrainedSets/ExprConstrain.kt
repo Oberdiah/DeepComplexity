@@ -50,6 +50,9 @@ object ExprConstrain {
      * Returns a list of constraints.
      * Typically, it returns a single constraint, but if an OR is involved, it may return multiple
      * as each side of the OR is a separate constraint.
+     *
+     * This is the only place we should generate constraints. They then get applied to constants when traversing
+     * evaluation, and those constants then cling onto bundles and go for a ride.
      */
     fun getConstraints(condition: Expr<Boolean>, scope: ExprEvaluate.Scope): Set<Constraints> {
         val startTime = System.currentTimeMillis()

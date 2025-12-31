@@ -120,6 +120,7 @@ object ExprEvaluate {
             is BooleanInvertExpr -> evaluate(expr, scope).invert()
             else -> evaluateAnythings(expr, scope)
         }
+
         return toReturn
     }
 
@@ -170,18 +171,15 @@ object ExprEvaluate {
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 
-            is ConstExpr -> Bundle.constrained(
-                expr.ind.newConstantSet(expr.value).toConstVariance(),
-                Constraints.completelyUnconstrained()
-            ).constrainWith(scope)
+            is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())
+                .constrainWith(scope)
 
             is VariableExpr ->
-                Bundle.constrained(
+                Bundle.unconstrained(
                     expr.ind.newVariance(
                         (expr.resolvesTo as VariableExpr.KeyBackreference)
                             .grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()
-                    ),
-                    Constraints.completelyUnconstrained()
+                    )
                 ).constrainWith(scope)
 
             is ExpressionChain -> {

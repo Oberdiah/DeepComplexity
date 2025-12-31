@@ -44,10 +44,6 @@ class Bundle<T : Any> private constructor(
     }
 
     companion object {
-        fun <T : Any> empty(ind: Indicator<T>): Bundle<T> {
-            return Bundle(ind, setOf())
-        }
-
         fun <T : Any> unconstrained(bundle: Variances<T>): Bundle<T> {
             return Bundle(
                 bundle.ind,
@@ -99,7 +95,7 @@ class Bundle<T : Any> private constructor(
             if (constraintsToPrint.isEmpty()) {
                 return "(${variances.toDebugString(constraints)})"
             }
-            
+
             val variancesStr = variances.toDebugString(Constraints.completelyUnconstrained())
             val constraintsStr = constraintsToPrint.joinToString { "${it.key}[${it.value}]" }
             return "(${variancesStr} | $constraintsStr)"
