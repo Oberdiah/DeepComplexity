@@ -8,6 +8,12 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 
+enum class IfTraversal {
+    ConditionAndBranches,
+    SkipCondition,
+    ConditionOnly,
+}
+
 object ExprTreeRebuilder {
     /**
      * This is just a standard expression replacer that will only be called
@@ -33,10 +39,10 @@ object ExprTreeRebuilder {
      */
     fun <T : Any> swapInplaceInTree(
         expr: Expr<T>,
-        includeIfCondition: Boolean = true,
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<T> =
-        rebuildTree(expr, includeIfCondition) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(expr.ind)
+        rebuildTree(expr, ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(expr.ind)
 
     /**
      * Iterates over the entire tree, allowing you to replace any expression with a new one.
@@ -49,33 +55,37 @@ object ExprTreeRebuilder {
      *
      * This can be helpful for optimizations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
      *
-     * [includeIfCondition]: Whether to explore the condition of [IfExpr]s in the rebuild.
+     * [ifTraversal]: What to do when encountering an IfExpr.
      */
-    fun rebuildTree(expr: Expr<*>, includeIfCondition: Boolean = true, replacer: (Expr<*>) -> Expr<*>): Expr<*> {
+    fun rebuildTree(
+        expr: Expr<*>,
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        replacer: (Expr<*>) -> Expr<*>
+    ): Expr<*> {
         // Note to self: If you're adding to this, remember that you want to call `rebuildTree` recursively,
         // and not `replacer` as that gets called automatically at the end of the method. This should be
         // obvious, but I've made the mistake before so thought it would be good to note.
         val replacedExpr: Expr<*> = when (expr) {
             is BooleanInvertExpr -> BooleanInvertExpr(
-                rebuildTree(expr.expr, includeIfCondition, replacer).castToBoolean()
+                rebuildTree(expr.expr, ifTraversal, replacer).castToBoolean()
             )
 
             is VarsExpr -> expr
             is LeafExpr -> expr
 
             is NegateExpr<*> -> NegateExpr(
-                rebuildTree(expr.expr, includeIfCondition, replacer).castToNumbers()
+                rebuildTree(expr.expr, ifTraversal, replacer).castToNumbers()
             )
 
             is TypeCastExpr<*, *> -> TypeCastExpr(
-                rebuildTree(expr.expr, includeIfCondition, replacer),
+                rebuildTree(expr.expr, ifTraversal, replacer),
                 expr.ind,
                 expr.explicit
             )
 
             is ExpressionChain<*> -> {
-                val newSupport = rebuildTree(expr.support, includeIfCondition, replacer)
-                val newExpr = rebuildTree(expr.expr, includeIfCondition) {
+                val newSupport = rebuildTree(expr.support, ifTraversal, replacer)
+                val newExpr = rebuildTree(expr.expr, ifTraversal) {
                     if (it is ExpressionChainPointer && it.supportKey == expr.supportKey) {
                         // Change the chain pointer's indicator to match the new support indicator.
                         ExpressionChainPointer(it.supportKey, newSupport.ind)
@@ -88,10 +98,49 @@ object ExprTreeRebuilder {
 
             is ExpressionChainPointer<*> -> expr
 
+            is IfExpr -> {
+                when (ifTraversal) {
+                    IfTraversal.ConditionAndBranches -> {
+                        ConversionsAndPromotion.castAToB(
+                            rebuildTree(expr.trueExpr, ifTraversal, replacer),
+                            rebuildTree(expr.falseExpr, ifTraversal, replacer),
+                            Behaviour.Throw
+                        ).map { trueE, falseE ->
+                            IfExpr.newRaw(
+                                trueE,
+                                falseE,
+                                rebuildTree(expr.thisCondition, ifTraversal, replacer).castToBoolean()
+                            )
+                        }
+                    }
+
+                    IfTraversal.SkipCondition -> {
+                        ConversionsAndPromotion.castAToB(
+                            rebuildTree(expr.trueExpr, ifTraversal, replacer),
+                            rebuildTree(expr.falseExpr, ifTraversal, replacer),
+                            Behaviour.Throw
+                        ).map { trueE, falseE ->
+                            IfExpr.newRaw(trueE, falseE, expr.thisCondition)
+                        }
+                    }
+
+                    IfTraversal.ConditionOnly -> {
+                        ConversionsAndPromotion.castAToB(expr.trueExpr, expr.falseExpr, Behaviour.Throw)
+                            .map { trueE, falseE ->
+                                IfExpr.newRaw(
+                                    trueE,
+                                    falseE,
+                                    rebuildTree(expr.thisCondition, ifTraversal, replacer).castToBoolean()
+                                )
+                            }
+                    }
+                }
+            }
+
             is AnyBinaryExpr<*> -> {
                 ConversionsAndPromotion.castAToB(
-                    rebuildTree(expr.lhs, includeIfCondition, replacer),
-                    rebuildTree(expr.rhs, includeIfCondition, replacer),
+                    rebuildTree(expr.lhs, ifTraversal, replacer),
+                    rebuildTree(expr.rhs, ifTraversal, replacer),
                     Behaviour.Throw
                 ).map { lhs, rhs ->
                     when (expr) {
@@ -106,16 +155,6 @@ object ExprTreeRebuilder {
                             ConversionsAndPromotion.castAToB(lhs, rhs.castToBoolean(), Behaviour.Throw).map { l, r ->
                                 BooleanExpr.newRaw(l, r, expr.op)
                             }
-
-                        is IfExpr<*> -> IfExpr.newRaw(
-                            lhs,
-                            rhs,
-                            if (includeIfCondition) {
-                                rebuildTree(expr.thisCondition, replacer = replacer).castToBoolean()
-                            } else {
-                                expr.thisCondition
-                            }
-                        )
                     }
                 }
             }

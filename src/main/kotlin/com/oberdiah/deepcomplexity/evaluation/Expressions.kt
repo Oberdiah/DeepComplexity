@@ -58,10 +58,10 @@ sealed class Expr<T : Any>() {
      * that constraint, use [replaceTypeInTree] instead.
      */
     inline fun <reified Q> swapInplaceTypeInTree(
-        includeIfCondition: Boolean = true,
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacement: (Q) -> Expr<*>?
     ): Expr<T> {
-        return ExprTreeRebuilder.swapInplaceInTree(this, includeIfCondition) { expr: Expr<*> ->
+        return ExprTreeRebuilder.swapInplaceInTree(this, ifTraversal) { expr: Expr<*> ->
             if (expr is Q) {
                 replacement(expr) ?: expr
             } else {
@@ -71,10 +71,10 @@ sealed class Expr<T : Any>() {
     }
 
     inline fun <reified Q> replaceTypeInTree(
-        includeIfCondition: Boolean = true,
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacement: (Q) -> Expr<*>?
     ): Expr<*> {
-        return ExprTreeRebuilder.rebuildTree(this, includeIfCondition) { expr: Expr<*> ->
+        return ExprTreeRebuilder.rebuildTree(this, ifTraversal) { expr: Expr<*> ->
             if (expr is Q) {
                 replacement(expr) ?: expr
             } else {
@@ -210,15 +210,13 @@ data class IfExpr<T : Any> private constructor(
     val trueExpr: Expr<T>,
     val falseExpr: Expr<T>,
     val thisCondition: Expr<Boolean>,
-) : Expr<T>(), AnyBinaryExpr<T> {
+) : Expr<T>() {
     init {
         assert(trueExpr.ind == falseExpr.ind) {
             "Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}"
         }
     }
 
-    override val lhs: Expr<T> get() = trueExpr
-    override val rhs: Expr<T> get() = falseExpr
     override val ind: Indicator<T> get() = trueExpr.ind
 
     override fun simplify(): Expr<T> = new(trueExpr, falseExpr, thisCondition)

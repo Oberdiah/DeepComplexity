@@ -130,7 +130,7 @@ class Vars(
 
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueField<*> -> expr.qualifier.replaceTypeInTree<LeafExpr<HeapMarker>>(false) {
+            is LValueField<*> -> expr.qualifier.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.SkipCondition) {
                 get(QualifiedFieldKey(it.resolvesTo, expr.field))
             }
 
@@ -229,7 +229,7 @@ class Vars(
 
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
-            val newValue = qualifierExpr.replaceTypeInTree<LeafExpr<HeapMarker>>(false) { expr ->
+            val newValue = qualifierExpr.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.SkipCondition) { expr ->
                 if (expr.resolvesTo == resolvesTo) {
                     rExpr
                 } else {
