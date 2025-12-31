@@ -16,7 +16,7 @@ enum class BooleanSet : ISet<Boolean> {
         }
 
         override fun addToSet(other: Boolean): BooleanSet {
-            return if (!other) BOTH else this
+            return if (!other) EITHER else this
         }
 
         override fun removeFromSet(other: Boolean): BooleanSet {
@@ -31,14 +31,16 @@ enum class BooleanSet : ISet<Boolean> {
         }
 
         override fun addToSet(other: Boolean): BooleanSet {
-            return if (other) BOTH else this
+            return if (other) EITHER else this
         }
 
         override fun removeFromSet(other: Boolean): BooleanSet {
             return if (!other) NEITHER else this
         }
     },
-    BOTH {
+
+    // The value in question may end up being either true or false, we're not sure.
+    EITHER {
         override fun size(): Long = 2L
 
         override fun contains(element: Boolean): Boolean {
@@ -46,13 +48,15 @@ enum class BooleanSet : ISet<Boolean> {
         }
 
         override fun addToSet(other: Boolean): BooleanSet {
-            return BOTH
+            return EITHER
         }
 
         override fun removeFromSet(other: Boolean): BooleanSet {
             return if (other) FALSE else TRUE
         }
     },
+
+    // The value in question is invalid; we've hit a contradiction.
     NEITHER {
         override fun size(): Long = 0L
 
@@ -84,7 +88,7 @@ enum class BooleanSet : ISet<Boolean> {
     }
 
     override fun isFull(): Boolean {
-        return this == BOTH
+        return this == EITHER
     }
 
     override fun <Q : Any> cast(newInd: Indicator<Q>): ISet<Q>? {
@@ -102,8 +106,8 @@ enum class BooleanSet : ISet<Boolean> {
         return when (this) {
             TRUE -> FALSE
             FALSE -> TRUE
-            BOTH -> NEITHER
-            NEITHER -> BOTH
+            EITHER -> NEITHER
+            NEITHER -> EITHER
         }
     }
 
@@ -116,7 +120,7 @@ enum class BooleanSet : ISet<Boolean> {
         return when (this) {
             TRUE -> FALSE
             FALSE -> TRUE
-            BOTH -> BOTH
+            EITHER -> EITHER
             NEITHER -> NEITHER
         }
     }
@@ -126,7 +130,7 @@ enum class BooleanSet : ISet<Boolean> {
         return when (other.into()) {
             TRUE -> this.removeFromSet(false)
             FALSE -> this.removeFromSet(true)
-            BOTH -> this
+            EITHER -> this
             NEITHER -> NEITHER
         }
     }
@@ -136,7 +140,7 @@ enum class BooleanSet : ISet<Boolean> {
         return when (other.into()) {
             TRUE -> this.addToSet(true)
             FALSE -> this.addToSet(false)
-            BOTH -> BOTH
+            EITHER -> EITHER
             NEITHER -> this
         }
     }
@@ -147,7 +151,7 @@ enum class BooleanSet : ISet<Boolean> {
                 when (this) {
                     TRUE -> other
                     FALSE -> if (other == NEITHER) NEITHER else FALSE
-                    BOTH -> if (other == NEITHER) NEITHER else BOTH
+                    EITHER -> if (other == NEITHER) NEITHER else EITHER
                     NEITHER -> NEITHER
                 }
             }
@@ -156,7 +160,7 @@ enum class BooleanSet : ISet<Boolean> {
                 when (this) {
                     TRUE -> if (other == NEITHER) NEITHER else TRUE
                     FALSE -> other
-                    BOTH -> if (other == NEITHER) NEITHER else BOTH
+                    EITHER -> if (other == NEITHER) NEITHER else EITHER
                     NEITHER -> NEITHER
                 }
             }

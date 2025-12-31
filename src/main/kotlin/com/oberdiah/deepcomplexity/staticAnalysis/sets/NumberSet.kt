@@ -251,7 +251,7 @@ data class NumberSet<T : Number> private constructor(
             }
         }
 
-        return BooleanSet.BOTH
+        return BooleanSet.EITHER
     }
 
     override fun toConstVariance(): Variances<T> = NumberVariances.newFromConstant(this)

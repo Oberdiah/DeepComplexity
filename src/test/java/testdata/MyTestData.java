@@ -600,6 +600,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(15)
 	public static short constraintTest5(short x) {
 		int c = 0;
 		if (x == 7) {
@@ -783,6 +784,7 @@ public class MyTestData {
 	}
 	
 	@ExpectedExpressionSize(49)
+	@RequiredScore(1.0)
 	public static short addingVariables(short x) {
 		int a = 0;
 		if (x < 40) {
@@ -800,6 +802,8 @@ public class MyTestData {
 	}
 	
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(46)
 	public static short challenge1(short x) {
 		int a = 0;
 		
@@ -817,6 +821,22 @@ public class MyTestData {
 		}
 		
 		return (short) 1;
+	}
+	
+	@ExpectedExpressionSize(30)
+	public static short challenge2(short x) {
+		int a = 0;
+		
+		if (x > 2) {
+			a = x;
+		}
+		
+		int b = 0;
+		if (a > 0) {
+			b = a;
+		}
+		
+		return (short) (a + b);
 	}
 	
 	@RequiredScore(0.4)

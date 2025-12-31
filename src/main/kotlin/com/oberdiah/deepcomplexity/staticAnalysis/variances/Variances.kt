@@ -47,6 +47,10 @@ interface Variances<T : Any> {
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,
      * all other types can throw if they receive one.
+     *
+     * Generate all constraints arising from a given comparison operation between this (lhs) and other (rhs).
+     * These constraints are the conditions that must be satisfied for the comparison to be able to return true.
+     * As usual, unreachable will be returned if the comparison cannot be satisfied under any circumstances.
      */
     fun generateConstraintsFrom(
         other: Variances<T>,

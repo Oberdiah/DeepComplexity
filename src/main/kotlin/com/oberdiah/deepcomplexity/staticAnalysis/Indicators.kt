@@ -193,8 +193,8 @@ data object ByteIndicator : NumberIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanIndicator : Indicator<Boolean>(Boolean::class) {
-    override fun newVariance(key: Key): Variances<Boolean> = BooleanVariances(BooleanSet.BOTH)
-    override fun newFullSet(): ISet<Boolean> = BooleanSet.BOTH
+    override fun newVariance(key: Key): Variances<Boolean> = BooleanVariances(BooleanSet.EITHER)
+    override fun newFullSet(): ISet<Boolean> = BooleanSet.EITHER
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
     override fun newConstantSet(constant: Boolean): ISet<Boolean> =
         BooleanSet.fromBoolean(constant)

@@ -155,7 +155,7 @@ object ExprEvaluate {
                     when (bundle.collapse(constraints).into()) {
                         TRUE -> evaluate(expr.trueExpr, trueScope)
                         FALSE -> evaluate(expr.falseExpr, falseScope)
-                        BOTH -> {
+                        EITHER -> {
                             val trueValue = evaluate(expr.trueExpr, trueScope)
                             val falseValue = evaluate(expr.falseExpr, falseScope)
                             trueValue.union(falseValue)
