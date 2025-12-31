@@ -37,7 +37,7 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
     override fun generateConstraintsFrom(
         other: Variances<HeapMarker>,
         comparisonOp: ComparisonOp,
-        incomingConstraints: Constraints
+        constraints: Constraints
     ): Constraints {
         // We might want to do something more interesting later.
         return Constraints.completelyUnconstrained()

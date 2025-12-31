@@ -52,16 +52,6 @@ fun <T : Any> Bundle<T>.comparisonOperation(
     }
 }
 
-fun <T : Number> Bundle<T>.numberComparisonOperation(
-    other: Bundle<T>,
-    comparisonOp: ComparisonOp,
-    exprKey: Key
-): Bundle<Boolean> {
-    return this.binaryMapToVariances(BooleanIndicator, other, exprKey) { a, b, constraints ->
-        a.into().comparisonOperation(b.into(), comparisonOp, constraints)
-    }
-}
-
 fun <T : Number> Bundle<T>.negate(): Bundle<T> =
     this.performUnaryOperation { a ->
         a.into().negate()

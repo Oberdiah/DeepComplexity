@@ -51,6 +51,6 @@ interface Variances<T : Any> {
     fun generateConstraintsFrom(
         other: Variances<T>,
         comparisonOp: ComparisonOp,
-        incomingConstraints: Constraints
+        constraints: Constraints
     ): Constraints
 }

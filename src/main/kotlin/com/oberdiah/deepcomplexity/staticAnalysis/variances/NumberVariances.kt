@@ -240,12 +240,12 @@ data class NumberVariances<T : Number> private constructor(
     override fun generateConstraintsFrom(
         other: Variances<T>,
         comparisonOp: ComparisonOp,
-        incomingConstraints: Constraints
+        constraints: Constraints
     ): Constraints {
         val other = other.into()
         val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isConstant() }
 
-        var constraints = incomingConstraints
+        var constraints = constraints
 
         for (key in allKeys) {
             val myKeyMultiplier = multipliers[key] ?: ind.onlyZeroSet()
@@ -257,10 +257,10 @@ data class NumberVariances<T : Number> private constructor(
             // Collapse all non-our-key constants into a single value, and move them to the right.
             val collapsedLhsBeforeMove =
                 NumberVariances(ind, multipliers.filter { it.key != key })
-                    .collapse(incomingConstraints)
+                    .collapse(constraints)
             val collapsedRhsBeforeMove =
                 NumberVariances(ind, other.multipliers.filter { it.key != key })
-                    .collapse(incomingConstraints)
+                    .collapse(constraints)
 
             val rhsConstant = collapsedRhsBeforeMove.subtract(collapsedLhsBeforeMove)
 

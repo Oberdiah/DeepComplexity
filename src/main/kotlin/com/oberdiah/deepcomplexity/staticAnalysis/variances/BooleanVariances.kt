@@ -36,7 +36,7 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
     override fun generateConstraintsFrom(
         other: Variances<Boolean>,
         comparisonOp: ComparisonOp,
-        incomingConstraints: Constraints
+        constraints: Constraints
     ): Constraints {
         TODO("Not yet implemented")
     }
