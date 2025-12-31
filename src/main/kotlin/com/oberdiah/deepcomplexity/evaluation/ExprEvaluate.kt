@@ -131,6 +131,10 @@ object ExprEvaluate {
         val toReturn: Bundle<T> = when (expr) {
             is UnionExpr -> evaluate(expr.lhs, scope).union(evaluate(expr.rhs, scope))
             is IfExpr -> {
+                // Useful note for future reference: The scope constraints are for binding variables
+                // together. For example, we may be able to know that c is only set to 5 when x is 7.
+                // In that case, if we see x != 7 later on, we can be sure c != 5.
+
                 val ifCondition = expr.thisCondition
 
                 val condScope = scope.withScope(expr.trueExpr).withScope(expr.falseExpr)

@@ -245,38 +245,38 @@ data class NumberVariances<T : Number> private constructor(
         val other = other.into()
         val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isConstant() }
 
-        var constraints = Constraints.completelyUnconstrained()
+        var constraints = incomingConstraints
 
         for (key in allKeys) {
             val myKeyMultiplier = multipliers[key] ?: ind.onlyZeroSet()
             val otherKeyMultiplier = other.multipliers[key] ?: ind.onlyZeroSet()
 
             // Move all the keys onto the left
-            val coefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
+            val lhsCoefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
 
-            val lhsConstant =
+            // Collapse all non-our-key constants into a single value, and move them to the right.
+            val collapsedLhsBeforeMove =
                 NumberVariances(ind, multipliers.filter { it.key != key })
                     .collapse(incomingConstraints)
-
-            val rhsConstant =
+            val collapsedRhsBeforeMove =
                 NumberVariances(ind, other.multipliers.filter { it.key != key })
                     .collapse(incomingConstraints)
 
-            val constant = rhsConstant.subtract(lhsConstant)
+            val rhsConstant = collapsedRhsBeforeMove.subtract(collapsedLhsBeforeMove)
 
-            if (coefficient.isZero()) {
+            if (lhsCoefficient.isZero()) {
                 // The key has cancelled itself out, this is now an all-or-nothing situation:
                 // either the constraint is met, or it isn't.
-                // The equation at this point looks like `0x blah constant`
+                // The equation at this point looks like `0x op constant`
                 // So we can just check the constant against zero.
-                val meetsConstraint = ind.onlyZeroSet().comparisonOperation(constant, comparisonOp)
+                val meetsConstraint = ind.onlyZeroSet().comparisonOperation(rhsConstant, comparisonOp)
                 constraints = when (meetsConstraint) {
                     BooleanSet.BOTH, BooleanSet.TRUE -> constraints.withConstraint(key, key.ind.newFullSet())
                     BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, key.ind.newEmptySet())
                 }
             } else {
-                val shouldFlip = coefficient.comparisonOperation(ind.onlyZeroSet(), ComparisonOp.LESS_THAN)
-                val rhs = constant.divide(coefficient)
+                val shouldFlip = lhsCoefficient.comparisonOperation(ind.onlyZeroSet(), ComparisonOp.LESS_THAN)
+                val rhs = rhsConstant.divide(lhsCoefficient)
                 val constraint = when (shouldFlip) {
                     BooleanSet.TRUE -> rhs.getSetSatisfying(comparisonOp.flip())
                     BooleanSet.FALSE -> rhs.getSetSatisfying(comparisonOp)

@@ -37,11 +37,12 @@ interface Variances<T : Any> {
         other: Variances<T>,
         comparisonOp: ComparisonOp,
         constraints: Constraints
-    ): BooleanVariances =
-        collapse(constraints)
+    ): BooleanVariances {
+        return collapse(constraints)
             .comparisonOperation(other.collapse(constraints), comparisonOp)
             .toConstVariance()
             .into()
+    }
 
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,

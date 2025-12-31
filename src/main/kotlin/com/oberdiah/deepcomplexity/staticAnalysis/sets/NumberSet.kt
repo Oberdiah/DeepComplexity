@@ -143,7 +143,7 @@ data class NumberSet<T : Number> private constructor(
         }
 
         if (ranges.size > 10) {
-            println("Warning: NumberSet has more than 5 ranges, this may be slow.")
+            throw RuntimeException("NumberSet has more than 10 ranges, this may be slow.")
         }
 
         var hasThrownDivideByZero = this.hasThrownDivideByZero || other.hasThrownDivideByZero
