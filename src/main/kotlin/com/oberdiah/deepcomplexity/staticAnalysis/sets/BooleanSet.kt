@@ -101,16 +101,6 @@ enum class BooleanSet : ISet<Boolean> {
 
     override val ind = BooleanIndicator
 
-    override fun invert(): BooleanSet {
-        // This is a set invert, not a boolean invert
-        return when (this) {
-            TRUE -> FALSE
-            FALSE -> TRUE
-            EITHER -> NEITHER
-            NEITHER -> EITHER
-        }
-    }
-
     /**
      * Inverts the boolean meaning of the set, rather than the set itself.
      *

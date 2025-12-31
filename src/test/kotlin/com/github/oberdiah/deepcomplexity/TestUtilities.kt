@@ -101,7 +101,7 @@ object TestUtilities {
         println("\tExpression size: ${scoreResults.expressionSize}")
 
         // Clone-contexts mode doesn't care about the standard expression size - it may well be
-        // a larger final expression tree and that doesn't matter so long as it's still correct.
+        // a larger final expression tree, and that doesn't matter so long as it's still correct.
         if (!testInfo.testSettings.cloneContexts) {
             if (expressionSizeAnnotation != null) {
                 val requiredMaxExpressionSize = expressionSizeAnnotation.value
@@ -140,7 +140,7 @@ object TestUtilities {
                 return listOf("Passed", msg, "$methodScoreStr%", goldStar, notes) to true
             }
         } else {
-            println(if (scoreResults.score == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg")
+            println(if (scoreResults.score == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg ($methodScoreStr%)")
             println("\tThis method was not required to reach a score threshold and as such it passed by default.")
             return listOf("Passed by default", scoreReceivedColumn, "$methodScoreStr%", "", extraInfoColumn) to true
         }

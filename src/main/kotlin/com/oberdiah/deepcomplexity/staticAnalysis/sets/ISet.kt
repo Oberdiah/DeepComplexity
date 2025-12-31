@@ -4,6 +4,13 @@ import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
+/**
+ * A set of possible values of type T. In essence, this represents an OR between the values of T listed.
+ *
+ * A crucial fact of sets: All values in a set might be the final value, we don't know.
+ * What we do know, for certain, is that no values outside the set are. This means an inversion
+ * of this type of set is impossible to compute.
+ */
 interface ISet<T : Any> {
     val ind: Indicator<T>
 
@@ -12,7 +19,12 @@ interface ISet<T : Any> {
      * Otherwise, null.
      */
     fun size(): Long?
-    fun invert(): ISet<T>
+
+    // We intentionally don't implement invert; all situations I can think of that would use it are
+    // inherently dangerous — a set is a bubble of uncertainty, to invert that doesn't get us the inverse
+    // bubble.
+    // fun invert(): ISet<T> = WONT_IMPLEMENT()
+
     fun <Q : Any> cast(newInd: Indicator<Q>): ISet<Q>?
     fun contains(element: T): Boolean
     fun isEmpty(): Boolean

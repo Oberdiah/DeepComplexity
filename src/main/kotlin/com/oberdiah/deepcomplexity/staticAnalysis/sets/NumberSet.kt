@@ -359,33 +359,6 @@ data class NumberSet<T : Number> private constructor(
         return total
     }
 
-    override fun invert(): NumberSet<T> {
-        val newList: MutableList<NumberRange<T>> = mutableListOf()
-
-        val minValue = ind.getMinValue()
-        val maxValue = ind.getMaxValue()
-
-        if (ranges.isEmpty()) {
-            return unaryMakeNew(listOf(NumberRange.new(minValue, maxValue)))
-        }
-
-        var currentMin = minValue
-
-        for (range in ranges) {
-            if (currentMin < range.start) {
-                newList.add(NumberRange.new(currentMin, range.start.downOneEpsilon()))
-            }
-            currentMin = range.end.upOneEpsilon()
-        }
-
-        // Add final range if necessary
-        if (currentMin < maxValue) {
-            newList.add(NumberRange.new(currentMin, maxValue))
-        }
-
-        return unaryMakeNew(newList)
-    }
-
     fun isOne(): Boolean {
         return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isOne()
     }

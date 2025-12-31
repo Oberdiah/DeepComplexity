@@ -34,8 +34,8 @@ fun Bundle<Boolean>.booleanOperation(
         a.into().booleanOperation(b.into(), operation)
     }
 
-fun Bundle<Boolean>.invert() = performUnaryOperation {
-    it.into().invert()
+fun Bundle<Boolean>.booleanInvert() = performUnaryOperation {
+    it.into().booleanInvert()
 }
 
 fun <T : Number> Bundle<T>.isOne(): Boolean = this.variances.all {

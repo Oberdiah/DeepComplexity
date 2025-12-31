@@ -442,6 +442,7 @@ object Utilities {
     fun String.betterPrependIndent(indent: String = "    "): String =
         lineSequence().joinToString("\n") { indent + it }
 
+    @Suppress("FunctionName")
     fun WONT_IMPLEMENT(reason: String = "This function is intentionally unimplemented."): Nothing {
         throw NotImplementedError(reason)
     }

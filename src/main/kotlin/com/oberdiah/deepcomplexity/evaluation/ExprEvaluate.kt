@@ -117,7 +117,7 @@ object ExprEvaluate {
                 evalC(expr, scope)
             }
 
-            is BooleanInvertExpr -> evaluate(expr, scope).invert()
+            is BooleanInvertExpr -> evaluate(expr, scope).booleanInvert()
             else -> evaluateAnythings(expr, scope)
         }
 

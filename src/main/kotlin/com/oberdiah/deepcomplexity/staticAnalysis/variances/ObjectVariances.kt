@@ -9,13 +9,10 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
 data class ObjectVariances(private val value: ObjectSet, override val ind: ObjectIndicator) :
     Variances<HeapMarker> {
     override fun toString(): String = value.toString()
-
-    fun invert(): ObjectVariances = ObjectVariances(value.invert().into(), ind)
 
     override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> {
         if (newInd == ind) {
