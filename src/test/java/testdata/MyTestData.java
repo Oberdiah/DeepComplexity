@@ -824,6 +824,8 @@ public class MyTestData {
 	}
 	
 	@ExpectedExpressionSize(30)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
+	@RequiredScore(0.5)
 	public static short challenge2(short x) {
 		int a = 0;
 		

@@ -6,7 +6,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 object ExpressionExtensions {
-    fun Expr<Boolean>.inverted(): Expr<Boolean> = ExprConstrain.invert(this)
+    fun Expr<Boolean>.inverted(scope: ExprEvaluate.Scope): Expr<Boolean> = ExprConstrain.invert(this, scope)
 
     /**
      * Only supports [nonTrivial] = [Behaviour.Throw].

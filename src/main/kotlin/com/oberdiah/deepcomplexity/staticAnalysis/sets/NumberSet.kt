@@ -271,7 +271,7 @@ data class NumberSet<T : Number> private constructor(
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
 
-        var newData: List<NumberRange<T>> =
+        val newData: List<NumberRange<T>> =
             when (comp) {
                 LESS_THAN_OR_EQUAL ->
                     listOf(NumberRange.new(ind.getMinValue(), biggestValue))

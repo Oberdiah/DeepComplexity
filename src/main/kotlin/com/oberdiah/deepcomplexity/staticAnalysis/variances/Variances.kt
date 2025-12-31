@@ -29,8 +29,8 @@ interface Variances<T : Any> {
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,
      * all other types can throw if they receive one.
      *
-     * At the very least, there are improvements to this that could be made for numbers.
-     * I wrote the above down in a previous comment, but there was no further information
+     * "At the very least, there are improvements to this that could be made for numbers."
+     * I wrote the above down in a previous comment, but there was no further information,
      * so I couldn't tell you specifically what those improvements might be.
      */
     fun comparisonOperation(

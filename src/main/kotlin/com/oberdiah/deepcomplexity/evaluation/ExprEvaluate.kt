@@ -18,7 +18,7 @@ object ExprEvaluate {
     data class Scope(
         val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
         val scopesToKeep: Set<Key.ExpressionKey> = setOf(),
-        val supportKeyMap: Map<ExpressionChain.SupportKey, Bundle<*>> = mapOf()
+        val supportKeyMap: Map<ExpressionChain.SupportKey, Expr<*>> = mapOf()
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
@@ -45,11 +45,11 @@ object ExprEvaluate {
             )
         }
 
-        fun withSupport(key: ExpressionChain.SupportKey, bundle: Bundle<*>): Scope {
+        fun withSupport(key: ExpressionChain.SupportKey, expr: Expr<*>): Scope {
             return Scope(
                 constraints,
                 scopesToKeep,
-                supportKeyMap + (key to bundle)
+                supportKeyMap + (key to expr)
             )
         }
     }
@@ -183,15 +183,19 @@ object ExprEvaluate {
                 ).constrainWith(scope)
 
             is ExpressionChain -> {
-                val supportBundle = evaluate(expr.support, scope)
-                val newScope = scope.withSupport(expr.supportKey, supportBundle)
+                // Note that at the moment we're leaving the evaluation of the expression itself to each of the
+                // chain pointer locations. This will result in a bit of an explosion in evaluations.
+                // We may want to re-think that in the future.
+                val newScope = scope.withSupport(expr.supportKey, expr.support)
                 evaluate(expr.expr, newScope)
             }
 
             is ExpressionChainPointer -> {
-                val keyResult = scope.supportKeyMap[expr.supportKey]
-                val castResult = keyResult!!.cast(expr.ind)
-                castResult!!
+                val replacementExpr = scope.supportKeyMap[expr.supportKey]
+                    ?: throw IllegalStateException("No support key found for ${expr.supportKey}")
+                val castResult = evaluate(replacementExpr, scope).cast(expr.ind)
+                    ?: throw IllegalStateException("Could not cast $replacementExpr to ${expr.ind}")
+                castResult
             }
 
             else -> {

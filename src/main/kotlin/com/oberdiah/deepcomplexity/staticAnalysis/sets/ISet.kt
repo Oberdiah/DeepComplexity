@@ -45,11 +45,13 @@ interface ISet<T : Any> {
      * in which the opposite event could occur. For equality, for example, two identical sets {5, 6} and {5, 6}
      * are NOT equal, nor are they unequal.
      *
+     * ```
      * {5} == {5} = True
      * {5} == {6} = False
      * {5, 6} == {5, 6} = Both
      * {5, 6} == {7, 8} = False
      * {5, 6} == {5} = Both
+     * ```
      *
      * Effectively, for equality you return false iff the sets are disjoint, true iff they are both size 1 and
      * equal to each other, and neither otherwise.
