@@ -62,7 +62,6 @@ object ExprTreeRebuilder {
 
             is VarsExpr -> expr
             is LeafExpr -> expr
-            is ExpressionChainPointer<*> -> expr
 
             is NegateExpr<*> -> NegateExpr(
                 rebuildTree(expr.expr, includeIfCondition, replacer).castToNumbers()
@@ -76,17 +75,18 @@ object ExprTreeRebuilder {
 
             is ExpressionChain<*> -> {
                 val newSupport = rebuildTree(expr.support, includeIfCondition, replacer)
-                val newExpr =
-                    rebuildTree(expr.expr, includeIfCondition, replacer).replaceTypeInTree<ExpressionChainPointer<*>> {
-                        if (it.supportKey == expr.supportKey) {
-                            // Change the chain pointer's indicator to match the new support indicator.
-                            ExpressionChainPointer(it.supportKey, newSupport.ind)
-                        } else {
-                            null
-                        }
+                val newExpr = rebuildTree(expr.expr, includeIfCondition) {
+                    if (it is ExpressionChainPointer && it.supportKey == expr.supportKey) {
+                        // Change the chain pointer's indicator to match the new support indicator.
+                        ExpressionChainPointer(it.supportKey, newSupport.ind)
+                    } else {
+                        replacer(it)
                     }
+                }
                 ExpressionChain(expr.supportKey, newSupport, newExpr)
             }
+
+            is ExpressionChainPointer<*> -> expr
 
             is AnyBinaryExpr<*> -> {
                 ConversionsAndPromotion.castAToB(

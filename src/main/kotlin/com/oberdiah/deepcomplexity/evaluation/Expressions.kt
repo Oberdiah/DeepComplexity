@@ -312,6 +312,16 @@ data class ExpressionChain<T : Any>(
     val support: Expr<*>,
     val expr: Expr<T>
 ) : Expr<T>() {
+    companion object {
+        fun <T : Any> buildNestedChain(links: Map<SupportKey, Expr<*>>, expr: Expr<T>): Expr<T> {
+            var currentExpr = expr
+            for ((key, support) in links.entries) {
+                currentExpr = ExpressionChain(key, support, currentExpr)
+            }
+            return currentExpr
+        }
+    }
+
     override val ind: Indicator<T> = expr.ind
 
     data class SupportKey(private val id: Int, private val displayName: String) {
