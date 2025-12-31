@@ -600,6 +600,20 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	public static short constraintTest5(short x) {
+		int c = 0;
+		if (x == 7) {
+			c = 5;
+		}
+		
+		if (x != 7) {
+			return (short) c;
+		}
+		
+		return (short) 10;
+	}
+	
+	@RequiredScore(1.0)
 	@ExpectedExpressionSize(27)
 	public static short returnTest1(short x) {
 		if (x > 0) {
@@ -784,6 +798,7 @@ public class MyTestData {
 		}
 		return 0;
 	}
+	
 	
 	public static short challenge1(short x) {
 		int a = 0;
