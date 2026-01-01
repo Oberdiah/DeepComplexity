@@ -3,8 +3,8 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
+import com.oberdiah.deepcomplexity.evaluation.ExpressionChain.SupportKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
@@ -24,20 +24,17 @@ sealed class Expr<T : Any>() {
      */
     abstract val ind: Indicator<T>
 
+    /**
+     * Concatenates the system hashcode and our general hashcode to get a unique long.
+     * Shouldn't be used in standard flow as we want expressions to be interchangeable for all normal purposes.
+     */
+    val completelyUniqueValueForDebugUseOnly: Long
+        get() =
+            (System.identityHashCode(this).toLong() shl 32) or (this.hashCode().toLong() and 0xFFFFFFFFL)
+
     final override fun toString(): String {
         return ExprToString.toString(this)
     }
-
-    /**
-     * Rebuilds every expression in the tree.
-     * As it's doing that, it calls the replacer on every expression so you can make any modifications
-     * you want.
-     */
-    fun rebuildTree(replacer: ExprTreeRebuilder.ExprReplacer, includeIfCondition: Boolean = true) =
-        ExprTreeRebuilder.rebuildTree(this, replacer, includeIfCondition)
-
-    fun <NewT : Any> replaceLeaves(replacer: LeafReplacer<NewT>): Expr<NewT> =
-        ExprTreeRebuilder.replaceTreeLeaves(this, replacer)
 
     fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition)
@@ -48,8 +45,6 @@ sealed class Expr<T : Any>() {
     fun iterateLeaves(includeIfCondition: Boolean = false): Sequence<LeafExpr<T>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<LeafExpr<T>>()
 
-    fun getVariables(): Set<VariableExpr<*>> = iterateTree<VariableExpr<*>>().toSet()
-
     fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)
 
@@ -58,64 +53,40 @@ sealed class Expr<T : Any>() {
      * As it's doing that, whenever it encounters an expression of type [Q],
      * it replaces it with the result of calling [replacement] on it. If [replacement] returns null,
      * it will skip the replacement.
+     *
+     * [replacement] must return an expression with the same indicator as it consumes. If you don't want
+     * that constraint, use [replaceTypeInTree] instead.
      */
-    inline fun <reified Q> replaceTypeInTree(
-        includeIfCondition: Boolean = true,
+    inline fun <reified Q> swapInplaceTypeInTree(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacement: (Q) -> Expr<*>?
     ): Expr<T> {
-        return rebuildTree(ExprTreeRebuilder.ExprReplacer { expr ->
+        return ExprTreeRebuilder.swapInplaceInTree(this, ifTraversal) { expr: Expr<*> ->
             if (expr is Q) {
                 replacement(expr) ?: expr
             } else {
                 expr
             }
-        }, includeIfCondition)
+        }
     }
 
-
-    /**
-     * Swaps out the leaves of the expression. Every leaf of the expression must have type [Q].
-     * An ergonomic and slightly constrained version of [com.oberdiah.deepcomplexity.evaluation.Expr.replaceLeaves].
-     *
-     * Will assume everything you return has type [newInd], and throw an exception if that is not true. This
-     * is mainly for ergonomic reasons, so you don't have to do the casting yourself.
-     */
-    internal inline fun <reified Q : Expr<T>> replaceTypeInLeaves(
-        newInd: Indicator<*>,
-        crossinline replacement: (Q) -> Expr<*>
+    inline fun <reified Q> replaceTypeInTree(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        crossinline replacement: (Q) -> Expr<*>?
     ): Expr<*> {
-        return object {
-            operator fun <T : Any> invoke(
-                newInd: Indicator<T>,
-            ): Expr<T> {
-                return replaceTypeInLeavesWithInd<Q, T>(newInd, replacement)
-            }
-        }(newInd)
-    }
-
-    private inline fun <reified Q : Expr<T>, B : Any> replaceTypeInLeavesWithInd(
-        newInd: Indicator<B>,
-        crossinline replacement: (Q) -> Expr<*>
-    ): Expr<B> {
-        return replaceLeaves { expr ->
-            val newExpr = if (expr is Q) {
-                replacement(expr)
+        return ExprTreeRebuilder.rebuildTree(this, ifTraversal) { expr: Expr<*> ->
+            if (expr is Q) {
+                replacement(expr) ?: expr
             } else {
-                throw IllegalArgumentException(
-                    "Expected ${Q::class.simpleName}, got ${expr::class.simpleName}"
-                )
+                expr
             }
-
-            newExpr.tryCastTo(newInd) ?: throw IllegalStateException(
-                "(${newExpr.ind} != $newInd) $newExpr does not match $expr"
-            )
         }
     }
 
     /**
      * Recursively calls [simplify] on every node in the tree, rebuilding the tree as it goes.
      */
-    fun optimise(): Expr<T> = rebuildTree(ExprTreeRebuilder.ExprReplacer { it.simplify() })
+    fun optimise(): Expr<T> = ExprTreeRebuilder.swapInplaceInTree(this) { it.simplify() }
 
     /**
      * Simplifies the expression if possible.
@@ -127,44 +98,74 @@ sealed class Expr<T : Any>() {
     fun dStr(): String = ExprToString.toDebugString(this)
 }
 
+/**
+ * An expression with an [lhs] and [rhs]
+ */
+sealed interface AnyBinaryExpr<T : Any> {
+    val lhs: Expr<T>
+    val rhs: Expr<T>
+}
+
 fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
 
 /**
- * Represents a link to an entire context. If it's null it represents the meta context's
- * personal `ctx` value.
+ * Represents a link to an entire context of variables.
  */
-data class VarsExpr(val vars: Vars? = null) : Expr<VarsMarker>() {
+data class VarsExpr(val vars: DynamicOrStatic = DynamicOrStatic.Dynamic) : Expr<VarsMarker>() {
     companion object {
         const val STRING_PLACEHOLDER = "##VarsExpr##"
     }
 
-    fun map(operation: (Vars) -> Vars): VarsExpr = VarsExpr(vars?.let { operation(it) })
+    val isStatic = vars is DynamicOrStatic.Static
+    val isDynamic = vars is DynamicOrStatic.Dynamic
+
+    fun map(operation: (Vars) -> Vars): VarsExpr = VarsExpr(
+        when (vars) {
+            is DynamicOrStatic.Dynamic -> DynamicOrStatic.Dynamic
+            is DynamicOrStatic.Static -> DynamicOrStatic.Static(operation(vars.vars))
+        }
+    )
 
     override val ind: VarsIndicator = VarsIndicator
+
+    sealed class DynamicOrStatic {
+        /**
+         * Representing the dynamic variables already stored in the context.
+         */
+        object Dynamic : DynamicOrStatic() {
+            override fun toString(): String = STRING_PLACEHOLDER
+        }
+
+        /**
+         * A static set of variables that's been locked in by a 'return'.
+         */
+        data class Static(val vars: Vars) : DynamicOrStatic() {
+            override fun toString(): String = vars.toString()
+        }
+    }
 }
 
 data class ArithmeticExpr<T : Number>(
-    val lhs: Expr<T>,
-    val rhs: Expr<T>,
+    override val lhs: Expr<T>,
+    override val rhs: Expr<T>,
     val op: BinaryNumberOp,
-) : Expr<T>() {
+) : Expr<T>(), AnyBinaryExpr<T> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 
-    override val ind: Indicator<T>
-        get() = lhs.ind
+    override val ind: Indicator<T> = lhs.ind
 }
 
 
 @ConsistentCopyVisibility
 data class ComparisonExpr<T : Any> private constructor(
-    val lhs: Expr<T>,
-    val rhs: Expr<T>,
+    override val lhs: Expr<T>,
+    override val rhs: Expr<T>,
     val comp: ComparisonOp,
-) : Expr<Boolean>() {
+) : Expr<Boolean>(), AnyBinaryExpr<T> {
     companion object {
         fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> =
             ComparisonExpr(lhs, rhs, comp)
@@ -179,6 +180,8 @@ data class ComparisonExpr<T : Any> private constructor(
         }
     }
 
+    override val ind: Indicator<Boolean> = BooleanIndicator
+
     override fun simplify(): Expr<Boolean> = new(lhs, rhs, comp)
 
     init {
@@ -187,8 +190,6 @@ data class ComparisonExpr<T : Any> private constructor(
         }
     }
 
-    override val ind: Indicator<Boolean>
-        get() = BooleanIndicator
 }
 
 /**
@@ -216,8 +217,7 @@ data class IfExpr<T : Any> private constructor(
         }
     }
 
-    override val ind: Indicator<T>
-        get() = trueExpr.ind
+    override val ind: Indicator<T> get() = trueExpr.ind
 
     override fun simplify(): Expr<T> = new(trueExpr, falseExpr, thisCondition)
 
@@ -257,28 +257,29 @@ data class IfExpr<T : Any> private constructor(
     }
 }
 
-data class UnionExpr<T : Any>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<T>() {
+data class UnionExpr<T : Any>(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(), AnyBinaryExpr<T> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 
-    override val ind: Indicator<T>
-        get() = lhs.ind
+    override val ind: Indicator<T> = lhs.ind
 }
 
 @ConsistentCopyVisibility
-data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr<Boolean>, val op: BooleanOp) :
-    Expr<Boolean>() {
+data class BooleanExpr private constructor(
+    override val lhs: Expr<Boolean>,
+    override val rhs: Expr<Boolean>,
+    val op: BooleanOp
+) : Expr<Boolean>(), AnyBinaryExpr<Boolean> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 
-    override val ind: Indicator<Boolean>
-        get() = BooleanIndicator
+    override val ind: Indicator<Boolean> = BooleanIndicator
 
     companion object {
         fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanExpr =
@@ -293,14 +294,45 @@ data class BooleanExpr private constructor(val lhs: Expr<Boolean>, val rhs: Expr
 }
 
 data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
-    override val ind: Indicator<Boolean>
-        get() = BooleanIndicator
+    override val ind: Indicator<Boolean> = BooleanIndicator
 }
 
 data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
-    override val ind: Indicator<T>
-        get() = expr.ind
+    override val ind: Indicator<T> = expr.ind
 }
+
+/**
+ * Prevent a massive combinatorial explosion by creating a support expression that can be referenced
+ * multiple times in the primary expression.
+ */
+data class ExpressionChain<T : Any>(
+    val supportKey: SupportKey,
+    val support: Expr<*>,
+    val expr: Expr<T>
+) : Expr<T>() {
+    companion object {
+        fun <T : Any> buildNestedChain(links: Map<SupportKey, Expr<*>>, expr: Expr<T>): Expr<T> {
+            var currentExpr = expr
+            for ((key, support) in links.entries) {
+                currentExpr = ExpressionChain(key, support, currentExpr)
+            }
+            return currentExpr
+        }
+    }
+
+    override val ind: Indicator<T> = expr.ind
+
+    data class SupportKey(private val id: Int, private val displayName: String) {
+        override fun toString(): String = "$displayName [$id]"
+
+        companion object {
+            private var NEXT_ID = 0
+            fun new(displayName: String): SupportKey = SupportKey(NEXT_ID++, displayName)
+        }
+    }
+}
+
+data class ExpressionChainPointer<T : Any>(val supportKey: SupportKey, override val ind: Indicator<T>) : Expr<T>()
 
 sealed class LeafExpr<T : Any> : Expr<T>() {
     abstract val resolvesTo: ResolvesTo<T>
@@ -309,7 +341,8 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
 }
 
 /**
- * This represents a standard primitive which we do not know the value of yet.
+ * This represents a variable in code which we do not know the value of yet within our scope. Variable expressions
+ * are resolved at method processing time.
  *
  * Related to a specific context (The context that created it).
  * This context is only used for ensuring proper usage, it's never used within the logic.
@@ -359,11 +392,11 @@ data class VariableExpr<T : Any> private constructor(
          */
         fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
 
-        override fun safelyResolveUsing(vars: Vars): Expr<*> {
+        fun safelyResolveUsing(vars: Vars): Expr<T> {
             assert(!contextId.collidesWith(vars.idx)) {
                 "Cannot resolve a KeyBackreference in the context it was created in."
             }
-            return vars.get(vars.resolveKey(key))
+            return vars.get(vars.resolveKey(key)).castOrThrow(ind)
         }
     }
 }
@@ -376,6 +409,7 @@ data class ConstExpr<T : Any> private constructor(override val resolvesTo: DataC
     data class DataContainer<T : Any>(val v: T, override val ind: Indicator<T>) : ResolvesTo<T> {
         override fun toString(): String = v.toString()
         override fun toLeafExpr(): Expr<T> = ConstExpr(this)
+        override fun isConstant(): Boolean = true
     }
 
     val value = resolvesTo.v

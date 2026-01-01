@@ -1,42 +1,45 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.staticAnalysis.*
+
+/**
+ * What to do when casting an expression actually has to do something.
+ */
+enum class Behaviour {
+    Throw,
+    WrapWithTypeCastExplicit,
+    WrapWithTypeCastImplicit
+}
 
 object ConversionsAndPromotion {
     class TypedPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {
         fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
     }
 
-    fun castAToB(exprA: Expr<*>, exprB: Expr<*>, explicit: Boolean): TypedPair<*> {
-        fun <T : Any> castTo(exprB: Expr<T>): TypedPair<*> {
-            val castExprA: Expr<T> = exprA.castToUsingTypeCast(exprB.ind, explicit)
-            return TypedPair(castExprA, exprB)
-        }
-        return castTo(exprB)
+    fun <T : Any> castAToB(exprA: Expr<*>, exprB: Expr<T>, nonTrivial: Behaviour): TypedPair<T> {
+        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
+        return TypedPair(castExprA, exprB)
     }
 
-    fun castNumbersAToB(
+    fun <T : Number> castNumbersAToB(
         exprA: Expr<out Number>,
-        exprB: Expr<out Number>,
-        explicit: Boolean
-    ): TypedPair<out Number> {
-        fun <T : Number> castTo(exprB: Expr<T>): TypedPair<out Number> {
-            val castExprA: Expr<T> = exprA.castToUsingTypeCast(exprB.ind, explicit)
-            return TypedPair(castExprA, exprB)
-        }
-        return castTo(exprB)
+        exprB: Expr<T>,
+        nonTrivial: Behaviour
+    ): TypedPair<T> {
+        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
+        return TypedPair(castExprA, exprB)
     }
 
     fun <T : Number> castBothNumbersTo(
         exprA: Expr<out Number>,
         exprB: Expr<out Number>,
         indicator: NumberIndicator<T>,
-        explicit: Boolean
+        nonTrivial: Behaviour
     ): TypedPair<T> {
-        val castExprA: Expr<T> = exprA.castToUsingTypeCast(indicator, explicit)
-        val castExprB: Expr<T> = exprB.castToUsingTypeCast(indicator, explicit)
+        val castExprA: Expr<T> = exprA.castTo(indicator, nonTrivial)
+        val castExprB: Expr<T> = exprB.castTo(indicator, nonTrivial)
         return TypedPair(castExprA, castExprB)
     }
 
@@ -51,7 +54,7 @@ object ConversionsAndPromotion {
         // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
         return when (expr.ind) {
             DoubleIndicator, FloatIndicator, LongIndicator, IntIndicator -> expr
-            else -> expr.castToUsingTypeCast(IntIndicator, false)
+            else -> expr.castTo(IntIndicator, Behaviour.WrapWithTypeCastImplicit)
         }
     }
 
@@ -71,6 +74,6 @@ object ConversionsAndPromotion {
             else -> IntIndicator
         }
 
-        return castBothNumbersTo(exprA, exprB, targetIndicator, false)
+        return castBothNumbersTo(exprA, exprB, targetIndicator, Behaviour.WrapWithTypeCastImplicit)
     }
 }

@@ -1,7 +1,9 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 
 object ExprConstrain {
     fun combineConstraints(a: Set<Constraints>, b: Set<Constraints>): Set<Constraints> {
@@ -20,13 +22,13 @@ object ExprConstrain {
     /**
      * Where the expression was previously returning true, it now returns false, and vice versa.
      */
-    fun invert(expr: Expr<Boolean>): Expr<Boolean> {
+    fun invert(expr: Expr<Boolean>, scope: ExprEvaluate.Scope): Expr<Boolean> {
         return when (expr) {
             is BooleanInvertExpr -> expr.expr
             is BooleanExpr -> {
                 BooleanExpr.new(
-                    expr.lhs.inverted(),
-                    expr.rhs.inverted(),
+                    expr.lhs.inverted(scope),
+                    expr.rhs.inverted(scope),
                     when (expr.op) {
                         BooleanOp.AND -> BooleanOp.OR
                         BooleanOp.OR -> BooleanOp.AND
@@ -37,10 +39,22 @@ object ExprConstrain {
             is ComparisonExpr<*> -> ComparisonExpr.new(expr.lhs, expr.rhs, expr.comp.invert())
             is ConstExpr -> ConstExpr.new(!expr.value, expr.ind)
             is IfExpr -> IfExpr.new(
-                expr.trueExpr.inverted(),
-                expr.falseExpr.inverted(),
+                expr.trueExpr.inverted(scope),
+                expr.falseExpr.inverted(scope),
                 expr.thisCondition
             )
+
+            is ExpressionChain -> {
+                val newScope = scope.withSupport(expr.supportKey, expr.support)
+                ExpressionChain(expr.supportKey, expr.support, expr.expr.inverted(newScope))
+            }
+
+            is ExpressionChainPointer -> {
+                require(expr.ind == BooleanIndicator)
+                val replacementExpr = scope.supportKeyMap[expr.supportKey]
+                    ?: throw IllegalStateException("No support key found for ${expr.supportKey}")
+                replacementExpr.castOrThrow(BooleanIndicator).inverted(scope)
+            }
 
             else -> TODO("Not implemented for $expr")
         }
@@ -50,6 +64,9 @@ object ExprConstrain {
      * Returns a list of constraints.
      * Typically, it returns a single constraint, but if an OR is involved, it may return multiple
      * as each side of the OR is a separate constraint.
+     *
+     * This is the only place we should generate constraints. They then get applied to constants when traversing
+     * evaluation, and those constants then cling onto bundles and go for a ride.
      */
     fun getConstraints(condition: Expr<Boolean>, scope: ExprEvaluate.Scope): Set<Constraints> {
         val startTime = System.currentTimeMillis()
@@ -108,7 +125,13 @@ object ExprConstrain {
                 )
             }
 
-            is BooleanInvertExpr -> getConstraints(condition.expr.inverted(), scope)
+            is BooleanInvertExpr -> {
+                // You might think that this is a bit silly, and we should just invert the produced constraints
+                // instead, but there's no easy way to invert constraints due to the uninvertability
+                // of sets.
+                getConstraints(condition.expr.inverted(scope), scope)
+            }
+
             is IfExpr -> {
                 val ifCondition = condition.thisCondition
                 val invertedIf = BooleanInvertExpr(ifCondition)
@@ -126,6 +149,17 @@ object ExprConstrain {
                     )
 
                 getConstraints(convertedToBooleanExpr, scope)
+            }
+
+            is ExpressionChain -> {
+                val newScope = scope.withSupport(condition.supportKey, condition.support)
+                getConstraints(condition.expr, newScope)
+            }
+
+            is ExpressionChainPointer -> {
+                val replacementExpr = scope.supportKeyMap[condition.supportKey]
+                    ?: throw IllegalStateException("No support key found for ${condition.supportKey}")
+                getConstraints(replacementExpr.castOrThrow(BooleanIndicator), scope)
             }
 
             else -> TODO("Not implemented constraints for $condition")

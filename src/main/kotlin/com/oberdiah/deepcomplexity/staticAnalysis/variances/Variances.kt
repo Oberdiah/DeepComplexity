@@ -29,27 +29,32 @@ interface Variances<T : Any> {
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,
      * all other types can throw if they receive one.
      *
-     * At the very least, there are improvements to this that could be made for numbers.
-     * I wrote the above down in a previous comment, but there was no further information
+     * "At the very least, there are improvements to this that could be made for numbers."
+     * I wrote the above down in a previous comment, but there was no further information,
      * so I couldn't tell you specifically what those improvements might be.
      */
     fun comparisonOperation(
         other: Variances<T>,
         comparisonOp: ComparisonOp,
         constraints: Constraints
-    ): BooleanVariances =
-        collapse(constraints)
+    ): BooleanVariances {
+        return collapse(constraints)
             .comparisonOperation(other.collapse(constraints), comparisonOp)
             .toConstVariance()
             .into()
+    }
 
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,
      * all other types can throw if they receive one.
+     *
+     * Generate all constraints arising from a given comparison operation between this (lhs) and other (rhs).
+     * These constraints are the conditions that must be satisfied for the comparison to be able to return true.
+     * As usual, unreachable will be returned if the comparison cannot be satisfied under any circumstances.
      */
     fun generateConstraintsFrom(
         other: Variances<T>,
         comparisonOp: ComparisonOp,
-        incomingConstraints: Constraints
+        constraints: Constraints
     ): Constraints
 }

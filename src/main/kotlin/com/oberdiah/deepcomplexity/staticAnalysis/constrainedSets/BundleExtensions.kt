@@ -34,8 +34,8 @@ fun Bundle<Boolean>.booleanOperation(
         a.into().booleanOperation(b.into(), operation)
     }
 
-fun Bundle<Boolean>.invert() = performUnaryOperation {
-    it.into().invert()
+fun Bundle<Boolean>.booleanInvert() = performUnaryOperation {
+    it.into().booleanInvert()
 }
 
 fun <T : Number> Bundle<T>.isOne(): Boolean = this.variances.all {
@@ -49,16 +49,6 @@ fun <T : Any> Bundle<T>.comparisonOperation(
 ): Bundle<Boolean> {
     return this.binaryMapToVariances(BooleanIndicator, other, exprKey) { a, b, constraints ->
         a.comparisonOperation(b, comparisonOp, constraints)
-    }
-}
-
-fun <T : Number> Bundle<T>.numberComparisonOperation(
-    other: Bundle<T>,
-    comparisonOp: ComparisonOp,
-    exprKey: Key
-): Bundle<Boolean> {
-    return this.binaryMapToVariances(BooleanIndicator, other, exprKey) { a, b, constraints ->
-        a.into().comparisonOperation(b.into(), comparisonOp, constraints)
     }
 }
 

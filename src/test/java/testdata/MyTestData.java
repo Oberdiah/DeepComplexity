@@ -120,7 +120,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(127)
+	@ExpectedExpressionSize(101)
 	public static short test11(short x) {
 		int q = 0;
 		if ((q++ > 0) && (q++ > 1) && (q++ > 2)) {
@@ -600,6 +600,21 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(15)
+	public static short constraintTest5(short x) {
+		int c = 0;
+		if (x == 7) {
+			c = 5;
+		}
+		
+		if (x != 7) {
+			return (short) c;
+		}
+		
+		return (short) 10;
+	}
+	
+	@RequiredScore(1.0)
 	@ExpectedExpressionSize(27)
 	public static short returnTest1(short x) {
 		if (x > 0) {
@@ -769,6 +784,7 @@ public class MyTestData {
 	}
 	
 	@ExpectedExpressionSize(49)
+	@RequiredScore(1.0)
 	public static short addingVariables(short x) {
 		int a = 0;
 		if (x < 40) {
@@ -783,6 +799,46 @@ public class MyTestData {
 			return x;
 		}
 		return 0;
+	}
+	
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(46)
+	public static short challenge1(short x) {
+		int a = 0;
+		
+		if (x > 2 && x < 10) {
+			a = x;
+		}
+		
+		int c = 0;
+		if (a <= 0 || a >= 10) {
+			c = 1;
+		}
+		
+		if (x == 5 && c == 1) {
+			return 20;
+		}
+		
+		return (short) 1;
+	}
+	
+	@ExpectedExpressionSize(30)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
+	@RequiredScore(0.5)
+	public static short challenge2(short x) {
+		int a = 0;
+		
+		if (x > 2) {
+			a = x;
+		}
+		
+		int b = 0;
+		if (a > 0) {
+			b = a;
+		}
+		
+		return (short) (a + b);
 	}
 	
 	@RequiredScore(0.4)
@@ -808,6 +864,8 @@ public class MyTestData {
 		return (short) (a + b + c);
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(480)
 	public static short nastyPerformanceTest2(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
@@ -1563,6 +1621,8 @@ public class MyTestData {
 		return -5;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(14)
 	public static short simpleClassTest40(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
@@ -2072,6 +2132,64 @@ public class MyTestData {
 		}
 		
 		return (short) (a.x + b.x);
+	}
+	
+	public static short forLoops14(short x) {
+		int a = 0;
+		int b = 0;
+		for (int i = 0; i < 10; i++) {
+			a = b + 1;
+			b = a + 1;
+		}
+		
+		return (short) (a + b);
+	}
+	
+	public static short forLoops15(short x) {
+		int a = 0;
+		int b = 1;
+		for (int i = 0; i < 10; i += 2) {
+			a = a + b + 1;
+			b = b * 2;
+		}
+		
+		// 	Ideal final IR:
+		//
+		//	Loop(
+		//	    target: $a
+		//		condition: $i < 10
+		//		variables: {
+		//			a: { initial: a', next: $a + $b + 1 }
+		//			b: { initial: b', next: $b * 2 }
+		//		}
+		//	)
+		
+		return (short) (a + b);
+	}
+	
+	public static short forLoops16(short x) {
+		int i1 = 0;
+		int i2 = -3;
+		int b = 1;
+		while (i1 + i2 + b < 10) {
+			b = b * 2;
+			i1 += 1;
+			i2 += 2;
+		}
+		
+		// 	Ideal final IR:
+		//
+		//	Loop(
+		//	    target: $b
+		//		condition: $i1 + $i2 + $b < 10
+		//		variables: {
+		//			b: { initial: b', next: $b * 2 }
+		//			i1: { initial: i1', next: $i1 + 1 }
+		//			i2: { initial: i2', next: $i2 + 2 }
+		//		}
+		//	)
+		
+		return (short) b;
 	}
 	
 	@RequiredScore(1.0)

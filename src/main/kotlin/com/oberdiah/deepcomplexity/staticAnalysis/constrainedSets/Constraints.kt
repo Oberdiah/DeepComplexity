@@ -6,6 +6,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.utilities.Functional
+import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 import kotlin.test.assertIsNot
 
 /**
@@ -81,9 +82,11 @@ data class Constraints private constructor(
     }
 
     fun invert(): Constraints {
-        // You may be wondering why you aren't dealing with the non-map values?
-        // I don't believe that's necessary, e.g., if (!(x > 5)) still doesn't constrain y.
-        return Constraints(constraints.mapValues { (_, v) -> v.invert() })
+        // Inverting a Constraints is too risky; both constraints and sets operate
+        // on a best-effort basis with a bubble of uncertainty. Values outside a set are guaranteed
+        // to not be in the set, but the inverse is not true. Inverting a set while maintaining this
+        // invariant is impossible.
+        WONT_IMPLEMENT()
     }
 
     /**

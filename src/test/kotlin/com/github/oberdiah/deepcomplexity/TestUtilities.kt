@@ -1,12 +1,12 @@
 package com.oberdiah.deepcomplexity
 
-import com.intellij.psi.PsiMethod
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.evaluation.MethodProcessing
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.ShortIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.utilities.Utilities
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
@@ -48,46 +48,48 @@ object TestUtilities {
      * Returns a string summary of the test results, to be printed in the summary test,
      * and if the test passed.
      */
-    fun testMethod(method: SimpleMustPassTest.TestInfo): Pair<String, Boolean> {
-        println("Processing method ${method.name}:")
+    fun testMethod(testInfo: SimpleMustPassTest.TestInfo): Pair<String, Boolean> {
+        Utilities.TEST_GLOBALS.SHOULD_CLONE_CONTEXTS = testInfo.testSettings.cloneContexts
 
-        val clazz = Class.forName(method.psiMethod.containingClass?.qualifiedName)
-        val reflectMethod = clazz.declaredMethods.find { it.name == method.name }
-            ?: throw NoSuchMethodException("Method ${method.name} not found in class ${clazz.name}")
+        println("Processing method ${testInfo.className}:")
 
-        val scoreResults = getMethodScore(reflectMethod, method.psiMethod)
+        val clazz = Class.forName(testInfo.psiMethod.containingClass?.qualifiedName)
+        val reflectMethod = clazz.declaredMethods.find { it.name == testInfo.className }
+            ?: throw NoSuchMethodException("Method ${testInfo.className} not found in class ${clazz.name}")
+
+        val scoreResults = getMethodScore(reflectMethod, testInfo)
 
         // Track perfect-score methods for optional annotation updates in the summary phase.
-        val filePath = method
+        val filePath = testInfo
             .psiMethod
             .containingFile
             ?.virtualFile
             ?.path
             ?.replace("/src", "src/test/java/testdata")
-        if (filePath != null) {
+        if (filePath != null && testInfo.testSettings.updateAnnotations) {
             annotationInformation.add(
                 MethodAnnotationInfo(
                     filePath,
-                    method.name,
+                    testInfo.className,
                     scoreResults.score,
                     scoreResults.expressionSize
                 )
             )
         }
 
-        val (columns, passed) = getSummaryTableRow(scoreResults, reflectMethod)
+        val (columns, passed) = getSummaryTableRow(testInfo, scoreResults, reflectMethod)
         val columnSpacing = listOf(17, 11, 7, 1, 1)
         val summary = columns.mapIndexed { i, s -> s.padEnd(columnSpacing[i]) }.joinToString(" | ")
         return summary to passed
     }
 
     private fun getSummaryTableRow(
+        testInfo: SimpleMustPassTest.TestInfo,
         scoreResults: MethodScoreResults,
         method: Method
     ): Pair<List<String>, Boolean> {
         val requiredScoreAnnotation = method.getAnnotation(RequiredScore::class.java)
         val expressionSizeAnnotation = method.getAnnotation(ExpectedExpressionSize::class.java)
-
 
         val scoreReceivedColumn = scoreResults.scoreReceivedColumn
         val extraInfoColumn = scoreResults.extraInfoColumn
@@ -98,17 +100,21 @@ object TestUtilities {
         }
         println("\tExpression size: ${scoreResults.expressionSize}")
 
-        if (expressionSizeAnnotation != null) {
-            val requiredMaxExpressionSize = expressionSizeAnnotation.value
-            if (scoreResults.expressionSize > requiredMaxExpressionSize) {
-                println("\tExpression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize")
-                return listOf(
-                    "### Failed ###",
-                    scoreReceivedColumn,
-                    "$methodScoreStr%",
-                    "",
-                    "Expression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize"
-                ) to false
+        // Clone-contexts mode doesn't care about the standard expression size - it may well be
+        // a larger final expression tree, and that doesn't matter so long as it's still correct.
+        if (!testInfo.testSettings.cloneContexts) {
+            if (expressionSizeAnnotation != null) {
+                val requiredMaxExpressionSize = expressionSizeAnnotation.value
+                if (scoreResults.expressionSize > requiredMaxExpressionSize) {
+                    println("\tExpression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize")
+                    return listOf(
+                        "### Failed ###",
+                        scoreReceivedColumn,
+                        "$methodScoreStr%",
+                        "",
+                        "Expression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize"
+                    ) to false
+                }
             }
         }
 
@@ -134,15 +140,15 @@ object TestUtilities {
                 return listOf("Passed", msg, "$methodScoreStr%", goldStar, notes) to true
             }
         } else {
-            println(if (scoreResults.score == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg")
+            println(if (scoreResults.score == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg ($methodScoreStr%)")
             println("\tThis method was not required to reach a score threshold and as such it passed by default.")
             return listOf("Passed by default", scoreReceivedColumn, "$methodScoreStr%", "", extraInfoColumn) to true
         }
     }
 
-    private fun getMethodScore(method: Method, psiMethod: PsiMethod): MethodScoreResults {
+    private fun getMethodScore(method: Method, testInfo: SimpleMustPassTest.TestInfo): MethodScoreResults {
         val returnValue = try {
-            MethodProcessing.getMethodContext(psiMethod)
+            MethodProcessing.getMethodContext(testInfo.psiMethod)
         } catch (e: Throwable) {
             // If it's an assertion error, we should fully error out regardless.
             // Those shouldn't be thrown, even on tests that aren't required to pass yet.
@@ -158,12 +164,6 @@ object TestUtilities {
         }.returnValue!!.optimise()
 
         val range = try {
-            if (System.getenv("DEBUG") != "false") {
-                println((returnValue.dStr()).prependIndent())
-            } else {
-                println("Found env. var. DEBUG=false so skipping debug output.".prependIndent())
-            }
-
             val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>(true)
                 .map { it.resolvesTo }
                 .toSet()
@@ -175,6 +175,9 @@ object TestUtilities {
             }
 
             val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope())
+
+            println((returnValue.dStr()).prependIndent())
+
             val castBundle = bundle.cast(ShortIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle

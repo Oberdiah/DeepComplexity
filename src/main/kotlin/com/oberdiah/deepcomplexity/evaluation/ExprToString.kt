@@ -1,5 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.utilities.Utilities
+
 object ExprToString {
     fun <T : Any> toString(expr: Expr<T>): String {
         return when (expr) {
@@ -7,7 +9,7 @@ object ExprToString {
             is ComparisonExpr<*> -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
             is ConstExpr<*> -> expr.value.toString()
             is IfExpr -> {
-                return "if ${expr.thisCondition} {\n${
+                "if ${expr.thisCondition} {\n${
                     expr.trueExpr.toString().prependIndent()
                 }\n} else {\n${
                     expr.falseExpr.toString().prependIndent()
@@ -27,7 +29,12 @@ object ExprToString {
             }
 
             is VariableExpr -> expr.resolvesTo.toString()
-            is VarsExpr -> if (expr.vars != null) expr.vars.toString() else VarsExpr.STRING_PLACEHOLDER
+            is VarsExpr -> expr.vars.toString()
+            is ExpressionChain<*> -> {
+                "${expr.supportKey} = ${expr.support}\n${expr.expr}"
+            }
+
+            is ExpressionChainPointer<*> -> expr.supportKey.toString()
         }
     }
 
@@ -44,11 +51,21 @@ object ExprToString {
             is VariableExpr -> expr.resolvesTo.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
+            is ExpressionChain<*> -> "'${toExprKeyString(expr.support)}+${toExprKeyString(expr.expr)}'"
+            is ExpressionChainPointer<*> -> expr.toString()
         }
     }
 
     fun <T : Any> toDebugString(expr: Expr<T>): String {
-        val myResult = "<| ${ExprEvaluate.evaluate(expr, ExprEvaluate.Scope(), true).toDebugString()} |>"
+        // Note: Although this looks sketchy, it's actually better than the old system of evaluating
+        // this bundle on the fly as it's more representative of what actually happened.
+        // Unless we generate more than 2 billion expressions, which we won't, this is absolutely fine.
+        // Even then, we won't collide unless those are the same exact expression. In short, it won't happen.
+        // The other failure mode is that we accidentally change the expression tree somehow, and that won't
+        // happen as it's read-only when entering the evaluate method.
+        val preCalculatedBundle =
+            Utilities.TEST_GLOBALS.EXPR_HASH_BUNDLES[expr.completelyUniqueValueForDebugUseOnly]
+        val myResult = "<| ${preCalculatedBundle?.toDebugString() ?: "Not evaluated"} |>"
         return when (expr) {
             is ArithmeticExpr -> {
                 val lhsStr = expr.lhs.dStr()
@@ -80,7 +97,7 @@ object ExprToString {
             is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
             is VariableExpr -> expr.resolvesTo.toString()
             is TypeCastExpr<*, *> -> {
-                return if (expr.explicit) {
+                if (expr.explicit) {
                     "(${expr.ind}) ${expr.expr.dStr()}"
                 } else {
                     expr.expr.dStr()
@@ -88,6 +105,11 @@ object ExprToString {
             }
 
             is VarsExpr -> "CtxExpr"
+            is ExpressionChain<*> -> {
+                "${expr.supportKey} = ${expr.support.dStr()}\n${expr.expr.dStr()}"
+            }
+
+            is ExpressionChainPointer<*> -> expr.supportKey.toString()
         }
     }
 }

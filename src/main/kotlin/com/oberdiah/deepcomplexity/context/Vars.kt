@@ -2,16 +2,17 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.into
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 class Vars(
     val idx: ContextId,
     map: Map<UnknownKey, Expr<*>>
 ) {
     private val map = map.mapValues { expr ->
-        expr.value.replaceTypeInTree<VariableExpr<*>> {
+        expr.value.swapInplaceTypeInTree<VariableExpr<*>> {
             VariableExpr.new(it.resolvesTo.withAddedContextId(idx))
         }
     }.mapKeys { it.key.withAddedContextId(idx) }
@@ -24,22 +25,40 @@ class Vars(
      */
     fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
     fun resolveUsing(vars: Vars): Vars =
-        mapExpressions(ExprTreeRebuilder.ExprReplacer { vars.resolveKnownVariables(it) })
+        mapExpressions(ExprTreeRebuilder.ExprReplacerWithKey { _, e -> vars.resolveKnownVariables(e) })
 
-    fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacer): Vars =
-        Vars(idx, map.mapValues { (_, expr) -> operation.replace(expr) })
+    fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacerWithKey): Vars =
+        Vars(idx, map.mapValues { (key, expr) -> operation.replace(key, expr) })
+
+    private fun <T : Any> resolveResolvesTo(resolvesTo: ResolvesTo<T>): Expr<T> {
+        return when (resolvesTo) {
+            is VariableExpr.KeyBackreference -> resolvesTo.safelyResolveUsing(this)
+            else -> resolvesTo.toLeafExpr()
+        }
+    }
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        expr.replaceTypeInTree<VariableExpr<*>> { varExpr ->
-            varExpr.resolvesTo.safelyResolveUsing(this)
-        }.replaceTypeInTree<VarsExpr> { varsExpr ->
+        expr.swapInplaceTypeInTree<VariableExpr<*>> { varExpr ->
+            resolveResolvesTo(varExpr.resolvesTo)
+        }.swapInplaceTypeInTree<VarsExpr> { varsExpr ->
             varsExpr.map { vars -> vars.resolveUsing(this) }
         }.optimise()
 
     fun stack(other: Vars): Vars =
-        other.map.entries.fold(this) { acc, (key, expr) ->
-            acc.with(acc.resolveKey(key), expr)
+        other.map.entries.fold(this) { updatingThis, (key, expr) ->
+            updatingThis.with(updatingThis.resolveKey(key), expr)
         }
+
+    /**
+     * Keys need resolved too, at least when they're qualified and have the possibility of containing variables.
+     */
+    fun resolveKey(key: UnknownKey): LValue<*> {
+        return if (key is QualifiedFieldKey) {
+            LValueField.new(key.field, resolveResolvesTo(key.qualifier).castToObject())
+        } else {
+            LValueKey.new(key)
+        }
+    }
 
     companion object {
         fun new(idx: ContextId): Vars = Vars(idx, mapOf())
@@ -47,11 +66,50 @@ class Vars(
         /**
          * Merges the two variable maps, combining variables with identical [UnknownKey]s using [how].
          */
-        fun combine(lhs: Vars, rhs: Vars, how: (Expr<*>, Expr<*>) -> Expr<*>): Vars =
-            Vars(
-                rhs.idx + lhs.idx,
-                (lhs.keys + rhs.keys).associateWith { key -> how(lhs.get(key), rhs.get(key)) }
-            )
+        fun combine(lhs: Vars, rhs: Vars, how: (Expr<*>, Expr<*>) -> Expr<*>): Vars {
+            val newKeys = (lhs.keys + rhs.keys) - lhs.keys.intersect(rhs.keys)
+            return Vars(rhs.idx + lhs.idx, (lhs.keys + rhs.keys).associateWith { key ->
+                val lhsResult = lhs.get(key)
+                val rhsResult = rhs.get(key)
+
+                /**
+                 * This is important, but removing it shouldn't technically result in any incorrect values,
+                 * just a lot of noise and impossible-to-reach parts of the evaluation tree with unresolved
+                 * variables.
+                 * To understand what this is solving, take the example
+                 * ```
+                 * Foo f = new Foo(5);
+                 * if (x > 5) {
+                 *     f = new Foo(10);
+                 * }
+                 * return f.x;
+                 * ```
+                 * Without this modification, here's how the `if` would end up looking:
+                 * ```
+                 * f: if (x > 5) { #2 } else { f' }
+                 * #2.x: if (x > 5) { 10 } else { #2.x' }
+                 * ```
+                 *
+                 * Now, that #2.x' produced there will never be resolved, as the #2 object was created in the true
+                 * branch so the other branch cannot contain the same instance of the object. If `if` branches
+                 * were always built on fresh contexts, checking to see if the qualifier was on an object instance
+                 * (a constant) would be enough (all other qualifiers would be references). However, we cannot assume
+                 * that; it is also acceptable for branches to be implemented by combining two clones of a context.
+                 * Given that, we need to additionally check that the qualified constant does not appear
+                 * on the other side too (if it does, both branches are both referencing an already-existing object
+                 * from earlier in the code path).
+                 */
+                if (key is QualifiedFieldKey && key.qualifier.isConstant() && key in newKeys) {
+                    return@associateWith when (key) {
+                        in lhs.keys -> lhsResult
+                        in rhs.keys -> rhsResult
+                        else -> throw IllegalStateException("How could the key not be in either map?")
+                    }
+                }
+
+                how(lhsResult, rhsResult)
+            })
+        }
     }
 
     override fun toString(): String {
@@ -70,17 +128,9 @@ class Vars(
                 "}"
     }
 
-    fun resolveKey(key: UnknownKey): LValue<*> {
-        return if (key is QualifiedFieldKey) {
-            LValueField.new(key.field, key.qualifier.safelyResolveUsing(this).castToObject())
-        } else {
-            LValueKey.new(key)
-        }
-    }
-
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueField<*> -> expr.qualifier.replaceTypeInLeaves<LeafExpr<HeapMarker>>(expr.field.ind) {
+            is LValueField<*> -> expr.qualifier.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.SkipCondition) {
                 get(QualifiedFieldKey(it.resolvesTo, expr.field))
             }
 
@@ -114,7 +164,7 @@ class Vars(
             val placeholderQualifierReplacement = key.qualifier.toLeafExpr()
 
             map[key.toPlaceholderKey()]?.let {
-                val replacedExpr = it.replaceTypeInTree<VariableExpr<*>> { expr ->
+                val replacedExpr = it.swapInplaceTypeInTree<VariableExpr<*>> { expr ->
                     when (expr.resolvesTo) {
                         placeholderKey -> placeholderKeyReplacement
                         placeholderQualifier -> placeholderQualifierReplacement
@@ -155,7 +205,7 @@ class Vars(
      *  which is exactly as desired.
      */
     fun with(lExpr: LValue<*>, rExpr: Expr<*>): Vars {
-        val rExpr = rExpr.castToUsingTypeCast(lExpr.ind, explicit = false)
+        val rExpr = rExpr.castTo(lExpr.ind, Behaviour.WrapWithTypeCastImplicit)
 
         if (lExpr is LValueKey) {
             return with(lExpr.key, rExpr)
@@ -179,7 +229,7 @@ class Vars(
 
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
-            val newValue = qualifierExpr.replaceTypeInLeaves<LeafExpr<HeapMarker>>(field.ind) { expr ->
+            val newValue = qualifierExpr.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.SkipCondition) { expr ->
                 if (expr.resolvesTo == resolvesTo) {
                     rExpr
                 } else {

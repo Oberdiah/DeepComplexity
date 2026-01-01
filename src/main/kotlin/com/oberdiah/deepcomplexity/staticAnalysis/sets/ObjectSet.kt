@@ -25,7 +25,6 @@ class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>, ove
     override fun toString(): String = values.toString()
 
     override fun size(): Long = values.size.toLong()
-    override fun invert(): ISet<HeapMarker> = ObjectSet(values.invert(), ind)
     override fun contains(element: HeapMarker): Boolean = values.contains(element)
     override fun isEmpty(): Boolean = values.isEmpty()
     override fun isFull(): Boolean = values.isFull()

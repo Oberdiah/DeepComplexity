@@ -11,12 +11,14 @@ import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
+import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
     data class Scope(
         val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
-        val scopesToKeep: Set<Key.ExpressionKey> = mutableSetOf(),
+        val scopesToKeep: Set<Key.ExpressionKey> = setOf(),
+        val supportKeyMap: Map<ExpressionChain.SupportKey, Expr<*>> = mapOf()
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
@@ -32,13 +34,22 @@ object ExprEvaluate {
          */
         fun withScope(expr: Expr<*>): Scope {
             val newScopes = expr.iterateTree().map { it.exprKey }.toSet()
-            return Scope(constraints, scopesToKeep + newScopes)
+            return Scope(constraints, scopesToKeep + newScopes, supportKeyMap)
         }
 
         fun constrainWith(constraints: Set<Constraints>): Scope {
             return Scope(
                 ExprConstrain.combineConstraints(constraints, this.constraints),
-                scopesToKeep
+                scopesToKeep,
+                supportKeyMap
+            )
+        }
+
+        fun withSupport(key: ExpressionChain.SupportKey, expr: Expr<*>): Scope {
+            return Scope(
+                constraints,
+                scopesToKeep,
+                supportKeyMap + (key to expr)
             )
         }
     }
@@ -65,6 +76,8 @@ object ExprEvaluate {
 
             VarsIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
+
+        Utilities.TEST_GLOBALS.EXPR_HASH_BUNDLES[expr.completelyUniqueValueForDebugUseOnly] = evaluatedBundle
 
         return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)
     }
@@ -104,9 +117,10 @@ object ExprEvaluate {
                 evalC(expr, scope)
             }
 
-            is BooleanInvertExpr -> evaluate(expr, scope).invert()
+            is BooleanInvertExpr -> evaluate(expr, scope).booleanInvert()
             else -> evaluateAnythings(expr, scope)
         }
+
         return toReturn
     }
 
@@ -118,6 +132,10 @@ object ExprEvaluate {
         val toReturn: Bundle<T> = when (expr) {
             is UnionExpr -> evaluate(expr.lhs, scope).union(evaluate(expr.rhs, scope))
             is IfExpr -> {
+                // Useful note for future reference: The scope constraints are for binding variables
+                // together. For example, we may be able to know that c is only set to 5 when x is 7.
+                // In that case, if we see x != 7 later on, we can be sure c != 5.
+
                 val ifCondition = expr.thisCondition
 
                 val condScope = scope.withScope(expr.trueExpr).withScope(expr.falseExpr)
@@ -137,7 +155,7 @@ object ExprEvaluate {
                     when (bundle.collapse(constraints).into()) {
                         TRUE -> evaluate(expr.trueExpr, trueScope)
                         FALSE -> evaluate(expr.falseExpr, falseScope)
-                        BOTH -> {
+                        EITHER -> {
                             val trueValue = evaluate(expr.trueExpr, trueScope)
                             val falseValue = evaluate(expr.falseExpr, falseScope)
                             trueValue.union(falseValue)
@@ -153,25 +171,38 @@ object ExprEvaluate {
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 
-            is ConstExpr -> Bundle.constrained(
-                expr.ind.newConstantSet(expr.value).toConstVariance(),
-                Constraints.completelyUnconstrained()
-            ).constrainWith(scope)
+            is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())
+                .constrainWith(scope)
 
             is VariableExpr ->
-                Bundle.constrained(
+                Bundle.unconstrained(
                     expr.ind.newVariance(
                         (expr.resolvesTo as VariableExpr.KeyBackreference)
                             .grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()
-                    ),
-                    Constraints.completelyUnconstrained()
-                )
-                    .constrainWith(scope)
+                    )
+                ).constrainWith(scope)
+
+            is ExpressionChain -> {
+                // Note that at the moment we're leaving the evaluation of the expression itself to each of the
+                // chain pointer locations. This will result in a bit of an explosion in evaluations.
+                // We may want to re-think that in the future.
+                val newScope = scope.withSupport(expr.supportKey, expr.support)
+                evaluate(expr.expr, newScope)
+            }
+
+            is ExpressionChainPointer -> {
+                val replacementExpr = scope.supportKeyMap[expr.supportKey]
+                    ?: throw IllegalStateException("No support key found for ${expr.supportKey}")
+                val castResult = evaluate(replacementExpr, scope).cast(expr.ind)
+                    ?: throw IllegalStateException("Could not cast $replacementExpr to ${expr.ind}")
+                castResult
+            }
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
             }
         }
+
         return toReturn
     }
 }

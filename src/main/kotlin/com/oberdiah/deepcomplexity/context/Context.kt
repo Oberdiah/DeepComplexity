@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
  *
  * For example, in a context `{ x: y' + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
  *
- * We encode this with the [ResolvesTo] class, representing an unknown that this context will never manage
+ * We encode this with the [com.oberdiah.deepcomplexity.evaluation.ResolvesTo] class, representing an unknown that this context will never manage
  * to resolve.
  *
  * How objects are stored:
@@ -72,15 +72,28 @@ class Context private constructor(
     override fun toString(): String = inner.toString()
     fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
     fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
+    val dynamicVars: Vars
+        get() = inner.grabDynamicVars()
+        // A context isn't in an invalid state when dynamic vars is null, but a lot of common
+        // operations stop having meaning; e.g. resolving variables or fetching variables use the dynamic
+            ?: throw IllegalStateException(
+                "Dynamic vars is null. This most likely means we're trying to interact " +
+                        "with this context in a meaningful way after a return statement has been hit, which is unlikely " +
+                        "to be what was intended."
+            )
 
-    val returnValue: Expr<*>? = inner.dynamicVars.returnValue
-    fun <T : Any> get(lValue: LValue<T>): Expr<T> = inner.dynamicVars.get(lValue)
-    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = inner.dynamicVars.resolveKnownVariables(expr)
+    val returnValue: Expr<*>? get() = dynamicVars.returnValue
+
+    /**
+     * Just grabs from the inner's dynamicVars.
+     */
+    fun <T : Any> get(lValue: LValue<T>): Expr<T> = dynamicVars.get(lValue)
+    fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = dynamicVars.resolveKnownVariables(expr)
 
     fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
         Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
 
-    private fun mapVars(operation: (Vars) -> Vars): Context =
+    fun mapVars(operation: (Vars) -> Vars): Context =
         Context(inner.mapAllVars(operation), thisType, idx)
 
     fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }
@@ -93,15 +106,18 @@ class Context private constructor(
         val otherInner = other
             .stripKeys(UnknownKey.Lifetime.BLOCK)
             .inner
-            .resolveUsing(this.inner.dynamicVars)
-            .mapAllVars { other -> inner.dynamicVars.stack(other) }
+            .resolveUsing(this.dynamicVars)
+            .mapAllVars { other -> dynamicVars.stack(other) }
 
         val afterStack = Context(
             InnerCtx.combine(
                 inner, otherInner,
                 { thisExpr, otherExpr ->
-                    thisExpr.replaceTypeInTree<VarsExpr> {
-                        if (it.vars != null) it else otherExpr
+                    thisExpr.swapInplaceTypeInTree<VarsExpr> {
+                        when (it.vars) {
+                            VarsExpr.DynamicOrStatic.Dynamic -> otherExpr
+                            is VarsExpr.DynamicOrStatic.Static -> it
+                        }
                     }
                 },
                 { _, otherVars -> otherVars }

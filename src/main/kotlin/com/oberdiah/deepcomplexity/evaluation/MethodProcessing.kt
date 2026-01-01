@@ -3,16 +3,17 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 import com.oberdiah.deepcomplexity.context.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToUsingTypeCast
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.oberdiah.deepcomplexity.solver.LoopSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.getThisType
@@ -104,13 +105,19 @@ object MethodProcessing {
             }
 
             is PsiIfStatement -> {
-                // Important note: We create a new context here not because it wouldn't work if
-                // it was a clone of [context] (with `val combined =` swapped for `context.c =` below),
-                // but because stacking is a non-negotiable part of how loops and method calls work,
-                // and the more test coverage we can get of that operation the better.
+                // Important note: We want to create a new context here not because it wouldn't work if
+                // it was a clone of [context], but because stacking is a non-negotiable part of how loops
+                // and method calls work, and the more test coverage we can get of that operation the better.
                 // We don't bother, for example, to do it with short-circuiting boolean operations because
                 // of the complexity it would add.
-                val ifContext = newContext(context.c.thisType)
+                // To get the best possible coverage of these two modes of operation,
+                // we run all the tests twice, once in cloning and one in stacking mode.
+                val ifContext = if (Utilities.TEST_GLOBALS.SHOULD_CLONE_CONTEXTS) {
+                    context.copy()
+                } else {
+                    newContext(context.c.thisType)
+                }
+
                 val condition = processPsiExpression(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     ifContext
@@ -123,11 +130,17 @@ object MethodProcessing {
                 val falseBranchContext = ifContext.copy()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
+                // In the non-clone, non-stacking case, the static result can end up
                 val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpr.new(a, b, condition)
                 }
 
-                context.stack(combined)
+                if (Utilities.TEST_GLOBALS.SHOULD_CLONE_CONTEXTS) {
+                    context.c = combined
+                } else {
+                    context.stack(combined)
+                }
+                // Just for debugging
                 context
             }
 
@@ -197,15 +210,18 @@ object MethodProcessing {
                 psi.body?.let { processPsiStatement(it, bodyContext) }
                 psi.update?.let { processPsiStatement(it, bodyContext) }
 
-                LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
-                TODO("Loops haven't been implemented yet")
+                val loopedContext = LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
+
+                context.stack(loopedContext)
+                context
+                TODO("Not completed.")
             }
 
             is PsiReturnStatement -> {
                 val returnKey = psi.toKey()
                 val returnExpr = psi.returnValue?.let {
                     processPsiExpression(it, context)
-                        .castToUsingTypeCast(returnKey.ind, false)
+                        .castTo(returnKey.ind, Behaviour.WrapWithTypeCastImplicit)
                 } ?: ConstExpr.VOID
 
                 context.addVar(LValueKey.new(returnKey), returnExpr)
@@ -338,7 +354,7 @@ object MethodProcessing {
                         ConversionsAndPromotion.castNumbersAToB(
                             rhs,
                             lhs,
-                            false
+                            Behaviour.WrapWithTypeCastImplicit
                         ).map { innerRhs, innerLhs ->
                             val expr = ArithmeticExpr(
                                 innerLhs,
@@ -566,7 +582,7 @@ object MethodProcessing {
                 ConversionsAndPromotion.castAToB(
                     lhsPrecast,
                     rhsPrecast,
-                    false
+                    Behaviour.WrapWithTypeCastImplicit
                 ).map { lhs, rhs ->
                     return@map when {
                         comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)

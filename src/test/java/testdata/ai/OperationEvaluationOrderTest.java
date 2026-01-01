@@ -76,7 +76,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing assignment in condition with short-circuit
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(26)
+	@ExpectedExpressionSize(17)
 	public static short assignmentInCondition(short x) {
 		int a = 0;
 		int b = 0;

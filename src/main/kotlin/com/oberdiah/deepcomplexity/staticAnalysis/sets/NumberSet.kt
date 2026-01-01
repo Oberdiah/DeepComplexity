@@ -143,7 +143,7 @@ data class NumberSet<T : Number> private constructor(
         }
 
         if (ranges.size > 10) {
-            println("Warning: NumberSet has more than 5 ranges, this may be slow.")
+            throw RuntimeException("NumberSet has more than 10 ranges, this may be slow.")
         }
 
         var hasThrownDivideByZero = this.hasThrownDivideByZero || other.hasThrownDivideByZero
@@ -251,7 +251,7 @@ data class NumberSet<T : Number> private constructor(
             }
         }
 
-        return BooleanSet.BOTH
+        return BooleanSet.EITHER
     }
 
     override fun toConstVariance(): Variances<T> = NumberVariances.newFromConstant(this)
@@ -271,7 +271,7 @@ data class NumberSet<T : Number> private constructor(
         val smallestValue = range.first.castInto<T>(clazz)
         val biggestValue = range.second.castInto<T>(clazz)
 
-        var newData: List<NumberRange<T>> =
+        val newData: List<NumberRange<T>> =
             when (comp) {
                 LESS_THAN_OR_EQUAL ->
                     listOf(NumberRange.new(ind.getMinValue(), biggestValue))
@@ -357,33 +357,6 @@ data class NumberSet<T : Number> private constructor(
             }
         }
         return total
-    }
-
-    override fun invert(): NumberSet<T> {
-        val newList: MutableList<NumberRange<T>> = mutableListOf()
-
-        val minValue = ind.getMinValue()
-        val maxValue = ind.getMaxValue()
-
-        if (ranges.isEmpty()) {
-            return unaryMakeNew(listOf(NumberRange.new(minValue, maxValue)))
-        }
-
-        var currentMin = minValue
-
-        for (range in ranges) {
-            if (currentMin < range.start) {
-                newList.add(NumberRange.new(currentMin, range.start.downOneEpsilon()))
-            }
-            currentMin = range.end.upOneEpsilon()
-        }
-
-        // Add final range if necessary
-        if (currentMin < maxValue) {
-            newList.add(NumberRange.new(currentMin, maxValue))
-        }
-
-        return unaryMakeNew(newList)
     }
 
     fun isOne(): Boolean {

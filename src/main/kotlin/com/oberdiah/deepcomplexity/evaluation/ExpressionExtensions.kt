@@ -3,11 +3,16 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 object ExpressionExtensions {
-    fun Expr<Boolean>.inverted(): Expr<Boolean> = ExprConstrain.invert(this)
+    fun Expr<Boolean>.inverted(scope: ExprEvaluate.Scope): Expr<Boolean> = ExprConstrain.invert(this, scope)
 
-    fun Expr<*>.castToNumbers(): Expr<out Number> {
+    /**
+     * Only supports [nonTrivial] = [Behaviour.Throw].
+     */
+    fun Expr<*>.castToNumbers(nonTrivial: Behaviour = Behaviour.Throw): Expr<out Number> {
+        require(nonTrivial == Behaviour.Throw)
         if (this.ind is NumberIndicator<*>) {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<out Number>
@@ -16,12 +21,11 @@ object ExpressionExtensions {
         }
     }
 
-    fun Expr<*>.castToBoolean(): Expr<Boolean> {
-        return this.tryCastTo(BooleanIndicator)
-            ?: throw IllegalStateException("Failed to cast to a boolean expr: $this ($ind)")
-    }
-
-    fun Expr<*>.castToObject(): Expr<HeapMarker> {
+    /**
+     * Only supports [nonTrivial] = [Behaviour.Throw].
+     */
+    fun Expr<*>.castToObject(nonTrivial: Behaviour = Behaviour.Throw): Expr<HeapMarker> {
+        require(nonTrivial == Behaviour.Throw)
         if (this.ind is ObjectIndicator) {
             @Suppress("UNCHECKED_CAST")
             return this as Expr<HeapMarker>
@@ -30,18 +34,27 @@ object ExpressionExtensions {
         }
     }
 
-    fun Expr<*>.castToContext(): Expr<VarsMarker> {
-        if (this.ind is VarsIndicator) {
-            @Suppress("UNCHECKED_CAST")
-            return this as Expr<VarsMarker>
-        } else {
-            throw IllegalStateException("Failed to cast to a context expr: $this ($ind)")
+    fun Expr<*>.castToBoolean(nonTrivial: Behaviour = Behaviour.Throw): Expr<Boolean> =
+        castTo(BooleanIndicator, nonTrivial)
+
+    fun Expr<*>.castToContext(nonTrivial: Behaviour = Behaviour.Throw): Expr<VarsMarker> =
+        castTo(VarsIndicator, nonTrivial)
+
+    fun <T : Any> Expr<*>.castOrThrow(indicator: Indicator<T>): Expr<T> = castTo(indicator, Behaviour.Throw)
+
+    fun <T : Any> Expr<*>.castTo(indicator: Indicator<T>, nonTrivial: Behaviour): Expr<T> {
+        tryCastTo(indicator)?.let { return it }
+
+        return when (nonTrivial) {
+            Behaviour.Throw -> {
+                throw IllegalStateException("Failed to cast '$this' to $indicator; (${this.ind} != $indicator)")
+            }
+
+            Behaviour.WrapWithTypeCastExplicit -> TypeCastExpr(this, indicator, explicit = true)
+            Behaviour.WrapWithTypeCastImplicit -> TypeCastExpr(this, indicator, explicit = false)
         }
     }
 
-    /**
-     * Basically a nicer way of doing `this as Expr<T>`, but with type checking :)
-     */
     fun <T : Any> Expr<*>.tryCastTo(indicator: Indicator<T>): Expr<T>? {
         return if (this.ind == indicator) {
             @Suppress("UNCHECKED_CAST")
@@ -51,7 +64,7 @@ object ExpressionExtensions {
         }
     }
 
-    inline fun <reified T : Any> Expr<*>.tryCastTo(): Expr<T>? {
+    inline fun <reified T : Any> Expr<*>.tryCastToReifiedExprType(): Expr<T>? {
         return if (this.ind.clazz == T::class) {
             @Suppress("UNCHECKED_CAST")
             this as Expr<T>
@@ -60,24 +73,12 @@ object ExpressionExtensions {
         }
     }
 
-    fun <T : Any> Expr<*>.castOrThrow(indicator: Indicator<T>): Expr<T> {
-        return this.tryCastTo(indicator)
-            ?: throw IllegalStateException("Failed to cast '$this' to $indicator; (${this.ind} != $indicator)")
-    }
-
-    inline fun <reified T : Any> Expr<*>.castOrThrow(): Expr<T> {
-        return this.tryCastTo<T>()
-            ?: throw IllegalStateException("Failed to cast '$this' to ${T::class}; (${this.ind} != ${T::class})")
-    }
-
-    /**
-     * Wrap the expression in a type cast to the given indicator.
-     */
-    fun <T : Any> Expr<*>.castToUsingTypeCast(indicator: Indicator<T>, explicit: Boolean): Expr<T> {
-        return if (this.ind == indicator) {
-            this.castOrThrow(indicator)
+    inline fun <reified T : Any> Expr<*>.tryCastToReifiedIndicatorType(): Expr<T>? {
+        return if (this.ind is T) {
+            @Suppress("UNCHECKED_CAST")
+            this as Expr<T>
         } else {
-            TypeCastExpr(this, indicator, explicit)
+            null
         }
     }
 }

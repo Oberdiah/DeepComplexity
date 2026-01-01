@@ -6,6 +6,7 @@ import com.oberdiah.deepcomplexity.context.ParameterKey
 import com.oberdiah.deepcomplexity.context.ReturnKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import org.apache.commons.numbers.core.DD
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -14,6 +15,24 @@ import kotlin.math.nextUp
 import kotlin.reflect.KClass
 
 object Utilities {
+    @Suppress("PropertyName")
+    data class Globals(
+        var SHOULD_CLONE_CONTEXTS: Boolean,
+        /**
+         * Maps expression instance hashes to their corresponding Bundle. Only used in debug printing.
+         */
+        var EXPR_HASH_BUNDLES: MutableMap<Long, Bundle<*>> = mutableMapOf()
+    )
+
+    /**
+     * Definitely shouldn't be used by anything in the application itself, but can be handy for
+     * test frameworks.
+     */
+    val TEST_GLOBALS: Globals = Globals(
+        SHOULD_CLONE_CONTEXTS = false,
+        EXPR_HASH_BUNDLES = mutableMapOf()
+    )
+
     val DD_POSITIVE_INFINITY: DD = DD.of(Double.POSITIVE_INFINITY)
     val DD_NEGATIVE_INFINITY: DD = DD.of(Double.NEGATIVE_INFINITY)
 
@@ -245,7 +264,6 @@ object Utilities {
             is Float -> this + other as Float
             is Double -> this + other as Double
             is BigInteger -> this.add(other as BigInteger)
-            is BigFraction -> this.add(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for addition")
         } as T // This cast shouldn't be necessary.
     }
@@ -264,7 +282,6 @@ object Utilities {
             is Float -> this - other as Float
             is Double -> this - other as Double
             is BigInteger -> this.subtract(other as BigInteger)
-            is BigFraction -> this.subtract(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for subtraction")
         } as T // This cast shouldn't be necessary.
     }
@@ -283,7 +300,6 @@ object Utilities {
             is Float -> this * other as Float
             is Double -> this * other as Double
             is BigInteger -> this.multiply(other as BigInteger)
-            is BigFraction -> this.multiply(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for multiplication")
         } as T // This cast shouldn't be necessary.
     }
@@ -302,7 +318,6 @@ object Utilities {
             is Float -> this / other as Float
             is Double -> this / other as Double
             is BigInteger -> this.divide(other as BigInteger)
-            is BigFraction -> this.divide(other as BigFraction)
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for division")
         } as T // This cast shouldn't be necessary.
     }
@@ -345,7 +360,6 @@ object Utilities {
             is Long -> if (this < other.toLong()) this else other.toLong()
             is Float -> if (this < other.toFloat()) this else other.toFloat()
             is Double -> if (this < other.toDouble()) this else other.toDouble()
-            is BigFraction -> if (this < other as BigFraction) this else other as BigFraction
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for min")
         } as T
     }
@@ -363,7 +377,6 @@ object Utilities {
             is Long -> if (this > other.toLong()) this else other.toLong()
             is Float -> if (this > other.toFloat()) this else other.toFloat()
             is Double -> if (this > other.toDouble()) this else other.toDouble()
-            is BigFraction -> if (this > other as BigFraction) this else other as BigFraction
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for max")
         } as T
     }
@@ -426,11 +439,10 @@ object Utilities {
     fun <L : Any, ROld : Any, RNew : Any> Pair<L, ROld>.mapRight(transform: (ROld) -> RNew): Pair<L, RNew> =
         Pair(this.first, transform(this.second))
 
-    fun BigFraction.half(): BigFraction = this.divide(2)
-
     fun String.betterPrependIndent(indent: String = "    "): String =
-        lineSequence().map { indent + it }.joinToString("\n")
+        lineSequence().joinToString("\n") { indent + it }
 
+    @Suppress("FunctionName")
     fun WONT_IMPLEMENT(reason: String = "This function is intentionally unimplemented."): Nothing {
         throw NotImplementedError(reason)
     }

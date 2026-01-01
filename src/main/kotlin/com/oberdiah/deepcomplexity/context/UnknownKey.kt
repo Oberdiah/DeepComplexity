@@ -1,7 +1,9 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.*
+import com.oberdiah.deepcomplexity.evaluation.ResolvesTo
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
@@ -72,6 +74,12 @@ data class ReturnKey(override val ind: Indicator<*>) : UnknownKey() {
 }
 
 data class QualifiedFieldKey(val qualifier: ResolvesTo<HeapMarker>, val field: Field) : UnknownKey() {
+    init {
+        require(qualifier.ind is ObjectIndicator) {
+            "Cannot create a qualified field key with a qualifier of indicator ${qualifier.ind}"
+        }
+    }
+
     override val ind: Indicator<*> = field.ind
     override val lifetime: Lifetime = qualifier.lifetime
 

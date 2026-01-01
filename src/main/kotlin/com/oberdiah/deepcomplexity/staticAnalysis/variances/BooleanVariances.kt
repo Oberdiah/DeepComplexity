@@ -13,11 +13,17 @@ import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> {
     override fun toString(): String = value.toString()
 
-    fun invert(): BooleanVariances = BooleanVariances(value.invert())
+    fun booleanInvert(): BooleanVariances = BooleanVariances(value.booleanInvert())
     override val ind: Indicator<Boolean> = BooleanIndicator
 
-    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> =
+    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> {
+        if (newInd == ind) {
+            // Safety: newInd == ind.
+            @Suppress("UNCHECKED_CAST")
+            return this as Variances<Q>
+        }
         throw IllegalArgumentException("Cannot cast boolean to $newInd")
+    }
 
     override fun collapse(constraints: Constraints): ISet<Boolean> = value
 
@@ -30,7 +36,7 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
     override fun generateConstraintsFrom(
         other: Variances<Boolean>,
         comparisonOp: ComparisonOp,
-        incomingConstraints: Constraints
+        constraints: Constraints
     ): Constraints {
         TODO("Not yet implemented")
     }

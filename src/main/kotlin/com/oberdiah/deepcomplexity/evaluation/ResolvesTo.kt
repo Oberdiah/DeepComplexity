@@ -1,24 +1,25 @@
-package com.oberdiah.deepcomplexity.context
+package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.VariableExpr
+import com.oberdiah.deepcomplexity.context.ContextId
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 
 /**
  * [ResolvesTo]s must be very carefully resolved; they cannot be resolved in any context
- * they were created in. Only [Context]s have the ability to create and resolve them.
+ * they were created in. Only [com.oberdiah.deepcomplexity.context.Context]s can create and resolve them.
  */
-interface ResolvesTo<T : Any> {
+sealed interface ResolvesTo<T : Any> {
     val lifetime: UnknownKey.Lifetime
         get() = UnknownKey.Lifetime.FOREVER
     val ind: Indicator<T>
 
     fun toLeafExpr(): Expr<T>
-    fun safelyResolveUsing(vars: Vars): Expr<*> = toLeafExpr()
     fun withAddedContextId(newId: ContextId): ResolvesTo<T> = this
     fun isPlaceholder(): Boolean = false
+    fun isConstant(): Boolean = false
 
     /**
      * Solely used to store any placeholder expression a type may have picked up
