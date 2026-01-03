@@ -1,7 +1,13 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 object StaticExpressionAnalysis {
+    const val SKIP_OPTIMISATIONS = false
+
     fun attemptToSimplifyBooleanExpr(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
+        if (SKIP_OPTIMISATIONS) {
+            return BooleanExpr.newRaw(lhs, rhs, op)
+        }
+
         return when (op) {
             BooleanOp.AND -> {
                 if (rhs == ConstExpr.FALSE || lhs == ConstExpr.FALSE) {
@@ -35,9 +41,9 @@ object StaticExpressionAnalysis {
      */
     fun <T : Any> attemptToSimplifyComparison(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
         // To disable optimisations for testing purposes:
-//        if (true) {
-//            return ComparisonExpr.newRaw(lhs, rhs, comp)
-//        }
+        if (SKIP_OPTIMISATIONS) {
+            return ComparisonExpr.newRaw(lhs, rhs, comp)
+        }
 
         val optimised = when (comp) {
             ComparisonOp.LESS_THAN -> null
@@ -94,6 +100,10 @@ object StaticExpressionAnalysis {
     }
 
     fun <A : Any> attemptToSimplifyIfExpr(trueExpr: Expr<A>, falseExpr: Expr<A>, condition: Expr<Boolean>): Expr<A> {
+        if (SKIP_OPTIMISATIONS) {
+            return IfExpr.newRaw(trueExpr, falseExpr, condition)
+        }
+
         /**
          * These simplifications do actually allow our tests to pass at the moment;
          * without their inlining some impossible conditions pollute the expression tree,

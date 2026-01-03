@@ -18,7 +18,7 @@ object ExprEvaluate {
     data class Scope(
         val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
         val scopesToKeep: Set<Key.ExpressionKey> = setOf(),
-        val supportKeyMap: Map<ExpressionChain.SupportKey, Expr<*>> = mapOf()
+        val supportKeyMap: Map<SupportKey, Expr<*>> = mapOf()
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
@@ -45,7 +45,7 @@ object ExprEvaluate {
             )
         }
 
-        fun withSupport(key: ExpressionChain.SupportKey, expr: Expr<*>): Scope {
+        fun withSupport(key: SupportKey, expr: Expr<*>): Scope {
             return Scope(
                 constraints,
                 scopesToKeep,

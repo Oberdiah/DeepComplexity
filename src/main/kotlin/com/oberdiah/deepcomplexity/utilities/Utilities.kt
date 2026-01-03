@@ -219,6 +219,9 @@ object Utilities {
         } as T
     }
 
+    /**
+     * If the receiver is null, evaluates and returns the result of [block], otherwise returns the receiver.
+     */
     inline fun <R> R?.orElse(block: () -> R): R {
         return this ?: block()
     }

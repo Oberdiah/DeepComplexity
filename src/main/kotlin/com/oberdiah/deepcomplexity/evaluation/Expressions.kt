@@ -3,7 +3,6 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
-import com.oberdiah.deepcomplexity.evaluation.ExpressionChain.SupportKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
@@ -47,6 +46,19 @@ sealed class Expr<T : Any>() {
 
     fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)
+
+    inline fun <reified Q> swapInplaceTypeInTreeChained(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        crossinline replacement: (Q) -> Expr<*>?
+    ): Expr<T> {
+        return ExpressionChain.swapInplaceWithChain(this, ifTraversal) { expr: Expr<*> ->
+            if (expr is Q) {
+                replacement(expr) ?: expr
+            } else {
+                expr
+            }
+        }
+    }
 
     /**
      * Rebuilds every expression in the tree.
@@ -300,39 +312,6 @@ data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
 data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
     override val ind: Indicator<T> = expr.ind
 }
-
-/**
- * Prevent a massive combinatorial explosion by creating a support expression that can be referenced
- * multiple times in the primary expression.
- */
-data class ExpressionChain<T : Any>(
-    val supportKey: SupportKey,
-    val support: Expr<*>,
-    val expr: Expr<T>
-) : Expr<T>() {
-    companion object {
-        fun <T : Any> buildNestedChain(links: Map<SupportKey, Expr<*>>, expr: Expr<T>): Expr<T> {
-            var currentExpr = expr
-            for ((key, support) in links.entries) {
-                currentExpr = ExpressionChain(key, support, currentExpr)
-            }
-            return currentExpr
-        }
-    }
-
-    override val ind: Indicator<T> = expr.ind
-
-    data class SupportKey(private val id: Int, private val displayName: String) {
-        override fun toString(): String = "$displayName [$id]"
-
-        companion object {
-            private var NEXT_ID = 0
-            fun new(displayName: String): SupportKey = SupportKey(NEXT_ID++, displayName)
-        }
-    }
-}
-
-data class ExpressionChainPointer<T : Any>(val supportKey: SupportKey, override val ind: Indicator<T>) : Expr<T>()
 
 sealed class LeafExpr<T : Any> : Expr<T>() {
     abstract val resolvesTo: ResolvesTo<T>

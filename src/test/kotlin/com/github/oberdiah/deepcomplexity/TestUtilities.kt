@@ -164,6 +164,12 @@ object TestUtilities {
         }.returnValue!!.optimise()
 
         val range = try {
+            val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope())
+            // Must come after the `evaluate` call.
+            println((returnValue.dStr()).prependIndent())
+
+            // Good to calculate this after we've done our debug printing, just so if this ends up throwing
+            // we still get to see the expression tree.
             val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>(true)
                 .map { it.resolvesTo }
                 .toSet()
@@ -173,10 +179,6 @@ object TestUtilities {
             assert(unknownsInReturn.size <= 1) {
                 "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
             }
-
-            val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope())
-
-            println((returnValue.dStr()).prependIndent())
 
             val castBundle = bundle.cast(ShortIndicator)!!
             val collapsedBundle = castBundle.collapse().into()
