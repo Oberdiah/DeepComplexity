@@ -1,7 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 object ExprTreeVisitor {
-    fun iterateTree(expr: Expr<*>, includeIfCondition: Boolean = true): Sequence<Expr<*>> {
+    fun iterateTree(expr: Expr<*>, ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches): Sequence<Expr<*>> {
         return object : Iterator<Expr<*>> {
             private val stack = mutableListOf(expr)
 
@@ -11,7 +11,7 @@ object ExprTreeVisitor {
 
             override fun next(): Expr<*> {
                 val current = stack.removeAt(stack.size - 1)
-                visitTree(current, includeIfCondition) {
+                visitTree(current, ifTraversal) {
                     stack.add(it)
                 }
                 return current
@@ -19,46 +19,53 @@ object ExprTreeVisitor {
         }.asSequence()
     }
 
-    fun visitTree(expr: Expr<*>, includeIfCondition: Boolean = true, visitor: (Expr<*>) -> Unit) = when (expr) {
-        is BooleanExpr -> {
-            visitor(expr.lhs)
-            visitor(expr.rhs)
-        }
-
-        is ComparisonExpr<*> -> {
-            visitor(expr.lhs)
-            visitor(expr.rhs)
-        }
-
-        is BooleanInvertExpr -> visitor(expr.expr)
-        is NegateExpr -> visitor(expr.expr)
-        is ArithmeticExpr -> {
-            visitor(expr.lhs)
-            visitor(expr.rhs)
-        }
-
-        is IfExpr -> {
-            if (includeIfCondition) {
-                visitor(expr.thisCondition)
+    fun visitTree(
+        expr: Expr<*>,
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        visitor: (Expr<*>) -> Unit
+    ) {
+        when (expr) {
+            is BooleanExpr -> {
+                visitor(expr.lhs)
+                visitor(expr.rhs)
             }
 
-            visitor(expr.trueExpr)
-            visitor(expr.falseExpr)
-        }
+            is ComparisonExpr<*> -> {
+                visitor(expr.lhs)
+                visitor(expr.rhs)
+            }
 
-        is UnionExpr -> {
-            visitor(expr.lhs)
-            visitor(expr.rhs)
-        }
+            is BooleanInvertExpr -> visitor(expr.expr)
+            is NegateExpr -> visitor(expr.expr)
+            is ArithmeticExpr -> {
+                visitor(expr.lhs)
+                visitor(expr.rhs)
+            }
 
-        is ExpressionChain<*> -> {
-            visitor(expr.support)
-            visitor(expr.expr)
-        }
+            is IfExpr -> {
+                if (ifTraversal.doCondition()) {
+                    visitor(expr.thisCondition)
+                }
+                if (ifTraversal.doBranches()) {
+                    visitor(expr.trueExpr)
+                    visitor(expr.falseExpr)
+                }
+            }
 
-        is TypeCastExpr<*, *> -> visitor(expr.expr)
-        is VarsExpr -> {}
-        is LeafExpr<*> -> {}
-        is ExpressionChainPointer<*> -> {}
+            is UnionExpr -> {
+                visitor(expr.lhs)
+                visitor(expr.rhs)
+            }
+
+            is ExpressionChain<*> -> {
+                visitor(expr.support)
+                visitor(expr.expr)
+            }
+
+            is TypeCastExpr<*, *> -> visitor(expr.expr)
+            is VarsExpr -> {}
+            is LeafExpr<*> -> {}
+            is ExpressionChainPointer<*> -> {}
+        }
     }
 }

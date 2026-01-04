@@ -35,14 +35,14 @@ sealed class Expr<T : Any>() {
         return ExprToString.toString(this)
     }
 
-    fun iterateTree(includeIfCondition: Boolean = true): Sequence<Expr<*>> =
-        ExprTreeVisitor.iterateTree(this, includeIfCondition)
+    fun iterateTree(ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches): Sequence<Expr<*>> =
+        ExprTreeVisitor.iterateTree(this, ifTraversal)
 
-    internal inline fun <reified Q : Expr<*>> iterateTree(includeIfCondition: Boolean = true): Sequence<Q> =
-        ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<Q>()
+    internal inline fun <reified Q : Expr<*>> iterateTree(ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches): Sequence<Q> =
+        ExprTreeVisitor.iterateTree(this, ifTraversal).filterIsInstance<Q>()
 
-    fun iterateLeaves(includeIfCondition: Boolean = false): Sequence<LeafExpr<T>> =
-        ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<LeafExpr<T>>()
+    fun iterateLeaves(ifTraversal: IfTraversal = IfTraversal.BranchesOnly): Sequence<LeafExpr<T>> =
+        ExprTreeVisitor.iterateTree(this, ifTraversal).filterIsInstance<LeafExpr<T>>()
 
     fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)

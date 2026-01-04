@@ -170,7 +170,7 @@ object TestUtilities {
 
             // Good to calculate this after we've done our debug printing, just so if this ends up throwing
             // we still get to see the expression tree.
-            val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>(true)
+            val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>()
                 .map { it.resolvesTo }
                 .toSet()
 
@@ -289,7 +289,7 @@ object TestUtilities {
             }
         }
 
-        val expressionSize = returnValue.iterateTree(true).map { 1 }.sum()
+        val expressionSize = returnValue.iterateTree().map { 1 }.sum()
 
         return MethodRan("$numEntriesCorrect/$numEntriesPredicted", scoreFraction, expressionSize)
     }
