@@ -41,6 +41,8 @@ data class ExpressionChain<T : Any>(
             ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
             replacer: (Expr<*>) -> Expr<*>
         ): Expr<*> {
+            // Note to self: Remove expressions entirely when you only encounter one support.
+
             var finalExpr = expr
 
             val exprReplacements = mutableMapOf<Expr<*>, SupportKey>()

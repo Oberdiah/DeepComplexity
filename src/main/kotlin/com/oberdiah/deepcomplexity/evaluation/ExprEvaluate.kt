@@ -187,7 +187,7 @@ object ExprEvaluate {
                 // chain pointer locations. This will result in a bit of an explosion in evaluations.
                 // We may want to re-think that in the future.
                 val newScope = scope.withSupport(expr.supportKey, expr.support)
-                evaluate(expr.expr, newScope)
+                evaluate(expr.expr, newScope.withScope(expr.support))
             }
 
             is ExpressionChainPointer -> {

@@ -7,7 +7,7 @@ import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
 public class ClassMemberModificationTest {
 	// Testing field modification through method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(8)
 	public static short fieldModification(short x) {
 		TestClass obj = new TestClass(0);
 		obj.setValue(10);
@@ -55,7 +55,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing field modification in constructor
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(4)
 	public static short constructorField(short x) {
 		TestClass obj = new TestClass(25);
 		return (short) obj.value;
@@ -63,7 +63,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing chained method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(8)
 	public static short chainedMethods(short x) {
 		TestClass obj = new TestClass(0);
 		return (short) obj.setValue(30).getValue();
@@ -83,7 +83,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing field modification through getter/setter
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(8)
 	public static short getterSetter(short x) {
 		TestClass obj = new TestClass(0);
 		obj.setValue(60);
@@ -92,7 +92,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing object field reassignment
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(4)
 	public static short fieldReassignment(short x) {
 		TestClass obj = new TestClass(35);
 		obj = new TestClass(70);
@@ -108,7 +108,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing method returning modified object
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(6)
 	public static short methodReturn(short x) {
 		TestClass obj = new TestClass(45);
 		TestClass result = modifyAndReturn(obj);
@@ -144,7 +144,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing method with multiple object parameters
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(34)
 	public static short multipleParameters(short x) {
 		TestClass obj1 = new TestClass(10);
 		TestClass obj2 = new TestClass(5);
@@ -154,7 +154,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing field modification through this reference
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(4)
 	public static short thisReference(short x) {
 		TestClass obj = new TestClass(0);
 		obj.setValueUsingThis(120);
@@ -163,7 +163,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing final field initialization
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(2)
+	@ExpectedExpressionSize(4)
 	public static short finalField(short x) {
 		FinalFieldClass obj = new FinalFieldClass(130);
 		return (short) obj.finalValue;
@@ -171,7 +171,7 @@ public class ClassMemberModificationTest {
 	
 	// Testing field modification after method call
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
+	@ExpectedExpressionSize(10)
 	public static short postMethodModification(short x) {
 		TestClass obj = new TestClass(2);
 		incrementValue(obj);

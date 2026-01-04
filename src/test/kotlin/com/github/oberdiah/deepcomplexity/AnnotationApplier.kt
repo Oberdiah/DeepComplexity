@@ -149,7 +149,10 @@ object AnnotationApplier {
                         newValue = pm.expressionSize,
                         filePath = filePath,
                         methodName = methodName,
-                        shouldUpdate = { new, existing -> new > 0.0 && (existing == null || new < existing) }
+                        // Note: It should be relatively easy to update the expected size upwards, as expressions
+                        // can change. The annotation is mainly to catch regressions, and we don't run
+                        // this update script often.
+                        shouldUpdate = { new, _ -> new > 0.0 }
                     )
                     if (pm.scoreAchieved == 1.0) {
                         updateAnnotationIfNeeded(

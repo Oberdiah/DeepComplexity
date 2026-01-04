@@ -125,7 +125,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with variable modifications
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(29)
 	public static short chainedIfVariableModification(short x) {
 		int value = x;
 		int result = 0;
@@ -215,7 +215,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with object field conditions
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(34)
+	@ExpectedExpressionSize(37)
 	public static short chainedIfObjectFields(short x) {
 		TestObject obj = new TestObject(x);
 		int result = 0;
@@ -355,7 +355,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with ternary operators in conditions
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(64)
+	@ExpectedExpressionSize(39)
 	public static short chainedIfTernary(short x) {
 		int result = 0;
 		int val = x > 0 ? x : -x;

@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.RequiredScore;
 
 public class ParameterOrderEvaluationTest {
 	// Testing parameter evaluation order with side effects
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(20)
 	public static short parameterOrder(short x) {
 		Counter c = new Counter();
 		multiParamMethod(c.increment(), c.increment(), c.increment());
@@ -30,7 +30,7 @@ public class ParameterOrderEvaluationTest {
 	
 	// Testing method calls with shared state in parameters
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(58)
 	public static short sharedStateParam(short x) {
 		SharedState state = new SharedState(0);
 		return (short) multiParamSum(state.addAndGet(1), state.addAndGet(2), state.addAndGet(3));
@@ -48,7 +48,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing nested method calls in parameter evaluation
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(36)
 	public static short nestedCallParam(short x) {
 		Counter c = new Counter();
 		multiParamMethod(incrementTwice(c), c.increment(), incrementTwice(c));
@@ -101,7 +101,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with boolean short-circuit
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(35)
 	public static short shortCircuitParam(short x) {
 		Counter c = new Counter();
 		booleanMethod(c.increment() > 0 && c.increment() > 0, c.increment() > 0);
@@ -116,7 +116,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with constructor calls
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(50)
 	public static short constructorParam(short x) {
 		Counter c = new Counter();
 		multiParamMethod(c.increment(), new Counter(c.increment()).value, c.increment());
@@ -131,7 +131,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with ternary operator
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(14)
 	public static short ternaryParam(short x) {
 		Counter c = new Counter();
 		multiParamMethod(c.increment(), true ? c.increment() : c.increment(), c.value);

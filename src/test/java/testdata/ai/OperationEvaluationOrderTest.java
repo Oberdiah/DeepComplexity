@@ -51,7 +51,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing ternary operator evaluation order
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
+	@ExpectedExpressionSize(6)
 	public static short ternaryEvalOrder(short x) {
 		int a = 0;
 		int result = true ? ++a : ++a + 10;
@@ -60,7 +60,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing ternary with side effects in condition
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(19)
 	public static short ternaryConditionSideEffect(short x) {
 		int a = 0;
 		int result = ++a > 0 ? ++a : 99;
@@ -76,7 +76,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing assignment in condition with short-circuit
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(19)
 	public static short assignmentInCondition(short x) {
 		int a = 0;
 		int b = 0;

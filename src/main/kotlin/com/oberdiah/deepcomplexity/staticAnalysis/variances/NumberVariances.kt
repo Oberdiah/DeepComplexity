@@ -254,7 +254,6 @@ data class NumberVariances<T : Number> private constructor(
                 BooleanSet.TRUE,
                 BooleanSet.EITHER -> constraints
 
-                //
                 BooleanSet.FALSE,
                 BooleanSet.NEITHER -> Constraints.unreachable()
             }

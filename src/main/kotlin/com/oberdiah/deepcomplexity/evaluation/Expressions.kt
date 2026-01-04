@@ -35,10 +35,10 @@ sealed class Expr<T : Any>() {
         return ExprToString.toString(this)
     }
 
-    fun iterateTree(includeIfCondition: Boolean = false): Sequence<Expr<*>> =
+    fun iterateTree(includeIfCondition: Boolean = true): Sequence<Expr<*>> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition)
 
-    internal inline fun <reified Q : Expr<*>> iterateTree(includeIfCondition: Boolean = false): Sequence<Q> =
+    internal inline fun <reified Q : Expr<*>> iterateTree(includeIfCondition: Boolean = true): Sequence<Q> =
         ExprTreeVisitor.iterateTree(this, includeIfCondition).filterIsInstance<Q>()
 
     fun iterateLeaves(includeIfCondition: Boolean = false): Sequence<LeafExpr<T>> =

@@ -257,6 +257,12 @@ class Bundle<T : Any> private constructor(
     }
 
     fun <Q : Any> cast(indicator: Indicator<Q>): Bundle<Q>? {
+        if (indicator == ind) {
+            // Safety: The indicators are the same, so the cast is valid
+            @Suppress("UNCHECKED_CAST")
+            return this as Bundle<Q>
+        }
+
         val cast = Bundle(
             indicator, variances.mapToSet {
                 ConstrainedVariances.new(it.variances.cast(indicator, it.constraints) ?: return null, it.constraints)

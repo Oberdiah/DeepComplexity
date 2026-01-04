@@ -133,7 +133,7 @@ public class ShortArithmeticWrappingTest {
 	
 	// Testing wrap in conditional expression
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(17)
 	public static short conditionalWrap(short x) {
 		short val = 32767;
 		short result = (short) (val + 1);
@@ -164,7 +164,7 @@ public class ShortArithmeticWrappingTest {
 	
 	// Testing method parameter wrap propagation
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(8)
 	public static short parameterWrap(short x) {
 		return wrapHelper((short) 32767);
 	}
