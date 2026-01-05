@@ -101,7 +101,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with boolean short-circuit
-	@ExpectedExpressionSize(21)
+	@ExpectedExpressionSize(19)
 	public static short shortCircuitParam(short x) {
 		Counter c = new Counter();
 		booleanMethod(c.increment() > 0 && c.increment() > 0, c.increment() > 0);

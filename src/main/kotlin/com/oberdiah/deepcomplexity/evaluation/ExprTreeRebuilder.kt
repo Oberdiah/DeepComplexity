@@ -108,14 +108,17 @@ object ExprTreeRebuilder {
 
                 var newExpr = rebuildTreeInner(expr.expr, isInCondition) { e, innerInCondition ->
                     if (e is ExpressionChainPointer && e.supportKey == expr.supportKey) {
-                        val support = supports.getOrPut(innerInCondition) {
-                            Pair(
-                                if (supports.isEmpty())
-                                    expr.supportKey
-                                else
-                                    SupportKey.new("Chain $innerInCondition"),
-                                rebuildTreeInner(expr.support, innerInCondition, replacer)
-                            )
+                        var support = supports[innerInCondition]
+
+                        if (support == null) {
+                            val newExpr = rebuildTreeInner(expr.support, innerInCondition, replacer)
+                            val otherSupport = supports[!innerInCondition]
+                            if (otherSupport != null && otherSupport.second == newExpr) {
+                                support = otherSupport
+                            } else {
+                                support = Pair(SupportKey.new("Chain $innerInCondition"), newExpr)
+                                supports[innerInCondition] = support
+                            }
                         }
 
                         ExpressionChainPointer(support.first, support.second.ind)

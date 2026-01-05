@@ -41,7 +41,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.75)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(27)
 	public static short test4(short x) {
 		int bar = x;
 		
@@ -120,7 +120,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(111)
+	@ExpectedExpressionSize(107)
 	public static short test11(short x) {
 		int q = 0;
 		if ((q++ > 0) && (q++ > 1) && (q++ > 2)) {
@@ -823,7 +823,7 @@ public class MyTestData {
 		return (short) 1;
 	}
 	
-	@ExpectedExpressionSize(34)
+	@ExpectedExpressionSize(25)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	@RequiredScore(0.5)
 	public static short challenge2(short x) {
@@ -843,7 +843,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.4)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(142)
+	@ExpectedExpressionSize(100)
 	public static short nastyPerformanceTest(short x) {
 		int a = 0;
 		
@@ -1438,7 +1438,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(79)
+	@ExpectedExpressionSize(53)
 	public static short simpleClassTest27(short x) {
 		MyClass b = new MyClass(10);
 		
@@ -1473,7 +1473,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(82)
+	@ExpectedExpressionSize(107)
 	public static short simpleClassTest30(short x) {
 		MyClass c = makeNewClass(100);
 		
@@ -1717,7 +1717,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(39)
+	@ExpectedExpressionSize(23)
 	public static short ternaryTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -1949,7 +1949,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(23)
+	@ExpectedExpressionSize(21)
 	public static short shortCircuit6(short x) {
 		int q = 0;
 		if (x > 0) {
@@ -1959,7 +1959,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(25)
+	@ExpectedExpressionSize(23)
 	public static short shortCircuit7(short x) {
 		int q = 0;
 		if (x > 0) {

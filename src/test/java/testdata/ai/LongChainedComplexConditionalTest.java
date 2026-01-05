@@ -125,7 +125,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with variable modifications
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(29)
+	@ExpectedExpressionSize(26)
 	public static short chainedIfVariableModification(short x) {
 		int value = x;
 		int result = 0;
