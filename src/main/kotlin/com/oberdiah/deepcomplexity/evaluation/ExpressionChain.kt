@@ -41,27 +41,48 @@ data class ExpressionChain<T : Any>(
             ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
             replacer: (Expr<*>) -> Expr<*>
         ): Expr<*> {
-            // Note to self: Remove expressions entirely when you only encounter one support.
+            data class Replacement(val supportKey: SupportKey, var numReplacements: Int)
 
-            var finalExpr = expr
+            // A map from the original expression to whatever we replaced it with
+            val replacementCache = mutableMapOf<Expr<*>, Expr<*>>()
+            // A map from the new expression to its replacement info
+            val newExprInfo = mutableMapOf<Expr<*>, Replacement>()
 
-            val exprReplacements = mutableMapOf<Expr<*>, SupportKey>()
-
-            finalExpr = ExprTreeRebuilder.rebuildTree(finalExpr, ifTraversal) { e ->
-                val newExpr = replacer(e)
-                if (newExpr != e) {
-                    val supportKey = exprReplacements.getOrPut(newExpr) {
-                        SupportKey.new("Chained")
+            // Before we actually perform the rebuild, we need to figure out what we're dealing with.
+            // We don't want to create chains when we don't need to.
+            expr.iterateTree(ifTraversal).forEach {
+                val newExpr = replacer(it)
+                // EXPR_EQUALITY_PERF_ISSUE: Note, this method has lots of issues with perf; see the maps using
+                // expressions as keys above - what we really want is to cache those expression hashes.
+                if (newExpr != it) {
+                    replacementCache[it] = newExpr
+                    val rep = newExprInfo.getOrPut(newExpr) {
+                        Replacement(SupportKey.new("Chained"), 0)
                     }
-                    ExpressionChainPointer(supportKey, newExpr.ind)
-                } else {
-                    newExpr
+                    rep.numReplacements++
                 }
             }
 
-            for (entry in exprReplacements) {
+            var finalExpr = expr
+
+            finalExpr = ExprTreeRebuilder.rebuildTree(finalExpr, ifTraversal) { e ->
+                val newExpr = replacementCache[e] ?: return@rebuildTree e
+                val replacement = newExprInfo[newExpr]
+                if (replacement != null) {
+                    if (replacement.numReplacements == 1) {
+                        // No need to create a chain if it's only used once
+                        newExpr
+                    } else {
+                        ExpressionChainPointer(replacement.supportKey, newExpr.ind)
+                    }
+                } else {
+                    e
+                }
+            }
+
+            for (entry in newExprInfo.filterValues { it.numReplacements > 1 }) {
                 finalExpr = ExpressionChain(
-                    entry.value,
+                    entry.value.supportKey,
                     entry.key,
                     finalExpr,
                 )
