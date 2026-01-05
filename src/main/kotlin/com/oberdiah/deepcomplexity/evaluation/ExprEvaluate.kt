@@ -148,7 +148,7 @@ object ExprEvaluate {
                     ExprConstrain.getConstraints(ifCondition, trueScope)
                 )
                 falseScope = falseScope.constrainWith(
-                    ExprConstrain.getConstraints(BooleanInvertExpr(ifCondition), falseScope)
+                    ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
                 )
 
                 evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->

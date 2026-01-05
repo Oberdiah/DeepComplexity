@@ -16,7 +16,7 @@ data class SupportKey(private val id: Int, private val displayName: String) {
  * Prevent a massive combinatorial explosion by creating a support expression that can be referenced
  * multiple times in the primary expression.
  */
-data class ExpressionChain<T : Any>(
+class ExpressionChain<T : Any>(
     val supportKey: SupportKey,
     val support: Expr<*>,
     val expr: Expr<T>,
@@ -71,7 +71,11 @@ data class ExpressionChain<T : Any>(
         }
     }
 
+    override fun parts(): List<Any?> = listOf(supportKey, support, expr)
+
     override val ind: Indicator<T> = expr.ind
 }
 
-data class ExpressionChainPointer<T : Any>(val supportKey: SupportKey, override val ind: Indicator<T>) : Expr<T>()
+class ExpressionChainPointer<T : Any>(val supportKey: SupportKey, override val ind: Indicator<T>) : Expr<T>() {
+    override fun parts(): List<Any?> = listOf(supportKey)
+}

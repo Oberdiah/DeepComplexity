@@ -50,8 +50,8 @@ object ExpressionExtensions {
                 throw IllegalStateException("Failed to cast '$this' to $indicator; (${this.ind} != $indicator)")
             }
 
-            Behaviour.WrapWithTypeCastExplicit -> TypeCastExpr(this, indicator, explicit = true)
-            Behaviour.WrapWithTypeCastImplicit -> TypeCastExpr(this, indicator, explicit = false)
+            Behaviour.WrapWithTypeCastExplicit -> TypeCastExpr.new(this, indicator, explicit = true)
+            Behaviour.WrapWithTypeCastImplicit -> TypeCastExpr.new(this, indicator, explicit = false)
         }
     }
 

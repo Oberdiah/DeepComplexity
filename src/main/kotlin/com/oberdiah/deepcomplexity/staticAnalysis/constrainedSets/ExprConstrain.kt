@@ -134,7 +134,7 @@ object ExprConstrain {
 
             is IfExpr -> {
                 val ifCondition = condition.thisCondition
-                val invertedIf = BooleanInvertExpr(ifCondition)
+                val invertedIf = BooleanInvertExpr.new(ifCondition)
 
                 // The true and false expressions are also conditions in this context,
                 // as this whole thing must be a condition.

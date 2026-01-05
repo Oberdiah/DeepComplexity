@@ -322,7 +322,7 @@ object MethodProcessing {
 
                 val psiType = psi.castType ?: throw ExpressionIncompleteException()
                 val setInd = Utilities.psiTypeToIndicator(psiType.type)
-                return TypeCastExpr(expr, setInd, false)
+                return TypeCastExpr.new(expr, setInd, false)
             }
 
             is PsiParenthesizedExpression -> {
@@ -356,7 +356,7 @@ object MethodProcessing {
                             lhs,
                             Behaviour.WrapWithTypeCastImplicit
                         ).map { innerRhs, innerLhs ->
-                            val expr = ArithmeticExpr(
+                            val expr = ArithmeticExpr.new(
                                 innerLhs,
                                 innerRhs,
                                 BinaryNumberOp.fromJavaTokenType(opSign.tokenType)
@@ -574,7 +574,7 @@ object MethodProcessing {
                 ).map { lhs, rhs ->
                     return@map when {
                         comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)
-                        binaryNumberOp != null -> ArithmeticExpr(lhs, rhs, binaryNumberOp)
+                        binaryNumberOp != null -> ArithmeticExpr.new(lhs, rhs, binaryNumberOp)
                         else -> TODO("Unsupported binary operation: $tokenType ($lhsPrecast, $rhsPrecast)")
                     }
                 }

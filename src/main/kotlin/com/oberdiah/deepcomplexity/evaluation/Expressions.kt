@@ -8,12 +8,46 @@ import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 
-sealed class Expr<T : Any>() {
+sealed class Expr<T : Any> {
+    init {
+        require(ExprPool.isCreating()) {
+            "Expressions must be created via ExprPool.create() to ensure proper pooling."
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        // TODO: Needs to be this === other eventually.
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Expr<*>
+
+        if (parts() != other.parts()) return false
+        if (ind != other.ind) return false
+
+        return true
+    }
+
+    // Cache the hash code so we don't recalculate parts() repeatedly
+    private val cachedHashCode: Int by lazy {
+        var result = this::class.hashCode()
+        result = 31 * result + parts().hashCode()
+        result = 31 * result + ind.hashCode()
+        result
+    }
+
+    final override fun hashCode(): Int = cachedHashCode
+
+    /**
+     * Subclasses should return their properties here for equality/hashcode purposes.
+     */
+    abstract fun parts(): List<Any?>
+
     /**
      * This is used as a key in the caching system. If two expressions have the same key,
      * they are considered equal.
      *
-     * Doing this works because all expressions are data classes, so equality ends up based on the
+     * Doing this works because all expressions are classes, so equality ends up based on the
      * structure of the expression, not the reference.
      */
     val exprKey = ExpressionKey(this)
@@ -110,15 +144,18 @@ fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
 /**
  * Represents a link to an entire context of variables.
  */
-data class VarsExpr(val vars: DynamicOrStatic = DynamicOrStatic.Dynamic) : Expr<VarsMarker>() {
+class VarsExpr private constructor(val vars: DynamicOrStatic = DynamicOrStatic.Dynamic) : Expr<VarsMarker>() {
     companion object {
         const val STRING_PLACEHOLDER = "##VarsExpr##"
+        fun new(vars: DynamicOrStatic = DynamicOrStatic.Dynamic): VarsExpr = ExprPool.create<VarsExpr>(vars)
     }
+
+    override fun parts(): List<Any?> = listOf(vars)
 
     val isStatic = vars is DynamicOrStatic.Static
     val isDynamic = vars is DynamicOrStatic.Dynamic
 
-    fun map(operation: (Vars) -> Vars): VarsExpr = VarsExpr(
+    fun map(operation: (Vars) -> Vars): VarsExpr = new(
         when (vars) {
             is DynamicOrStatic.Dynamic -> DynamicOrStatic.Dynamic
             is DynamicOrStatic.Static -> DynamicOrStatic.Static(operation(vars.vars))
@@ -138,36 +175,42 @@ data class VarsExpr(val vars: DynamicOrStatic = DynamicOrStatic.Dynamic) : Expr<
         /**
          * A static set of variables that's been locked in by a 'return'.
          */
-        data class Static(val vars: Vars) : DynamicOrStatic() {
+        class Static(val vars: Vars) : DynamicOrStatic() {
             override fun toString(): String = vars.toString()
         }
     }
 }
 
-data class ArithmeticExpr<T : Number>(
+class ArithmeticExpr<T : Number> private constructor(
     override val lhs: Expr<T>,
     override val rhs: Expr<T>,
     val op: BinaryNumberOp,
 ) : Expr<T>(), AnyBinaryExpr<T> {
+    companion object {
+        fun <T : Number> new(lhs: Expr<T>, rhs: Expr<T>, op: BinaryNumberOp): ArithmeticExpr<T> =
+            ExprPool.create(lhs, rhs, op)
+    }
+
     init {
-        assert(lhs.ind == rhs.ind) {
+        require(lhs.ind == rhs.ind) {
             "Adding expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
+
+    override fun parts(): List<Any?> = listOf(lhs, rhs, op)
 
     override val ind: Indicator<T> = lhs.ind
 }
 
 
-@ConsistentCopyVisibility
-data class ComparisonExpr<T : Any> private constructor(
+class ComparisonExpr<T : Any> private constructor(
     override val lhs: Expr<T>,
     override val rhs: Expr<T>,
     val comp: ComparisonOp,
 ) : Expr<Boolean>(), AnyBinaryExpr<T> {
     companion object {
-        fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> =
-            ComparisonExpr(lhs, rhs, comp)
+        fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): ComparisonExpr<T> =
+            ExprPool.create(lhs, rhs, comp)
 
         /**
          * Compile-time casts [rhs] for you so you don't have to worry about it. If you provide
@@ -178,6 +221,8 @@ data class ComparisonExpr<T : Any> private constructor(
             return StaticExpressionAnalysis.attemptToSimplifyComparison(lhs, rhs, comp)
         }
     }
+
+    override fun parts(): List<Any?> = listOf(lhs, rhs, comp)
 
     override val ind: Indicator<Boolean> = BooleanIndicator
 
@@ -198,14 +243,28 @@ data class ComparisonExpr<T : Any> private constructor(
  * Given that there's an assumption baked into all of this that we're working on a compilable program,
  * explicit isn't strictly necessary, but it's nice debugging and printing purposes.
  */
-data class TypeCastExpr<T : Any, Q : Any>(
+class TypeCastExpr<T : Any, Q : Any> private constructor(
     val expr: Expr<Q>,
     override val ind: Indicator<T>,
     val explicit: Boolean,
-) : Expr<T>()
+) : Expr<T>() {
+    companion object {
+        fun <T : Any, Q : Any> new(
+            expr: Expr<Q>,
+            targetInd: Indicator<T>,
+            explicit: Boolean = false
+        ): Expr<T> {
+            if (expr.ind == targetInd) {
+                return expr.castOrThrow(targetInd)
+            }
+            return ExprPool.create<TypeCastExpr<T, Q>>(expr, targetInd, explicit)
+        }
+    }
 
-@ConsistentCopyVisibility
-data class IfExpr<T : Any> private constructor(
+    override fun parts(): List<Any?> = listOf(expr, ind, explicit)
+}
+
+class IfExpr<T : Any> private constructor(
     val trueExpr: Expr<T>,
     val falseExpr: Expr<T>,
     val thisCondition: Expr<Boolean>,
@@ -215,6 +274,8 @@ data class IfExpr<T : Any> private constructor(
             "Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}"
         }
     }
+
+    override fun parts(): List<Any?> = listOf(trueExpr, falseExpr, thisCondition)
 
     override val ind: Indicator<T> get() = trueExpr.ind
 
@@ -243,7 +304,7 @@ data class IfExpr<T : Any> private constructor(
          * be incorrect.
          */
         fun <T : Any> newRaw(trueExpr: Expr<T>, falseExpr: Expr<T>, condition: Expr<Boolean>): IfExpr<T> =
-            IfExpr(trueExpr, falseExpr, condition)
+            ExprPool.create(trueExpr, falseExpr, condition)
 
         /**
          * Compile-time casts [falseExpr] for you so you don't have to worry about it. If you provide
@@ -256,18 +317,24 @@ data class IfExpr<T : Any> private constructor(
     }
 }
 
-data class UnionExpr<T : Any>(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(), AnyBinaryExpr<T> {
+class UnionExpr<T : Any> private constructor(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(),
+    AnyBinaryExpr<T> {
     init {
         assert(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
 
+    override fun parts(): List<Any?> = listOf(lhs, rhs)
+
+    companion object {
+        fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>): UnionExpr<T> = ExprPool.create(lhs, rhs)
+    }
+
     override val ind: Indicator<T> = lhs.ind
 }
 
-@ConsistentCopyVisibility
-data class BooleanExpr private constructor(
+class BooleanExpr private constructor(
     override val lhs: Expr<Boolean>,
     override val rhs: Expr<Boolean>,
     val op: BooleanOp
@@ -278,11 +345,13 @@ data class BooleanExpr private constructor(
         }
     }
 
+    override fun parts(): List<Any?> = listOf(lhs, rhs, op)
+
     override val ind: Indicator<Boolean> = BooleanIndicator
 
     companion object {
         fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanExpr =
-            BooleanExpr(lhs, rhs, op)
+            ExprPool.create(lhs, rhs, op)
 
         fun new(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
             return StaticExpressionAnalysis.attemptToSimplifyBooleanExpr(lhs, rhs, op)
@@ -292,11 +361,23 @@ data class BooleanExpr private constructor(
     override fun simplify(): Expr<Boolean> = new(lhs, rhs, op)
 }
 
-data class BooleanInvertExpr(val expr: Expr<Boolean>) : Expr<Boolean>() {
+class BooleanInvertExpr private constructor(val expr: Expr<Boolean>) : Expr<Boolean>() {
+    companion object {
+        fun new(expr: Expr<Boolean>): BooleanInvertExpr = ExprPool.create(expr)
+    }
+
+    override fun parts(): List<Any?> = listOf(expr)
+
     override val ind: Indicator<Boolean> = BooleanIndicator
 }
 
-data class NegateExpr<T : Number>(val expr: Expr<T>) : Expr<T>() {
+class NegateExpr<T : Number> private constructor(val expr: Expr<T>) : Expr<T>() {
+    companion object {
+        fun <T : Number> new(expr: Expr<T>): NegateExpr<T> = ExprPool.create(expr)
+    }
+
+    override fun parts(): List<Any?> = listOf(expr)
+
     override val ind: Indicator<T> = expr.ind
 }
 
@@ -313,8 +394,7 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
  * Related to a specific context (The context that created it).
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
-@ConsistentCopyVisibility
-data class VariableExpr<T : Any> private constructor(
+class VariableExpr<T : Any> private constructor(
     override val resolvesTo: ResolvesTo<T>
 ) : LeafExpr<T>() {
     companion object {
@@ -323,19 +403,21 @@ data class VariableExpr<T : Any> private constructor(
          * to create [VariableExpr]s. Only contexts really can, anyway, because they've got control
          * of the [KeyBackreference]s.
          */
-        fun <T : Any> new(resolvesTo: ResolvesTo<T>): VariableExpr<T> = VariableExpr(resolvesTo)
+        fun <T : Any> new(resolvesTo: ResolvesTo<T>): VariableExpr<T> = ExprPool.create(resolvesTo)
         fun new(key: UnknownKey, contextId: ContextId): VariableExpr<*> =
-            VariableExpr(KeyBackreference.new(key, contextId))
+            new(KeyBackreference.new(key, contextId))
     }
 
-    data class KeyBackreference<T : Any>(
+    override fun parts(): List<Any?> = listOf(resolvesTo)
+
+    class KeyBackreference<T : Any>(
         private val key: UnknownKey,
         private val contextId: ContextId,
         override val ind: Indicator<T>
     ) : ResolvesTo<T> {
         companion object {
             fun new(key: UnknownKey, contextId: ContextId): KeyBackreference<*> =
-                KeyBackreference(key, contextId, key.ind)
+                new(key, contextId, key.ind)
 
             fun <T : Any> new(key: UnknownKey, contextId: ContextId, indicator: Indicator<T>): KeyBackreference<T> =
                 KeyBackreference(key, contextId, indicator)
@@ -370,18 +452,20 @@ data class VariableExpr<T : Any> private constructor(
 /**
  * Objects are represented as a [ConstExpr] with an underlying [com.oberdiah.deepcomplexity.context.HeapMarker].
  */
-@ConsistentCopyVisibility
-data class ConstExpr<T : Any> private constructor(override val resolvesTo: DataContainer<T>) : LeafExpr<T>() {
+class ConstExpr<T : Any> private constructor(override val resolvesTo: DataContainer<T>) : LeafExpr<T>() {
     data class DataContainer<T : Any>(val v: T, override val ind: Indicator<T>) : ResolvesTo<T> {
         override fun toString(): String = v.toString()
-        override fun toLeafExpr(): Expr<T> = ConstExpr(this)
+        override fun toLeafExpr(): Expr<T> = ExprPool.create<ConstExpr<T>>(this)
         override fun isConstant(): Boolean = true
     }
+
+    override fun parts(): List<Any?> = listOf(resolvesTo)
 
     val value = resolvesTo.v
 
     companion object {
-        fun <T : Any> new(value: T, indicator: Indicator<T>): ConstExpr<T> = ConstExpr(DataContainer(value, indicator))
+        fun <T : Any> new(value: T, indicator: Indicator<T>): ConstExpr<T> =
+            ExprPool.create(DataContainer(value, indicator))
 
         val TRUE = new(true, BooleanIndicator)
         val FALSE = new(false, BooleanIndicator)

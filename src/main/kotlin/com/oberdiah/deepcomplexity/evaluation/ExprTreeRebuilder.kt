@@ -85,18 +85,18 @@ object ExprTreeRebuilder {
         // and not `replacer` as that gets called automatically at the end of the method. This should be
         // obvious, but I've made the mistake before so thought it would be good to note.
         val replacedExpr: Expr<*> = when (expr) {
-            is BooleanInvertExpr -> BooleanInvertExpr(
+            is BooleanInvertExpr -> BooleanInvertExpr.new(
                 rebuildTreeInner(expr.expr, isInCondition, replacer).castToBoolean()
             )
 
             is VarsExpr -> expr
-            is LeafExpr -> expr
+            is LeafExpr<*> -> expr
 
-            is NegateExpr<*> -> NegateExpr(
+            is NegateExpr<*> -> NegateExpr.new(
                 rebuildTreeInner(expr.expr, isInCondition, replacer).castToNumbers()
             )
 
-            is TypeCastExpr<*, *> -> TypeCastExpr(
+            is TypeCastExpr<*, *> -> TypeCastExpr.new(
                 rebuildTreeInner(expr.expr, isInCondition, replacer),
                 expr.ind,
                 expr.explicit
@@ -159,10 +159,10 @@ object ExprTreeRebuilder {
                 ).map { lhs, rhs ->
                     when (expr) {
                         is ComparisonExpr<*> -> ComparisonExpr.new(lhs, rhs, expr.comp)
-                        is UnionExpr<*> -> UnionExpr(lhs, rhs)
+                        is UnionExpr<*> -> UnionExpr.new(lhs, rhs)
                         is ArithmeticExpr<*> ->
                             ConversionsAndPromotion.castAToB(lhs, rhs.castToNumbers(), Behaviour.Throw).map { l, r ->
-                                ArithmeticExpr(l, r, expr.op)
+                                ArithmeticExpr.new(l, r, expr.op)
                             }
 
                         is BooleanExpr ->

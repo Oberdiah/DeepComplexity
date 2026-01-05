@@ -171,7 +171,10 @@ object TestUtilities {
             // Good to calculate this after we've done our debug printing, just so if this ends up throwing
             // we still get to see the expression tree.
             val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>()
-                .map { it.resolvesTo }
+                .map {
+                    (it.resolvesTo as VariableExpr.KeyBackreference)
+                        .grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()
+                }
                 .toSet()
 
             // For every test we have, there is no reason for unknowns to be present by the time we return.
