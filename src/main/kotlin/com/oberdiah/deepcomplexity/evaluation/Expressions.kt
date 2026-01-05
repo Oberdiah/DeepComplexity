@@ -46,7 +46,7 @@ sealed class Expr<T : Any>() {
 
     fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)
-    
+
     /**
      * Rebuilds every expression in the tree.
      * As it's doing that, whenever it encounters an expression of type [Q],
@@ -60,7 +60,7 @@ sealed class Expr<T : Any>() {
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacement: (Q) -> Expr<*>?
     ): Expr<T> {
-        return ExpressionChain.swapInplaceWithChain(this, ifTraversal) { expr: Expr<*> ->
+        return ExprTreeRebuilder.swapInplaceInTree(this, ifTraversal) { expr: Expr<*> ->
             if (expr is Q) {
                 replacement(expr) ?: expr
             } else {

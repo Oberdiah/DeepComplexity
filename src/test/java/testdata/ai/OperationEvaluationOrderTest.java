@@ -60,7 +60,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing ternary with side effects in condition
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(15)
 	public static short ternaryConditionSideEffect(short x) {
 		int a = 0;
 		int result = ++a > 0 ? ++a : 99;

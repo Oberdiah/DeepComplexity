@@ -21,7 +21,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with conditional modification
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(2)
 	public static short conditionalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		conditionalModify(obj, obj);
@@ -37,7 +37,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with method chaining
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(38)
+	@ExpectedExpressionSize(8)
 	public static short chainingAliasing(short x) {
 		AliasClass obj = new AliasClass(5);
 		chainedModify(obj, obj);
@@ -52,7 +52,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with return value dependency
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(2)
 	public static short returnAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		return (short) modifyAndCheck(obj, obj);
@@ -201,7 +201,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with synchronized methods
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short synchronizedAliasing(short x) {
 		AliasClass obj = new AliasClass(44);
 		synchronizedModify(obj, obj);
@@ -254,7 +254,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with final parameter modification
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(2)
 	public static short finalAliasing(short x) {
 		AliasClass obj = new AliasClass(0);
 		finalModify(obj, obj);
