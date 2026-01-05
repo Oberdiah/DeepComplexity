@@ -215,7 +215,7 @@ public class LongChainedComplexConditionalTest {
 	
 	// Testing chained if with object field conditions
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(37)
+	@ExpectedExpressionSize(33)
 	public static short chainedIfObjectFields(short x) {
 		TestObject obj = new TestObject(x);
 		int result = 0;

@@ -21,7 +21,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return bypassing method call with side effects
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(11)
 	public static short earlyReturnBypassCall(short x) {
 		int result = 5;
 		if (x < 0) {
@@ -37,7 +37,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing multiple early returns with different method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(22)
+	@ExpectedExpressionSize(16)
 	public static short multipleEarlyReturns(short x) {
 		if (x == 0) {
 			return (short) getValue(1);
@@ -68,7 +68,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with recursive method call
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(29)
+	@ExpectedExpressionSize(27)
 	public static short earlyReturnRecursive(short x) {
 		if (x <= 0) {
 			return 0;
@@ -119,7 +119,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with method call in condition
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(11)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnMethodInCondition(short x) {
 		if (isPositive(x)) {
 			return 100;
@@ -173,7 +173,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with method modifying parameter object
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(13)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnModifyObject(short x) {
 		TestObject obj = new TestObject(1);
 		if (x < 0) {
@@ -233,7 +233,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with method call that has early return
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(23)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnNested(short x) {
 		if (x == 0) {
 			return (short) methodWithEarlyReturn(1);
@@ -248,7 +248,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with constructor call
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnConstructor(short x) {
 		if (x < 0) {
 			return (short) new ValueClass(5).getValue();
@@ -320,7 +320,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with overloaded method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(13)
 	public static short earlyReturnOverload(short x) {
 		if (x == 0) {
 			return (short) overloadedMethod(5);

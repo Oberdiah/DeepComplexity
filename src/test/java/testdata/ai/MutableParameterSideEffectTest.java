@@ -18,7 +18,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing method with side effect on object field
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(4)
 	public static short objectFieldSideEffect(short x) {
 		Counter c = new Counter(3);
 		incrementCounter(c);
@@ -39,7 +39,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing multiple side effects on same object
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(6)
 	public static short multipleSideEffects(short x) {
 		Holder h = new Holder(5);
 		addFive(h);
@@ -61,7 +61,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing side effect through aliased parameters
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(4)
 	public static short aliasedParameterSideEffect(short x) {
 		Box box = new Box(10);
 		doubleValue(box, box);
@@ -82,7 +82,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing conditional side effect
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(13)
+	@ExpectedExpressionSize(2)
 	public static short conditionalSideEffect(short x) {
 		Value v = new Value(2);
 		conditionalModify(v, true);
@@ -230,7 +230,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing side effect with method chaining pattern
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(4)
 	public static short methodChainingSideEffect(short x) {
 		Builder builder = new Builder(10);
 		process(builder);
@@ -315,7 +315,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing side effect with parameter reassignment not affecting original
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
+	@ExpectedExpressionSize(2)
 	public static short parameterReassignment(short x) {
 		Reference ref = new Reference(9);
 		tryReassign(ref);
@@ -358,7 +358,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing complex side effect with multiple parameters
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(4)
 	public static short complexSideEffect(short x) {
 		Pair pair = new Pair(14, 15);
 		swapAndSum(pair);

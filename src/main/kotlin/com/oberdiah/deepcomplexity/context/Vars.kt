@@ -38,7 +38,7 @@ class Vars(
     }
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        expr.swapInplaceTypeInTreeChained<VariableExpr<*>> { varExpr ->
+        expr.swapInplaceTypeInTree<VariableExpr<*>> { varExpr ->
             resolveResolvesTo(varExpr.resolvesTo)
         }.swapInplaceTypeInTree<VarsExpr> { varsExpr ->
             varsExpr.map { vars -> vars.resolveUsing(this) }

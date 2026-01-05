@@ -26,7 +26,7 @@ public class AITestData {
 	
 	// 3. Comparison after cast wrap
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(13)
 	public static short tricky3(short x) {
 		int y = x + 40000;
 		short z = (short) y;
@@ -44,7 +44,7 @@ public class AITestData {
 	
 	// 5. Branch on overflowed result
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(13)
 	public static short tricky5(short x) {
 		short y = (short) (x + 32767);
 		if (y < 0) return 1;  // Will be negative only when wrapping occurs
@@ -61,7 +61,7 @@ public class AITestData {
 	
 	// 7. Control flow based on int, but returned value cast
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(13)
+	@ExpectedExpressionSize(11)
 	public static short tricky7(short x) {
 		int y = x * 5000;
 		if (y > 100000) return 1;
@@ -70,7 +70,7 @@ public class AITestData {
 	
 	// 8. Double cast wrap
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(14)
 	public static short tricky8(short x) {
 		int y = 70000;
 		if (x == 123) return (short) ((short) y + x);  // Outer cast wraps
@@ -198,7 +198,7 @@ public class AITestData {
 	
 	// Test 10: Mixed arithmetic with potential intermediate overflow
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(70)
+	@ExpectedExpressionSize(55)
 	public static short mixedArithmeticOverflow(short x) {
 		if (x > 120) {
 			return 0;

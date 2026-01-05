@@ -114,7 +114,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable state after conditional assignment
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
+	@ExpectedExpressionSize(2)
 	public static short conditionalAssignment(short x) {
 		int a = 50;
 		int b = 100;
@@ -171,7 +171,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable state with method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(4)
 	public static short methodCall(short x) {
 		int a = 10;
 		int b = a;
@@ -218,7 +218,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable state in nested method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(4)
 	public static short nestedMethodCall(short x) {
 		int a = 8;
 		int b = doubleValue(a);
@@ -231,7 +231,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable state with ternary operator
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(11)
 	public static short ternaryOperator(short x) {
 		int a = 100;
 		int b = 200;
