@@ -1,6 +1,5 @@
 package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rebuildTree
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean

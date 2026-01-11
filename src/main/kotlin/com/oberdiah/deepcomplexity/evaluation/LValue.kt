@@ -1,8 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
-import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 sealed class LValue<T : Any> {

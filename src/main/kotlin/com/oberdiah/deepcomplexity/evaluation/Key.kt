@@ -1,7 +1,5 @@
-package com.oberdiah.deepcomplexity.context
+package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExprToString
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 sealed class Key() {
@@ -39,6 +37,7 @@ sealed class Key() {
             is VariableKey -> 6
             is QualifiedFieldKey -> 5
             is ThisKey -> 4
+            is BehindKey -> 3
             is ReturnKey -> 2
             is ExpressionKey -> 1
             is ConstantKey -> 0

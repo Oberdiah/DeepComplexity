@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.evaluation.Key
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet

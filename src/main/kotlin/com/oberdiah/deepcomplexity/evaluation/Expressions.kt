@@ -1,10 +1,13 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.intellij.psi.PsiTypes
-import com.oberdiah.deepcomplexity.context.*
-import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
+import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.context.ContextId
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.Vars
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
+import com.oberdiah.deepcomplexity.evaluation.Key.ExpressionKey
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 

@@ -1,7 +1,8 @@
-package com.oberdiah.deepcomplexity.context
+package com.oberdiah.deepcomplexity.evaluation
 
 import com.intellij.psi.*
-import com.oberdiah.deepcomplexity.evaluation.ResolvesTo
+import com.oberdiah.deepcomplexity.context.ContextId
+import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
@@ -49,6 +50,13 @@ sealed class UnknownKey : Key() {
             else -> false
         }
     }
+}
+
+data class BehindKey(val key: VariableKey, val contextId: ContextId) : UnknownKey() {
+    override val ind: Indicator<*> = key.ind
+    override val lifetime: Lifetime = key.lifetime
+
+    override fun toString(): String = "Behind $contextId ($key)"
 }
 
 sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {

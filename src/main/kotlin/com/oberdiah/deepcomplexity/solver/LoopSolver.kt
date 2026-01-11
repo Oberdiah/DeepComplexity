@@ -1,9 +1,9 @@
 package com.oberdiah.deepcomplexity.solver
 
 import com.oberdiah.deepcomplexity.context.Context
-import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder
+import com.oberdiah.deepcomplexity.evaluation.UnknownKey
 
 object LoopSolver {
     private data class SolverInformation(

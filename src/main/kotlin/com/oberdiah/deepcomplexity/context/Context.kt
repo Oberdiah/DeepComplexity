@@ -1,10 +1,8 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
-import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
-import com.oberdiah.deepcomplexity.evaluation.LValue
-import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import kotlin.test.assertEquals
 
 /**
@@ -48,7 +46,7 @@ class Context private constructor(
         }
 
         /**
-         * Merges the two contexts, combining variables with identical [UnknownKey]s using [how]. This is
+         * Merges the two contexts, combining variables with identical [com.oberdiah.deepcomplexity.evaluation.UnknownKey]s using [how]. This is
          * primarily used to combine two branches of an if-statement.
          */
         fun combine(lhs: Context, rhs: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {

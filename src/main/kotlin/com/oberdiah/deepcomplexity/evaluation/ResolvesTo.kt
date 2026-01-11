@@ -2,7 +2,6 @@ package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.ContextId
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty

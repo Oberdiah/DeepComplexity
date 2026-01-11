@@ -1,9 +1,9 @@
 package com.oberdiah.deepcomplexity.utilities
 
 import com.intellij.psi.*
-import com.oberdiah.deepcomplexity.context.LocalVariableKey
-import com.oberdiah.deepcomplexity.context.ParameterKey
-import com.oberdiah.deepcomplexity.context.ReturnKey
+import com.oberdiah.deepcomplexity.evaluation.LocalVariableKey
+import com.oberdiah.deepcomplexity.evaluation.ParameterKey
+import com.oberdiah.deepcomplexity.evaluation.ReturnKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle

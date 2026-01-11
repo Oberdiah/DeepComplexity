@@ -2,6 +2,7 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.LValueKey
+import com.oberdiah.deepcomplexity.evaluation.UnknownKey
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsMarker
 import com.oberdiah.deepcomplexity.utilities.Utilities.betterPrependIndent
