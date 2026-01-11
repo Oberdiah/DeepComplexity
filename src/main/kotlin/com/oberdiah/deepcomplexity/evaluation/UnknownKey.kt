@@ -35,7 +35,7 @@ sealed class UnknownKey : Key() {
         FOREVER
     }
 
-    fun withAddedContextId(id: ContextId): UnknownKey {
+    open fun withAddedContextId(id: ContextId): UnknownKey {
         return when (this) {
             is QualifiedFieldKey ->
                 QualifiedFieldKey(qualifier.withAddedContextId(id), field)
@@ -44,19 +44,12 @@ sealed class UnknownKey : Key() {
         }
     }
 
-    fun isPlaceholder(): Boolean {
+    open fun isPlaceholder(): Boolean {
         return when (this) {
             is QualifiedFieldKey -> qualifier.isPlaceholder()
             else -> false
         }
     }
-}
-
-data class BehindKey(val key: VariableKey, val contextId: ContextId) : UnknownKey() {
-    override val ind: Indicator<*> = key.ind
-    override val lifetime: Lifetime = key.lifetime
-
-    override fun toString(): String = "Behind $contextId ($key)"
 }
 
 sealed class VariableKey(val variable: PsiVariable) : UnknownKey() {

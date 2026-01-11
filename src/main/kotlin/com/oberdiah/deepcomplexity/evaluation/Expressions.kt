@@ -417,7 +417,7 @@ class VariableExpr<T : Any> private constructor(
         private val key: UnknownKey,
         private val contextId: ContextId,
         override val ind: Indicator<T>
-    ) : ResolvesTo<T> {
+    ) : ResolvesTo<T>, UnknownKey() {
         companion object {
             fun new(key: UnknownKey, contextId: ContextId): KeyBackreference<*> =
                 new(key, contextId, key.ind)
@@ -431,6 +431,8 @@ class VariableExpr<T : Any> private constructor(
         override fun equals(other: Any?): Boolean = other is KeyBackreference<*> && this.key == other.key
         override fun hashCode(): Int = key.hashCode()
         override fun isPlaceholder() = key.isPlaceholder()
+        override fun isConstant(): Boolean = false
+
         override val lifetime = key.lifetime
 
         override fun withAddedContextId(newId: ContextId): KeyBackreference<T> =
