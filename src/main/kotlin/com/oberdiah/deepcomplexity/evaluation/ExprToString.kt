@@ -28,7 +28,7 @@ object ExprToString {
                 }
             }
 
-            is VariableExpr -> expr.resolvesTo.toString()
+            is VariableExpr -> expr.key.toString()
             is VarsExpr -> expr.vars.toString()
             is ExpressionChain<*> -> {
                 "${expr.supportKey} = ${expr.support}\n${expr.expr}"
@@ -48,7 +48,7 @@ object ExprToString {
             is NegateExpr -> "'-'"
             is UnionExpr -> "'∪'"
             is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
-            is VariableExpr -> expr.resolvesTo.toString()
+            is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
             is ExpressionChain<*> -> "'${toExprKeyString(expr.support)}+${toExprKeyString(expr.expr)}'"
@@ -95,7 +95,7 @@ object ExprToString {
             is NegateExpr -> "-${expr.expr.dStr()}"
             is UnionExpr -> "(${expr.lhs.dStr()} ∪ ${expr.rhs.dStr()}) = $myResult"
             is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
-            is VariableExpr -> expr.resolvesTo.toString()
+            is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> {
                 if (expr.explicit) {
                     "(${expr.ind}) ${expr.expr.dStr()}"

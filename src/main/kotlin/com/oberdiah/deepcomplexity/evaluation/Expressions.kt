@@ -1,8 +1,11 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.intellij.psi.PsiTypes
-import com.oberdiah.deepcomplexity.context.*
+import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
+import com.oberdiah.deepcomplexity.context.UnknownKey
+import com.oberdiah.deepcomplexity.context.Vars
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
@@ -382,9 +385,7 @@ class NegateExpr<T : Number> private constructor(val expr: Expr<T>) : Expr<T>() 
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>() {
-    abstract val resolvesTo: ResolvesTo<T>
-    override val ind: Indicator<T>
-        get() = resolvesTo.ind
+    abstract fun resolve(vars: Vars): Expr<T>
 }
 
 /**
@@ -395,77 +396,38 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
  * This context is only used for ensuring proper usage, it's never used within the logic.
  */
 class VariableExpr<T : Any> private constructor(
-    override val resolvesTo: ResolvesTo<T>
+    val key: UnknownKey,
+    override val ind: Indicator<T>
 ) : LeafExpr<T>() {
     companion object {
-        /**
-         * This should only ever be called from a [Context]. Only contexts are allowed
-         * to create [VariableExpr]s. Only contexts really can, anyway, because they've got control
-         * of the [KeyBackreference]s.
-         */
-        fun <T : Any> new(resolvesTo: ResolvesTo<T>): VariableExpr<T> = ExprPool.create(resolvesTo)
-        fun new(key: UnknownKey, contextId: ContextId): VariableExpr<*> =
-            new(KeyBackreference.new(key, contextId))
+        fun <T : Any> new(key: UnknownKey, ind: Indicator<T>): VariableExpr<T> = ExprPool.create(key, ind)
+        fun new(key: UnknownKey): VariableExpr<*> = new(key, key.ind)
     }
 
-    override fun parts(): List<Any?> = listOf(resolvesTo)
+    override fun parts(): List<Any?> = listOf(key, ind)
 
-    class KeyBackreference<T : Any>(
-        private val key: UnknownKey,
-        private val contextId: ContextId,
-        override val ind: Indicator<T>
-    ) : ResolvesTo<T> {
-        companion object {
-            fun new(key: UnknownKey, contextId: ContextId): KeyBackreference<*> =
-                new(key, contextId, key.ind)
-
-            fun <T : Any> new(key: UnknownKey, contextId: ContextId, indicator: Indicator<T>): KeyBackreference<T> =
-                KeyBackreference(key, contextId, indicator)
-        }
-
-        override fun toLeafExpr(): Expr<T> = new(this)
-        override fun toString(): String = "$key'"
-        override fun equals(other: Any?): Boolean = other is KeyBackreference<*> && this.key == other.key
-        override fun hashCode(): Int = key.hashCode()
-        override fun isPlaceholder() = key.isPlaceholder()
-        override val lifetime = key.lifetime
-
-        override fun withAddedContextId(newId: ContextId): KeyBackreference<T> =
-            KeyBackreference(key.withAddedContextId(newId), contextId + newId, ind)
-
-        /**
-         * This shouldn't be used unless you know for certain you're in the evaluation stage;
-         * using this in the method processing stage may lead to you resolving a key using your
-         * own context, which is a recipe for disaster.
-         */
-        fun grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage(): UnknownKey = key
-
-        fun safelyResolveUsing(vars: Vars): Expr<T> {
-            assert(!contextId.collidesWith(vars.idx)) {
-                "Cannot resolve a KeyBackreference in the context it was created in."
-            }
-            return vars.get(vars.resolveKey(key)).castOrThrow(ind)
-        }
+    override fun resolve(vars: Vars): Expr<T> {
+        return vars.get(vars.resolveKey(key)).castOrThrow(ind)
     }
 }
 
 /**
  * Objects are represented as a [ConstExpr] with an underlying [com.oberdiah.deepcomplexity.context.HeapMarker].
  */
-class ConstExpr<T : Any> private constructor(override val resolvesTo: DataContainer<T>) : LeafExpr<T>() {
-    data class DataContainer<T : Any>(val v: T, override val ind: Indicator<T>) : ResolvesTo<T> {
-        override fun toString(): String = v.toString()
-        override fun toLeafExpr(): Expr<T> = ExprPool.create<ConstExpr<T>>(this)
-        override fun isConstant(): Boolean = true
-    }
+class ConstExpr<T : Any> private constructor(val value: T, override val ind: Indicator<T>) : LeafExpr<T>() {
+    override fun parts(): List<Any?> = listOf(value, ind)
 
-    override fun parts(): List<Any?> = listOf(resolvesTo)
+    override fun resolve(vars: Vars): Expr<T> = this
 
-    val value = resolvesTo.v
+    val isHeapMarker: Boolean
+        get() = value is HeapMarker
+
+    val isPlaceholder: Boolean
+        get() = isHeapMarker && (value as HeapMarker).isPlaceholder
 
     companion object {
         fun <T : Any> new(value: T, indicator: Indicator<T>): ConstExpr<T> =
-            ExprPool.create(DataContainer(value, indicator))
+            ExprPool.create(value, indicator)
 
         val TRUE = new(true, BooleanIndicator)
         val FALSE = new(false, BooleanIndicator)
@@ -475,5 +437,9 @@ class ConstExpr<T : Any> private constructor(override val resolvesTo: DataContai
         fun <T : Number> one(ind: NumberIndicator<T>): ConstExpr<T> = new(ind.getOne(), ind)
         fun <T : Any> fromAny(value: T): ConstExpr<T> = new(value, Indicator.fromValue(value))
         fun fromHeapMarker(marker: HeapMarker): ConstExpr<HeapMarker> = fromAny(marker)
+        fun placeholderOf(ind: ObjectIndicator): ConstExpr<HeapMarker> = new(
+            HeapMarker.newPlaceholder(ind.type),
+            ind
+        )
     }
 }

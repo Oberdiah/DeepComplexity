@@ -171,7 +171,9 @@ class Bundle<T : Any> private constructor(
         exprKey: Key,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
     ): Bundle<Q> {
-        require(ind == other.ind)
+        require(ind == other.ind) {
+            "Cannot perform binary operation on bundles with different indicators: $ind vs ${other.ind}"
+        }
 
         val newBundles = mutableSetOf<ConstrainedVariances<Q>>()
         for (myBundle in variances) {

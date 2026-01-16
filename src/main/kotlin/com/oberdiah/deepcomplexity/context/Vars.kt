@@ -3,20 +3,13 @@ package com.oberdiah.deepcomplexity.context
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 class Vars(
     val idx: ContextId,
-    map: Map<UnknownKey, Expr<*>>
+    val map: Map<UnknownKey, Expr<*>>
 ) {
-    private val map = map.mapValues { expr ->
-        expr.value.swapInplaceTypeInTree<VariableExpr<*>> {
-            VariableExpr.new(it.resolvesTo.withAddedContextId(idx))
-        }
-    }.mapKeys { it.key.withAddedContextId(idx) }
-
     val keys = map.keys
     val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
 
@@ -30,16 +23,9 @@ class Vars(
     fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacerWithKey): Vars =
         Vars(idx, map.mapValues { (key, expr) -> operation.replace(key, expr) })
 
-    private fun <T : Any> resolveResolvesTo(resolvesTo: ResolvesTo<T>): Expr<T> {
-        return when (resolvesTo) {
-            is VariableExpr.KeyBackreference -> resolvesTo.safelyResolveUsing(this)
-            else -> resolvesTo.toLeafExpr()
-        }
-    }
-
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.swapInplaceTypeInTree<VariableExpr<*>> { varExpr ->
-            resolveResolvesTo(varExpr.resolvesTo)
+            varExpr.resolve(this)
         }.swapInplaceTypeInTree<VarsExpr> { varsExpr ->
             varsExpr.map { vars -> vars.resolveUsing(this) }
         }.optimise()
@@ -54,7 +40,7 @@ class Vars(
      */
     fun resolveKey(key: UnknownKey): LValue<*> {
         return if (key is QualifiedFieldKey) {
-            LValueField.new(key.field, resolveResolvesTo(key.qualifier).castToObject())
+            LValueField.new(key.field, key.qualifier.resolve(this))
         } else {
             LValueKey.new(key)
         }
@@ -99,7 +85,7 @@ class Vars(
                  * on the other side too (if it does, both branches are both referencing an already-existing object
                  * from earlier in the code path).
                  */
-                if (key is QualifiedFieldKey && key.qualifier.isConstant() && key in newKeys) {
+                if (key is QualifiedFieldKey && key.qualifier is ConstExpr && key in newKeys) {
                     return@associateWith when (key) {
                         in lhs.keys -> lhsResult
                         in rhs.keys -> rhsResult
@@ -131,7 +117,7 @@ class Vars(
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
             is LValueField<*> -> expr.qualifier.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) {
-                get(QualifiedFieldKey(it.resolvesTo, expr.field))
+                get(QualifiedFieldKey(it, expr.field))
             }
 
             is LValueKey<*> -> get(expr.key)
@@ -148,24 +134,24 @@ class Vars(
         getPlaceholderFor(key)?.let { return it }
 
         // OK, now we really do have no choice
-        return VariableExpr.new(key, idx)
+        return VariableExpr.new(key)
     }
 
     private fun getPlaceholderFor(key: UnknownKey): Expr<*>? {
         if (key is QualifiedFieldKey) {
             // This is straightforward; wherever the placeholder for the entire key exists,
             // we replace it with the key itself.
-            val placeholderKey = VariableExpr.KeyBackreference.new(key.toPlaceholderKey(), idx)
-            val placeholderKeyReplacement = VariableExpr.new(key, idx)
+            val placeholderKey = VariableExpr.new(key.toPlaceholderKey())
+            val placeholderKeyReplacement = VariableExpr.new(key)
 
             // Slightly more complicated; wherever the placeholder for the qualifier alone exists,
             // we also need to replace that with the qualifier itself.
-            val placeholderQualifier = ResolvesTo.PlaceholderResolvesTo(key.qualifier.ind.into())
-            val placeholderQualifierReplacement = key.qualifier.toLeafExpr()
+            val placeholderQualifier = ConstExpr.placeholderOf(key.qualifier.ind.into())
+            val placeholderQualifierReplacement = key.qualifier
 
             map[key.toPlaceholderKey()]?.let {
-                val replacedExpr = it.swapInplaceTypeInTree<VariableExpr<*>> { expr ->
-                    when (expr.resolvesTo) {
+                val replacedExpr = it.swapInplaceTypeInTree<LeafExpr<*>> { expr ->
+                    when (expr) {
                         placeholderKey -> placeholderKeyReplacement
                         placeholderQualifier -> placeholderQualifierReplacement
                         else -> null
@@ -216,8 +202,8 @@ class Vars(
         val qualifierExpr = lExpr.qualifier
         val field = lExpr.field
 
-        val qualifiersMentionedInQualifierExpr: Set<ResolvesTo<HeapMarker>> =
-            qualifierExpr.iterateLeaves().map { it.resolvesTo }.toSet()
+        val qualifiersMentionedInQualifierExpr: Set<LeafExpr<HeapMarker>> =
+            qualifierExpr.iterateLeaves().toSet()
 
         var vars = this
 
@@ -230,7 +216,7 @@ class Vars(
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
             val newValue = qualifierExpr.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) { expr ->
-                if (expr.resolvesTo == resolvesTo) {
+                if (expr == resolvesTo) {
                     rExpr
                 } else {
                     existingExpr
@@ -269,12 +255,12 @@ class Vars(
                         && fieldKey == it.field
                         && qualifier.ind == it.qualifier.ind
             }
-            .toSet() + QualifiedFieldKey(ResolvesTo.PlaceholderResolvesTo(key.qualifier.ind.into()), fieldKey)
+            .toSet() + QualifiedFieldKey(ConstExpr.placeholderOf(key.qualifier.ind.into()), fieldKey)
 
         for (aliasingKey in potentialAliasers) {
             val condition = ComparisonExpr.new(
-                aliasingKey.qualifier.toLeafExpr(),
-                qualifier.toLeafExpr(),
+                aliasingKey.qualifier,
+                qualifier,
                 ComparisonOp.EQUAL
             )
 

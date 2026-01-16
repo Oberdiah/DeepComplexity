@@ -175,12 +175,7 @@ object ExprEvaluate {
                 .constrainWith(scope)
 
             is VariableExpr ->
-                Bundle.unconstrained(
-                    expr.ind.newVariance(
-                        (expr.resolvesTo as VariableExpr.KeyBackreference)
-                            .grabTheKeyYesIKnowWhatImDoingICanGuaranteeImInTheEvaluateStage()
-                    )
-                ).constrainWith(scope)
+                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(scope)
 
             is ExpressionChain -> {
                 // Note that at the moment we're leaving the evaluation of the expression itself to each of the

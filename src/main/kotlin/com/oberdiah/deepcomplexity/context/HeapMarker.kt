@@ -12,22 +12,32 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 data class HeapMarker private constructor(
     private val idx: Int,
     val type: PsiType,
+    val isPlaceholder: Boolean
 ) {
     companion object {
-        val NULL = HeapMarker(0, PsiTypes.nullType())
-        val VOID = HeapMarker(1, PsiTypes.voidType())
+        private var placeholders = mutableMapOf<PsiType, HeapMarker>()
+
+        val NULL = HeapMarker(0, PsiTypes.nullType(), false)
+        val VOID = HeapMarker(1, PsiTypes.voidType(), false)
         private var KEY_INDEX = 2
+
         fun new(type: PsiType): HeapMarker {
             if (type == PsiTypes.nullType()) return NULL
             if (type == PsiTypes.voidType()) return VOID
-            return HeapMarker(KEY_INDEX++, type)
+            return HeapMarker(KEY_INDEX++, type, false)
+        }
+
+        fun newPlaceholder(type: PsiType): HeapMarker {
+            return placeholders.getOrPut(type) {
+                HeapMarker(KEY_INDEX++, type, true)
+            }
         }
     }
 
     val ind: ObjectIndicator = ObjectIndicator(type)
     override fun toString(): String {
-        if (this == NULL) return "null"
-        if (this == VOID) return "void"
+        if (this == NULL) return "MyNull"
+        if (this == VOID) return "MyVoid"
         return "#$idx"
     }
 }
