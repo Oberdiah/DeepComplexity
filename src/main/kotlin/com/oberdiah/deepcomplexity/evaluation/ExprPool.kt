@@ -24,9 +24,7 @@ object ExprPool {
             creationFlag.set(false)
         }
 
-        // TODO should be
-        // return intern(instance)
-        return instance
+        return intern(instance)
     }
 
     @Synchronized
