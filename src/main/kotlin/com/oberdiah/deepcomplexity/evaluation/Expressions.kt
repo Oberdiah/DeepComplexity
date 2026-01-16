@@ -18,33 +18,27 @@ sealed class Expr<T : Any> {
         }
     }
 
-    override fun equals(other: Any?): Boolean {
-        // TODO: Needs to be this === other eventually.
+    internal var internId: Long = 0L
+
+    final override fun hashCode(): Int {
+        require(internId != 0L)
+        return internId.hashCode()
+    }
+
+    final override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as Expr<*>
-
-        if (parts() != other.parts()) return false
-        if (ind != other.ind) return false
-
-        return true
+        if (other !is Expr<*>) return false
+        if (this.javaClass != other.javaClass) return false
+        require(internId != 0L)
+        return this.internId == other.internId
     }
 
-    // Cache the hash code so we don't recalculate parts() repeatedly
-    private val cachedHashCode: Int by lazy {
-        var result = this::class.hashCode()
-        result = 31 * result + parts().hashCode()
-        result = 31 * result + ind.hashCode()
-        result
-    }
-
-    final override fun hashCode(): Int = cachedHashCode
+    fun myParts(): List<Any> = parts() + ind
 
     /**
      * Subclasses should return their properties here for equality/hashcode purposes.
      */
-    abstract fun parts(): List<Any?>
+    protected abstract fun parts(): List<Any>
 
     /**
      * This is used as a key in the caching system. If two expressions have the same key,
@@ -153,7 +147,7 @@ class VarsExpr private constructor(val vars: DynamicOrStatic = DynamicOrStatic.D
         fun new(vars: DynamicOrStatic = DynamicOrStatic.Dynamic): VarsExpr = ExprPool.create<VarsExpr>(vars)
     }
 
-    override fun parts(): List<Any?> = listOf(vars)
+    override fun parts(): List<Any> = listOf(vars)
 
     val isStatic = vars is DynamicOrStatic.Static
     val isDynamic = vars is DynamicOrStatic.Dynamic
@@ -200,7 +194,7 @@ class ArithmeticExpr<T : Number> private constructor(
         }
     }
 
-    override fun parts(): List<Any?> = listOf(lhs, rhs, op)
+    override fun parts(): List<Any> = listOf(lhs, rhs, op)
 
     override val ind: Indicator<T> = lhs.ind
 }
@@ -225,7 +219,7 @@ class ComparisonExpr<T : Any> private constructor(
         }
     }
 
-    override fun parts(): List<Any?> = listOf(lhs, rhs, comp)
+    override fun parts(): List<Any> = listOf(lhs, rhs, comp)
 
     override val ind: Indicator<Boolean> = BooleanIndicator
 
@@ -264,7 +258,7 @@ class TypeCastExpr<T : Any, Q : Any> private constructor(
         }
     }
 
-    override fun parts(): List<Any?> = listOf(expr, ind, explicit)
+    override fun parts(): List<Any> = listOf(expr, ind, explicit)
 }
 
 class IfExpr<T : Any> private constructor(
@@ -278,7 +272,7 @@ class IfExpr<T : Any> private constructor(
         }
     }
 
-    override fun parts(): List<Any?> = listOf(trueExpr, falseExpr, thisCondition)
+    override fun parts(): List<Any> = listOf(trueExpr, falseExpr, thisCondition)
 
     override val ind: Indicator<T> get() = trueExpr.ind
 
@@ -328,7 +322,7 @@ class UnionExpr<T : Any> private constructor(override val lhs: Expr<T>, override
         }
     }
 
-    override fun parts(): List<Any?> = listOf(lhs, rhs)
+    override fun parts(): List<Any> = listOf(lhs, rhs)
 
     companion object {
         fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>): UnionExpr<T> = ExprPool.create(lhs, rhs)
@@ -348,7 +342,7 @@ class BooleanExpr private constructor(
         }
     }
 
-    override fun parts(): List<Any?> = listOf(lhs, rhs, op)
+    override fun parts(): List<Any> = listOf(lhs, rhs, op)
 
     override val ind: Indicator<Boolean> = BooleanIndicator
 
@@ -369,7 +363,7 @@ class BooleanInvertExpr private constructor(val expr: Expr<Boolean>) : Expr<Bool
         fun new(expr: Expr<Boolean>): BooleanInvertExpr = ExprPool.create(expr)
     }
 
-    override fun parts(): List<Any?> = listOf(expr)
+    override fun parts(): List<Any> = listOf(expr)
 
     override val ind: Indicator<Boolean> = BooleanIndicator
 }
@@ -379,7 +373,7 @@ class NegateExpr<T : Number> private constructor(val expr: Expr<T>) : Expr<T>() 
         fun <T : Number> new(expr: Expr<T>): NegateExpr<T> = ExprPool.create(expr)
     }
 
-    override fun parts(): List<Any?> = listOf(expr)
+    override fun parts(): List<Any> = listOf(expr)
 
     override val ind: Indicator<T> = expr.ind
 }
@@ -404,7 +398,7 @@ class VariableExpr<T : Any> private constructor(
         fun new(key: UnknownKey): VariableExpr<*> = new(key, key.ind)
     }
 
-    override fun parts(): List<Any?> = listOf(key, ind)
+    override fun parts(): List<Any> = listOf(key, ind)
 
     override fun resolve(vars: Vars): Expr<T> {
         return vars.get(vars.resolveKey(key)).castOrThrow(ind)
@@ -415,7 +409,7 @@ class VariableExpr<T : Any> private constructor(
  * Objects are represented as a [ConstExpr] with an underlying [com.oberdiah.deepcomplexity.context.HeapMarker].
  */
 class ConstExpr<T : Any> private constructor(val value: T, override val ind: Indicator<T>) : LeafExpr<T>() {
-    override fun parts(): List<Any?> = listOf(value, ind)
+    override fun parts(): List<Any> = listOf(value, ind)
 
     override fun resolve(vars: Vars): Expr<T> = this
 

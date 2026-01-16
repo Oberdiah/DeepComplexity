@@ -71,11 +71,11 @@ class ExpressionChain<T : Any>(
         }
     }
 
-    override fun parts(): List<Any?> = listOf(supportKey, support, expr)
+    override fun parts(): List<Any> = listOf(supportKey, support, expr)
 
     override val ind: Indicator<T> = expr.ind
 }
 
 class ExpressionChainPointer<T : Any>(val supportKey: SupportKey, override val ind: Indicator<T>) : Expr<T>() {
-    override fun parts(): List<Any?> = listOf(supportKey)
+    override fun parts(): List<Any> = listOf(supportKey)
 }
