@@ -38,7 +38,8 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
         comparisonOp: ComparisonOp,
         constraints: Constraints
     ): Constraints {
-        TODO("Not yet implemented")
+        // We could make this much more complex in the future, for now we'll just do nothing.
+        return constraints
     }
 
     override fun toDebugString(constraints: Constraints): String = value.toString()

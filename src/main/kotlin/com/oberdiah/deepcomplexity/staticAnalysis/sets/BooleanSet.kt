@@ -97,7 +97,30 @@ enum class BooleanSet : ISet<Boolean> {
     }
 
     override fun comparisonOperation(other: ISet<Boolean>, operation: ComparisonOp): BooleanSet {
-        TODO("Not yet implemented")
+        val other = other.into()
+        if (this == NEITHER || other == NEITHER) {
+            return NEITHER
+        }
+
+        return when (operation) {
+            ComparisonOp.EQUAL -> {
+                when (this) {
+                    TRUE -> other
+                    FALSE -> other.booleanInvert()
+                    EITHER -> EITHER
+                }
+            }
+
+            ComparisonOp.NOT_EQUAL -> {
+                when (this) {
+                    TRUE -> other.booleanInvert()
+                    FALSE -> other
+                    EITHER -> EITHER
+                }
+            }
+
+            else -> throw IllegalArgumentException("Cannot perform non-equality comparison on booleans.")
+        }
     }
 
     override val ind = BooleanIndicator
