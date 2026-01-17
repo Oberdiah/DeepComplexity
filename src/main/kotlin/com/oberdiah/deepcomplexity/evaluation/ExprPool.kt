@@ -50,7 +50,7 @@ object ExprPool {
             table.remove(ref.key, ref)
         }
 
-        require(candidate.internId == 0L) {
+        require(candidate.transientInternIdDoNotUse == 0L) {
             "Expr $candidate is already interned."
         }
 
@@ -61,7 +61,7 @@ object ExprPool {
             return existing as T
         }
 
-        candidate.internId = nextId.getAndIncrement()
+        candidate.assignInternId(nextId.getAndIncrement())
 
         table[key] = Entry(key, candidate, queue)
         return candidate
@@ -71,7 +71,7 @@ object ExprPool {
         val normalizedParts = expr.myParts().map { p ->
             when (p) {
                 is Expr<*> -> {
-                    val id = p.internId
+                    val id = p.transientInternIdDoNotUse
                     require(id != 0L) {
                         "Child Expr is not interned yet (internId==0)."
                     }

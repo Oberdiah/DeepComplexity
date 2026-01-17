@@ -18,19 +18,31 @@ sealed class Expr<T : Any> {
         }
     }
 
-    internal var internId: Long = 0L
+    fun assignInternId(id: Long) {
+        require(transientInternIdDoNotUse == 0L) {
+            "Intern id is already set for $this"
+        }
+        transientInternIdDoNotUse = id
+    }
+
+    /**
+     * This is marked do not use as it's *not* unique for the lifetime of the program and may change if the
+     * expression doesn't exist and gets garbage collected.
+     * It's fine for use so long as this Expression object itself still exists, which is why these internal uses are
+     * fine, but that's a restriction confusing enough to caution against usage entirely.
+     * If you want something to use as a key, either use [exprKey] or better yet use this object directly as your key.
+     */
+    var transientInternIdDoNotUse: Long = 0L
 
     final override fun hashCode(): Int {
-        require(internId != 0L)
-        return internId.hashCode()
+        return transientInternIdDoNotUse.hashCode()
     }
 
     final override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Expr<*>) return false
         if (this.javaClass != other.javaClass) return false
-        require(internId != 0L)
-        return this.internId == other.internId
+        return this.transientInternIdDoNotUse == other.transientInternIdDoNotUse
     }
 
     fun myParts(): List<Any> = parts() + ind
@@ -41,26 +53,14 @@ sealed class Expr<T : Any> {
     protected abstract fun parts(): List<Any>
 
     /**
-     * This is used as a key in the caching system. If two expressions have the same key,
-     * they are considered equal.
-     *
-     * Doing this works because all expressions are classes, so equality ends up based on the
-     * structure of the expression, not the reference.
+     * So we can treat expressions as variables in their own right in the constraint system.
      */
-    val exprKey = ExpressionKey(this)
+    val exprKey get() = ExpressionKey(this)
 
     /**
      * The indicator represents what the expression will be once evaluated.
      */
     abstract val ind: Indicator<T>
-
-    /**
-     * Concatenates the system hashcode and our general hashcode to get a unique long.
-     * Shouldn't be used in standard flow as we want expressions to be interchangeable for all normal purposes.
-     */
-    val completelyUniqueValueForDebugUseOnly: Long
-        get() =
-            (System.identityHashCode(this).toLong() shl 32) or (this.hashCode().toLong() and 0xFFFFFFFFL)
 
     final override fun toString(): String {
         return ExprToString.toString(this)
@@ -149,6 +149,7 @@ class VarsExpr private constructor(val vars: DynamicOrStatic = DynamicOrStatic.D
 
     override fun parts(): List<Any> = listOf(vars)
 
+    @Suppress("unused")
     val isStatic = vars is DynamicOrStatic.Static
     val isDynamic = vars is DynamicOrStatic.Dynamic
 
@@ -427,6 +428,7 @@ class ConstExpr<T : Any> private constructor(val value: T, override val ind: Ind
         val FALSE = new(false, BooleanIndicator)
         val VOID = fromHeapMarker(HeapMarker.new(PsiTypes.voidType()))
 
+        @Suppress("unused")
         fun <T : Number> zero(ind: NumberIndicator<T>): ConstExpr<T> = new(ind.getZero(), ind)
         fun <T : Number> one(ind: NumberIndicator<T>): ConstExpr<T> = new(ind.getOne(), ind)
         fun <T : Any> fromAny(value: T): ConstExpr<T> = new(value, Indicator.fromValue(value))
