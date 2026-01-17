@@ -24,7 +24,11 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         val testSettings: TestSettings
     )
 
-    data class TestSettings(val cloneContexts: Boolean, val updateAnnotations: Boolean)
+    data class TestSettings(
+        val cloneContexts: Boolean,
+        val updateAnnotations: Boolean,
+        val ignoreExpressionSize: Boolean
+    )
 
     @Test
     @Order(1)
@@ -46,6 +50,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
         ).toList()
 
         val fileToRun = System.getenv("FILE_FILTER")
+        val ignoreExpressionSize = System.getenv("IGNORE_EXPRESSION_SIZE") == "True"
 
         val outputFiles = if (fileToRun != null) {
             outputFilesPreFilter.filter { it?.name?.contains(fileToRun) == true }
@@ -76,7 +81,8 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                                         relativeFile,
                                         TestSettings(
                                             cloneContexts = false,
-                                            updateAnnotations = true
+                                            updateAnnotations = true,
+                                            ignoreExpressionSize = ignoreExpressionSize
                                         )
                                     ), TestInfo(
                                         psiMethod.name + " C.",
@@ -85,7 +91,8 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                                         relativeFile,
                                         TestSettings(
                                             cloneContexts = true,
-                                            updateAnnotations = false
+                                            updateAnnotations = false,
+                                            ignoreExpressionSize = ignoreExpressionSize
                                         )
                                     )
                                 )

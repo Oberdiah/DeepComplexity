@@ -1968,6 +1968,27 @@ public class MyTestData {
 		return (short) q;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(8)
+	public static short shortCircuit8(short x) {
+		MyClass myClass = new MyClass(0);
+		boolean result = addAndReturn(myClass, true) && addAndReturn(myClass, true);
+		return (short) (myClass.x + ((result) ? 1 : 0));
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(6)
+	public static short shortCircuit9(short x) {
+		MyClass myClass = new MyClass(0);
+		boolean result = addAndReturn(myClass, false) && addAndReturn(myClass, false);
+		return (short) (myClass.x + ((result) ? 1 : 0));
+	}
+	
+	private static boolean addAndReturn(MyClass myClass, boolean flag) {
+		myClass.x += 10;
+		return flag;
+	}
+	
 	public static short interfaceSideEffect(short x) {
 		ModifiableImpl impl = new ModifiableImpl(17);
 		processModifiable(impl);

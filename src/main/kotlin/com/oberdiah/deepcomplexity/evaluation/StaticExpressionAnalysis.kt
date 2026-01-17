@@ -8,6 +8,13 @@ object StaticExpressionAnalysis {
             return BooleanExpr.newRaw(lhs, rhs, op)
         }
 
+        if (lhs == rhs) {
+            // Note: This is OK even though boolean expressions normally short-circuit.
+            // That's because the expression is truly a boolean expression by this point; it
+            // can't have side effects.
+            return lhs
+        }
+
         return when (op) {
             BooleanOp.AND -> {
                 if (rhs == ConstExpr.FALSE || lhs == ConstExpr.FALSE) {
@@ -51,7 +58,7 @@ object StaticExpressionAnalysis {
             ComparisonOp.GREATER_THAN -> null
             ComparisonOp.GREATER_THAN_OR_EQUAL -> null
             ComparisonOp.EQUAL -> {
-                if (guaranteedEqual(rhs, lhs)) {
+                if (rhs == lhs) {
                     return ConstExpr.TRUE
                 }
                 if (guaranteedNotEqual(rhs, lhs)) {
@@ -61,7 +68,7 @@ object StaticExpressionAnalysis {
             }
 
             ComparisonOp.NOT_EQUAL -> {
-                if (guaranteedEqual(rhs, lhs)) {
+                if (rhs == lhs) {
                     return ConstExpr.FALSE
                 }
                 if (guaranteedNotEqual(rhs, lhs)) {
@@ -75,26 +82,10 @@ object StaticExpressionAnalysis {
     }
 
     private fun guaranteedNotEqual(lhs: Expr<*>, rhs: Expr<*>): Boolean {
+        // Note, this cannot just be lhs != rhs, because Var(x) and Var(y) may actually be the same value,
+        // despite evaluating to different expressions.
         if (lhs is ConstExpr<*> && rhs is ConstExpr<*>) {
-            return lhs.value != rhs.value
-        }
-        return false
-    }
-
-    private fun guaranteedEqual(lhs: Expr<*>, rhs: Expr<*>): Boolean {
-        // This could do a full lhs == rhs equality check, but I
-        // felt it was unnecessary. If you ever encounter a situation
-        // where it might simplify stuff, feel free to add it.
-        if (lhs is ConstExpr<*> && rhs is ConstExpr<*>) {
-            return lhs.value == rhs.value
-        }
-        if (lhs is VariableExpr<*> && rhs is VariableExpr<*>) {
-            return lhs.key == rhs.key
-        }
-        if (lhs is TypeCastExpr<*, *> && rhs is TypeCastExpr<*, *>) {
-            if (lhs.ind == rhs.ind && lhs.explicit == rhs.explicit) {
-                return guaranteedEqual(lhs.expr, rhs.expr)
-            }
+            return lhs != rhs
         }
         return false
     }
@@ -123,13 +114,11 @@ object StaticExpressionAnalysis {
          * So for now, we just rely on the if statement simplifications to hide them from us.
          */
 
-        // EXPR_EQUALITY_PERF_ISSUE
         val trueExpr = if (trueExpr is IfExpr && trueExpr.thisCondition == condition) {
             trueExpr.trueExpr
         } else {
             trueExpr
         }
-        // EXPR_EQUALITY_PERF_ISSUE
         val falseExpr = if (falseExpr is IfExpr && falseExpr.thisCondition == condition) {
             // If my condition is equal to the condition of the false branch's inner `if`'s condition, we know that that
             // inner `if` can never be true, so we can safely return its false branch.
@@ -138,9 +127,6 @@ object StaticExpressionAnalysis {
             falseExpr
         }
 
-        // This equality is probably not very cheap.
-        // I'm sure that can be improved in the future.
-        // EXPR_EQUALITY_PERF_ISSUE
         if (trueExpr == falseExpr) {
             return trueExpr
         }

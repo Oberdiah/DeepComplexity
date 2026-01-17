@@ -100,9 +100,7 @@ object TestUtilities {
         }
         println("\tExpression size: ${scoreResults.expressionSize}")
 
-        // Clone-contexts mode doesn't care about the standard expression size - it may well be
-        // a larger final expression tree, and that doesn't matter so long as it's still correct.
-        if (!testInfo.testSettings.cloneContexts) {
+        if (!testInfo.testSettings.ignoreExpressionSize) {
             if (expressionSizeAnnotation != null) {
                 val requiredMaxExpressionSize = expressionSizeAnnotation.value
                 if (scoreResults.expressionSize > requiredMaxExpressionSize) {

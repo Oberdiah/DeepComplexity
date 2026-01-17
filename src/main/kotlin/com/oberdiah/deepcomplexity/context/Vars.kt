@@ -8,7 +8,11 @@ import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 class Vars(
     val idx: ContextId,
-    val map: Map<UnknownKey, Expr<*>>
+    // Note to self: We got rid of the protections around double-resolving because they were annoying
+    // There may be a way to add protections back, in the form of a 'variables already resolved' set, but
+    // ensuring we always update that when a resolution is done is tricky, so I didn't bother. If it's
+    // annoying in future that's worth investigating. See 'Placeholder Behaviour Change' in ChatGPT for more ideas.
+    private val map: Map<UnknownKey, Expr<*>>
 ) {
     val keys = map.keys
     val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
