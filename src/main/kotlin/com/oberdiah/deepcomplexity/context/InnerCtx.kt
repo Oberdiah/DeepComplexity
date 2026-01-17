@@ -46,7 +46,7 @@ class InnerCtx private constructor(
     private val dynamicVars: Vars?,
 ) {
     companion object {
-        fun new(idx: ContextId): InnerCtx = InnerCtx(VarsExpr.new(), Vars.new(idx))
+        fun new(): InnerCtx = InnerCtx(VarsExpr.new(), Vars.new())
 
         fun combine(
             lhs: InnerCtx,
@@ -108,7 +108,7 @@ class InnerCtx private constructor(
 
     fun mapAllVars(operation: (Vars) -> Vars): InnerCtx = this.mapStaticVars(operation).mapDynamicVars(operation)
 
-    fun forcedStatic(idx: ContextId): InnerCtx = InnerCtx(
+    fun forcedStatic(): InnerCtx = InnerCtx(
         staticExpr.swapInplaceTypeInTree<VarsExpr> {
             // !! is safe by init {} check.
             if (it.isDynamic) VarsExpr.new(VarsExpr.DynamicOrStatic.Static(dynamicVars!!)) else it
@@ -116,9 +116,9 @@ class InnerCtx private constructor(
         null
     )
 
-    fun forcedDynamic(idx: ContextId): InnerCtx = InnerCtx(
+    fun forcedDynamic(): InnerCtx = InnerCtx(
         VarsExpr.new(),
-        Vars(idx, keys.associateWith { key ->
+        Vars(keys.associateWith { key ->
             staticExpr.replaceTypeInTree<VarsExpr> {
                 getVarsFromVarsExpr(it).get(LValueKey.new(key))
             }

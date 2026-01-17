@@ -6,12 +6,11 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
-class Vars(
-    val idx: ContextId,
+data class Vars(
     // Note to self: We got rid of the protections around double-resolving because they were annoying
     // There may be a way to add protections back, in the form of a 'variables already resolved' set, but
     // ensuring we always update that when a resolution is done is tricky, so I didn't bother. If it's
-    // annoying in future that's worth investigating. See 'Placeholder Behaviour Change' in ChatGPT for more ideas.
+    // annoying in future, that's worth investigating. See 'Placeholder Behaviour Change' in ChatGPT for more ideas.
     private val map: Map<UnknownKey, Expr<*>>
 ) {
     val keys = map.keys
@@ -20,12 +19,12 @@ class Vars(
     /**
      * Retains all entries that satisfy the given predicate.
      */
-    fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(idx, map.filterKeys(operation))
+    fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(map.filterKeys(operation))
     fun resolveUsing(vars: Vars): Vars =
         mapExpressions(ExprTreeRebuilder.ExprReplacerWithKey { _, e -> vars.resolveKnownVariables(e) })
 
     fun mapExpressions(operation: ExprTreeRebuilder.ExprReplacerWithKey): Vars =
-        Vars(idx, map.mapValues { (key, expr) -> operation.replace(key, expr) })
+        Vars(map.mapValues { (key, expr) -> operation.replace(key, expr) })
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
         expr.swapInplaceTypeInTree<VariableExpr<*>> { varExpr ->
@@ -51,14 +50,14 @@ class Vars(
     }
 
     companion object {
-        fun new(idx: ContextId): Vars = Vars(idx, mapOf())
+        fun new(): Vars = Vars(mapOf())
 
         /**
          * Merges the two variable maps, combining variables with identical [UnknownKey]s using [how].
          */
         fun combine(lhs: Vars, rhs: Vars, how: (Expr<*>, Expr<*>) -> Expr<*>): Vars {
             val newKeys = (lhs.keys + rhs.keys) - lhs.keys.intersect(rhs.keys)
-            return Vars(rhs.idx + lhs.idx, (lhs.keys + rhs.keys).associateWith { key ->
+            return Vars((lhs.keys + rhs.keys).associateWith { key ->
                 val lhsResult = lhs.get(key)
                 val rhsResult = rhs.get(key)
 
@@ -240,7 +239,7 @@ class Vars(
      * Using this alone should be perfectly correct.
      */
     fun with(key: UnknownKey, rExpr: Expr<*>): Vars {
-        var newVars = Vars(idx, map + (key to rExpr))
+        var newVars = Vars(map + (key to rExpr))
 
         if (key !is QualifiedFieldKey) {
             // No need to do anything further if there's no risk of aliasing.
@@ -274,7 +273,7 @@ class Vars(
             // setting. Otherwise, we leave it alone.
             val newRExpr = IfExpr.new(rExpr, newVars.get(aliasingKey), condition)
 
-            newVars = Vars(idx, newVars.map + (aliasingKey to newRExpr))
+            newVars = Vars(newVars.map + (aliasingKey to newRExpr))
         }
 
         return newVars

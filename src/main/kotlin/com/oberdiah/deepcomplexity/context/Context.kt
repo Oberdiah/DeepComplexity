@@ -13,8 +13,7 @@ import kotlin.test.assertEquals
  *
  * For example, in a context `{ x: y' + 1, y: 2}`, the variable `x` is not equal to `2 + 1`, it's equal to `y' + 1`.
  *
- * We encode this with the [com.oberdiah.deepcomplexity.evaluation.ResolvesTo] class, representing an unknown that this context will never manage
- * to resolve.
+ * This is no longer encoded as a constraint within the program itself, you'll have to play it by ear.
  *
  * How objects are stored:
  *  - Every object's field will be stored as its own variable.
@@ -23,7 +22,6 @@ import kotlin.test.assertEquals
  *    not have a previous or future state. E.g. in { #1.x: 2, x: #1 }, it is completely OK to resolve `x.x` to `2`.
  *    This means it is also OK to resolve `b.x` using { b: a', a'.x: 2 } to `2` - although `b` is `a'` and not `a`,
  *    `a.x` is also actually `a'.x`.
- *  - ObjectExprs can be considered a ConstExpr, except that their values can be used to build QualifiedKeys.
  */
 class Context private constructor(
     private val inner: InnerCtx,
@@ -38,13 +36,11 @@ class Context private constructor(
      * Imagine a case where we're evaluating an expression like `int t = this.q`. `this`'s type needs to be known
      * to at least some degree to perform alias protection, and the only place to store that is in the context.
      */
-    val thisType: PsiType?,
-    private val idx: ContextId
+    val thisType: PsiType?
 ) {
     companion object {
         fun brandNew(thisType: PsiType?): Context {
-            val contextIdx = ContextId.new()
-            return Context(InnerCtx.new(contextIdx), thisType, contextIdx)
+            return Context(InnerCtx.new(), thisType)
         }
 
         /**
@@ -63,18 +59,17 @@ class Context private constructor(
                         }
                     }
                 ),
-                lhs.thisType,
-                lhs.idx + rhs.idx
+                lhs.thisType
             )
         }
     }
 
     override fun toString(): String = inner.toString()
-    fun forcedDynamic(): Context = Context(inner.forcedDynamic(idx), thisType, idx)
-    fun haveHitReturn(): Context = Context(inner.forcedStatic(idx), thisType, idx)
+    fun forcedDynamic(): Context = Context(inner.forcedDynamic(), thisType)
+    fun haveHitReturn(): Context = Context(inner.forcedStatic(), thisType)
     val dynamicVars: Vars
         get() = inner.grabDynamicVars()
-        // A context isn't in an invalid state when dynamic vars is null, but a lot of common
+        // A context isn't in an invalid state when dynamic vars are null, but a lot of common
         // operations stop having meaning; e.g. resolving variables or fetching variables use the dynamic
             ?: throw IllegalStateException(
                 "Dynamic vars is null. This most likely means we're trying to interact " +
@@ -91,10 +86,10 @@ class Context private constructor(
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> = dynamicVars.resolveKnownVariables(expr)
 
     fun withVar(lExpr: LValue<*>, rExpr: Expr<*>): Context =
-        Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType, idx)
+        Context(inner.mapDynamicVars { vars -> vars.with(lExpr, rExpr) }, thisType)
 
     fun mapVars(operation: (Vars) -> Vars): Context =
-        Context(inner.mapAllVars(operation), thisType, idx)
+        Context(inner.mapAllVars(operation), thisType)
 
     fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }
 
@@ -122,8 +117,7 @@ class Context private constructor(
                 },
                 { _, otherVars -> otherVars }
             ),
-            thisType,
-            idx + other.idx
+            thisType
         )
 
         return afterStack
