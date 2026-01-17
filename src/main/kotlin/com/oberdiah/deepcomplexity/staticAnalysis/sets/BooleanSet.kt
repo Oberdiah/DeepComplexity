@@ -57,6 +57,7 @@ enum class BooleanSet : ISet<Boolean> {
     },
 
     // The value in question is invalid; we've hit a contradiction.
+    // Neither is contagious; most interactions with Neither will return Neither.
     NEITHER {
         override fun size(): Long = 0L
 
@@ -136,22 +137,24 @@ enum class BooleanSet : ISet<Boolean> {
     }
 
     fun booleanOperation(other: BooleanSet, operation: BooleanOp): BooleanSet {
+        if (this == NEITHER || other == NEITHER) {
+            return NEITHER
+        }
+
         return when (operation) {
             BooleanOp.AND -> {
                 when (this) {
                     TRUE -> other
-                    FALSE -> if (other == NEITHER) NEITHER else FALSE
-                    EITHER -> if (other == NEITHER) NEITHER else EITHER
-                    NEITHER -> NEITHER
+                    FALSE -> FALSE
+                    EITHER -> EITHER
                 }
             }
 
             BooleanOp.OR -> {
                 when (this) {
-                    TRUE -> if (other == NEITHER) NEITHER else TRUE
+                    TRUE -> TRUE
                     FALSE -> other
-                    EITHER -> if (other == NEITHER) NEITHER else EITHER
-                    NEITHER -> NEITHER
+                    EITHER -> EITHER
                 }
             }
         }
