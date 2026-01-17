@@ -100,7 +100,8 @@ object TestUtilities {
         }
         println("\tExpression size: ${scoreResults.expressionSize}")
 
-        if (!testInfo.testSettings.ignoreExpressionSize) {
+        // CloneContexts tests will have different expression sizes, so we skip expression size checks for those.
+        if (!testInfo.testSettings.ignoreExpressionSize && !testInfo.testSettings.cloneContexts) {
             if (expressionSizeAnnotation != null) {
                 val requiredMaxExpressionSize = expressionSizeAnnotation.value
                 if (scoreResults.expressionSize > requiredMaxExpressionSize) {
