@@ -190,7 +190,7 @@ data class Bundle<T : Any> private constructor(
 
                 if (newConstraints.unreachable) continue
 
-                // Only do the fun optimisation if we were tracking something beforehand, otherwise we're just
+                // Only do the fun optimization if we were tracking something beforehand, otherwise we're just
                 // going to start tracking a constant for no reason.
                 val wereTrackingSomething =
                     (myBundle.variances.varsTracking() + otherBundle.variances.varsTracking()).isNotEmpty()

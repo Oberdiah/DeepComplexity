@@ -1,10 +1,10 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 object StaticExpressionAnalysis {
-    const val SKIP_OPTIMISATIONS = false
+    const val SKIP_OPTIMIZATIONS = false
 
     fun attemptToSimplifyBooleanExpr(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
-        if (SKIP_OPTIMISATIONS) {
+        if (SKIP_OPTIMIZATIONS) {
             return BooleanExpr.newRaw(lhs, rhs, op)
         }
 
@@ -47,8 +47,8 @@ object StaticExpressionAnalysis {
      * trivial comparisons from going to the full evaluation engine.
      */
     fun <T : Any> attemptToSimplifyComparison(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): Expr<Boolean> {
-        // To disable optimisations for testing purposes:
-        if (SKIP_OPTIMISATIONS) {
+        // To disable optimizations for testing purposes:
+        if (SKIP_OPTIMIZATIONS) {
             return ComparisonExpr.newRaw(lhs, rhs, comp)
         }
 
@@ -103,7 +103,7 @@ object StaticExpressionAnalysis {
     }
 
     fun <A : Any> attemptToSimplifyIfExpr(trueExpr: Expr<A>, falseExpr: Expr<A>, condition: Expr<Boolean>): Expr<A> {
-        if (SKIP_OPTIMISATIONS) {
+        if (SKIP_OPTIMIZATIONS) {
             return IfExpr.newRaw(trueExpr, falseExpr, condition)
         }
 
@@ -120,7 +120,7 @@ object StaticExpressionAnalysis {
          * leads to `#1.x = (x > 5) ? 20 : #1.x'`.
          * Now, we know for certain that #1 is never going to appear earlier in the expression tree;
          * it was created in the branch itself.
-         * We previously had an optimisation where we'd check for assigning to defined objects
+         * We previously had an optimization where we'd check for assigning to defined objects
          * inside branches and remove those early, but that complicated the code and I'm
          * concerned that further down the line with globals it might lead to problems.
          * So for now, we just rely on the if statement simplifications to hide them from us.
