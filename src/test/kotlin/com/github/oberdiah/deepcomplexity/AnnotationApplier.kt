@@ -83,7 +83,7 @@ object AnnotationApplier {
         methodsByFile.forEach { (filePath, methods) ->
             try {
                 val path = Paths.get(filePath)
-                var content = Files.readAllLines(path).toMutableList()
+                val content = Files.readAllLines(path).toMutableList()
 
                 // --- Ensure imports exist ---
                 for (annotation in ANNOTATIONS) {
@@ -152,7 +152,7 @@ object AnnotationApplier {
                         // Note: It should be relatively easy to update the expected size upwards, as expressions
                         // can change. The annotation is mainly to catch regressions, and we don't run
                         // this update script often.
-                        shouldUpdate = { new, _ -> new > 0.0 }
+                        shouldUpdate = { new, existing -> new > 0.0 && new != existing }
                     )
                     if (pm.scoreAchieved == 1.0) {
                         updateAnnotationIfNeeded(
@@ -168,7 +168,7 @@ object AnnotationApplier {
                 }
 
                 // Log warnings for methods not found
-                methodsWithIndices.filter { it.second < 0 }.forEach { (pm, idx) ->
+                methodsWithIndices.filter { it.second < 0 }.forEach { (pm, _) ->
                     println("Warning: Could not locate method declaration for $filePath#${pm.methodName}")
                 }
 

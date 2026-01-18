@@ -15,14 +15,12 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
     data class Scope(
-        val constraints: Set<Constraints> = setOf(Constraints.completelyUnconstrained()),
+        val constraints: ExprConstrain.ConstraintsOrPile = ExprConstrain.ConstraintsOrPile.unconstrained(),
         val scopesToKeep: Set<Key.ExpressionKey> = setOf(),
         val supportKeyMap: Map<SupportKey, Expr<*>> = mapOf()
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
-
-        fun isUnconstrained(): Boolean = constraints.all { it.isUnconstrained() }
 
         /**
          * Adds the expression's keys to the scopes we want to keep around.
@@ -36,9 +34,9 @@ object ExprEvaluate {
             return Scope(constraints, scopesToKeep + newScopes, supportKeyMap)
         }
 
-        fun constrainWith(constraints: Set<Constraints>): Scope {
+        fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Scope {
             return Scope(
-                ExprConstrain.combineConstraints(constraints, this.constraints),
+                constraints.and(this.constraints),
                 scopesToKeep,
                 supportKeyMap
             )
@@ -169,10 +167,10 @@ object ExprEvaluate {
             }
 
             is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())
-                .constrainWith(scope)
+                .constrainWith(scope.constraints)
 
             is VariableExpr ->
-                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(scope)
+                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(scope.constraints)
 
             is ExpressionChain -> {
                 // Note that at the moment we're leaving the evaluation of the expression itself to each of the

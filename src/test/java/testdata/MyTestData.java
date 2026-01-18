@@ -922,6 +922,7 @@ public class MyTestData {
 	}
 	
 	@ExpectedExpressionSize(24)
+	@RequiredScore(1.0)
 	public static short twoVars1(short x) {
 		int b = x % 100;
 		int a = x % 100;

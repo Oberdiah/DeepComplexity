@@ -19,10 +19,16 @@ fun <T : Number> Bundle<T>.arithmeticOperation(
 fun <T : Any> Bundle<T>.generateConstraintsFrom(
     other: Bundle<T>,
     operation: ComparisonOp,
-): Set<Constraints> {
-    return this.binaryMap(other) { a, b, constraints ->
+): ExprConstrain.ConstraintsOrPile {
+    if (this.isEmpty() || other.isEmpty()) {
+        return ExprConstrain.ConstraintsOrPile.unreachable()
+    }
+
+    val newConstraintsGenerated = this.binaryMap(other) { a, b, constraints ->
         a.generateConstraintsFrom(b, operation, constraints)
     }.toSet()
+
+    return ExprConstrain.ConstraintsOrPile(newConstraintsGenerated)
 }
 
 fun Bundle<Boolean>.booleanOperation(
@@ -30,7 +36,7 @@ fun Bundle<Boolean>.booleanOperation(
     operation: BooleanOp,
     exprKey: Key
 ): Bundle<Boolean> =
-    this.performBinaryOperation(other, exprKey) { a, b, constraints ->
+    this.performBinaryOperation(other, exprKey) { a, b, _ ->
         a.into().booleanOperation(b.into(), operation)
     }
 
@@ -38,6 +44,7 @@ fun Bundle<Boolean>.booleanInvert() = performUnaryOperation {
     it.into().booleanInvert()
 }
 
+@Suppress("Unused")
 fun <T : Number> Bundle<T>.isOne(): Boolean = this.variances.all {
     it.variances.into().isOne(it.constraints)
 }

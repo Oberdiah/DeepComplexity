@@ -27,11 +27,21 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
  * Now, when an operation is performed between two BundleSets we effectively do an O(n^2) operation,
  * running each bundle against each other bundle.
  *
- * NOTE: The bundle's constraints are not necessarily mutually exclusive and should be considered
+ * NOTE: The bundle's values are not necessarily mutually exclusive and should be considered
  * OR'd together. Take, for example,
  * ```
  * if (a > 5 || (a > 10 && b > 15)) {
+ *      x = 5;
+ * }
  * ```
+ * x would be a BundleSet with the following bundles:
+ * [
+ *     {bundle: {5}, constraints: {a > 5}},
+ *     {bundle: {5}, constraints: {a > 10, b > 15}},
+ *     {bundle: {0}, constraints: {who knows}}
+ * ]
+ *
+ * A bundle with no variances is fine; it indicates there are no possible values for the expression.
  */
 class Bundle<T : Any> private constructor(
     val ind: Indicator<T>,
@@ -49,15 +59,6 @@ class Bundle<T : Any> private constructor(
                 bundle.ind,
                 setOf(
                     ConstrainedVariances.new(bundle, Constraints.completelyUnconstrained())
-                )
-            )
-        }
-
-        fun <T : Any> constrained(variances: Variances<T>, constraints: Constraints): Bundle<T> {
-            return Bundle(
-                variances.ind,
-                setOf(
-                    ConstrainedVariances.new(variances, constraints)
                 )
             )
         }
@@ -100,6 +101,10 @@ class Bundle<T : Any> private constructor(
             val constraintsStr = constraintsToPrint.joinToString { "${it.key}[${it.value}]" }
             return "(${variancesStr} | $constraintsStr)"
         }
+    }
+
+    fun isEmpty(): Boolean {
+        return variances.isEmpty() || variances.all { it.constraints.unreachable }
     }
 
     override fun toString(): String {
@@ -227,17 +232,9 @@ class Bundle<T : Any> private constructor(
         return listOut
     }
 
-    /**
-     * The expression you provide is converted into a set of constraints and then
-     * combined with this bundle set.
-     */
-    fun constrainWith(scope: ExprEvaluate.Scope): Bundle<T> {
-        if (scope.isUnconstrained()) {
-            return this
-        }
-
+    fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Bundle<T> {
         return Bundle(ind, variances.flatMap { bundle ->
-            scope.constraints.map { constraint ->
+            constraints.pile.map { constraint ->
                 ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))
             }
         }.toSet())
