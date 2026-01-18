@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
  * NOTE: The bundle's values are not necessarily mutually exclusive and should be considered
  * OR'd together. Take, for example,
  * ```
+ * x = 0;
  * if (a > 5 || (a > 10 && b > 15)) {
  *      x = 5;
  * }

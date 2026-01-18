@@ -841,6 +841,28 @@ public class MyTestData {
 		return (short) (a + b);
 	}
 	
+	@RequiredScore(1.0)
+	public static short challenge3(short x) {
+		int a = x % 100;
+		int b = x % 99;
+		int c = 0;
+		if (a > 5 || (a > 3 && b > 15)) {
+			c = 8;
+		} else {
+			c = 2;
+		}
+		
+		if (a > 5) {
+			return (short) c;
+		}
+		
+		if (a > 3 && b > 15) {
+			return (short) (c + 1);
+		}
+		
+		return -5;
+	}
+	
 	@RequiredScore(0.4)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	@ExpectedExpressionSize(207)
