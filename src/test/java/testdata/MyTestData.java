@@ -522,6 +522,18 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(17)
+	public static short chainedConstraintTest3(short x) {
+		int a = 0;
+		
+		if (x > x * 5 && x > 5) {
+			a = x;
+		}
+		
+		return (short) (a);
+	}
+	
+	@RequiredScore(1.0)
 	@ExpectedExpressionSize(29)
 	public static short intelliJTest1(short x) {
 		int a = 0;

@@ -27,9 +27,9 @@ class Tracer(
 
     fun getTrace(): String {
         return if (likelyCompromised) {
-            evaluatedStrings[emptyList()]!! + "\nThis trace will likely be inaccurate " +
-                    "if you've performed any instruction-pointer-moving debugging. Checks-disabled tracing was enabled " +
-                    "because the TEST_FILTER environment variable was set to 'go'."
+            evaluatedStrings[emptyList()]!! + "\nThe tracer's sanity checks were disabled because the TEST_FILTER" +
+                    " environment variable was set to 'go',\nso this trace will likely be inaccurate " +
+                    "if you've performed any instruction-pointer-moving debugging."
         } else {
             evaluatedStrings[emptyList()]!!
         }

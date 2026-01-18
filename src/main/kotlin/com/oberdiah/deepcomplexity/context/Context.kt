@@ -49,10 +49,22 @@ class Context private constructor(
          */
         fun combine(lhs: Context, rhs: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
             assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
+
             return Context(
                 InnerCtx.combine(
                     lhs.inner, rhs.inner,
-                    { lhs, rhs -> how(lhs, rhs).castToContext() },
+                    { lhs, rhs ->
+                        if (lhs == rhs) {
+                            lhs
+                        } else {
+                            // This situation isn't ideal if dynamic variables are referenced on both sides —
+                            // we may end up unnecessarily wrapping expressions twice, once here and once
+                            // in the dynamic section.
+                            // Unfortunately, we can't really help it as both static sides need to reference the same
+                            // dynamic expression unless we're prepared for a large change in how things work.
+                            how(lhs, rhs).castToContext()
+                        }
+                    },
                     { vars1, vars2 ->
                         Vars.combine(vars1, vars2) { expr1, expr2 ->
                             how(expr1, expr2)

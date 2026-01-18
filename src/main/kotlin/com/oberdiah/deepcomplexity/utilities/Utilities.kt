@@ -451,6 +451,8 @@ object Utilities {
         throw NotImplementedError(reason)
     }
 
+    fun doNothing(any: Any) = Unit
+
     fun <T> List<T>.startsWith(other: List<T>): Boolean {
         return this.subList(0, other.size) == other
     }

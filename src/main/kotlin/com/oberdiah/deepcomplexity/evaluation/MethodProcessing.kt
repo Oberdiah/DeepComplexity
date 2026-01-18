@@ -16,6 +16,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.utilities.Utilities
+import com.oberdiah.deepcomplexity.utilities.Utilities.doNothing
 import com.oberdiah.deepcomplexity.utilities.Utilities.getThisType
 import com.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
@@ -130,7 +131,6 @@ object MethodProcessing {
                 val falseBranchContext = ifContext.copy()
                 psi.elseBranch?.let { processPsiStatement(it, falseBranchContext) }
 
-                // In the non-clone, non-stacking case, the static result can end up
                 val combined = Context.combine(trueBranchContext.c, falseBranchContext.c) { a, b ->
                     IfExpr.new(a, b, condition)
                 }
@@ -141,7 +141,7 @@ object MethodProcessing {
                     context.stack(combined)
                 }
                 // Just for debugging
-                context
+                doNothing(context)
             }
 
             is PsiConditionalExpression -> {
@@ -213,7 +213,7 @@ object MethodProcessing {
                 val loopedContext = LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
 
                 context.stack(loopedContext)
-                context
+                doNothing(context)
                 TODO("Not completed.")
             }
 
@@ -536,29 +536,31 @@ object MethodProcessing {
             val rhsContext = context.copy()
             val rhs = processPsiExpression(rhsPsi, rhsContext).castToBoolean()
 
-            /**
-             * Effectively operate as an if statement here, where the condition is the lhs.
-             * Then we either place the rhs in the 'then' branch or the 'else' branch
-             * depending on the boolean operation.
-             *
-             * `var foo = doFoo() && doBar()`
-             * becomes
-             * `var foo = doFoo() ? doBar() : false`
-             * and
-             * `var foo = doFoo() || doBar()`
-             * becomes
-             * `var foo = doFoo() ? true : doBar()`
-             */
-            context.c = when (booleanOp) {
-                BooleanOp.AND -> {
-                    Context.combine(rhsContext.c, context.copy().c) { a, b ->
-                        IfExpr.new(a, b, lhs)
+            if (rhsContext != context) {
+                /**
+                 * Effectively operate as an if statement here, where the condition is the lhs.
+                 * Then we either place the rhs in the 'then' branch or the 'else' branch
+                 * depending on the boolean operation.
+                 *
+                 * `var foo = doFoo() && doBar()`
+                 * becomes
+                 * `var foo = doFoo() ? doBar() : false`
+                 * and
+                 * `var foo = doFoo() || doBar()`
+                 * becomes
+                 * `var foo = doFoo() ? true : doBar()`
+                 */
+                context.c = when (booleanOp) {
+                    BooleanOp.AND -> {
+                        Context.combine(rhsContext.c, context.copy().c) { a, b ->
+                            IfExpr.new(a, b, lhs)
+                        }
                     }
-                }
 
-                BooleanOp.OR -> {
-                    Context.combine(context.copy().c, rhsContext.c) { a, b ->
-                        IfExpr.new(a, b, lhs)
+                    BooleanOp.OR -> {
+                        Context.combine(context.copy().c, rhsContext.c) { a, b ->
+                            IfExpr.new(a, b, lhs)
+                        }
                     }
                 }
             }

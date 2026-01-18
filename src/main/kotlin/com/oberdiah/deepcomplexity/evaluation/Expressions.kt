@@ -280,10 +280,10 @@ class IfExpr<T : Any> private constructor(
 
     companion object {
         /**
-         * Like [new], but perform on-the-fly optimisations. Should only really be used during tree traversal.
+         * Like [new], but doesn't perform on-the-fly optimizations. Should only really be used during tree traversal.
          *
          * A tree replacement traversal relies on the only changes coming from the replacer itself -
-         * if we did our own optimisations, we could end up in a situation where a replacer sees the same
+         * if we did our own optimizations, we could end up in a situation where a replacer sees the same
          * expression more than once.
          *
          * For example,
@@ -297,7 +297,7 @@ class IfExpr<T : Any> private constructor(
          * }
          * ```
          * If we ran the above through an identity replacer it would end up seeing `a` twice. Once when it parsed
-         * the original leaf node, and then again once the inner if was optimised away. This would obviously
+         * the original leaf node, and then again once the inner if was optimized away. This would obviously
          * be incorrect.
          */
         fun <T : Any> newRaw(trueExpr: Expr<T>, falseExpr: Expr<T>, condition: Expr<Boolean>): IfExpr<T> =
