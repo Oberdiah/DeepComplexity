@@ -842,6 +842,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	@ExpectedExpressionSize(74)
 	public static short challenge3(short x) {
 		int a = x % 100;
 		int b = x % 99;
