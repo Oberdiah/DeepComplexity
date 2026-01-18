@@ -9,18 +9,16 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet.*
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
     data class Scope(
         val constraints: ExprConstrain.ConstraintsOrPile = ExprConstrain.ConstraintsOrPile.unconstrained(),
-        val scopesToKeep: Set<Key.ExpressionKey> = setOf(),
-        val supportKeyMap: Map<SupportKey, Expr<*>> = mapOf()
+        val toKeep: Set<Key.ExpressionKey> = setOf(),
+        val supportKeyMap: Map<SupportKey, Expr<*>> = mapOf(),
     ) {
         override fun toString(): String = constraints.toString()
-        fun shouldKeep(key: Key): Boolean = scopesToKeep.contains(key) || !key.isExpr()
+        fun shouldKeep(key: Key): Boolean = toKeep.contains(key) || !key.isExpr()
 
         /**
          * Adds the expression's keys to the scopes we want to keep around.
@@ -31,101 +29,101 @@ object ExprEvaluate {
          */
         fun withScope(expr: Expr<*>): Scope {
             val newScopes = expr.iterateTree().map { it.exprKey }.toSet()
-            return Scope(constraints, scopesToKeep + newScopes, supportKeyMap)
+            return Scope(constraints, toKeep + newScopes, supportKeyMap)
         }
 
         fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Scope {
             return Scope(
                 constraints.and(this.constraints),
-                scopesToKeep,
-                supportKeyMap
+                toKeep,
+                supportKeyMap,
             )
         }
 
         fun withSupport(key: SupportKey, expr: Expr<*>): Scope {
             return Scope(
                 constraints,
-                scopesToKeep,
-                supportKeyMap + (key to expr)
+                toKeep,
+                supportKeyMap + (key to expr),
             )
         }
     }
 
-    /**
-     * We actually process evaluate backwards so that we can keep track of the scope.
-     *
-     * skipSimplify is just used for debug printing, which likes to see the non-reduced version.
-     */
-    fun <T : Any> evaluate(expr: Expr<T>, scope: Scope, skipSimplify: Boolean = false): Bundle<T> {
+    fun <T : Any> evaluate(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
         @Suppress("UNCHECKED_CAST")
         val evaluatedBundle = when (expr.ind) {
             is NumberIndicator<*> -> {
                 // Split into two lines for nicer debugging
                 val castExpr = expr.castToNumbers()
-                evaluateNums(castExpr, scope)
+                evaluateNums(castExpr, scope, tracer)
             }
 
-            is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, scope)
+            is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, scope, tracer)
             BooleanIndicator -> {
                 val castExpr = expr.castToBoolean()
-                evaluateBools(castExpr, scope)
+                evaluateBools(castExpr, scope, tracer)
             }
 
             VarsIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
 
-        return if (skipSimplify) evaluatedBundle else evaluatedBundle.reduceAndSimplify(scope)
+        tracer.trace(expr, evaluatedBundle)
+
+        return evaluatedBundle.reduceAndSimplify(scope)
     }
 
-    private fun <T : Number> evaluateNums(expr: Expr<T>, scope: Scope): Bundle<T> {
+    private fun <T : Number> evaluateNums(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
         val toReturn = when (expr) {
             is ArithmeticExpr -> {
-                val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
-                val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
+                val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs), tracer.leftPath())
+                val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs), tracer.rightPath())
 
                 lhs.arithmeticOperation(rhs, expr.op, expr.exprKey)
             }
 
-            is NegateExpr -> evaluate(expr.expr, scope).negate()
+            is NegateExpr -> evaluate(expr.expr, scope, tracer.onlyPath()).negate()
 
-            else -> evaluateAnythings(expr, scope)
+            else -> evaluateAnythings(expr, scope, tracer)
         }
         return toReturn
     }
 
-    private fun evaluateBools(expr: Expr<Boolean>, scope: Scope): Bundle<Boolean> {
+    private fun evaluateBools(expr: Expr<Boolean>, scope: Scope, tracer: Tracer): Bundle<Boolean> {
         val toReturn = when (expr) {
             is BooleanExpr -> {
-                val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
-                val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
+                val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs), tracer.leftPath())
+                val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs), tracer.rightPath())
 
                 lhs.booleanOperation(rhs, expr.op, expr.exprKey)
             }
 
             is ComparisonExpr<*> -> {
                 fun <T : Any> evalC(expr: ComparisonExpr<T>, scope: Scope): Bundle<Boolean> {
-                    val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs))
-                    val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs))
+                    val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs), tracer.leftPath())
+                    val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs), tracer.rightPath())
 
                     return lhs.comparisonOperation(rhs, expr.comp, expr.exprKey)
                 }
                 evalC(expr, scope)
             }
 
-            is BooleanInvertExpr -> evaluate(expr, scope).booleanInvert()
-            else -> evaluateAnythings(expr, scope)
+            is BooleanInvertExpr -> evaluate(expr, scope, tracer.onlyPath()).booleanInvert()
+            else -> evaluateAnythings(expr, scope, tracer)
         }
 
         return toReturn
     }
 
-    private fun <T : Any> evaluateGenerics(expr: Expr<T>, scope: Scope): Bundle<T> {
-        return evaluateAnythings(expr, scope)
+    private fun <T : Any> evaluateGenerics(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
+        return evaluateAnythings(expr, scope, tracer)
     }
 
-    private fun <T : Any> evaluateAnythings(expr: Expr<T>, scope: Scope): Bundle<T> {
+    private fun <T : Any> evaluateAnythings(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
         val toReturn: Bundle<T> = when (expr) {
-            is UnionExpr -> evaluate(expr.lhs, scope).union(evaluate(expr.rhs, scope))
+            is UnionExpr -> evaluate(expr.lhs, scope, tracer.leftPath()).union(
+                evaluate(expr.rhs, scope, tracer.rightPath())
+            )
+
             is IfExpr -> {
                 // Useful note for future reference:
                 // A good way to think of this is constraints in towards the leaves, bundles back out again.
@@ -141,11 +139,8 @@ object ExprEvaluate {
 
                 val ifCondition = expr.thisCondition
 
-                val condScope = scope.withScope(expr.trueExpr).withScope(expr.falseExpr)
                 var trueScope = scope.withScope(expr.thisCondition).withScope(expr.falseExpr)
                 var falseScope = scope.withScope(expr.thisCondition).withScope(expr.trueExpr)
-
-                val evaluatedCond = evaluate(ifCondition, condScope)
 
                 trueScope = trueScope.constrainWith(
                     ExprConstrain.getConstraints(ifCondition, trueScope)
@@ -154,25 +149,19 @@ object ExprEvaluate {
                     ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
                 )
 
-                val b = evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
-                    when (bundle.collapse(constraints).into()) {
-                        TRUE -> evaluate(expr.trueExpr, trueScope)
-                        FALSE -> evaluate(expr.falseExpr, falseScope)
-                        EITHER -> {
-                            val trueValue = evaluate(expr.trueExpr, trueScope)
-                            val falseValue = evaluate(expr.falseExpr, falseScope)
-                            trueValue.union(falseValue)
-                        }
-
-                        NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
-                    }
+                if (falseScope.constraints.unreachable) {
+                    evaluate(expr.trueExpr, trueScope, tracer.truePath())
+                } else if (trueScope.constraints.unreachable) {
+                    evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                } else {
+                    val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
+                    val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                    trueValue.union(falseValue)
                 }
-
-                b
             }
 
             is TypeCastExpr<*, *> -> {
-                val toCast = evaluate(expr.expr, scope)
+                val toCast = evaluate(expr.expr, scope, tracer.onlyPath())
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 
@@ -187,13 +176,13 @@ object ExprEvaluate {
                 // chain pointer locations. This will result in a bit of an explosion in evaluations.
                 // We may want to re-think that in the future.
                 val newScope = scope.withSupport(expr.supportKey, expr.support)
-                evaluate(expr.expr, newScope.withScope(expr.support))
+                evaluate(expr.expr, newScope.withScope(expr.support), tracer.onlyPath())
             }
 
             is ExpressionChainPointer -> {
                 val replacementExpr = scope.supportKeyMap[expr.supportKey]
                     ?: throw IllegalStateException("No support key found for ${expr.supportKey}")
-                val castResult = evaluate(replacementExpr, scope).cast(expr.ind)
+                val castResult = evaluate(replacementExpr, scope, tracer.onlyPath()).cast(expr.ind)
                     ?: throw IllegalStateException("Could not cast $replacementExpr to ${expr.ind}")
                 castResult
             }

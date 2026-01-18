@@ -124,8 +124,13 @@ object ExprConstrain {
 
             is ComparisonExpr<*> -> {
                 fun <Q : Any> extra(me: ComparisonExpr<Q>): ConstraintsOrPile {
-                    val lhsBundleSet = me.lhs.evaluate(scope)
-                    val rhsBundleSet = me.rhs.evaluate(scope)
+                    // At the moment we don't want these traces to appear in the debug view.
+                    // In future if you do, we'll just need to be sure to create a new tracer.falseConstraints()
+                    // and tracer.trueConstraints() and use those when calling getConstraints from
+                    // the `evaluate` section to keep these separate from the standard evaluations. Currently
+                    // there's nowhere to display that information even if we had it, so we don't bother.
+                    val lhsBundleSet = me.lhs.evaluate(scope, Tracer())
+                    val rhsBundleSet = me.rhs.evaluate(scope, Tracer())
 
                     return lhsBundleSet.generateConstraintsFrom(
                         rhsBundleSet,

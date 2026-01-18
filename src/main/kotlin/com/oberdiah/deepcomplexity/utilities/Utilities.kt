@@ -14,6 +14,7 @@ import kotlin.math.nextDown
 import kotlin.math.nextUp
 import kotlin.reflect.KClass
 
+@Suppress("Unused")
 object Utilities {
     @Suppress("PropertyName")
     data class Globals(
@@ -448,5 +449,9 @@ object Utilities {
     @Suppress("FunctionName")
     fun WONT_IMPLEMENT(reason: String = "This function is intentionally unimplemented."): Nothing {
         throw NotImplementedError(reason)
+    }
+
+    fun <T> List<T>.startsWith(other: List<T>): Boolean {
+        return this.subList(0, other.size) == other
     }
 }

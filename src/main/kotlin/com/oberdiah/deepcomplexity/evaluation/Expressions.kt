@@ -124,8 +124,7 @@ sealed class Expr<T : Any> {
      */
     open fun simplify(): Expr<T> = this
 
-    fun evaluate(scope: ExprEvaluate.Scope): Bundle<T> = ExprEvaluate.evaluate(this, scope)
-    fun dStr(): String = ExprToString.toDebugString(this)
+    fun evaluate(scope: ExprEvaluate.Scope, tracer: Tracer): Bundle<T> = ExprEvaluate.evaluate(this, scope, tracer)
 }
 
 /**
@@ -182,7 +181,7 @@ class VarsExpr private constructor(val vars: DynamicOrStatic = DynamicOrStatic.D
 class ArithmeticExpr<T : Number> private constructor(
     override val lhs: Expr<T>,
     override val rhs: Expr<T>,
-    val op: BinaryNumberOp,
+    val op: BinaryNumberOp
 ) : Expr<T>(), AnyBinaryExpr<T> {
     companion object {
         fun <T : Number> new(lhs: Expr<T>, rhs: Expr<T>, op: BinaryNumberOp): ArithmeticExpr<T> =
