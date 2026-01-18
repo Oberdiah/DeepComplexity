@@ -39,12 +39,14 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
  * [
  *     {bundle: {5}, constraints: {a > 5}},
  *     {bundle: {5}, constraints: {a > 10, b > 15}},
- *     {bundle: {0}, constraints: {who knows}}
+ *     {bundle: {0}, constraints: {a <= 5, a <= 10}} // note that this would simplify
+ *     {bundle: {0}, constraints: {a <= 5, b <= 15}}
  * ]
  *
  * A bundle with no variances is fine; it indicates there are no possible values for the expression.
  */
-class Bundle<T : Any> private constructor(
+@ConsistentCopyVisibility
+data class Bundle<T : Any> private constructor(
     val ind: Indicator<T>,
     val variances: Set<ConstrainedVariances<T>>
 ) {
@@ -235,8 +237,13 @@ class Bundle<T : Any> private constructor(
 
     fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Bundle<T> {
         return Bundle(ind, variances.flatMap { bundle ->
-            constraints.pile.map { constraint ->
-                ConstrainedVariances.new(bundle.variances, bundle.constraints.and(constraint))
+            constraints.pile.flatMap { constraint ->
+                val newConstraints = bundle.constraints.and(constraint)
+                if (newConstraints.unreachable) {
+                    emptyList()
+                } else {
+                    listOf(ConstrainedVariances.new(bundle.variances, newConstraints))
+                }
             }
         }.toSet())
     }

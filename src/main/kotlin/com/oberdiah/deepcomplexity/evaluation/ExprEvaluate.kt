@@ -146,7 +146,7 @@ object ExprEvaluate {
                     ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
                 )
 
-                evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
+                val b = evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
                     when (bundle.collapse(constraints).into()) {
                         TRUE -> evaluate(expr.trueExpr, trueScope)
                         FALSE -> evaluate(expr.falseExpr, falseScope)
@@ -159,6 +159,8 @@ object ExprEvaluate {
                         NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
                     }
                 }
+
+                b
             }
 
             is TypeCastExpr<*, *> -> {
