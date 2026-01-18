@@ -1,6 +1,8 @@
 package com.oberdiah.deepcomplexity.utilities
 
-class MathematicalSet<T> private constructor(
+@ConsistentCopyVisibility
+@Suppress("Unused")
+data class MathematicalSet<T> private constructor(
     private val impl: Impl<T>
 ) : Set<T> by impl {
     override fun toString(): String = impl.toString()

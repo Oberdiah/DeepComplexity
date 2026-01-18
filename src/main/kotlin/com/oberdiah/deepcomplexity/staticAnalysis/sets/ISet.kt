@@ -58,7 +58,7 @@ interface ISet<T : Any> {
      */
     fun comparisonOperation(other: ISet<T>, operation: ComparisonOp): BooleanSet {
         // A default implementation for non-numeric sets that just handles EQ and NE
-        if (operation != ComparisonOp.EQUAL && operation != ComparisonOp.NOT_EQUAL) {
+        require(operation == ComparisonOp.EQUAL || operation == ComparisonOp.NOT_EQUAL) {
             throw IllegalArgumentException("Only EQ and NE are supported for non-numeric sets")
         }
 
@@ -73,7 +73,6 @@ interface ISet<T : Any> {
         return when (operation) {
             ComparisonOp.EQUAL -> areEqual
             ComparisonOp.NOT_EQUAL -> areEqual.booleanInvert()
-            else -> throw IllegalArgumentException("Only EQ and NE are supported for non-numeric sets")
         }
     }
 }

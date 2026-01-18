@@ -246,17 +246,7 @@ data class NumberVariances<T : Number> private constructor(
         val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isConstant() }
 
         if (allKeys.isEmpty()) {
-            // All we've got is the constants. There's not much constraining we can do here,
-            // but we can still determine whether this is even `satisfiable`.
-            val rhs = other.multipliers[Key.ConstantKey] ?: ind.onlyZeroSet()
-            val lhs = multipliers[Key.ConstantKey] ?: ind.onlyZeroSet()
-            return when (lhs.comparisonOperation(rhs, comparisonOp)) {
-                BooleanSet.TRUE,
-                BooleanSet.EITHER -> constraints
-
-                BooleanSet.FALSE,
-                BooleanSet.NEITHER -> Constraints.unreachable()
-            }
+            return super.generateConstraintsFrom(other, comparisonOp, constraints)
         }
 
         var constraints = constraints

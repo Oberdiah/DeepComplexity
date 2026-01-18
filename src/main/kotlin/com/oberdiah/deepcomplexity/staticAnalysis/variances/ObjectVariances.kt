@@ -2,7 +2,6 @@ package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.Key
-import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
@@ -29,15 +28,6 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
 
     override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<HeapMarker> {
         return this
-    }
-
-    override fun generateConstraintsFrom(
-        other: Variances<HeapMarker>,
-        comparisonOp: ComparisonOp,
-        constraints: Constraints
-    ): Constraints {
-        // We might want to do something more interesting later.
-        return Constraints.completelyUnconstrained()
     }
 
     override fun toDebugString(constraints: Constraints): String = value.toString()

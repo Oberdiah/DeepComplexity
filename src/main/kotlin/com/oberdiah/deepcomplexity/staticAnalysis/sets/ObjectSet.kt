@@ -12,7 +12,8 @@ import com.oberdiah.deepcomplexity.utilities.MathematicalSet
  * Doesn't track the values of the fields in the object, just which one out of several
  * possible objects it could be.
  */
-class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>, override val ind: ObjectIndicator) :
+@ConsistentCopyVisibility
+data class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>, override val ind: ObjectIndicator) :
     ISet<HeapMarker> {
     companion object {
         fun fromConstant(constant: HeapMarker): ObjectSet =

@@ -5,6 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 
@@ -56,5 +57,15 @@ interface Variances<T : Any> {
         other: Variances<T>,
         comparisonOp: ComparisonOp,
         constraints: Constraints
-    ): Constraints
+    ): Constraints {
+        val thisCollapsed = collapse(constraints)
+        val otherCollapsed = other.collapse(constraints)
+        return when (thisCollapsed.comparisonOperation(otherCollapsed, comparisonOp)) {
+            BooleanSet.TRUE,
+            BooleanSet.EITHER -> constraints
+
+            BooleanSet.FALSE,
+            BooleanSet.NEITHER -> Constraints.unreachable()
+        }
+    }
 }

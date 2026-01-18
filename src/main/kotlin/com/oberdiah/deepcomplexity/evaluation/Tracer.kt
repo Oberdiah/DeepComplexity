@@ -25,7 +25,17 @@ class Tracer(
     private fun direction(direction: Direction): Tracer =
         Tracer(path + direction, evaluatedStrings)
 
-    fun getTrace(): String = evaluatedStrings[emptyList()]!!
+    fun getTrace(): String {
+        return if (likelyCompromised) {
+            evaluatedStrings[emptyList()]!! + "\nThis trace will likely be inaccurate " +
+                    "if you've performed any instruction-pointer-moving debugging. Checks-disabled tracing was enabled " +
+                    "because the TEST_FILTER environment variable was set to 'go'."
+        } else {
+            evaluatedStrings[emptyList()]!!
+        }
+    }
+
+    private val likelyCompromised: Boolean get() = System.getenv("TEST_FILTER") == "go"
 
     fun trace(expr: Expr<*>, bundle: Bundle<*>) {
         fun getStr(direction: Direction, fallback: Expr<*>): String {
@@ -36,8 +46,10 @@ class Tracer(
 
         val myResult = "<| ${bundle.toDebugString()} |>"
 
-        require(path !in evaluatedStrings) {
-            "Path already evaluated: $path"
+        if (!likelyCompromised) {
+            require(path !in evaluatedStrings) {
+                "Path already evaluated: $path"
+            }
         }
 
         evaluatedStrings[path] = when (expr) {

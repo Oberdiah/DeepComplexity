@@ -9,6 +9,8 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
@@ -139,8 +141,11 @@ object ExprEvaluate {
 
                 val ifCondition = expr.thisCondition
 
+                val condScope = scope.withScope(expr.trueExpr).withScope(expr.falseExpr)
                 var trueScope = scope.withScope(expr.thisCondition).withScope(expr.falseExpr)
                 var falseScope = scope.withScope(expr.thisCondition).withScope(expr.trueExpr)
+
+                val evaluatedCond = evaluate(ifCondition, condScope, tracer.onlyPath())
 
                 trueScope = trueScope.constrainWith(
                     ExprConstrain.getConstraints(ifCondition, trueScope)
@@ -149,15 +154,36 @@ object ExprEvaluate {
                     ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
                 )
 
-                if (falseScope.constraints.unreachable) {
-                    evaluate(expr.trueExpr, trueScope, tracer.truePath())
-                } else if (trueScope.constraints.unreachable) {
-                    evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                if (true) {
+                    if (falseScope.constraints.unreachable) {
+                        evaluate(expr.trueExpr, trueScope, tracer.truePath())
+                    } else if (trueScope.constraints.unreachable) {
+                        evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                    } else {
+                        val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
+
+                        ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
+
+                        val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                        trueValue.union(falseValue)
+                    }
                 } else {
-                    val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
-                    val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
-                    trueValue.union(falseValue)
+                    val b = evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
+                        when (bundle.collapse(constraints).into()) {
+                            BooleanSet.TRUE -> evaluate(expr.trueExpr, trueScope, tracer.truePath())
+                            BooleanSet.FALSE -> evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                            BooleanSet.EITHER -> {
+                                val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
+                                val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                                trueValue.union(falseValue)
+                            }
+
+                            BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
+                        }
+                    }
+                    b
                 }
+
             }
 
             is TypeCastExpr<*, *> -> {

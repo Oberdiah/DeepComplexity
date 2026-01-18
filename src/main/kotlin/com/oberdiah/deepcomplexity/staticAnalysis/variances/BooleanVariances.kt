@@ -2,7 +2,6 @@ package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.BooleanOp
-import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
@@ -31,15 +30,6 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
 
     override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<Boolean> {
         return this
-    }
-
-    override fun generateConstraintsFrom(
-        other: Variances<Boolean>,
-        comparisonOp: ComparisonOp,
-        constraints: Constraints
-    ): Constraints {
-        // We could make this much more complex in the future, for now we'll just do nothing.
-        return constraints
     }
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
