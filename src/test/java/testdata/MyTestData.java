@@ -4,8 +4,7 @@ import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
 import com.oberdiah.deepcomplexity.GoodEnough;
 import com.oberdiah.deepcomplexity.RequiredScore;
 
-import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_MULTIPLICATION;
-import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.GAPS_FROM_POWERS;
+import static com.oberdiah.deepcomplexity.GoodEnough.GoodEnoughReason.*;
 
 @SuppressWarnings("ALL")
 public class MyTestData {
@@ -939,11 +938,13 @@ public class MyTestData {
 		}
 	}
 	
+	@GoodEnough(REQUIRES_KNOWLEDGE_OF_MODULUS)
+	@RequiredScore(0.8824)
 	@ExpectedExpressionSize(19)
 	public static short modulo4(short x) {
-		int a = x % 100;
-		if (x < 100 || x > 100) {
-			a = x % 90;
+		int a = x % 8;
+		if (x == 5) {
+			a = x % 10;
 		}
 		
 		return (short) a;
