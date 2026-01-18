@@ -146,6 +146,7 @@ object TestUtilities {
     }
 
     private fun getMethodScore(method: Method, testInfo: SimpleMustPassTest.TestInfo): MethodScoreResults {
+        val contextStartTime = System.nanoTime()
         val returnValue = try {
             MethodProcessing.getMethodContext(testInfo.psiMethod)
         } catch (e: Throwable) {
@@ -161,9 +162,13 @@ object TestUtilities {
                     .replace("An operation is not implemented: ", ""),
             )
         }.returnValue!!.optimise()
+        println("\tMethod processing took ${(System.nanoTime() - contextStartTime) / 1_000_000}ms")
 
         val range = try {
+            val evaluationStartTime = System.nanoTime()
             val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope())
+            println("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
+
             // Must come after the `evaluate` call.
             println((returnValue.dStr()).prependIndent())
 
