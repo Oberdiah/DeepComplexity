@@ -53,10 +53,22 @@ object StaticExpressionAnalysis {
         }
 
         val optimised = when (comp) {
-            ComparisonOp.LESS_THAN -> null
-            ComparisonOp.LESS_THAN_OR_EQUAL -> null
-            ComparisonOp.GREATER_THAN -> null
-            ComparisonOp.GREATER_THAN_OR_EQUAL -> null
+            ComparisonOp.LESS_THAN,
+            ComparisonOp.GREATER_THAN -> {
+                if (lhs == rhs) {
+                    return ConstExpr.FALSE
+                }
+                null
+            }
+
+            ComparisonOp.LESS_THAN_OR_EQUAL,
+            ComparisonOp.GREATER_THAN_OR_EQUAL -> {
+                if (lhs == rhs) {
+                    return ConstExpr.TRUE
+                }
+                null
+            }
+
             ComparisonOp.EQUAL -> {
                 if (rhs == lhs) {
                     return ConstExpr.TRUE

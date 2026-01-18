@@ -68,9 +68,9 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(12)
 	public static short test6(short x) {
-		if (x > x) {
+		if (x > x + 0) {
 			return 1;
 		} else {
 			return 0;
@@ -90,9 +90,9 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(14)
 	public static short test8(short x) {
-		int q = 0;
+		int q = 0 + 0;
 		if (q++ > 0) {
 			return (short) q;
 		}
@@ -120,9 +120,9 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(101)
+	@ExpectedExpressionSize(143)
 	public static short test11(short x) {
-		int q = 0;
+		int q = 0 + 0;
 		if ((q++ > 0) && (q++ > 1) && (q++ > 2)) {
 			return (short) q;
 		}
@@ -929,26 +929,36 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(16)
 	public static short modulo3(short x) {
 		int a = x % 100;
-		if (a > a) {
+		if (a > a + 0) {
 			return 1;
 		} else {
 			return 0;
 		}
 	}
 	
-	@RequiredScore(1.0)
-	@ExpectedExpressionSize(42)
+	@ExpectedExpressionSize(19)
 	public static short modulo4(short x) {
 		int a = x % 100;
 		if (x < 100 || x > 100) {
 			a = x % 90;
 		}
 		
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(44)
+	public static short modulo5(short x) {
+		int a = x % 100;
+		if (x < 100 || x > 100) {
+			a = x % 90;
+		}
+		
 		int b = a;
-		int c = a;
+		int c = a + 0;
 		if (b > c) {
 			return 1;
 		} else {
@@ -956,11 +966,11 @@ public class MyTestData {
 		}
 	}
 	
-	@ExpectedExpressionSize(24)
+	@ExpectedExpressionSize(28)
 	@RequiredScore(1.0)
 	public static short twoVars1(short x) {
 		int b = x % 100;
-		int a = x % 100;
+		int a = x % 100 + 0;
 		
 		if (a < b && a > b) {
 			return 1;
@@ -1035,10 +1045,10 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(21)
 	public static short twoVars7(short x) {
 		int b = x % 100;
-		int a = x % 100;
+		int a = x % 100 + 0;
 		
 		if (a > b) {
 			return (short) a;
@@ -1985,7 +1995,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(19)
+	@ExpectedExpressionSize(10)
 	public static short shortCircuit6(short x) {
 		int q = 0;
 		if (x > 0) {
