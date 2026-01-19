@@ -121,7 +121,7 @@ object ExprTreeRebuilder {
                             }
                         }
 
-                        ExpressionChainPointer(support.first, support.second.ind)
+                        ExpressionChainPointer.new(support.first, support.second.ind)
                     } else {
                         replacer(e, innerInCondition)
                     }
@@ -129,7 +129,7 @@ object ExprTreeRebuilder {
 
                 for ((_, pair) in supports) {
                     val (supportKey, support) = pair
-                    newExpr = ExpressionChain(supportKey, support, newExpr)
+                    newExpr = ExpressionChain.new(supportKey, support, newExpr)
                 }
 
                 newExpr

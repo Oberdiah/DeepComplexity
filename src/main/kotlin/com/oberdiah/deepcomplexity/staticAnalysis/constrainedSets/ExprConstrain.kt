@@ -76,7 +76,7 @@ object ExprConstrain {
 
             is ExpressionChain -> {
                 val newScope = scope.withSupport(expr.supportKey, expr.support)
-                ExpressionChain(expr.supportKey, expr.support, expr.expr.inverted(newScope))
+                ExpressionChain.new(expr.supportKey, expr.support, expr.expr.inverted(newScope))
             }
 
             is ExpressionChainPointer -> {

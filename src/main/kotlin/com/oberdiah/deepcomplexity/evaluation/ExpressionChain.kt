@@ -16,12 +16,15 @@ data class SupportKey(private val id: Int, private val displayName: String) {
  * Prevent a massive combinatorial explosion by creating a support expression that can be referenced
  * multiple times in the primary expression.
  */
-class ExpressionChain<T : Any>(
+class ExpressionChain<T : Any> private constructor(
     val supportKey: SupportKey,
     val support: Expr<*>,
     val expr: Expr<T>,
 ) : Expr<T>() {
     companion object {
+        fun <T : Any> new(supportKey: SupportKey, support: Expr<*>, expr: Expr<T>): ExpressionChain<T> =
+            ExprPool.create(supportKey, support, expr)
+
         fun <T : Any> swapInplaceWithChain(
             expr: Expr<T>,
             ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
@@ -61,12 +64,12 @@ class ExpressionChain<T : Any>(
             val replacedExpr = ExprTreeRebuilder.rebuildTree(expr, ifTraversal) { oldExpr ->
                 val newExpr = replacerCache[oldExpr] ?: return@rebuildTree oldExpr
                 chainsToGenerate[newExpr]?.let {
-                    ExpressionChainPointer(it, newExpr.ind)
+                    ExpressionChainPointer.new(it, newExpr.ind)
                 } ?: newExpr
             }
 
             return chainsToGenerate.entries.fold(replacedExpr) { acc, (expr, key) ->
-                ExpressionChain(key, expr, acc)
+                new(key, expr, acc)
             }
         }
     }
@@ -76,6 +79,14 @@ class ExpressionChain<T : Any>(
     override val ind: Indicator<T> = expr.ind
 }
 
-class ExpressionChainPointer<T : Any>(val supportKey: SupportKey, override val ind: Indicator<T>) : Expr<T>() {
+class ExpressionChainPointer<T : Any> private constructor(
+    val supportKey: SupportKey,
+    override val ind: Indicator<T>
+) : Expr<T>() {
+    companion object {
+        fun <T : Any> new(supportKey: SupportKey, ind: Indicator<T>): ExpressionChainPointer<T> =
+            ExprPool.create(supportKey, ind)
+    }
+
     override fun parts(): List<Any> = listOf(supportKey)
 }
