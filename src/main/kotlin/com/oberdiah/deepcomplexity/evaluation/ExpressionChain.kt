@@ -32,6 +32,18 @@ class ExpressionChain<T : Any> private constructor(
         ): Expr<T> =
             rebuildTreeWithChain(expr, ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(expr.ind)
 
+        fun withChainsAtBottom(expr: Expr<*>): Expr<*> {
+            val removed = mutableListOf<ExpressionChain<*>>()
+            val newExpr = expr.replaceTypeInTree<ExpressionChain<*>> { expr ->
+                removed.add(expr)
+                expr.expr
+            }
+
+            return removed.fold(newExpr) { acc, chain ->
+                new(chain.supportKey, chain.support, acc)
+            }
+        }
+
         /**
          * The best way to create a new chain - you provide an expression you're performing substitution on,
          * and how to perform it, and we'll perform the substitution throughout the tree.
@@ -44,13 +56,26 @@ class ExpressionChain<T : Any> private constructor(
             ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
             replacer: (Expr<*>) -> Expr<*>
         ): Expr<*> {
+//            val expr = withChainsAtBottom(expr)
+
+            // The plan for next time:
+            // We're going to start pulling chains down to the roots of expressions, in big piles
+            // That's going to be a key part of this rebuilding process, we're going to make sure we always
+            // pull chains to the bottom.
+            // Then we're going to write some code to build a list of everything we've generated chains for
+            // thus far
+            // Then we're going to use that to potentially add to those existing chains rather than
+            // making new ones.
+
             // OldExpr -> NewExpr
             val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
             // NewExpr -> Count
             val replacementCounts = mutableMapOf<Expr<*>, Int>()
 
             expr.iterateTree(ifTraversal).forEach { oldExpr ->
-                val newExpr = replacerCache.getOrPut(oldExpr) { replacer(oldExpr) }
+                val newExpr = replacerCache.getOrPut(oldExpr) {
+                    replacer(oldExpr)
+                }
                 if (newExpr != oldExpr) {
                     replacementCounts[newExpr] = (replacementCounts[newExpr] ?: 0) + 1
                 }

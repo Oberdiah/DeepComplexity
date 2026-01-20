@@ -84,13 +84,17 @@ sealed class Expr<T : Any> {
      * it replaces it with the result of calling [replacement] on it. If [replacement] returns null,
      * it will skip the replacement.
      *
+     * Exactly the same as [replaceTypeInTree], but imposes the constraint that each expression's indicator must not change
+     * after replacement, which in turn guarantees that the result will be of the same type as the original.
      * [replacement] must return an expression with the same indicator as it consumes. If you don't want
      * that constraint, use [replaceTypeInTree] instead.
+     *
      */
     inline fun <reified Q> swapInplaceTypeInTree(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacement: (Q) -> Expr<*>?
     ): Expr<T> {
+//        return ExpressionChain.swapInplaceWithChain(this, ifTraversal) { expr: Expr<*> ->
         return ExprTreeRebuilder.swapInplaceInTree(this, ifTraversal) { expr: Expr<*> ->
             if (expr is Q) {
                 replacement(expr) ?: expr
@@ -100,6 +104,19 @@ sealed class Expr<T : Any> {
         }
     }
 
+    /**
+     * Iterates over the entire tree, allowing you to replace any expression with a new one.
+     * Verifies that the new expression is valid in whatever slot it goes in to, but it doesn't need to be the same
+     * type as the original.
+     *
+     * This performs a post-order traversal (leaves-first replacement) of the tree. This means children are
+     * always fully replaced before their parents, and parents operate on the results of their children's
+     * replacements.
+     *
+     * This can be helpful for optimizations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
+     *
+     * [ifTraversal]: What to do when encountering an IfExpr.
+     */
     inline fun <reified Q> replaceTypeInTree(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacement: (Q) -> Expr<*>?

@@ -48,9 +48,13 @@ object ExprTreeRebuilder {
         rebuildTree(expr, ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(expr.ind)
 
     /**
-     * Iterates over the entire tree, allowing you to replace any expression with a new one.
-     * Verifies that the new expression is valid in whatever slot it goes in to, but it doesn't need be the same
+     * Iterates over the tree, allowing you to replace any expression with a new one.
+     * Verifies that the new expression is valid in whatever slot it goes in to, but it doesn't need to be the same
      * type as the original.
+     *
+     * [replacer] must always return the same expression for the same input within the same call.
+     * You should not rely on [rebuildTree] calling [replacer] on every expression in the tree, it may cache and
+     * re-use results to avoid re-evaluation.
      *
      * This performs a post-order traversal (leaves-first replacement) of the tree. This means children are
      * always fully replaced before their parents, and parents operate on the results of their children's
@@ -106,6 +110,10 @@ object ExprTreeRebuilder {
                 // A map from whether we're in a condition to the support expression for that condition.
                 val supports = mutableMapOf<Boolean, Pair<SupportKey, Expr<*>>>()
 
+                // So this is a nightmare because we may be in a situation where we request to rebuild
+                // the branches of an if, but not its condition. In such a case, it's possible that a chain's
+                // pointers span both. In that case we need to split the expression chain in half — one to
+                // support the pointers in the conditions and one to support the pointers in the branches.
                 var newExpr = rebuildTreeInner(expr.expr, isInCondition) { e, innerInCondition ->
                     if (e is ExpressionChainPointer && e.supportKey == expr.supportKey) {
                         var support = supports[innerInCondition]
