@@ -120,7 +120,7 @@ class Context private constructor(
             InnerCtx.combine(
                 inner, otherInner,
                 { thisExpr, otherExpr ->
-                    thisExpr.swapInplaceTypeInTree<VarsExpr> {
+                    thisExpr.replaceTypeInTreeMaintainType<VarsExpr> {
                         when (it.vars) {
                             VarsExpr.DynamicOrStatic.Dynamic -> otherExpr
                             is VarsExpr.DynamicOrStatic.Static -> it

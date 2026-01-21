@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.replaceInTree
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
@@ -86,8 +87,8 @@ class ExpressionChain<T : Any> private constructor(
                 .filterValues { it > 1 }
                 .mapValues { SupportKey.new("Chained") }
 
-            val replacedExpr = ExprTreeRebuilder.rebuildTree(expr, ifTraversal) { oldExpr ->
-                val newExpr = replacerCache[oldExpr] ?: return@rebuildTree oldExpr
+            val replacedExpr = expr.replaceInTree(ifTraversal) { oldExpr ->
+                val newExpr = replacerCache[oldExpr] ?: return@replaceInTree oldExpr
                 chainsToGenerate[newExpr]?.let {
                     ExpressionChainPointer.new(it, newExpr.ind)
                 } ?: newExpr

@@ -1,7 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.UnknownKey
-import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rebuildTree
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.replaceInTree
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
@@ -37,24 +37,19 @@ object ExprTreeRebuilder {
     }
 
     /**
-     * Exactly the same as [rebuildTree], but imposes the constraint that each expression's indicator must not change
+     * Exactly the same as [replaceInTree], but imposes the constraint that each expression's indicator must not change
      * after replacement, which in turn guarantees that the result will be of the same type as the original.
      */
-    fun <T : Any> swapInplaceInTree(
-        expr: Expr<T>,
+    fun <T : Any> Expr<T>.replaceInTreeMaintainType(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<T> =
-        rebuildTree(expr, ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(expr.ind)
+        this.replaceInTree(ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(this.ind)
 
     /**
      * Iterates over the tree, allowing you to replace any expression with a new one.
      * Verifies that the new expression is valid in whatever slot it goes in to, but it doesn't need to be the same
      * type as the original.
-     *
-     * [replacer] must always return the same expression for the same input within the same call.
-     * You should not rely on [rebuildTree] calling [replacer] on every expression in the tree, it may cache and
-     * re-use results to avoid re-evaluation.
      *
      * This performs a post-order traversal (leaves-first replacement) of the tree. This means children are
      * always fully replaced before their parents, and parents operate on the results of their children's
@@ -62,13 +57,17 @@ object ExprTreeRebuilder {
      *
      * This can be helpful for optimizations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
      *
+     * **Notes of caution**:
+     *  - [replacer] must always return the same expression given the same input within the same call.
+     *  - You should not rely on [replaceInTree] calling [replacer] on every expression in the tree, it may cache and
+     * re-use results to avoid re-evaluation.
+     *
      * [ifTraversal]: What to do when encountering an IfExpr.
      */
-    fun rebuildTree(
-        expr: Expr<*>,
+    fun <T : Any> Expr<T>.replaceInTree(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
-    ): Expr<*> = rebuildTreeInner(expr, false) { e, isInCondition ->
+    ): Expr<*> = rebuildTreeInner(this, false) { e, isInCondition ->
         if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
             replacer(e)
         } else {

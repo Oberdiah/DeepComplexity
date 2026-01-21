@@ -27,9 +27,9 @@ data class Vars(
         Vars(map.mapValues { (key, expr) -> operation.replace(key, expr) })
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        expr.swapInplaceTypeInTree<VariableExpr<*>> { varExpr ->
+        expr.replaceTypeInTreeMaintainType<VariableExpr<*>> { varExpr ->
             varExpr.resolve(this)
-        }.swapInplaceTypeInTree<VarsExpr> { varsExpr ->
+        }.replaceTypeInTreeMaintainType<VarsExpr> { varsExpr ->
             varsExpr.map { vars -> vars.resolveUsing(this) }
         }.optimise()
 
@@ -153,11 +153,11 @@ data class Vars(
             val placeholderQualifierReplacement = key.qualifier
 
             map[key.toPlaceholderKey()]?.let {
-                val replacedExpr = it.swapInplaceTypeInTree<LeafExpr<*>> { expr ->
+                val replacedExpr = it.replaceTypeInTree<LeafExpr<*>> { expr ->
                     when (expr) {
                         placeholderKey -> placeholderKeyReplacement
                         placeholderQualifier -> placeholderQualifierReplacement
-                        else -> null
+                        else -> expr
                     }
                 }
 
