@@ -102,14 +102,14 @@ class InnerCtx private constructor(
     )
 
     fun mapStaticVars(operation: (Vars) -> Vars): InnerCtx = InnerCtx(
-        staticExpr.replaceTypeInTreeMaintainType<VarsExpr> { it.map(operation) },
+        staticExpr.rewriteTypeInTreeSameType<VarsExpr> { it.map(operation) },
         dynamicVars
     )
 
     fun mapAllVars(operation: (Vars) -> Vars): InnerCtx = this.mapStaticVars(operation).mapDynamicVars(operation)
 
     fun forcedStatic(): InnerCtx = InnerCtx(
-        staticExpr.replaceTypeInTreeMaintainType<VarsExpr> {
+        staticExpr.rewriteTypeInTreeSameType<VarsExpr> {
             // !! is safe by init {} check.
             if (it.isDynamic) VarsExpr.new(VarsExpr.DynamicOrStatic.Static(dynamicVars!!)) else it
         },
@@ -119,7 +119,7 @@ class InnerCtx private constructor(
     fun forcedDynamic(): InnerCtx = InnerCtx(
         VarsExpr.new(),
         Vars(keys.associateWith { key ->
-            staticExpr.replaceTypeInTree<VarsExpr> {
+            staticExpr.rewriteTypeInTree<VarsExpr> {
                 getVarsFromVarsExpr(it).get(LValueKey.new(key))
             }
         })

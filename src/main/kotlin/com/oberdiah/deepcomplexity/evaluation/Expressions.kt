@@ -6,8 +6,8 @@ import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
 import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.context.Vars
-import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.replaceInTree
-import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.replaceInTreeMaintainType
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTreeSameType
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
@@ -81,28 +81,32 @@ sealed class Expr<T : Any> {
         mCtx.resolveKnownVariables(this)
 
     /**
-     * Exactly the same as [replaceTypeInTree], but imposes the constraint that each expression's indicator must not change
-     * after replacement, which in turn guarantees that the result will be of the same type as the original.
-     * [replacer] must return an expression with the same indicator as it consumes. If you don't want
-     * that constraint, use [replaceTypeInTree] instead.
+     * Variant of [rewriteTypeInTree] that enforces indicator preservation.
      *
-     * Standard caveats of [replaceInTree] apply.
+     * For every expression of type [Q], [replacer] must return an expression with the same indicator as
+     * its input.
+     *
+     * All traversal and caching behaviour is identical to [rewriteInTree].
      */
-    inline fun <reified Q : Expr<*>> replaceTypeInTreeMaintainType(
+    inline fun <reified Q : Expr<*>> rewriteTypeInTreeSameType(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacer: (Q) -> Expr<*>
-    ): Expr<T> = this.replaceTypeInTree<Q>(ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(this.ind)
+    ): Expr<T> = this.rewriteTypeInTree<Q>(ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }
+        .castOrThrow(this.ind)
 
     /**
-     *  Rebuilds every expression in the tree.
-     *  As it's doing that, whenever it encounters an expression of type [Q], it replaces it with the result of
-     *  calling [replacer] on it. Standard caveats of [replaceInTree] apply.
+     * Variant of [rewriteInTree] that only applies [replacer] to expressions of type [Q].
+     *
+     * Expressions that are not instances of [Q] are left unchanged. Replacements are allowed to change
+     * indicators.
+     *
+     * All traversal and caching behaviour is identical to [rewriteInTree].
      */
-    inline fun <reified Q : Expr<*>> replaceTypeInTree(
+    inline fun <reified Q : Expr<*>> rewriteTypeInTree(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         crossinline replacer: (Q) -> Expr<*>
     ): Expr<*> {
-        return this.replaceInTree(ifTraversal) { expr: Expr<*> ->
+        return this.rewriteInTree(ifTraversal) { expr: Expr<*> ->
             if (expr is Q) {
                 replacer(expr)
             } else {
@@ -114,7 +118,7 @@ sealed class Expr<T : Any> {
     /**
      * Recursively calls [simplify] on every node in the tree, rebuilding the tree as it goes.
      */
-    fun optimise(): Expr<T> = this.replaceInTreeMaintainType { it.simplify() }
+    fun optimise(): Expr<T> = this.rewriteInTreeSameType { it.simplify() }
 
     /**
      * Simplifies the expression if possible.

@@ -27,9 +27,9 @@ data class Vars(
         Vars(map.mapValues { (key, expr) -> operation.replace(key, expr) })
 
     fun <T : Any> resolveKnownVariables(expr: Expr<T>): Expr<T> =
-        expr.replaceTypeInTreeMaintainType<VariableExpr<*>> { varExpr ->
+        expr.rewriteTypeInTreeSameType<VariableExpr<*>> { varExpr ->
             varExpr.resolve(this)
-        }.replaceTypeInTreeMaintainType<VarsExpr> { varsExpr ->
+        }.rewriteTypeInTreeSameType<VarsExpr> { varsExpr ->
             varsExpr.map { vars -> vars.resolveUsing(this) }
         }.optimise()
 
@@ -119,7 +119,7 @@ data class Vars(
 
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueField<*> -> expr.qualifier.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) {
+            is LValueField<*> -> expr.qualifier.rewriteTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) {
                 get(QualifiedFieldKey(it, expr.field))
             }
 
@@ -153,7 +153,7 @@ data class Vars(
             val placeholderQualifierReplacement = key.qualifier
 
             map[key.toPlaceholderKey()]?.let {
-                val replacedExpr = it.replaceTypeInTree<LeafExpr<*>> { expr ->
+                val replacedExpr = it.rewriteTypeInTreeSameType<LeafExpr<*>> { expr ->
                     when (expr) {
                         placeholderKey -> placeholderKeyReplacement
                         placeholderQualifier -> placeholderQualifierReplacement
@@ -218,13 +218,14 @@ data class Vars(
 
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
-            val newValue = qualifierExpr.replaceTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) { expr ->
-                if (expr == resolvesTo) {
-                    rExpr
-                } else {
-                    existingExpr
-                }
-            }.castOrThrow(rExpr.ind)
+            val newValue =
+                qualifierExpr.rewriteTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) { expr ->
+                    if (expr == resolvesTo) {
+                        rExpr
+                    } else {
+                        existingExpr
+                    }
+                }.castOrThrow(rExpr.ind)
 
             // In the simple cases this will just perform a basic assignment, but
             // in reality under the hood it may do other stuff due to aliasing.

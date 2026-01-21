@@ -1,7 +1,7 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.UnknownKey
-import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.replaceInTree
+import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
@@ -37,34 +37,36 @@ object ExprTreeRebuilder {
     }
 
     /**
-     * Exactly the same as [replaceInTree], but imposes the constraint that each expression's indicator must not change
-     * after replacement, which in turn guarantees that the result will be of the same type as the original.
+     * Variant of [rewriteInTree] that enforces indicator preservation.
+     *
+     * For every expression passed to [replacer], the returned expression must have the same indicator
+     * as its input. This constraint is checked at runtime and guarantees that the returned tree has
+     * the same static type as the receiver.
+     *
+     * All traversal and caching behaviour is identical to [rewriteInTree].
      */
-    fun <T : Any> Expr<T>.replaceInTreeMaintainType(
+    fun <T : Any> Expr<T>.rewriteInTreeSameType(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<T> =
-        this.replaceInTree(ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(this.ind)
+        this.rewriteInTree(ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(this.ind)
 
     /**
-     * Iterates over the tree, allowing you to replace any expression with a new one.
-     * Verifies that the new expression is valid in whatever slot it goes in to, but it doesn't need to be the same
-     * type as the original.
+     * Rebuilds the expression tree using a post-order (leaves-first) traversal.
      *
-     * This performs a post-order traversal (leaves-first replacement) of the tree. This means children are
-     * always fully replaced before their parents, and parents operate on the results of their children's
-     * replacements.
+     * Each visited expression may be replaced with another expression that is valid in the same slot.
+     * The replacement is not required to preserve the original expression’s indicator.
      *
-     * This can be helpful for optimizations, e.g. `(1 + 1) * 2` could be resolved to 4 in a single run.
+     * Rewrite results may be cached. As a consequence:
+     *  - [replacer] may be invoked fewer times than there are occurrences in the tree.
+     *  - [replacer] must act as a pure function, with no behavioural change based on external state.
+     *  - You must not rely on occurrence counts or traversal-order side effects.
      *
-     * **Notes of caution**:
-     *  - [replacer] must always return the same expression given the same input within the same call.
-     *  - You should not rely on [replaceInTree] calling [replacer] on every expression in the tree, it may cache and
-     * re-use results to avoid re-evaluation.
+     * Return the same expression to indicate “no change”.
      *
-     * [ifTraversal]: What to do when encountering an IfExpr.
+     * [ifTraversal] controls how IfExpr nodes are traversed.
      */
-    fun <T : Any> Expr<T>.replaceInTree(
+    fun <T : Any> Expr<T>.rewriteInTree(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<*> = rebuildTreeInner(this, false) { e, isInCondition ->
