@@ -104,11 +104,14 @@ object ExprTreeRebuilder {
     private fun <T : Any> Expr<T>.internalRewriteInTree(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
-    ): Expr<*> = rebuildTreeInner(this, false) { e, isInCondition ->
-        if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
-            replacer(e)
-        } else {
-            e
+    ): Expr<*> {
+        val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
+        return rebuildTreeInner(this, false) { e, isInCondition ->
+            if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
+                replacerCache.getOrPut(e) { replacer(e) }
+            } else {
+                e
+            }
         }
     }
 
