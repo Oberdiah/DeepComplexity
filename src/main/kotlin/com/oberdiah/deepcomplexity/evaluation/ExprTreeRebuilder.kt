@@ -153,23 +153,27 @@ object ExprTreeRebuilder {
                 // the branches of an if, but not its condition. In such a case, it's possible that a chain's
                 // pointers span both. In that case we need to split the expression chain in half — one to
                 // support the pointers in the conditions and one to support the pointers in the branches.
+                // We also need to account for the indicator changing, so we'd need to go and update
+                // all of our pointers even if that wasn't the case.
                 var newExpr = rebuildTreeInner(expr.expr, isInCondition) { e, innerInCondition ->
                     // If it's our pointer...
                     if (e is ExpressionChainPointer && e.supportKey == expr.supportKey) {
-                        // ... check if we've encountered a pointer in this situation before...
-                        var support = supports[innerInCondition]
-
-                        if (support == null) {
-                            // ... if not, we perform its rebuild, which we need to do.
-                            // Note to self: This is really inefficient, we end up traversing the support at
-                            // every support location worst-case.
+                        // ... grab the support associated with this condition state.
+                        val support = supports.getOrPut(innerInCondition) {
+                            // At most, we'll only be in this section twice.
                             val newExpr = rebuildTreeInner(expr.support, innerInCondition, replacer)
-                            val otherSupport = supports[!innerInCondition]
-                            if (otherSupport != null && otherSupport.second == newExpr) {
-                                support = otherSupport
+                            if (supports.isEmpty()) {
+                                expr.supportKey.newIdCopy() to newExpr
                             } else {
-                                support = Pair(SupportKey.new("Chain $innerInCondition"), newExpr)
-                                supports[innerInCondition] = support
+                                require(supports.size == 1)
+                                // If the replacement is the same in either branch,
+                                // we don't even need to make two chains.
+                                val otherSupport = supports[!innerInCondition]!!
+                                if (otherSupport.second == newExpr) {
+                                    otherSupport
+                                } else {
+                                    expr.supportKey.branchOff() to newExpr
+                                }
                             }
                         }
 
@@ -177,6 +181,10 @@ object ExprTreeRebuilder {
                     } else {
                         replacer(e, innerInCondition)
                     }
+                }
+
+                if (supports[false] == supports[true]) {
+                    supports.remove(false) // either works
                 }
 
                 for ((_, pair) in supports) {

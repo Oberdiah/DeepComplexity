@@ -9,6 +9,9 @@ data class SupportKey(private val id: Int, private val displayName: String) {
         private var NEXT_ID = 0
         fun new(displayName: String): SupportKey = SupportKey(NEXT_ID++, displayName)
     }
+
+    fun newIdCopy(): SupportKey = new(displayName)
+    fun branchOff(): SupportKey = new("$displayName^")
 }
 
 /**
