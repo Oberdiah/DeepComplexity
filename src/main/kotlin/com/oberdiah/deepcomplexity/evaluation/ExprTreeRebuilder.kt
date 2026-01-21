@@ -69,6 +69,41 @@ object ExprTreeRebuilder {
     fun <T : Any> Expr<T>.rewriteInTree(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
+    ): Expr<*> {
+        // OldExpr -> NewExpr
+        val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
+        // NewExpr -> Count
+        val replacementCounts = mutableMapOf<Expr<*>, Int>()
+
+        iterateTree(ifTraversal).forEach { oldExpr ->
+            val newExpr = replacerCache.getOrPut(oldExpr) {
+                replacer(oldExpr)
+            }
+            if (newExpr != oldExpr) {
+                replacementCounts[newExpr] = (replacementCounts[newExpr] ?: 0) + 1
+            }
+        }
+
+        // Only generate chains for expressions that are used more than once
+        val chainsToGenerate = replacementCounts
+            .filterValues { it > 1 }
+            .mapValues { SupportKey.new("Chained") }
+
+        val replacedExpr = internalRewriteInTree(ifTraversal) { oldExpr ->
+            val newExpr = replacerCache[oldExpr] ?: return@internalRewriteInTree oldExpr
+            chainsToGenerate[newExpr]?.let {
+                ExpressionChainPointer.new(it, newExpr.ind)
+            } ?: newExpr
+        }
+
+        return chainsToGenerate.entries.fold(replacedExpr) { acc, (expr, key) ->
+            ExpressionChain.new(key, expr, acc)
+        }
+    }
+
+    private fun <T : Any> Expr<T>.internalRewriteInTree(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        replacer: (Expr<*>) -> Expr<*>,
     ): Expr<*> = rebuildTreeInner(this, false) { e, isInCondition ->
         if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
             replacer(e)
@@ -116,10 +151,15 @@ object ExprTreeRebuilder {
                 // pointers span both. In that case we need to split the expression chain in half — one to
                 // support the pointers in the conditions and one to support the pointers in the branches.
                 var newExpr = rebuildTreeInner(expr.expr, isInCondition) { e, innerInCondition ->
+                    // If it's our pointer...
                     if (e is ExpressionChainPointer && e.supportKey == expr.supportKey) {
+                        // ... check if we've encountered a pointer in this situation before...
                         var support = supports[innerInCondition]
 
                         if (support == null) {
+                            // ... if not, we perform its rebuild, which we need to do.
+                            // Note to self: This is really inefficient, we end up traversing the support at
+                            // every support location worst-case.
                             val newExpr = rebuildTreeInner(expr.support, innerInCondition, replacer)
                             val otherSupport = supports[!innerInCondition]
                             if (otherSupport != null && otherSupport.second == newExpr) {
@@ -184,5 +224,21 @@ object ExprTreeRebuilder {
         }
 
         return replacer(replacedExpr, isInCondition)
+    }
+
+    fun withChainsAtBottom(expr: Expr<*>): Expr<*> {
+        val removed = mutableSetOf<ExpressionChain<*>>()
+        val newExpr = expr.internalRewriteInTree { expr ->
+            if (expr is ExpressionChain<*>) {
+                removed.add(expr)
+                expr.expr
+            } else {
+                expr
+            }
+        }
+
+        return removed.fold(newExpr) { acc, chain ->
+            ExpressionChain.new(chain.supportKey, chain.support, acc)
+        }
     }
 }

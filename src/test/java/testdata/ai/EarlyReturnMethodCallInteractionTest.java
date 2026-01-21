@@ -320,7 +320,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with overloaded method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(11)
+	@ExpectedExpressionSize(13)
 	public static short earlyReturnOverload(short x) {
 		if (x == 0) {
 			return (short) overloadedMethod(5);

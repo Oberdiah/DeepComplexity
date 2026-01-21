@@ -183,7 +183,7 @@ public class AITestData {
 	
 	// Test 8: Combination of multiplication and conditional boundary
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(29)
+	@ExpectedExpressionSize(25)
 	public static short multiplyAndCompare(short x) {
 		int doubled = x * 2;
 		
@@ -198,7 +198,7 @@ public class AITestData {
 	
 	// Test 10: Mixed arithmetic with potential intermediate overflow
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(70)
+	@ExpectedExpressionSize(55)
 	public static short mixedArithmeticOverflow(short x) {
 		if (x > 120) {
 			return 0;

@@ -231,7 +231,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable state with ternary operator
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(7)
+	@ExpectedExpressionSize(9)
 	public static short ternaryOperator(short x) {
 		int a = 100;
 		int b = 200;
