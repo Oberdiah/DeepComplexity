@@ -29,10 +29,14 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is VarsExpr -> expr.vars.toString()
             is ExpressionChain<*> -> {
-                "${expr.supportKey} = ${expr.support}\n${expr.expr}"
+                "ExpressionChain(\n\tsupportKey = ${
+                    expr.supportKey.toString().prependIndent().trim()
+                }\n\tsupport = ${expr.support.toString().prependIndent().trim()}\n\texpr = ${
+                    expr.expr.toString().prependIndent().trim()
+                }\n)"
             }
 
-            is ExpressionChainPointer<*> -> expr.supportKey.toString()
+            is ExpressionChainPointer<*> -> "ExpressionChainPointer(${expr.supportKey})"
         }
     }
 

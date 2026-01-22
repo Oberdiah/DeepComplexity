@@ -3,7 +3,7 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 data class SupportKey(private val id: Int, private val displayName: String) {
-    override fun toString(): String = "$displayName [$id]"
+    override fun toString(): String = "$displayName$id"
 
     companion object {
         private var NEXT_ID = 0

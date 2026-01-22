@@ -87,7 +87,7 @@ object ExprTreeRebuilder {
         // Only generate chains for expressions that are used more than once
         val chainsToGenerate = replacementCounts
             .filterValues { it > 1 }
-            .mapValues { SupportKey.new("Chained") }
+            .mapValues { SupportKey.new("K") }
 
         val replacedExpr = internalRewriteInTree(ifTraversal) { oldExpr ->
             val newExpr = replacerCache[oldExpr] ?: return@internalRewriteInTree oldExpr
@@ -105,6 +105,8 @@ object ExprTreeRebuilder {
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<*> {
+        // Note to self: This cache could be better still if it cached entire parts of the traversal, not
+        // just the calling of replacer().
         val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
         return rebuildTreeInner(this, false) { e, isInCondition ->
             if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
@@ -146,6 +148,14 @@ object ExprTreeRebuilder {
             )
 
             is ExpressionChain<*> -> {
+                // The REALLY messed up thing about these expression chains is that you can easily end up in
+                // a situation where nothing in your `expr.expr` traversal actually uses your
+                // [ExpressionChainPointer], but you still can't optimize because your pointer could be
+                // used in a `support` of a different chain further up the stack.
+                // This confused me for like 4 hours.
+                // This implementation, as it stands, does not understand that and is technically incorrect.
+                // The fact it works at the moment is a fluke.
+
                 // A map from whether we're in a condition to the support expression for that condition.
                 val supports = mutableMapOf<Boolean, Pair<SupportKey, Expr<*>>>()
 
