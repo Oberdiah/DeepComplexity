@@ -37,7 +37,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with method chaining
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(32)
+	@ExpectedExpressionSize(8)
 	public static short chainingAliasing(short x) {
 		AliasClass obj = new AliasClass(5);
 		chainedModify(obj, obj);
@@ -201,7 +201,7 @@ public class ObjectAliasingMethodTest {
 	
 	// Testing aliasing with synchronized methods
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short synchronizedAliasing(short x) {
 		AliasClass obj = new AliasClass(44);
 		synchronizedModify(obj, obj);

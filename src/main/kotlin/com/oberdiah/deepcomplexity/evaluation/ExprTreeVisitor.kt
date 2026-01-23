@@ -57,15 +57,9 @@ object ExprTreeVisitor {
                 visitor(expr.rhs)
             }
 
-            is ExpressionChain<*> -> {
-                visitor(expr.support)
-                visitor(expr.expr)
-            }
-
             is TypeCastExpr<*, *> -> visitor(expr.expr)
             is VarsExpr -> {}
             is LeafExpr<*> -> {}
-            is ExpressionChainPointer<*> -> {}
         }
     }
 }

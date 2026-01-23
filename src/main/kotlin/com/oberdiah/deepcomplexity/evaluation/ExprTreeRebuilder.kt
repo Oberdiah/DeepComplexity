@@ -70,41 +70,6 @@ object ExprTreeRebuilder {
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<*> {
-        // OldExpr -> NewExpr
-        val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
-        // NewExpr -> Count
-        val replacementCounts = mutableMapOf<Expr<*>, Int>()
-
-        iterateTree(ifTraversal).forEach { oldExpr ->
-            val newExpr = replacerCache.getOrPut(oldExpr) {
-                replacer(oldExpr)
-            }
-            if (newExpr != oldExpr) {
-                replacementCounts[newExpr] = (replacementCounts[newExpr] ?: 0) + 1
-            }
-        }
-
-        // Only generate chains for expressions that are used more than once
-        val chainsToGenerate = replacementCounts
-            .filterValues { it > 1 }
-            .mapValues { SupportKey.new("K") }
-
-        val replacedExpr = internalRewriteInTree(ifTraversal) { oldExpr ->
-            val newExpr = replacerCache[oldExpr] ?: return@internalRewriteInTree oldExpr
-            chainsToGenerate[newExpr]?.let {
-                ExpressionChainPointer.new(it, newExpr.ind)
-            } ?: newExpr
-        }
-
-        return chainsToGenerate.entries.fold(replacedExpr) { acc, (expr, key) ->
-            ExpressionChain.new(key, expr, acc)
-        }
-    }
-
-    private fun <T : Any> Expr<T>.internalRewriteInTree(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
-        replacer: (Expr<*>) -> Expr<*>,
-    ): Expr<*> {
         // Note to self: This cache could be better still if it cached entire parts of the traversal, not
         // just the calling of replacer().
         val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
@@ -116,6 +81,7 @@ object ExprTreeRebuilder {
             }
         }
     }
+
 
     /**
      * [isInCondition]: Whether we're currently inside an if-condition. Once set, this remains true for any
@@ -146,66 +112,6 @@ object ExprTreeRebuilder {
                 expr.ind,
                 expr.explicit
             )
-
-            is ExpressionChain<*> -> {
-                // The REALLY messed up thing about these expression chains is that you can easily end up in
-                // a situation where nothing in your `expr.expr` traversal actually uses your
-                // [ExpressionChainPointer], but you still can't optimize because your pointer could be
-                // used in a `support` of a different chain further up the stack.
-                // This confused me for like 4 hours.
-                // This implementation, as it stands, does not understand that and is technically incorrect.
-                // The fact it works at the moment is a fluke.
-
-                // A map from whether we're in a condition to the support expression for that condition.
-                val supports = mutableMapOf<Boolean, Pair<SupportKey, Expr<*>>>()
-
-                // So this is a nightmare because we may be in a situation where we request to rebuild
-                // the branches of an if, but not its condition. In such a case, it's possible that a chain's
-                // pointers span both. In that case we need to split the expression chain in half — one to
-                // support the pointers in the conditions and one to support the pointers in the branches.
-                // We also need to account for the indicator changing, so we'd need to go and update
-                // all of our pointers even if that wasn't the case.
-                var newExpr = rebuildTreeInner(expr.expr, isInCondition) { e, innerInCondition ->
-                    // If it's our pointer...
-                    if (e is ExpressionChainPointer && e.supportKey == expr.supportKey) {
-                        // ... grab the support associated with this condition state.
-                        val support = supports.getOrPut(innerInCondition) {
-                            // At most, we'll only be in this section twice.
-                            val newExpr = rebuildTreeInner(expr.support, innerInCondition, replacer)
-                            if (supports.isEmpty()) {
-                                expr.supportKey.newIdCopy() to newExpr
-                            } else {
-                                require(supports.size == 1)
-                                // If the replacement is the same in either branch,
-                                // we don't even need to make two chains.
-                                val otherSupport = supports[!innerInCondition]!!
-                                if (otherSupport.second == newExpr) {
-                                    otherSupport
-                                } else {
-                                    expr.supportKey.branchOff() to newExpr
-                                }
-                            }
-                        }
-
-                        ExpressionChainPointer.new(support.first, support.second.ind)
-                    } else {
-                        replacer(e, innerInCondition)
-                    }
-                }
-
-                if (supports[false] == supports[true]) {
-                    supports.remove(false) // either works
-                }
-
-                for ((_, pair) in supports) {
-                    val (supportKey, support) = pair
-                    newExpr = ExpressionChain.new(supportKey, support, newExpr)
-                }
-
-                newExpr
-            }
-
-            is ExpressionChainPointer<*> -> expr
 
             is IfExpr -> {
                 ConversionsAndPromotion.castAToB(
@@ -245,21 +151,5 @@ object ExprTreeRebuilder {
         }
 
         return replacer(replacedExpr, isInCondition)
-    }
-
-    fun withChainsAtBottom(expr: Expr<*>): Expr<*> {
-        val removed = mutableSetOf<ExpressionChain<*>>()
-        val newExpr = expr.internalRewriteInTree { expr ->
-            if (expr is ExpressionChain<*>) {
-                removed.add(expr)
-                expr.expr
-            } else {
-                expr
-            }
-        }
-
-        return removed.fold(newExpr) { acc, chain ->
-            ExpressionChain.new(chain.supportKey, chain.support, acc)
-        }
     }
 }

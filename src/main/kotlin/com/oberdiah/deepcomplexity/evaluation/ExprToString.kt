@@ -28,15 +28,6 @@ object ExprToString {
 
             is VariableExpr -> expr.key.toString()
             is VarsExpr -> expr.vars.toString()
-            is ExpressionChain<*> -> {
-                "ExpressionChain(\n\tsupportKey = ${
-                    expr.supportKey.toString().prependIndent().trim()
-                }\n\tsupport = ${expr.support.toString().prependIndent().trim()}\n\texpr = ${
-                    expr.expr.toString().prependIndent().trim()
-                }\n)"
-            }
-
-            is ExpressionChainPointer<*> -> "ExpressionChainPointer(${expr.supportKey})"
         }
     }
 
@@ -53,8 +44,6 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
-            is ExpressionChain<*> -> "'${toExprKeyString(expr.support)}+${toExprKeyString(expr.expr)}'"
-            is ExpressionChainPointer<*> -> expr.toString()
         }
     }
 }

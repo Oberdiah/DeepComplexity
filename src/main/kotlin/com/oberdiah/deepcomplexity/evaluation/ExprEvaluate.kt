@@ -14,6 +14,18 @@ import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
+    data class SupportKey(private val id: Int, private val displayName: String) {
+        override fun toString(): String = "$displayName$id"
+
+        companion object {
+            private var NEXT_ID = 0
+            fun new(displayName: String): SupportKey = SupportKey(NEXT_ID++, displayName)
+        }
+
+        fun newIdCopy(): SupportKey = new(displayName)
+        fun branchOff(): SupportKey = new("$displayName^")
+    }
+
     data class Scope(
         val constraints: ExprConstrain.ConstraintsOrPile = ExprConstrain.ConstraintsOrPile.unconstrained(),
         val toKeep: Set<Key.ExpressionKey> = setOf(),
@@ -196,22 +208,6 @@ object ExprEvaluate {
 
             is VariableExpr ->
                 Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(scope.constraints)
-
-            is ExpressionChain -> {
-                // Note that at the moment we're leaving the evaluation of the expression itself to each of the
-                // chain pointer locations. This will result in a bit of an explosion in evaluations.
-                // We may want to re-think that in the future.
-                val newScope = scope.withSupport(expr.supportKey, expr.support)
-                evaluate(expr.expr, newScope.withScope(expr.support), tracer.onlyPath())
-            }
-
-            is ExpressionChainPointer -> {
-                val replacementExpr = scope.supportKeyMap[expr.supportKey]
-                    ?: throw IllegalStateException("No support key found for ${expr.supportKey}")
-                val castResult = evaluate(replacementExpr, scope, tracer.onlyPath()).cast(expr.ind)
-                    ?: throw IllegalStateException("Could not cast $replacementExpr to ${expr.ind}")
-                castResult
-            }
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

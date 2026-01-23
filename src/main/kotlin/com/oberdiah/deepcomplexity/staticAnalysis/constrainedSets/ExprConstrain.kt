@@ -1,9 +1,7 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import org.jetbrains.kotlin.preloading.ProfilingInstrumenterExample.a
 import org.jetbrains.kotlin.preloading.ProfilingInstrumenterExample.b
 
@@ -73,18 +71,6 @@ object ExprConstrain {
                 expr.falseExpr.inverted(scope),
                 expr.thisCondition
             )
-
-            is ExpressionChain -> {
-                val newScope = scope.withSupport(expr.supportKey, expr.support)
-                ExpressionChain.new(expr.supportKey, expr.support, expr.expr.inverted(newScope))
-            }
-
-            is ExpressionChainPointer -> {
-                require(expr.ind == BooleanIndicator)
-                val replacementExpr = scope.supportKeyMap[expr.supportKey]
-                    ?: throw IllegalStateException("No support key found for ${expr.supportKey}")
-                replacementExpr.castOrThrow(BooleanIndicator).inverted(scope)
-            }
 
             else -> TODO("Not implemented for $expr")
         }
@@ -175,17 +161,6 @@ object ExprConstrain {
                     )
 
                 getConstraints(convertedToBooleanExpr, scope)
-            }
-
-            is ExpressionChain -> {
-                val newScope = scope.withSupport(condition.supportKey, condition.support)
-                getConstraints(condition.expr, newScope)
-            }
-
-            is ExpressionChainPointer -> {
-                val replacementExpr = scope.supportKeyMap[condition.supportKey]
-                    ?: throw IllegalStateException("No support key found for ${condition.supportKey}")
-                getConstraints(replacementExpr.castOrThrow(BooleanIndicator), scope)
             }
 
             else -> TODO("Not implemented constraints for $condition")

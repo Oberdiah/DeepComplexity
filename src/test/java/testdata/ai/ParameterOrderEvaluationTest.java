@@ -30,7 +30,7 @@ public class ParameterOrderEvaluationTest {
 	
 	// Testing method calls with shared state in parameters
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(18)
 	public static short sharedStateParam(short x) {
 		SharedState state = new SharedState(0);
 		return (short) multiParamSum(state.addAndGet(1), state.addAndGet(2), state.addAndGet(3));
@@ -101,7 +101,7 @@ public class ParameterOrderEvaluationTest {
 	}
 	
 	// Testing parameter order with boolean short-circuit
-	@ExpectedExpressionSize(19)
+	@ExpectedExpressionSize(17)
 	public static short shortCircuitParam(short x) {
 		Counter c = new Counter();
 		booleanMethod(c.increment() > 0 && c.increment() > 0, c.increment() > 0);

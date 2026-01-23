@@ -107,11 +107,6 @@ class Tracer(
             }
 
             is VarsExpr -> "CtxExpr"
-            is ExpressionChain<*> -> {
-                "${expr.supportKey} = ${expr.support}\n${getStr(Direction.Only, expr.expr)}"
-            }
-
-            is ExpressionChainPointer<*> -> expr.supportKey.toString()
         }
     }
 }
