@@ -6,7 +6,7 @@ import com.oberdiah.deepcomplexity.RequiredScore;
 public class EarlyReturnMethodCallInteractionTest {
 	// Testing early return with no method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
+	@ExpectedExpressionSize(8)
 	public static short earlyReturnNoCalls(short x) {
 		if (x > 0) {
 			return 1;
@@ -21,7 +21,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return bypassing method call with side effects
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(11)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnBypassCall(short x) {
 		int result = 5;
 		if (x < 0) {
@@ -37,7 +37,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing multiple early returns with different method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(13)
 	public static short multipleEarlyReturns(short x) {
 		if (x == 0) {
 			return (short) getValue(1);
@@ -68,7 +68,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with recursive method call
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(27)
+	@ExpectedExpressionSize(16)
 	public static short earlyReturnRecursive(short x) {
 		if (x <= 0) {
 			return 0;
@@ -197,7 +197,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with method call returning different types
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
+	@ExpectedExpressionSize(8)
 	public static short earlyReturnDifferentTypes(short x) {
 		if (x > 0) {
 			return (short) (getBoolean() ? 1 : 0);
@@ -320,7 +320,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with overloaded method calls
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(11)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnOverload(short x) {
 		if (x == 0) {
 			return (short) overloadedMethod(5);

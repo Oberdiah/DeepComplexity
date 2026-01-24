@@ -32,7 +32,7 @@ sealed class Expr<T : Any> {
      * expression doesn't exist and gets garbage collected.
      * It's fine for use so long as this Expression object itself still exists, which is why these internal uses are
      * fine, but that's a restriction confusing enough to caution against usage entirely.
-     * If you want something to use as a key, either use [exprKey] or better yet use this object directly as your key.
+     * If you want something as a key, use this object directly.
      */
     var transientInternIdDoNotUse: Long = 0L
 
@@ -68,15 +68,38 @@ sealed class Expr<T : Any> {
         return ExprToString.toString(this)
     }
 
-    fun iterateTree(ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches): Sequence<Expr<*>> =
-        ExprTreeVisitor.iterateTree(this, ifTraversal)
+    /**
+     * Collects all sub-expressions in the tree, including this one.
+     */
+    fun allSubExprs(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches
+    ): Set<Expr<*>> = collectToSet(ifTraversal) { it }
 
-    internal inline fun <reified Q : Expr<*>> iterateTree(ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches): Sequence<Q> =
-        ExprTreeVisitor.iterateTree(this, ifTraversal).filterIsInstance<Q>()
+    fun allLeaves(): Set<LeafExpr<*>> = collectToSet(IfTraversal.BranchesOnly) { it as? LeafExpr<*> }
 
-    fun iterateLeaves(ifTraversal: IfTraversal = IfTraversal.BranchesOnly): Sequence<LeafExpr<T>> =
-        ExprTreeVisitor.iterateTree(this, ifTraversal).filterIsInstance<LeafExpr<T>>()
+    internal inline fun <reified Q : Expr<*>> allSubExprsOfType(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches
+    ): Set<Q> = collectToSet(ifTraversal) { it as? Q }
 
+    fun <O> collectToSet(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        getItem: (Expr<*>) -> O?
+    ): Set<O> {
+        return ExprTreeVisitor.reduce(
+            ifTraversal,
+            this,
+            { expr ->
+                val item = getItem(expr)
+                if (item != null) {
+                    setOf(item)
+                } else {
+                    emptySet()
+                }
+            },
+            { setA, setB -> setA + setB }
+        )
+    }
+    
     fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)
 

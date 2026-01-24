@@ -19,7 +19,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable swapping without temporary
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(6)
 	public static short variableSwap(short x) {
 		int a = 3;
 		int b = 5;
@@ -50,7 +50,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable reassignment chain
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(5)
 	public static short reassignmentChain(short x) {
 		int a = 1;
 		int b = 2;
@@ -63,7 +63,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable dependency tracking
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
+	@ExpectedExpressionSize(3)
 	public static short dependencyTracking(short x) {
 		int a = 10;
 		int b = a;
@@ -103,7 +103,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable modification through operations
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
+	@ExpectedExpressionSize(3)
 	public static short variableModification(short x) {
 		int a = 5;
 		int b = a;
@@ -231,7 +231,7 @@ public class VariableDeclarationTrackingTest {
 	
 	// Testing variable state with ternary operator
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(7)
+	@ExpectedExpressionSize(6)
 	public static short ternaryOperator(short x) {
 		int a = 100;
 		int b = 200;

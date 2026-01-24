@@ -3,8 +3,10 @@ package com.oberdiah.deepcomplexity.context
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
+import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
+import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 data class Vars(
     // Note to self: We got rid of the protections around double-resolving because they were annoying
@@ -206,7 +208,7 @@ data class Vars(
         val field = lExpr.field
 
         val qualifiersMentionedInQualifierExpr: Set<LeafExpr<HeapMarker>> =
-            qualifierExpr.iterateLeaves().toSet()
+            qualifierExpr.allLeaves().mapToSet { it.castToObject() as LeafExpr }
 
         var vars = this
 

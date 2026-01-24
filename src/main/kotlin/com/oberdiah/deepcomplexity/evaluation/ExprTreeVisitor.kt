@@ -1,22 +1,23 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 object ExprTreeVisitor {
-    fun iterateTree(expr: Expr<*>, ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches): Sequence<Expr<*>> {
-        return object : Iterator<Expr<*>> {
-            private val stack = mutableListOf(expr)
+    fun <OUTPUT> reduce(
+        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        initial: Expr<*>,
+        producer: (Expr<*>) -> OUTPUT,
+        combiner: (OUTPUT, OUTPUT) -> OUTPUT,
+    ): OUTPUT {
+        val cache = mutableMapOf<Expr<*>, OUTPUT>()
+        val stack = ArrayDeque(listOf(initial))
 
-            override fun hasNext(): Boolean {
-                return stack.isNotEmpty()
-            }
-
-            override fun next(): Expr<*> {
-                val current = stack.removeAt(stack.size - 1)
-                visitTree(current, ifTraversal) {
-                    stack.add(it)
+        return generateSequence { stack.removeLastOrNull() }
+            .map { e ->
+                cache.getOrPut(e) {
+                    visitTree(e, ifTraversal) { c -> stack.addLast(c) }
+                    producer(e)
                 }
-                return current
             }
-        }.asSequence()
+            .reduce(combiner)
     }
 
     fun visitTree(

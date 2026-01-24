@@ -65,7 +65,7 @@ class InnerCtx private constructor(
 
     init {
         if (dynamicVars == null) {
-            require(staticExpr.iterateTree<VarsExpr>().none { it.isDynamic }) {
+            require(staticExpr.allSubExprsOfType<VarsExpr>().none { it.isDynamic }) {
                 "Static expression contains dynamic references, but dynamicVars is null!"
             }
         }
@@ -92,7 +92,7 @@ class InnerCtx private constructor(
         dynamicVars?.resolveUsing(vars)
     )
 
-    val keys: Set<UnknownKey> = staticExpr.iterateTree<VarsExpr>().flatMap {
+    val keys: Set<UnknownKey> = staticExpr.allSubExprsOfType<VarsExpr>().flatMap {
         getVarsFromVarsExpr(it).keys
     }.toSet()
 

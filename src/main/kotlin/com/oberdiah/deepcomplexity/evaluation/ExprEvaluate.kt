@@ -10,6 +10,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
+import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 object ExprEvaluate {
     data class Scope(
@@ -28,7 +29,7 @@ object ExprEvaluate {
          * any y-specific information you calculate you should keep around as it's going to be used.
          */
         fun withScope(expr: Expr<*>): Scope {
-            val newScopes = expr.iterateTree().map { it.exprKey }.toSet()
+            val newScopes = expr.allSubExprs().mapToSet { it.exprKey }
             return Scope(constraints, toKeep + newScopes, tagsMap)
         }
 

@@ -67,7 +67,7 @@ public class ShortArithmeticWrappingTest {
 	
 	// Testing double overflow wrap
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(7)
 	public static short doubleOverflow(short x) {
 		short val = 32767;
 		return (short) (val + val + 2);
@@ -83,7 +83,7 @@ public class ShortArithmeticWrappingTest {
 	
 	// Testing chain of operations causing wrap
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(6)
 	public static short chainOperationWrap(short x) {
 		short val = 32765;
 		val++;
@@ -109,7 +109,7 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing modulo with wrap values
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(7)
 	public static short moduloWrap(short x) {
 		short val = 32767;
 		return (short) ((val + 2) % 2);

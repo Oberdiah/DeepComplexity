@@ -6,7 +6,7 @@ import com.oberdiah.deepcomplexity.RequiredScore;
 public class OperationEvaluationOrderTest {
 	// Testing short-circuit AND with side effects on left operand
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(7)
 	public static short shortCircuitAndLeft(short x) {
 		int a = 0;
 		boolean result = ++a > 0 && ++a > 1;
@@ -24,7 +24,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing short-circuit OR with side effects on left operand
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(7)
 	public static short shortCircuitOrLeft(short x) {
 		int a = 0;
 		boolean result = ++a > 0 || ++a > 1;
@@ -42,7 +42,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing nested short-circuit evaluation order
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(5)
 	public static short nestedShortCircuit(short x) {
 		int a = 0;
 		boolean result = (++a > 0 && false) || ++a > 1;
@@ -60,7 +60,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing ternary with side effects in condition
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(7)
 	public static short ternaryConditionSideEffect(short x) {
 		int a = 0;
 		int result = ++a > 0 ? ++a : 99;
@@ -76,7 +76,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing assignment in condition with short-circuit
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(10)
 	public static short assignmentInCondition(short x) {
 		int a = 0;
 		int b = 0;
@@ -97,7 +97,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing pre-increment vs post-increment order
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short prePostIncrementOrder(short x) {
 		int a = 1;
 		int result = ++a + a++;
@@ -114,7 +114,7 @@ public class OperationEvaluationOrderTest {
 	
 	// Testing complex expression with multiple operators
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(6)
 	public static short complexExpressionOrder(short x) {
 		int a = 1;
 		int result = a++ + ++a * a++ - --a;

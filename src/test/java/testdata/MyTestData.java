@@ -19,7 +19,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(7)
 	public static short test2(short x) {
 		if (x < 3) {
 			return x;
@@ -29,7 +29,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(13)
+	@ExpectedExpressionSize(10)
 	public static short test3(short x) {
 		if (x < 5 && x < 3) {
 			return x;
@@ -40,7 +40,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.75)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(28)
+	@ExpectedExpressionSize(13)
 	public static short test4(short x) {
 		int bar = x;
 		
@@ -53,7 +53,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(10)
 	public static short test5(short x) {
 		if (x < 5) {
 			if (x < 3) {
@@ -67,7 +67,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(9)
 	public static short test6(short x) {
 		if (x > x + 0) {
 			return 1;
@@ -77,7 +77,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(13)
+	@ExpectedExpressionSize(11)
 	public static short test7(short x) {
 		int i = 0;
 		if (x > 5) {
@@ -89,7 +89,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(8)
 	public static short test8(short x) {
 		int q = 0 + 0;
 		if (q++ > 0) {
@@ -99,7 +99,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(7)
 	public static short test9(short x) {
 		int q = 0;
 		if (++q > 0) {
@@ -119,7 +119,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(143)
+	@ExpectedExpressionSize(19)
 	public static short test11(short x) {
 		int q = 0 + 0;
 		if ((q++ > 0) && (q++ > 1) && (q++ > 2)) {
@@ -135,7 +135,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(7)
+	@ExpectedExpressionSize(5)
 	public static short negateTest2(short x) {
 		return (short) (-x + x);
 	}
@@ -147,7 +147,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(6)
 	public static short incrementTest(short x) {
 		int a = x;
 		int b = a++;
@@ -156,7 +156,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(6)
 	public static short incrementTest2(short x) {
 		int a = x;
 		int b = ++a;
@@ -165,7 +165,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(7)
 	public static short incrementTest3(short x) {
 		int a = 0;
 		a++;
@@ -176,7 +176,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(6)
 	public static short decrementTest(short x) {
 		int a = x;
 		int b = a--;
@@ -185,7 +185,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(6)
 	public static short decrementTest2(short x) {
 		int a = x;
 		int b = --a;
@@ -194,25 +194,25 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short zeroTest(short x) {
 		return (short) (x - x);
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(6)
 	public static short zeroTest2(short x) {
 		return (short) (x * 2 - x * 2);
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(8)
 	public static short zeroTest3(short x) {
 		return (short) ((x + 1) * 2 - (x + 1) * 2);
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(9)
 	public static short zeroTest4(short x) {
 		int a = ((x * 2) - 1) * 2;
 		int b = ((x * 2) - 1) * 2;
@@ -221,13 +221,13 @@ public class MyTestData {
 	
 	@RequiredScore(0.0)
 	@GoodEnough(GAPS_FROM_POWERS)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(5)
 	public static short zeroTest5(short x) {
 		return (short) (x * x - x * x);
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(6)
 	public static short zeroTest6(short x) {
 		int b = x % 100;
 		
@@ -235,7 +235,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(42)
+	@ExpectedExpressionSize(18)
 	public static short zeroTest7(short x) {
 		int a = 0;
 		if (x > 50) {
@@ -252,7 +252,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(34)
+	@ExpectedExpressionSize(14)
 	public static short zeroTest8(short x) {
 		int b = 0;
 		if (x > 50) {
@@ -265,24 +265,24 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(6)
 	public static short oneTest(short x) {
 		return (short) (x + 1 - x);
 	}
 	
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short oneTest2(short x) {
 		return (short) (x / x);
 	}
 	
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(8)
 	public static short oneTest3(short x) {
 		return (short) ((short) (x + 1) - x);
 	}
 	
 	@RequiredScore(0.5)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short simpleAdd(short x) {
 		return (short) (x + x);
 	}
@@ -306,7 +306,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(32)
+	@ExpectedExpressionSize(12)
 	public static short multiplyTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -331,7 +331,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(13)
 	public static short barTest1(short x) {
 		int bar = 0;
 		
@@ -347,7 +347,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.5)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(14)
 	public static short barTest2(short x) {
 		int bar = 0;
 		
@@ -362,7 +362,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(15)
 	public static short barTest3(short x) {
 		int bar = 0;
 		
@@ -378,7 +378,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.3334)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(93)
+	@ExpectedExpressionSize(34)
 	public static short largeTest1(short x) {
 		int foo = 0;
 		int bar = 0;
@@ -405,13 +405,13 @@ public class MyTestData {
 	
 	@RequiredScore(0.5)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(6)
 	public static short multiplicationTest1(short x) {
 		return (short) (x * (x + 1));
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(15)
 	public static short combinedIfs1(short x) {
 		int a = x;
 		if (x < 0) {
@@ -432,7 +432,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.129)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(15)
 	public static short combinedIfs2(short x) {
 		int a = x;
 		if (x < 0) {
@@ -452,7 +452,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(15)
 	public static short combinedIfs3(short x) {
 		int a = x;
 		if (x < 0) {
@@ -473,7 +473,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.129)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(15)
 	public static short combinedIfs4(short x) {
 		int a = x;
 		if (x < 0) {
@@ -493,7 +493,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(10)
 	public static short chainedConstraintTest1(short x) {
 		int a = 0;
 		int b = x + 5;
@@ -508,7 +508,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(19)
+	@ExpectedExpressionSize(10)
 	public static short chainedConstraintTest2(short x) {
 		int a = 0;
 		int b = x * 5;
@@ -521,7 +521,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(10)
 	public static short chainedConstraintTest3(short x) {
 		int a = 0;
 		
@@ -533,7 +533,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(29)
+	@ExpectedExpressionSize(17)
 	public static short intelliJTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -554,7 +554,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.122)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(28)
+	@ExpectedExpressionSize(14)
 	public static short constraintTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -569,7 +569,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(13)
 	public static short constraintTest2(short x) {
 		if (x > -10 && x < 10) {
 			return (short) (x + 32767);
@@ -578,7 +578,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(24)
+	@ExpectedExpressionSize(14)
 	public static short constraintTest3(short x) {
 		int a = 0;
 		if (x >= 10) {
@@ -596,7 +596,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(13)
 	public static short constraintTest4(short x) {
 		int a = 0;
 		if (x > 7 || x < 2) {
@@ -611,7 +611,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(12)
 	public static short constraintTest5(short x) {
 		int c = 0;
 		if (x == 7) {
@@ -626,7 +626,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(27)
+	@ExpectedExpressionSize(20)
 	public static short returnTest1(short x) {
 		if (x > 0) {
 			return x;
@@ -644,7 +644,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(37)
+	@ExpectedExpressionSize(15)
 	public static short returnTest2(short x) {
 		int a = -5;
 		
@@ -660,7 +660,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(28)
+	@ExpectedExpressionSize(15)
 	public static short returnTest3(short x) {
 		if (x > 0) {
 			if (x < 20) {
@@ -677,7 +677,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(21)
 	public static short returnTest4(short x) {
 		if (x > 0) {
 			if (x < 10) {
@@ -700,7 +700,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(27)
+	@ExpectedExpressionSize(20)
 	public static short performanceTest1(short x) {
 		if (x < 0) {
 			return -10;
@@ -723,7 +723,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(9)
 	public static short equalityTest2(short x) {
 		if (x == x + 1) {
 			return 1;
@@ -732,7 +732,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(7)
 	public static short equalityTest3(short x) {
 		if (x == 5) {
 			return x;
@@ -779,7 +779,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(8)
 	public static short returnTypeCasting(short x) {
 		if (x == 0) {
 			int a = x;
@@ -794,7 +794,7 @@ public class MyTestData {
 		return (short) (x * 65536);
 	}
 	
-	@ExpectedExpressionSize(49)
+	@ExpectedExpressionSize(19)
 	@RequiredScore(1.0)
 	public static short addingVariables(short x) {
 		int a = 0;
@@ -814,7 +814,7 @@ public class MyTestData {
 	
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(46)
+	@ExpectedExpressionSize(22)
 	public static short challenge1(short x) {
 		int a = 0;
 		
@@ -834,7 +834,7 @@ public class MyTestData {
 		return (short) 1;
 	}
 	
-	@ExpectedExpressionSize(30)
+	@ExpectedExpressionSize(10)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	@RequiredScore(0.5)
 	public static short challenge2(short x) {
@@ -853,7 +853,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(74)
+	@ExpectedExpressionSize(25)
 	public static short challenge3(short x) {
 		int a = x % 100;
 		int b = x % 99;
@@ -877,7 +877,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.4)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(207)
+	@ExpectedExpressionSize(20)
 	public static short nastyPerformanceTest(short x) {
 		int a = 0;
 		
@@ -899,7 +899,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(480)
+	@ExpectedExpressionSize(25)
 	public static short nastyPerformanceTest2(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
@@ -919,7 +919,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(9)
 	public static short modulo2(short x) {
 		if (x >= 0) {
 			return (short) (x % 100);
@@ -928,7 +928,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(11)
 	public static short modulo3(short x) {
 		int a = x % 100;
 		if (a > a + 0) {
@@ -940,7 +940,7 @@ public class MyTestData {
 	
 	@GoodEnough(REQUIRES_KNOWLEDGE_OF_MODULUS)
 	@RequiredScore(0.8824)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(10)
 	public static short modulo4(short x) {
 		int a = x % 8;
 		if (x == 5) {
@@ -951,7 +951,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(44)
+	@ExpectedExpressionSize(17)
 	public static short modulo5(short x) {
 		int a = x % 100;
 		if (x < 100 || x > 100) {
@@ -967,7 +967,7 @@ public class MyTestData {
 		}
 	}
 	
-	@ExpectedExpressionSize(28)
+	@ExpectedExpressionSize(13)
 	@RequiredScore(1.0)
 	public static short twoVars1(short x) {
 		int b = x % 100;
@@ -981,7 +981,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(11)
 	public static short twoVars2(short x) {
 		int b = x % 100;
 		int a = x % 99;
@@ -994,7 +994,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(31)
+	@ExpectedExpressionSize(17)
 	public static short twoVars3(short x) {
 		int b = x % 100;
 		int a = x % 99;
@@ -1007,7 +1007,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(33)
+	@ExpectedExpressionSize(17)
 	public static short twoVars4(short x) {
 		int b = x % 100;
 		int a = x % 90;
@@ -1020,7 +1020,7 @@ public class MyTestData {
 		return 0;
 	}
 	
-	@ExpectedExpressionSize(31)
+	@ExpectedExpressionSize(17)
 	public static short twoVars5(short x) {
 		int b = x % 99;
 		int a = x % 100;
@@ -1032,7 +1032,7 @@ public class MyTestData {
 		}
 	}
 	
-	@ExpectedExpressionSize(33)
+	@ExpectedExpressionSize(17)
 	public static short twoVars6(short x) {
 		int b = x % 100;
 		int a = x % 90;
@@ -1046,7 +1046,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(21)
+	@ExpectedExpressionSize(10)
 	public static short twoVars7(short x) {
 		int b = x % 100;
 		int a = x % 100 + 0;
@@ -1058,7 +1058,7 @@ public class MyTestData {
 		}
 	}
 	
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(10)
 	public static short wrappingComparison(short x) {
 		if ((short) (x - 1) > 0) {
 			return x;
@@ -1068,7 +1068,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(13)
 	public static short nearlyImpossible(short x) {
 		short y = (short) (x - 1);
 		if (x < 0 && y > 0) {
@@ -1079,7 +1079,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(26)
+	@ExpectedExpressionSize(16)
 	public static short alsoNearlyImpossible(short x) {
 		int a = x * -65536 - 65535;
 		if (a < 0 && a - 1 > 0) {
@@ -1090,7 +1090,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(11)
 	public static short actuallyImpossible(short x) {
 		if (x < 0 && (x - 1) > 0) {
 			return 0;
@@ -1100,7 +1100,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(28)
+	@ExpectedExpressionSize(21)
 	public static short valueCascade(short x) {
 		if (x == 5) {
 			return -10;
@@ -1124,7 +1124,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(10)
 	public static short simpleMethodTest1(short x) {
 		return (short) simplePrivateMethod(x - 10, x);
 	}
@@ -1138,7 +1138,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(35)
+	@ExpectedExpressionSize(20)
 	public static short simpleMethodTest2(short x) {
 		if (x == 5) {
 			return 0;
@@ -1162,7 +1162,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(17)
+	@ExpectedExpressionSize(14)
 	public static short simpleMethodTest3(short x) {
 		if (x == 5) {
 			return -6;
@@ -1172,7 +1172,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(21)
+	@ExpectedExpressionSize(15)
 	public static short simpleMethodTest4(short x) {
 		if (x == 5) {
 			return -6;
@@ -1194,7 +1194,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(11)
 	public static short simpleMethodTest6(short x) {
 		int b = x;
 		b++;
@@ -1257,14 +1257,14 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(4)
+	@ExpectedExpressionSize(3)
 	public static short simpleClassTest6(short x) {
 		MyClass nested = new MyClass(2);
 		return (short) (nested.getX() - nested.x);
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(9)
 	public static short simpleClassTest7(short x) {
 		MyClass nested = new MyClass(2);
 		nested.addOne();
@@ -1275,7 +1275,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(6)
 	public static short simpleClassTest8(short x) {
 		MyClass nested = new MyClass(2);
 		nested.addOne();
@@ -1312,7 +1312,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(6)
 	public static short simpleClassTest12(short x) {
 		return (short) new MyClass(50).addOne().addOne().addOne().getX();
 	}
@@ -1326,7 +1326,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(6)
 	public static short simpleClassTest14(short x) {
 		MyClass nested = new MyClass(50);
 		MyNestingClass nesting = new MyNestingClass(nested);
@@ -1352,7 +1352,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(12)
 	public static short simpleClassTest17(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1361,7 +1361,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(11)
 	public static short simpleClassTest18(short x) {
 		if (x <= 0) {
 			return 0;
@@ -1394,7 +1394,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(7)
 	public static short simpleClassTest21(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = makeNewClass(2);
@@ -1407,7 +1407,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(17)
 	public static short simpleClassTest22(short x) {
 		int p = 0;
 		
@@ -1423,7 +1423,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(10)
 	public static short simpleClassTest23(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = makeNewClass(2);
@@ -1442,7 +1442,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(12)
 	public static short simpleClassTest24(short x) {
 		MyClass c = makeNewClass(100);
 		
@@ -1461,7 +1461,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(7)
 	public static short simpleClassTest25(short x) {
 		MyClass b = makeNewClass(10);
 		
@@ -1473,7 +1473,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(9)
 	public static short simpleClassTest26(short x) {
 		MyClass b = new MyClass(10);
 		
@@ -1485,7 +1485,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(75)
+	@ExpectedExpressionSize(16)
 	public static short simpleClassTest27(short x) {
 		MyClass b = new MyClass(10);
 		
@@ -1500,7 +1500,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(5)
 	public static short simpleClassTest28(short x) {
 		MyClass b = new MyClass(10);
 		b = makeNewClass(b.addOne().getX() + 1);
@@ -1520,7 +1520,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(63)
+	@ExpectedExpressionSize(21)
 	public static short simpleClassTest30(short x) {
 		MyClass c = makeNewClass(100);
 		
@@ -1579,7 +1579,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(15)
+	@ExpectedExpressionSize(11)
 	public static short simpleClassTest34(short x) {
 		MyClass a = new MyClass(1);
 		MyClass b = new MyClass(2);
@@ -1593,7 +1593,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(11)
 	public static short simpleClassTest35(short x) {
 		MyClass q = new MyClass(2);
 		MyClass a = (x > 0) ? new MyClass(3) : q;
@@ -1604,7 +1604,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short simpleClassTest36(short x) {
 		MyClass obj = new MyClass(1);
 		MyClass a = obj;
@@ -1617,7 +1617,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(7)
 	public static short simpleClassTest37(short x) {
 		MyClass obj = new MyClass(1);
 		if (x == x) {
@@ -1655,7 +1655,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(12)
 	public static short simpleClassTest39(short x) {
 		MyClass obj1 = new MyClass(1);
 		MyClass obj2 = obj1;
@@ -1669,7 +1669,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(10)
 	public static short simpleClassTest40(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
@@ -1752,7 +1752,7 @@ public class MyTestData {
 		}
 	}
 	
-	@ExpectedExpressionSize(25)
+	@ExpectedExpressionSize(16)
 	public static short negativeSquaredTest(short x) {
 		if (x < 20 && x > -10) {
 			int a = -2 * x;
@@ -1764,7 +1764,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(31)
+	@ExpectedExpressionSize(10)
 	public static short ternaryTest1(short x) {
 		int a = 0;
 		int b = 0;
@@ -1779,7 +1779,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
+	@ExpectedExpressionSize(6)
 	public static short ternaryTest2(short x) {
 		int a = x;
 		int b = 0;
@@ -1788,13 +1788,13 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(8)
 	public static short ternaryTest3(short x) {
 		return (short) ((x > x + 4) ? x : 0);
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(18)
+	@ExpectedExpressionSize(12)
 	public static short ternaryTest4(short x) {
 		if ((x > 0) ? x > 10 : x < 10) {
 			return 1;
@@ -1804,7 +1804,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(19)
+	@ExpectedExpressionSize(13)
 	public static short ternaryTest5(short x) {
 		if ((x > 0) ? x > -10 : x < 10) {
 			return 1;
@@ -1814,7 +1814,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(11)
+	@ExpectedExpressionSize(10)
 	public static short ternaryTest6(short x) {
 		if (x == 0) {
 			return (x++ == 0) ? x : x;
@@ -1841,7 +1841,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(14)
 	public static short earlyReturnTest2(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest2Method(nested, x);
@@ -1862,7 +1862,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(52)
+	@ExpectedExpressionSize(19)
 	public static short earlyReturnTest3(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest3Method(nested, x);
@@ -1885,7 +1885,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(9)
 	public static short earlyReturnTest4(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest4Method(nested, x);
@@ -1900,7 +1900,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(16)
 	public static short earlyReturnTest5(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest5Method(nested, x);
@@ -1940,7 +1940,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(14)
+	@ExpectedExpressionSize(10)
 	public static short earlyReturnTest7(short x) {
 		MyClass nested = new MyClass(2);
 		earlyReturnTest7Method(nested, x);
@@ -1996,7 +1996,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(8)
 	public static short shortCircuit6(short x) {
 		int q = 0;
 		if (x > 0) {
@@ -2006,7 +2006,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(21)
+	@ExpectedExpressionSize(11)
 	public static short shortCircuit7(short x) {
 		int q = 0;
 		if (x > 0) {
@@ -2016,7 +2016,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(7)
 	public static short shortCircuit8(short x) {
 		MyClass myClass = new MyClass(0);
 		boolean result = addAndReturn(myClass, true) && addAndReturn(myClass, true);
@@ -2024,7 +2024,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(5)
 	public static short shortCircuit9(short x) {
 		MyClass myClass = new MyClass(0);
 		boolean result = addAndReturn(myClass, false) && addAndReturn(myClass, false);
@@ -2268,7 +2268,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(7)
 	public static short sharedState2(short x) {
 		MyClass state = new MyClass(0);
 		return (short) (state.addAndGet(1) + state.addAndGet(2));
@@ -2348,7 +2348,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(8)
 	public static short simpleModifyAliasing(short x) {
 		MyNestingClass obj = new MyNestingClass(5);
 		directModify(obj, obj);
@@ -2364,7 +2364,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(8)
+	@ExpectedExpressionSize(7)
 	public static short methodCallAliasing(short x) {
 		MyNestingClass obj = new MyNestingClass(5);
 		methodCallModify(obj, obj);
@@ -2393,7 +2393,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(12)
+	@ExpectedExpressionSize(9)
 	public static short aliasingTest2(short x) {
 		MyNestingClass a = new MyNestingClass(1);
 		MyNestingClass b = a;
@@ -2407,7 +2407,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
+	@ExpectedExpressionSize(8)
 	public static short aliasingTest3(short x) {
 		MyNestingClass a = new MyNestingClass(1);
 		MyNestingClass b = a;
@@ -2428,7 +2428,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
+	@ExpectedExpressionSize(8)
 	public static short aliasingTest4(short x) {
 		MyNestingClass a = new MyNestingClass(-1);
 		MyNestingClass b = new MyNestingClass(-1);
@@ -2449,7 +2449,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
+	@ExpectedExpressionSize(8)
 	public static short aliasingTest5(short x) {
 		MyNestingClass a = new MyNestingClass(-1);
 		MyClass b = new MyClass(-1);
@@ -2470,7 +2470,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(9)
+	@ExpectedExpressionSize(8)
 	public static short aliasingTest6(short x) {
 		MyClass b = new MyClass(-1);
 		MyNestingClass a = new MyNestingClass(b);

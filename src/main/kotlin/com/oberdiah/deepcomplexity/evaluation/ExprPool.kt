@@ -13,6 +13,10 @@ object ExprPool {
     private val nextId = AtomicLong(1)
     private val queue = ReferenceQueue<Expr<*>>()
 
+    /**
+     * This isn't a good key to use globally; it still depends on the interned id that may be invalidated.
+     * If you want a key for an expression, just use the expression itself.
+     */
     private data class Key(
         val kind: Class<*>,
         val parts: List<Any?>

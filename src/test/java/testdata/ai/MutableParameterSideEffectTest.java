@@ -39,7 +39,7 @@ public class MutableParameterSideEffectTest {
 	
 	// Testing multiple side effects on same object
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(4)
 	public static short multipleSideEffects(short x) {
 		Holder h = new Holder(5);
 		addFive(h);

@@ -8,6 +8,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ShortIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.oberdiah.deepcomplexity.utilities.Utilities
+import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
@@ -176,8 +177,7 @@ object TestUtilities {
 
             // Good to calculate this after we've done our debug printing, just so if this ends up throwing
             // we still get to see the expression tree.
-            val unknownsInReturn = returnValue.iterateTree<VariableExpr<*>>()
-                .map { it.key }.toSet()
+            val unknownsInReturn = returnValue.allSubExprsOfType<VariableExpr<*>>().mapToSet { it.key }
 
             // For every test we have, there is no reason for unknowns to be present by the time we return.
             // (Aside from `x`, of course, hence the `size <= 1` check.)
@@ -294,7 +294,7 @@ object TestUtilities {
             }
         }
 
-        val expressionSize = returnValue.iterateTree().map { 1 }.sum()
+        val expressionSize = returnValue.allSubExprs().map { 1 }.sum()
 
         return MethodRan("$numEntriesCorrect/$numEntriesPredicted", scoreFraction, expressionSize)
     }
