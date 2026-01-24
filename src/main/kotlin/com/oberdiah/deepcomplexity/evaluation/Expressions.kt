@@ -380,6 +380,18 @@ class NegateExpr<T : Number> private constructor(val expr: Expr<T>) : Expr<T>() 
     override val ind: Indicator<T> = expr.ind
 }
 
+typealias TagsMap = Map<Expr<*>, String>
+
+class TagsExpr<T : Any> private constructor(val tags: TagsMap, val expr: Expr<T>) : Expr<T>() {
+    companion object {
+        fun <T : Any> new(tags: TagsMap, expr: Expr<T>): TagsExpr<T> = ExprPool.create(tags, expr)
+    }
+
+    override val ind: Indicator<T> = expr.ind
+    override fun parts(): List<Any> = listOf(tags, expr)
+}
+
+
 sealed class LeafExpr<T : Any> : Expr<T>() {
     abstract fun resolve(vars: Vars): Expr<T>
 }

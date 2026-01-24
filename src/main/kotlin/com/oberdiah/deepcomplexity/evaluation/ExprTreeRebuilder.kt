@@ -70,86 +70,87 @@ object ExprTreeRebuilder {
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<*> {
-        // Note to self: This cache could be better still if it cached entire parts of the traversal, not
-        // just the calling of replacer().
         val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
-        return rebuildTreeInner(this, false) { e, isInCondition ->
-            if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
-                replacerCache.getOrPut(e) { replacer(e) }
-            } else {
-                e
-            }
-        }
-    }
 
-
-    /**
-     * [isInCondition]: Whether we're currently inside an if-condition. Once set, this remains true for any
-     * nested if-conditions. Just used for our recursion, it isn't part of the public API.
-     */
-    private fun rebuildTreeInner(
-        expr: Expr<*>,
-        isInCondition: Boolean,
-        replacer: (Expr<*>, Boolean) -> Expr<*>
-    ): Expr<*> {
-        // Note to self: If you're adding to this, remember that you want to call `rebuildTree` recursively,
-        // and not `replacer` as that gets called automatically at the end of the method. This should be
-        // obvious, but I've made the mistake before so thought it would be good to note.
-        val replacedExpr: Expr<*> = when (expr) {
-            is BooleanInvertExpr -> BooleanInvertExpr.new(
-                rebuildTreeInner(expr.expr, isInCondition, replacer).castToBoolean()
-            )
-
-            is VarsExpr -> expr
-            is LeafExpr<*> -> expr
-
-            is NegateExpr<*> -> NegateExpr.new(
-                rebuildTreeInner(expr.expr, isInCondition, replacer).castToNumbers()
-            )
-
-            is TypeCastExpr<*, *> -> TypeCastExpr.new(
-                rebuildTreeInner(expr.expr, isInCondition, replacer),
-                expr.ind,
-                expr.explicit
-            )
-
-            is IfExpr -> {
-                ConversionsAndPromotion.castAToB(
-                    rebuildTreeInner(expr.trueExpr, isInCondition, replacer),
-                    rebuildTreeInner(expr.falseExpr, isInCondition, replacer),
-                    Behaviour.Throw
-                ).map { trueE, falseE ->
-                    IfExpr.newRaw(
-                        trueE,
-                        falseE,
-                        rebuildTreeInner(expr.thisCondition, true, replacer).castToBoolean()
+        /**
+         * [isInCondition]: Whether we're currently inside an if-condition. Once set, this remains true for any
+         * nested if-conditions. Just used for our recursion.
+         */
+        fun inner(
+            expr: Expr<*>,
+            isInCondition: Boolean,
+            replacer: (Expr<*>) -> Expr<*>
+        ): Expr<*> {
+            return replacerCache.getOrPut(expr) {
+                val replacedExpr: Expr<*> = when (expr) {
+                    is BooleanInvertExpr -> BooleanInvertExpr.new(
+                        inner(expr.expr, isInCondition, replacer).castToBoolean()
                     )
-                }
-            }
 
-            is AnyBinaryExpr<*> -> {
-                ConversionsAndPromotion.castAToB(
-                    rebuildTreeInner(expr.lhs, isInCondition, replacer),
-                    rebuildTreeInner(expr.rhs, isInCondition, replacer),
-                    Behaviour.Throw
-                ).map { lhs, rhs ->
-                    when (expr) {
-                        is ComparisonExpr<*> -> ComparisonExpr.new(lhs, rhs, expr.comp)
-                        is UnionExpr<*> -> UnionExpr.new(lhs, rhs)
-                        is ArithmeticExpr<*> ->
-                            ConversionsAndPromotion.castAToB(lhs, rhs.castToNumbers(), Behaviour.Throw).map { l, r ->
-                                ArithmeticExpr.new(l, r, expr.op)
-                            }
+                    is VarsExpr -> expr
+                    is LeafExpr<*> -> expr
 
-                        is BooleanExpr ->
-                            ConversionsAndPromotion.castAToB(lhs, rhs.castToBoolean(), Behaviour.Throw).map { l, r ->
-                                BooleanExpr.newRaw(l, r, expr.op)
+                    is NegateExpr<*> -> NegateExpr.new(
+                        inner(expr.expr, isInCondition, replacer).castToNumbers()
+                    )
+
+                    is TypeCastExpr<*, *> -> TypeCastExpr.new(
+                        inner(expr.expr, isInCondition, replacer),
+                        expr.ind,
+                        expr.explicit
+                    )
+
+                    is IfExpr -> ConversionsAndPromotion.castAToB(
+                        inner(expr.trueExpr, isInCondition, replacer),
+                        inner(expr.falseExpr, isInCondition, replacer),
+                        Behaviour.Throw
+                    ).map { trueE, falseE ->
+                        IfExpr.newRaw(
+                            trueE,
+                            falseE,
+                            inner(expr.thisCondition, true, replacer).castToBoolean()
+                        )
+                    }
+
+                    is TagsExpr<*> -> TagsExpr.new(
+                        expr.tags.mapKeys { inner(it.key, isInCondition, replacer) },
+                        inner(expr.expr, isInCondition, replacer)
+                    )
+
+                    is AnyBinaryExpr<*> -> {
+                        ConversionsAndPromotion.castAToB(
+                            inner(expr.lhs, isInCondition, replacer),
+                            inner(expr.rhs, isInCondition, replacer),
+                            Behaviour.Throw
+                        ).map { lhs, rhs ->
+                            when (expr) {
+                                is ComparisonExpr<*> -> ComparisonExpr.new(lhs, rhs, expr.comp)
+                                is UnionExpr<*> -> UnionExpr.new(lhs, rhs)
+                                is ArithmeticExpr<*> ->
+                                    ConversionsAndPromotion.castAToB(lhs, rhs.castToNumbers(), Behaviour.Throw)
+                                        .map { l, r ->
+                                            ArithmeticExpr.new(l, r, expr.op)
+                                        }
+
+                                is BooleanExpr ->
+                                    ConversionsAndPromotion.castAToB(lhs, rhs.castToBoolean(), Behaviour.Throw)
+                                        .map { l, r ->
+                                            BooleanExpr.newRaw(l, r, expr.op)
+                                        }
                             }
+                        }
                     }
                 }
+
+                if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
+                    replacer(replacedExpr)
+                } else {
+                    replacedExpr
+                }
             }
         }
 
-        return replacer(replacedExpr, isInCondition)
+        return inner(this, false, replacer)
     }
+
 }

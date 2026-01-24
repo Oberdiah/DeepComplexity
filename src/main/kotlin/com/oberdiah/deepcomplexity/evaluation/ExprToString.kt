@@ -1,33 +1,38 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 object ExprToString {
-    fun <T : Any> toString(expr: Expr<T>): String {
+    fun <T : Any> toString(expr: Expr<T>, tagsMap: TagsMap = emptyMap()): String {
+        tagsMap[expr]?.let { return it }
+
         return when (expr) {
-            is ArithmeticExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
-            is ComparisonExpr<*> -> "(${expr.lhs} ${expr.comp} ${expr.rhs})"
+            is ArithmeticExpr -> "(${toString(expr.lhs, tagsMap)} ${expr.op} ${toString(expr.rhs, tagsMap)})"
+            is ComparisonExpr<*> -> "(${toString(expr.lhs, tagsMap)} ${expr.comp} ${toString(expr.rhs, tagsMap)})"
             is ConstExpr<*> -> expr.value.toString()
             is IfExpr -> {
-                "if ${expr.thisCondition} {\n${
-                    expr.trueExpr.toString().prependIndent()
+                "if ${toString(expr.thisCondition, tagsMap)} {\n${
+                    toString(expr.trueExpr, tagsMap).prependIndent()
                 }\n} else {\n${
-                    expr.falseExpr.toString().prependIndent()
+                    toString(expr.falseExpr, tagsMap).prependIndent()
                 }\n}"
             }
 
-            is BooleanInvertExpr -> "!${expr.expr}"
-            is NegateExpr -> "-${expr.expr}"
-            is UnionExpr -> "(${expr.lhs} ∪ ${expr.rhs})"
-            is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
+            is BooleanInvertExpr -> "!${toString(expr.expr, tagsMap)}"
+            is NegateExpr -> "-${toString(expr.expr, tagsMap)}"
+            is UnionExpr -> "(${toString(expr.lhs, tagsMap)} ∪ ${toString(expr.rhs, tagsMap)})"
+            is BooleanExpr -> "(${toString(expr.lhs, tagsMap)} ${expr.op} ${toString(expr.rhs, tagsMap)})"
             is TypeCastExpr<*, *> -> {
                 if (expr.explicit) {
-                    "(${expr.ind}) ${expr.expr}"
+                    "(${expr.ind}) ${toString(expr.expr, tagsMap)}"
                 } else {
-                    "${expr.expr}"
+                    toString(expr.expr, tagsMap)
                 }
             }
 
             is VariableExpr -> expr.key.toString()
             is VarsExpr -> expr.vars.toString()
+            is TagsExpr<*> -> {
+                toString(expr.expr, tagsMap + expr.tags)
+            }
         }
     }
 
@@ -40,10 +45,12 @@ object ExprToString {
             is BooleanInvertExpr -> "'!'"
             is NegateExpr -> "'-'"
             is UnionExpr -> "'∪'"
-            is BooleanExpr -> "(${expr.lhs} ${expr.op} ${expr.rhs})"
+            is BooleanExpr -> "(${toString(expr.lhs)} ${expr.op} ${toString(expr.rhs)})"
             is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
+            is TagsExpr<*> -> toExprKeyString(expr.expr)
         }
     }
 }
+

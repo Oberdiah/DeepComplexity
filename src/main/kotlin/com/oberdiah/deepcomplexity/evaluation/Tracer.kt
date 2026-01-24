@@ -107,6 +107,9 @@ class Tracer(
             }
 
             is VarsExpr -> "CtxExpr"
+            is TagsExpr<*> -> {
+                "${getStr(Direction.Only, expr.expr)}.${expr.tags}"
+            }
         }
     }
 }

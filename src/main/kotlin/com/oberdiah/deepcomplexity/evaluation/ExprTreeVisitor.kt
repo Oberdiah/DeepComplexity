@@ -60,6 +60,7 @@ object ExprTreeVisitor {
             is TypeCastExpr<*, *> -> visitor(expr.expr)
             is VarsExpr -> {}
             is LeafExpr<*> -> {}
+            is TagsExpr<*> -> visitor(expr.expr)
         }
     }
 }
