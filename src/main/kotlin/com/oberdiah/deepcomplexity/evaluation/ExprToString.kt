@@ -31,7 +31,7 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is VarsExpr -> expr.vars.toString()
             is TagsExpr<*> -> {
-                toString(expr.expr, tagsMap + expr.tags)
+                "${expr.prettyTags()}\n${toString(expr.expr, tagsMap + expr.tags)}"
             }
         }
     }

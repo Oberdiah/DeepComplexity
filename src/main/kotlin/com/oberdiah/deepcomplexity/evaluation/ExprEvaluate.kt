@@ -9,27 +9,13 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
-    data class SupportKey(private val id: Int, private val displayName: String) {
-        override fun toString(): String = "$displayName$id"
-
-        companion object {
-            private var NEXT_ID = 0
-            fun new(displayName: String): SupportKey = SupportKey(NEXT_ID++, displayName)
-        }
-
-        fun newIdCopy(): SupportKey = new(displayName)
-        fun branchOff(): SupportKey = new("$displayName^")
-    }
-
     data class Scope(
         val constraints: ExprConstrain.ConstraintsOrPile = ExprConstrain.ConstraintsOrPile.unconstrained(),
         val toKeep: Set<Key.ExpressionKey> = setOf(),
-        val supportKeyMap: Map<SupportKey, Expr<*>> = mapOf(),
+        val tagsMap: TagsMap = mapOf(),
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Key): Boolean = toKeep.contains(key) || !key.isExpr()
@@ -43,22 +29,22 @@ object ExprEvaluate {
          */
         fun withScope(expr: Expr<*>): Scope {
             val newScopes = expr.iterateTree().map { it.exprKey }.toSet()
-            return Scope(constraints, toKeep + newScopes, supportKeyMap)
+            return Scope(constraints, toKeep + newScopes, tagsMap)
         }
 
         fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Scope {
             return Scope(
                 constraints.and(this.constraints),
                 toKeep,
-                supportKeyMap,
+                tagsMap,
             )
         }
 
-        fun withSupport(key: SupportKey, expr: Expr<*>): Scope {
+        fun withTags(tagsMap: TagsMap): Scope {
             return Scope(
                 constraints,
                 toKeep,
-                supportKeyMap + (key to expr),
+                tagsMap + this.tagsMap,
             )
         }
     }
@@ -81,7 +67,7 @@ object ExprEvaluate {
             VarsIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
 
-        tracer.trace(expr, evaluatedBundle)
+        tracer.trace(expr, evaluatedBundle, scope.tagsMap)
 
         return evaluatedBundle.reduceAndSimplify(scope)
     }
@@ -153,11 +139,8 @@ object ExprEvaluate {
 
                 val ifCondition = expr.thisCondition
 
-                val condScope = scope.withScope(expr.trueExpr).withScope(expr.falseExpr)
                 var trueScope = scope.withScope(expr.thisCondition).withScope(expr.falseExpr)
                 var falseScope = scope.withScope(expr.thisCondition).withScope(expr.trueExpr)
-
-                val evaluatedCond = evaluate(ifCondition, condScope, tracer.onlyPath())
 
                 trueScope = trueScope.constrainWith(
                     ExprConstrain.getConstraints(ifCondition, trueScope)
@@ -166,41 +149,27 @@ object ExprEvaluate {
                     ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
                 )
 
-                if (true) {
-                    if (falseScope.constraints.unreachable) {
-                        evaluate(expr.trueExpr, trueScope, tracer.truePath())
-                    } else if (trueScope.constraints.unreachable) {
-                        evaluate(expr.falseExpr, falseScope, tracer.falsePath())
-                    } else {
-                        val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
-
-                        ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
-
-                        val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
-                        trueValue.union(falseValue)
-                    }
+                if (falseScope.constraints.unreachable) {
+                    evaluate(expr.trueExpr, trueScope, tracer.truePath())
+                } else if (trueScope.constraints.unreachable) {
+                    evaluate(expr.falseExpr, falseScope, tracer.falsePath())
                 } else {
-                    val b = evaluatedCond.unaryMapAndUnion(expr.trueExpr.ind) { bundle, constraints ->
-                        when (bundle.collapse(constraints).into()) {
-                            BooleanSet.TRUE -> evaluate(expr.trueExpr, trueScope, tracer.truePath())
-                            BooleanSet.FALSE -> evaluate(expr.falseExpr, falseScope, tracer.falsePath())
-                            BooleanSet.EITHER -> {
-                                val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
-                                val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
-                                trueValue.union(falseValue)
-                            }
+                    val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
 
-                            BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false! Something's wrong.")
-                        }
-                    }
-                    b
+                    ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
+
+                    val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                    trueValue.union(falseValue)
                 }
-
             }
 
             is TypeCastExpr<*, *> -> {
                 val toCast = evaluate(expr.expr, scope, tracer.onlyPath())
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
+            }
+
+            is TagsExpr -> {
+                evaluate(expr.expr, scope.withTags(expr.tags), tracer.onlyPath())
             }
 
             is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())

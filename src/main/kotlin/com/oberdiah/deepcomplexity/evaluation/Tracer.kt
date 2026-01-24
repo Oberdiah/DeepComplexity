@@ -37,7 +37,7 @@ class Tracer(
 
     private val likelyCompromised: Boolean get() = System.getenv("TEST_FILTER") == "go"
 
-    fun trace(expr: Expr<*>, bundle: Bundle<*>) {
+    fun trace(expr: Expr<*>, bundle: Bundle<*>, tagsMap: TagsMap) {
         fun getStr(direction: Direction, fallback: Expr<*>): String {
             return evaluatedStrings.getOrElse(path + direction) {
                 "$fallback = <| NOT EVALUATED |>"
@@ -52,7 +52,7 @@ class Tracer(
             }
         }
 
-        evaluatedStrings[path] = when (expr) {
+        evaluatedStrings[path] = tagsMap[expr] ?: when (expr) {
             is ArithmeticExpr -> {
                 val lhsStr = getStr(Direction.Left, expr.lhs)
                 val rhsStr = getStr(Direction.Right, expr.rhs)
@@ -108,7 +108,7 @@ class Tracer(
 
             is VarsExpr -> "CtxExpr"
             is TagsExpr<*> -> {
-                "${getStr(Direction.Only, expr.expr)}.${expr.tags}"
+                "${expr.prettyTags()}\n${getStr(Direction.Only, expr.expr)}"
             }
         }
     }

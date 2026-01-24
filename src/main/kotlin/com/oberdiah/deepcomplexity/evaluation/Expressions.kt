@@ -387,6 +387,8 @@ class TagsExpr<T : Any> private constructor(val tags: TagsMap, val expr: Expr<T>
         fun <T : Any> new(tags: TagsMap, expr: Expr<T>): TagsExpr<T> = ExprPool.create(tags, expr)
     }
 
+    fun prettyTags(): String = tags.entries.joinToString("\n") { "${it.value} = ${it.key}" }
+
     override val ind: Indicator<T> = expr.ind
     override fun parts(): List<Any> = listOf(tags, expr)
 }
