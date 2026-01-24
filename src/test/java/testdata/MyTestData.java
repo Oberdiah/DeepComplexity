@@ -875,43 +875,6 @@ public class MyTestData {
 		return -5;
 	}
 	
-	@RequiredScore(0.4)
-	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(20)
-	public static short nastyPerformanceTest(short x) {
-		int a = 0;
-		
-		if (x > 2 && x < 10) {
-			a = x;
-		}
-		
-		int b = 0;
-		if (a > 0 && a < 10) {
-			b = a;
-		}
-		
-		int c = 0;
-		if (b > 0 && b < 10) {
-			c = b;
-		}
-		
-		return (short) (a + b + c);
-	}
-	
-	@RequiredScore(1.0)
-	@ExpectedExpressionSize(25)
-	public static short nastyPerformanceTest2(short x) {
-		MyClass foo = new MyClass(50);
-		if (x > 100) {
-			if (x > 200) {
-				foo = new MyClass(100);
-			}
-		}
-		foo.x++;
-		foo.x++;
-		return (short) foo.getX();
-	}
-	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(5)
 	public static short modulo1(short x) {
@@ -2488,5 +2451,42 @@ public class MyTestData {
 		}
 		
 		return 0;
+	}
+	
+	@RequiredScore(0.4)
+	@GoodEnough(GAPS_FROM_MULTIPLICATION)
+	@ExpectedExpressionSize(20)
+	public static short nastyPerformanceTest(short x) {
+		int a = 0;
+		
+		if (x > 2 && x < 10) {
+			a = x;
+		}
+		
+		int b = 0;
+		if (a > 0 && a < 10) {
+			b = a;
+		}
+		
+		int c = 0;
+		if (b > 0 && b < 10) {
+			c = b;
+		}
+		
+		return (short) (a + b + c);
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(25)
+	public static short nastyPerformanceTest2(short x) {
+		MyClass foo = new MyClass(50);
+		if (x > 100) {
+			if (x > 200) {
+				foo = new MyClass(100);
+			}
+		}
+		foo.x++;
+		foo.x++;
+		return (short) foo.getX();
 	}
 }
