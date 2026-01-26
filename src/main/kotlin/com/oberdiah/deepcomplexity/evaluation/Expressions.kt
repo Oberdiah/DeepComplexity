@@ -69,11 +69,16 @@ sealed class Expr<T : Any> {
     }
 
     /**
-     * Collects all sub-expressions in the tree, including this one.
+     * All sub-expressions in this tree, including this one.
      */
-    fun allSubExprs(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches
-    ): Set<Expr<*>> = collectToSet(ifTraversal) { it }
+    val allSubExprs: Set<Expr<*>> by lazy {
+        directSubExprs.flatMap { it.allSubExprs }.toSet() + this
+    }
+
+    /**
+     * A shallow list of this expression's direct sub-expressions.
+     */
+    val directSubExprs = parts().filterIsInstance<Expr<*>>()
 
     fun allLeaves(): Set<LeafExpr<*>> = collectToSet(IfTraversal.BranchesOnly) { it as? LeafExpr<*> }
 
@@ -99,7 +104,7 @@ sealed class Expr<T : Any> {
             { setA, setB -> setA + setB }
         )
     }
-    
+
     fun resolveUnknowns(mCtx: Context): Expr<T> =
         mCtx.resolveKnownVariables(this)
 
