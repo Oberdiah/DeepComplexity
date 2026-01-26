@@ -7,61 +7,26 @@ object ExprTreeVisitor {
         producer: (Expr<*>) -> OUTPUT,
         combiner: (OUTPUT, OUTPUT) -> OUTPUT,
     ): OUTPUT {
+        data class Frame(val e: Expr<*>, val isEntering: Boolean)
+
         val cache = mutableMapOf<Expr<*>, OUTPUT>()
-        val stack = ArrayDeque(listOf(initial))
+        val stack = ArrayDeque<Frame>().apply { addLast(Frame(initial, true)) }
 
-        return generateSequence { stack.removeLastOrNull() }
-            .map { e ->
-                cache.getOrPut(e) {
-                    visitTree(e, ifTraversal) { c -> stack.addLast(c) }
-                    producer(e)
+        while (stack.isNotEmpty()) {
+            val (expr, isEntering) = stack.removeLast()
+            if (expr in cache) continue
+
+            val children = expr.subExprs(ifTraversal)
+            if (isEntering) {
+                stack.addLast(Frame(expr, false))
+                stack.addAll(children.filter { it !in cache }.map { Frame(it, true) })
+            } else {
+                cache[expr] = children.fold(producer(expr)) { acc, c ->
+                    combiner(acc, cache.getValue(c))
                 }
             }
-            .reduce(combiner)
-    }
-
-    fun visitTree(
-        expr: Expr<*>,
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
-        visitor: (Expr<*>) -> Unit
-    ) {
-        when (expr) {
-            is BooleanExpr -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
-
-            is ComparisonExpr<*> -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
-
-            is BooleanInvertExpr -> visitor(expr.expr)
-            is NegateExpr -> visitor(expr.expr)
-            is ArithmeticExpr -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
-
-            is IfExpr -> {
-                if (ifTraversal.doCondition()) {
-                    visitor(expr.thisCondition)
-                }
-                if (ifTraversal.doBranches()) {
-                    visitor(expr.trueExpr)
-                    visitor(expr.falseExpr)
-                }
-            }
-
-            is UnionExpr -> {
-                visitor(expr.lhs)
-                visitor(expr.rhs)
-            }
-
-            is TypeCastExpr<*, *> -> visitor(expr.expr)
-            is VarsExpr -> {}
-            is LeafExpr<*> -> {}
-            is TagsExpr<*> -> visitor(expr.expr)
         }
+
+        return cache.getValue(initial)
     }
 }

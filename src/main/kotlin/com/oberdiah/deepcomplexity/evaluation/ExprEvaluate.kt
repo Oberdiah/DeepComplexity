@@ -29,7 +29,7 @@ object ExprEvaluate {
          * any y-specific information you calculate you should keep around as it's going to be used.
          */
         fun withScope(expr: Expr<*>): Scope {
-            val newScopes = expr.allSubExprs.mapToSet { it.exprKey }
+            val newScopes = expr.recursiveSubExprs.mapToSet { it.exprKey }
             return Scope(constraints, toKeep + newScopes, tagsMap)
         }
 

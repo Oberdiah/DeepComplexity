@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import ai.grazie.utils.merge
 import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.context.Context
 import com.oberdiah.deepcomplexity.context.HeapMarker
@@ -12,6 +13,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import java.math.BigInteger
 
 sealed class Expr<T : Any> {
     init {
@@ -68,17 +70,35 @@ sealed class Expr<T : Any> {
         return ExprToString.toString(this)
     }
 
-    /**
-     * All sub-expressions in this tree, including this one.
-     */
-    val allSubExprs: Set<Expr<*>> by lazy {
-        directSubExprs.flatMap { it.allSubExprs }.toSet() + this
+    fun subExprsCounts(): Map<Expr<*>, BigInteger> {
+        return ExprTreeVisitor.reduce(
+            IfTraversal.ConditionAndBranches,
+            this,
+            { expr -> mapOf(expr to BigInteger.ONE) },
+            { mapA, mapB -> mapA.merge(mapB) { _, a, b -> a + b } }
+        )
     }
 
     /**
-     * A shallow list of this expression's direct sub-expressions.
+     * All sub-expressions in this tree, including this one.
      */
-    val directSubExprs = parts().filterIsInstance<Expr<*>>()
+    val recursiveSubExprs: Set<Expr<*>> by lazy {
+        directSubExprs.flatMap { it.recursiveSubExprs }.toSet() + this
+    }
+
+    val directSubExprs by lazy { subExprs(IfTraversal.ConditionAndBranches) }
+
+    fun subExprs(ifTraversal: IfTraversal): List<Expr<*>> {
+        return when (this) {
+            is IfExpr -> when (ifTraversal) {
+                IfTraversal.ConditionAndBranches -> listOf(trueExpr, falseExpr, thisCondition)
+                IfTraversal.BranchesOnly -> listOf(trueExpr, falseExpr)
+                IfTraversal.ConditionOnly -> listOf(thisCondition)
+            }
+
+            else -> parts().filterIsInstance<Expr<*>>()
+        }
+    }
 
     fun allLeaves(): Set<LeafExpr<*>> = collectToSet(IfTraversal.BranchesOnly) { it as? LeafExpr<*> }
 
