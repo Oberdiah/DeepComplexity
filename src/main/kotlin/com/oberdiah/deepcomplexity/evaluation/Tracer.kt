@@ -25,7 +25,7 @@ class Tracer(
     fun onlyPath(): Tracer = direction(Direction.Only)
 
     private fun direction(direction: Direction): Tracer =
-        Tracer(tagsMap, path + direction, evaluatedStrings)
+        Tracer(tagsMap, path + direction, evaluatedStrings, isDummy)
 
     fun getTrace(): String {
         if (isDummy) return "<| DUMMY TRACER |>"
