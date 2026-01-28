@@ -2477,7 +2477,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(25)
+	@ExpectedExpressionSize(929)
 	public static short nastyPerformanceTest2(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
@@ -2538,8 +2538,8 @@ public class MyTestData {
 	
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(25)
-	public static short go(short x) {
+	@ExpectedExpressionSize(101)
+	public static short nastyPerformanceTest3(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
 			if (x > 200) {
@@ -2575,6 +2575,7 @@ public class MyTestData {
 		return (short) foo.getX();
 	}
 	
+	@ExpectedExpressionSize(12)
 	public static short nastyPerformanceTest4(short x) {
 		int a = x % 100;
 		int b = x % 100;
