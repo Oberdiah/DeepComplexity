@@ -1,9 +1,6 @@
 package com.oberdiah.deepcomplexity
 
-import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
-import com.oberdiah.deepcomplexity.evaluation.MethodProcessing
-import com.oberdiah.deepcomplexity.evaluation.Tracer
-import com.oberdiah.deepcomplexity.evaluation.VariableExpr
+import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.staticAnalysis.ShortIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
@@ -168,7 +165,7 @@ object TestUtilities {
 
         val range = try {
             val evaluationStartTime = System.nanoTime()
-            val tracer = Tracer()
+            val tracer = Tracer(ExpressionTagger.buildTags(returnValue))
             val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope(), tracer)
             println("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
 

@@ -431,6 +431,16 @@ object Utilities {
         } as T
     }
 
+    fun Iterable<BigInteger>.sum(): BigInteger = fold(BigInteger.ZERO, BigInteger::add)
+
+    /**
+     * Performs an inner join on two maps based on their keys. Returns a new map containing only the
+     * keys that are present in both maps, with values being pairs of corresponding values from the original maps.
+     */
+    fun <T, A, B> Map<T, A>.innerJoin(other: Map<T, B>): Map<T, Pair<A, B>> =
+        this.keys.intersect(other.keys)
+            .associateWith { key -> this.getValue(key) to other.getValue(key) }
+
     fun <T : Number> Pair<T, T>.intersect(other: Pair<T, T>): Pair<T, T>? {
         val start = this.first.max(other.first)
         val end = this.second.min(other.second)

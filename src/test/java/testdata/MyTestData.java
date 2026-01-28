@@ -2482,11 +2482,132 @@ public class MyTestData {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
 			if (x > 200) {
-				foo = new MyClass(100);
+				if (x > 300) {
+					if (x > 400) {
+						if (x > 500) {
+							if (x > 600) {
+								if (x > 700) {
+									if (x > 800) {
+										foo = new MyClass(100);
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		foo.x++;
 		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
+		foo.x++;
 		return (short) foo.getX();
+	}
+	
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(25)
+	public static short go(short x) {
+		MyClass foo = new MyClass(50);
+		if (x > 100) {
+			if (x > 200) {
+				if (x > 300) {
+					foo = new MyClass(100);
+				}
+			}
+		}
+		foo.x++;
+		if (foo.x > 100) {
+			if (foo.x > 200) {
+				if (foo.x > 300) {
+					foo = new MyClass(100);
+				}
+			}
+		}
+		foo.x++;
+		if (foo.x > 100) {
+			if (foo.x > 200) {
+				if (foo.x > 300) {
+					foo = new MyClass(100);
+				}
+			}
+		}
+		foo.x++;
+		if (foo.x > 100) {
+			if (foo.x > 200) {
+				if (foo.x > 300) {
+					foo = new MyClass(100);
+				}
+			}
+		}
+		return (short) foo.getX();
+	}
+	
+	public static short nastyPerformanceTest4(short x) {
+		int a = x % 100;
+		int b = x % 100;
+		int c = x % 100;
+		int d = x % 100;
+		
+		int q = 0;
+		
+		if (a > 50) {
+			if (b > 50) {
+				if (c > 50) {
+					if (d > 50) {
+						q += a + b + c + d;
+					}
+				}
+			}
+		}
+		
+		int e = x % 100;
+		int f = x % 100;
+		int g = x % 100;
+		int h = x % 100;
+		
+		if (e > 50) {
+			if (f > 50) {
+				if (g > 50) {
+					if (h > 50) {
+						f += a * b * c * d;
+					}
+				}
+			}
+		}
+		
+		return (short) f;
 	}
 }

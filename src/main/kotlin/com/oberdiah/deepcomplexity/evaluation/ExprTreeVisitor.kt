@@ -29,4 +29,42 @@ object ExprTreeVisitor {
 
         return cache.getValue(initial)
     }
+    
+    fun getTopologicalOrdering(root: Expr<*>): List<Expr<*>> {
+        val reachable = root.recursiveSubExprs
+        val indegree = reachable.associateWith { 0 }.toMutableMap()
+        reachable.forEach { parent ->
+            parent.directSubExprs
+                .forEach { child ->
+                    indegree.merge(child, 1, Int::plus)
+                }
+        }
+
+        val q = ArrayDeque<Expr<*>>().apply {
+            indegree
+                .filter { (_, deg) -> deg == 0 }
+                .map { (n, _) -> n }
+                .forEach(::addLast)
+        }
+
+        val topoParent = buildList(reachable.size) {
+            while (q.isNotEmpty()) {
+                val n = q.removeFirst()
+                add(n)
+
+                n.directSubExprs
+                    .forEach { child ->
+                        val newDeg = indegree.getValue(child) - 1
+                        indegree[child] = newDeg
+                        if (newDeg == 0) q.addLast(child)
+                    }
+            }
+        }
+
+        require(topoParent.size == reachable.size) {
+            "Graph contains a cycle; topological ordering does not exist."
+        }
+
+        return topoParent
+    }
 }

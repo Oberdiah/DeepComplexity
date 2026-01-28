@@ -4,9 +4,11 @@ import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 
 
 class Tracer(
+    private val tagsMap: TagsMap,
     private val path: List<Direction> = emptyList(),
     // Mutable, and the one instance is shared between tracers, which can be confusing.
-    private val evaluatedStrings: MutableMap<List<Direction>, String> = mutableMapOf()
+    private val evaluatedStrings: MutableMap<List<Direction>, String> = mutableMapOf(),
+    private val isDummy: Boolean = false,
 ) {
     enum class Direction {
         Only,
@@ -23,24 +25,31 @@ class Tracer(
     fun onlyPath(): Tracer = direction(Direction.Only)
 
     private fun direction(direction: Direction): Tracer =
-        Tracer(path + direction, evaluatedStrings)
+        Tracer(tagsMap, path + direction, evaluatedStrings)
 
     fun getTrace(): String {
+        if (isDummy) return "<| DUMMY TRACER |>"
+
+        val mainStr = "${ExpressionTagger.tagsToString(tagsMap)}\n${evaluatedStrings[emptyList()]!!}"
+
         return if (likelyCompromised) {
-            evaluatedStrings[emptyList()]!! + "\nThe tracer's sanity checks were disabled because the TEST_FILTER" +
+            mainStr + "\nThe tracer's sanity checks were disabled because the TEST_FILTER" +
                     " environment variable was set to 'go',\nso this trace will likely be inaccurate " +
                     "if you've performed any instruction-pointer-moving debugging."
         } else {
-            evaluatedStrings[emptyList()]!!
+            mainStr
         }
     }
 
     private val likelyCompromised: Boolean get() = System.getenv("TEST_FILTER") == "go"
 
-    fun trace(expr: Expr<*>, bundle: Bundle<*>, tagsMap: TagsMap) {
+    fun trace(expr: Expr<*>, bundle: Bundle<*>) {
+        if (isDummy) return
+
         fun getStr(direction: Direction, fallback: Expr<*>): String {
             return evaluatedStrings.getOrElse(path + direction) {
-                "$fallback = <| NOT EVALUATED |>"
+                "<| NOT EVALUATED |>"
+//                "${ExprToString.toStringWithTags(fallback, tagsMap)} = <| NOT EVALUATED |>"
             }
         }
 
@@ -77,7 +86,7 @@ class Tracer(
 
             is ConstExpr<*> -> expr.value.toString()
             is IfExpr -> {
-                "if ${expr.thisCondition} {\n${
+                "if ${ExprToString.toStringWithTags(expr.thisCondition, tagsMap)} {\n${
                     getStr(Direction.True, expr.trueExpr).prependIndent()
                 }\n} else {\n${
                     getStr(Direction.False, expr.falseExpr).prependIndent()

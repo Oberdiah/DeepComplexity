@@ -115,8 +115,8 @@ object ExprConstrain {
                     // and tracer.trueConstraints() and use those when calling getConstraints from
                     // the `evaluate` section to keep these separate from the standard evaluations. Currently
                     // there's nowhere to display that information even if we had it, so we don't bother.
-                    val lhsBundleSet = me.lhs.evaluate(scope, Tracer())
-                    val rhsBundleSet = me.rhs.evaluate(scope, Tracer())
+                    val lhsBundleSet = me.lhs.evaluate(scope, Tracer(emptyMap(), isDummy = true))
+                    val rhsBundleSet = me.rhs.evaluate(scope, Tracer(emptyMap(), isDummy = true))
 
                     return lhsBundleSet.generateConstraintsFrom(
                         rhsBundleSet,

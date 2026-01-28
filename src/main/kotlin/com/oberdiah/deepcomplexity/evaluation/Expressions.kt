@@ -13,6 +13,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.utilities.Utilities.sum
 import java.math.BigInteger
 
 sealed class Expr<T : Any> {
@@ -70,13 +71,12 @@ sealed class Expr<T : Any> {
         return ExprToString.toString(this)
     }
 
-    fun subExprsCounts(): Map<Expr<*>, BigInteger> {
-        return ExprTreeVisitor.reduce(
-            IfTraversal.ConditionAndBranches,
-            this,
-            { expr -> mapOf(expr to BigInteger.ONE) },
-            { mapA, mapB -> mapA.merge(mapB) { _, a, b -> a + b } }
-        )
+    val subExprCounts: Map<Expr<*>, BigInteger> by lazy {
+        directSubExprs.map {
+            it.subExprCounts
+        }.fold(mapOf(this to BigInteger.ONE)) { mapA, mapB ->
+            mapA.merge(mapB) { _, a, b -> a + b }
+        }
     }
 
     /**
@@ -85,6 +85,12 @@ sealed class Expr<T : Any> {
     val recursiveSubExprs: Set<Expr<*>> by lazy {
         directSubExprs.flatMap { it.recursiveSubExprs }.toSet() + this
     }
+
+    /**
+     * The size of this expression tree, defined as the number of expression nodes it contains.
+     * Can be really, really big. 10^50+ is not out of the question.
+     */
+    val size: BigInteger by lazy { subExprCounts.values.sum() }
 
     val directSubExprs by lazy { subExprs(IfTraversal.ConditionAndBranches) }
 
@@ -427,8 +433,6 @@ class NegateExpr<T : Number> private constructor(val expr: Expr<T>) : Expr<T>() 
 
     override val ind: Indicator<T> = expr.ind
 }
-
-typealias TagsMap = Map<Expr<*>, String>
 
 class TagsExpr<T : Any> private constructor(val tags: TagsMap, val expr: Expr<T>) : Expr<T>() {
     companion object {

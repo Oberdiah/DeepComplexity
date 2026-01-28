@@ -68,7 +68,7 @@ object ExprEvaluate {
             VarsIndicator -> WONT_IMPLEMENT()
         } as Bundle<T>
 
-        tracer.trace(expr, evaluatedBundle, scope.tagsMap)
+        tracer.trace(expr, evaluatedBundle)
 
         return evaluatedBundle.reduceAndSimplify(scope)
     }
