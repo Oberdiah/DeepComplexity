@@ -21,8 +21,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.getThisType
 import com.oberdiah.deepcomplexity.utilities.Utilities.orElse
 import com.oberdiah.deepcomplexity.utilities.Utilities.resolveIfNeeded
 import com.oberdiah.deepcomplexity.utilities.Utilities.toKey
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
+import org.jetbrains.kotlin.analysis.utils.errors.requireIsInstance
 
 @Suppress("unused")
 object MethodProcessing {
@@ -405,7 +404,7 @@ object MethodProcessing {
     }
 
     private fun processReference(psi: PsiExpression, context: ContextWrapper): LValue<*> {
-        assertIs<PsiReferenceExpression>(psi, "Expected PsiReferenceExpression, but got ${psi::class}")
+        requireIsInstance<PsiReferenceExpression>(psi)
 
         return when (val resolved = psi.resolveIfNeeded()) {
             is PsiField -> {
@@ -413,10 +412,9 @@ object MethodProcessing {
                     processPsiExpression(it, context)
                 }.orElse {
                     val thisType = context.c.thisType
-                    assertNotNull(
-                        thisType,
+                    requireNotNull(thisType) {
                         "No qualifier on field ${resolved.name}, but also no `this` type in context?"
-                    )
+                    }
                     context.c.get(LValueKey.new(ThisKey(thisType)))
                 }.castToObject()
 
@@ -524,7 +522,7 @@ object MethodProcessing {
             throw IllegalArgumentException("As-yet unsupported binary operation: $tokenType")
         }
 
-        assert(numTokenTypes == 1) {
+        require(numTokenTypes == 1) {
             "Multiple binary operation types detected for token type: $tokenType"
         }
 

@@ -255,7 +255,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.plus(other: T): T {
-        assert(this::class == other::class) {
+        require(this::class == other::class) {
             "Types don't match: $this (${this::class}) and $other (${other::class})"
         }
 
@@ -273,7 +273,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.minus(other: T): T {
-        assert(this::class == other::class) {
+        require(this::class == other::class) {
             "Types don't match: $this (${this::class}) and $other (${other::class})"
         }
 
@@ -291,7 +291,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.times(other: T): T {
-        assert(this::class == other::class) {
+        require(this::class == other::class) {
             "Types don't match: $this (${this::class}) and $other (${other::class})"
         }
 
@@ -309,7 +309,7 @@ object Utilities {
     }
 
     operator fun <T : Number> T.div(other: T): T {
-        assert(this::class == other::class) {
+        require(this::class == other::class) {
             "Types don't match: $this (${this::class}) and $other (${other::class})"
         }
 
@@ -352,7 +352,7 @@ object Utilities {
 
     // Min and max extension functions for Number
     fun <T : Number> T.min(other: T): T {
-        assert(this::class == other::class) {
+        require(this::class == other::class) {
             "Types don't match: $this (${this::class}) and $other (${other::class})"
         }
 
@@ -369,7 +369,7 @@ object Utilities {
     }
 
     fun <T : Number> T.max(other: T): T {
-        assert(this::class == other::class) {
+        require(this::class == other::class) {
             "Types don't match: $this (${this::class}) and $other (${other::class})"
         }
 

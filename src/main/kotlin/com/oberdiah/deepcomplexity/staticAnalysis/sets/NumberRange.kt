@@ -24,7 +24,7 @@ data class NumberRange<T : Number> private constructor(
     private val clazz: KClass<*> = ind.clazz
 
     init {
-        assert(start <= end) {
+        require(start <= end) {
             "Start ($start) must be less than or equal to end ($end)"
         }
     }
@@ -175,10 +175,10 @@ data class NumberRange<T : Number> private constructor(
     }
 
     private fun bigIntToT(v: BigInteger): T {
-        assert(v >= BigInteger.valueOf(ind.getMinValue().toLong())) {
+        require(v >= BigInteger.valueOf(ind.getMinValue().toLong())) {
             "Value $v is below minimum value ${ind.getMinValue()}"
         }
-        assert(v <= BigInteger.valueOf(ind.getMaxValue().toLong())) {
+        require(v <= BigInteger.valueOf(ind.getMaxValue().toLong())) {
             "Value $v is above maximum value ${ind.getMaxValue()}"
         }
         return v.longValueExact().castInto(clazz)
@@ -188,7 +188,7 @@ data class NumberRange<T : Number> private constructor(
         initialLower: BigInteger,
         initialUpper: BigInteger
     ): Iterable<NumberRange<T>> {
-        assert(initialLower <= initialUpper) {
+        require(initialLower <= initialUpper) {
             "Lower bound $initialLower is greater than upper bound $initialUpper"
         }
 
@@ -206,10 +206,10 @@ data class NumberRange<T : Number> private constructor(
         // Makes things a lot easier to reason about.
         val (lower, upper) = initialLower + distanceToShunt to initialUpper + distanceToShunt
 
-        assert(lower >= indMin) {
+        require(lower >= indMin) {
             "Lower bound $lower is below minimum value $indMin"
         }
-        assert(lower <= indMax) {
+        require(lower <= indMax) {
             "Lower bound $lower is above maximum value $indMax"
         }
 

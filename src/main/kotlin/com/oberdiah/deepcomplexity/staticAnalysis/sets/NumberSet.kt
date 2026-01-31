@@ -114,7 +114,7 @@ data class NumberSet<T : Number> private constructor(
         }
 
         fun <OutT : Number> extra(newInd: NumberIndicator<OutT>): NumberSet<OutT> {
-            assert(newInd.isWholeNum() && ind.isWholeNum()) {
+            require(newInd.isWholeNum() && ind.isWholeNum()) {
                 "Attempted to cast to a floating point number."
             }
             return NumberSet(
@@ -138,7 +138,7 @@ data class NumberSet<T : Number> private constructor(
         other: NumberSet<T>,
         operation: BinaryNumberOp
     ): NumberSet<T> {
-        assert(ind == other.ind)
+        require(ind == other.ind)
 
         val rangeOp = when (operation) {
             ADDITION -> NumberRange<T>::add
@@ -192,7 +192,7 @@ data class NumberSet<T : Number> private constructor(
         }
         val other = other.into()
 
-        assert(ind == other.ind)
+        require(ind == other.ind)
         val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
         val (otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
 
@@ -326,13 +326,13 @@ data class NumberSet<T : Number> private constructor(
     }
 
     override fun union(other: ISet<T>): NumberSet<T> {
-        assert(ind == other.ind)
+        require(ind == other.ind)
 
         return binaryMakeNew(other.into(), ranges + other.into().ranges)
     }
 
     override fun intersect(other: ISet<T>): NumberSet<T> {
-        assert(ind == other.ind)
+        require(ind == other.ind)
         val other = other.into()
 
         val newList: MutableList<NumberRange<T>> = mutableListOf()

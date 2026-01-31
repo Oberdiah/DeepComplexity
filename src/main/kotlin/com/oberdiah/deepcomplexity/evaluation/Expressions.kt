@@ -284,7 +284,7 @@ class ComparisonExpr<T : Any> private constructor(
     override fun simplify(): Expr<Boolean> = new(lhs, rhs, comp)
 
     init {
-        assert(lhs.ind == rhs.ind) {
+        require(lhs.ind == rhs.ind) {
             "Comparing expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
@@ -325,7 +325,7 @@ class IfExpr<T : Any> private constructor(
     val thisCondition: Expr<Boolean>,
 ) : Expr<T>() {
     init {
-        assert(trueExpr.ind == falseExpr.ind) {
+        require(trueExpr.ind == falseExpr.ind) {
             "Incompatible types in if statement: ${trueExpr.ind} and ${falseExpr.ind}"
         }
     }
@@ -375,7 +375,7 @@ class IfExpr<T : Any> private constructor(
 class UnionExpr<T : Any> private constructor(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(),
     AnyBinaryExpr<T> {
     init {
-        assert(lhs.ind == rhs.ind) {
+        require(lhs.ind == rhs.ind) {
             "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }
@@ -395,7 +395,7 @@ class BooleanExpr private constructor(
     val op: BooleanOp
 ) : Expr<Boolean>(), AnyBinaryExpr<Boolean> {
     init {
-        assert(lhs.ind == rhs.ind) {
+        require(lhs.ind == rhs.ind) {
             "Boolean expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
         }
     }

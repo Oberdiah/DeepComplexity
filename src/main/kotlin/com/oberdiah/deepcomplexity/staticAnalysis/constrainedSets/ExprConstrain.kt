@@ -2,8 +2,6 @@ package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
-import org.jetbrains.kotlin.preloading.ProfilingInstrumenterExample.a
-import org.jetbrains.kotlin.preloading.ProfilingInstrumenterExample.b
 
 object ExprConstrain {
     /**
@@ -30,8 +28,8 @@ object ExprConstrain {
         fun and(other: ConstraintsOrPile): ConstraintsOrPile {
             val outputConstraints: MutableSet<Constraints> = mutableSetOf()
 
-            if (pile.size > 10 || other.pile.size > 10) {
-                println("Warning: Combining constraints with size > 10: $a, $b")
+            require(pile.size < 10 && other.pile.size < 10) {
+                "Combining constraints with size > 10: $pile , $other. This surely can't be efficient."
             }
 
             for (lhs in pile) {

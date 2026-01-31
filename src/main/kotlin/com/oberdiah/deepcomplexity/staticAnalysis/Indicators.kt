@@ -13,9 +13,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
-import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
-import java.math.BigInteger
 import kotlin.reflect.KClass
 
 /**
@@ -59,7 +57,7 @@ sealed class Indicator<T : Any>(val clazz: KClass<T>) {
                 else -> TODO()
             }
 
-            assert(ind.clazz == clazz) {
+            require(ind.clazz == clazz) {
                 "Mismatched class: ${ind.clazz} != $clazz"
             }
             // Safety: We checked the class matches.
@@ -75,7 +73,7 @@ sealed class Indicator<T : Any>(val clazz: KClass<T>) {
                 else -> TODO()
             }
 
-            assert(ind.clazz == value::class) {
+            require(ind.clazz == value::class) {
                 "Mismatched class: ${ind.clazz} != ${value::class}"
             }
             // Safety: We checked the class matches.
@@ -98,7 +96,7 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
                 else -> TODO("No NumberIndicator for ${value::class}")
             }
 
-            assert(ind.clazz == value::class) {
+            require(ind.clazz == value::class) {
                 "Mismatched class: ${ind.clazz} != ${value::class}"
             }
             // Safety: We checked the class matches.
@@ -129,16 +127,6 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
         }
     }
 
-    /**
-     * Returns max(abs(minValue), abs(maxValue))
-     */
-    fun getRadius(): BigInteger {
-        return maxOf(
-            BigInteger.valueOf(getMaxValue().toLong()).abs(),
-            BigInteger.valueOf(getMinValue().toLong()).abs()
-        )
-    }
-
     fun isWholeNum(): Boolean {
         return this is IntIndicator
                 || this is LongIndicator
@@ -149,11 +137,11 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
     fun onlyZeroSet(): NumberSet<T> = newConstantSet(getZero())
     fun onlyOneSet(): NumberSet<T> = newConstantSet(getOne())
     fun positiveNumbersAndZero(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.GREATER_THAN_OR_EQUAL)
+
+    @Suppress("unused")
     fun negativeNumbersAndZero(): NumberSet<T> = onlyZeroSet().getSetSatisfying(ComparisonOp.LESS_THAN_OR_EQUAL)
     fun getZero(): T = getInt(0)
     fun getOne(): T = getInt(1)
-
-    fun castToMe(v: Number): T = v.castInto(clazz)
 }
 
 data object DoubleIndicator : NumberIndicator<Double>(Double::class) {

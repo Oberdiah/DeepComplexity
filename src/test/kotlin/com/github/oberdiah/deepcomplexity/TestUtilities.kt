@@ -185,7 +185,7 @@ object TestUtilities {
 
             // For every test we have, there is no reason for unknowns to be present by the time we return.
             // (Aside from `x`, of course, hence the `size <= 1` check.)
-            assert(unknownsInReturn.size <= 1) {
+            require(unknownsInReturn.size <= 1) {
                 "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
             }
 

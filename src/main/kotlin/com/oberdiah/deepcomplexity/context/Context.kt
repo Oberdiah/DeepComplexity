@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.LValue
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
-import kotlin.test.assertEquals
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never
@@ -48,7 +47,9 @@ class Context private constructor(
          * primarily used to combine two branches of an if-statement.
          */
         fun combine(lhs: Context, rhs: Context, how: (a: Expr<*>, b: Expr<*>) -> Expr<*>): Context {
-            assertEquals(lhs.thisType, rhs.thisType, "Differing 'this' types in contexts.")
+            require(lhs.thisType == rhs.thisType) {
+                "Differing 'this' types in contexts; ${lhs.thisType}, ${rhs.thisType}"
+            }
 
             return Context(
                 InnerCtx.combine(

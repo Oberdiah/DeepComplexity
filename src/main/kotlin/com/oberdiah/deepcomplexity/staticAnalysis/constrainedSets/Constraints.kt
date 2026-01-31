@@ -6,7 +6,6 @@ import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.utilities.Functional
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
-import kotlin.test.assertIsNot
 
 /**
  * All constraints in the map must be true, it in-effect acts as an AND.
@@ -72,11 +71,10 @@ data class Constraints private constructor(
     }
 
     fun withConstraint(key: Key, iSet: ISet<*>): Constraints {
-        assertIsNot<Key.ConstantKey>(
-            key,
+        require(key !is Key.ConstantKey) {
             "Constant keys shouldn't be allowed to be added to constraints."
-        )
-        assert(key.ind == iSet.ind) {
+        }
+        require(key.ind == iSet.ind) {
             "Key and bundle must have the same type. (${key.ind} != ${iSet.ind})"
         }
         return and(constrainedBy(mapOf(key to iSet)))
@@ -100,11 +98,11 @@ data class Constraints private constructor(
 
         val newConstraints = Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
             fun <T : Any> ugly(l: ISet<T>): ISet<T> =
-                // Safety: We've asserted that the types are the same.
+                // Safety: We've required that the types are the same.
                 @Suppress("UNCHECKED_CAST")
                 l.intersect(rhs as ISet<T>)
 
-            assert(lhs.ind == rhs.ind)
+            require(lhs.ind == rhs.ind)
 
             ugly(lhs)
         }
