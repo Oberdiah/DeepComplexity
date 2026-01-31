@@ -6,10 +6,11 @@ import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import java.math.BigInteger
 
 enum class BooleanSet : ISet<Boolean> {
     TRUE {
-        override fun size(): Long = 1L
+        override fun size(): BigInteger = BigInteger.ONE
 
         override fun contains(element: Boolean): Boolean {
             return element
@@ -24,7 +25,7 @@ enum class BooleanSet : ISet<Boolean> {
         }
     },
     FALSE {
-        override fun size(): Long = 1L
+        override fun size(): BigInteger = BigInteger.ONE
 
         override fun contains(element: Boolean): Boolean {
             return !element
@@ -41,7 +42,7 @@ enum class BooleanSet : ISet<Boolean> {
 
     // The value in question may end up being either true or false, we're not sure.
     EITHER {
-        override fun size(): Long = 2L
+        override fun size(): BigInteger = BigInteger.TWO
 
         override fun contains(element: Boolean): Boolean {
             return true
@@ -59,7 +60,7 @@ enum class BooleanSet : ISet<Boolean> {
     // The value in question is invalid; we've hit a contradiction.
     // Neither is contagious; most interactions with Neither will return Neither.
     NEITHER {
-        override fun size(): Long = 0L
+        override fun size(): BigInteger = BigInteger.ZERO
 
         override fun contains(element: Boolean): Boolean {
             return false
