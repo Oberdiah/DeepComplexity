@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.context.VariableKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.solver.CastSolver
@@ -155,8 +156,14 @@ object ExprEvaluate {
             is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())
                 .constrainWith(constraints)
 
-            is VariableExpr ->
-                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(constraints)
+            is VariableExpr -> {
+                // By the time we're at the point of evaluating a variable, all other forms of keys
+                // should have been resolved away. The only ones that should be left are Variable Keys.
+                // At least, for now?
+                // That may not turn out to be the case once we expand beyond our simple test setup.
+                val varKey = expr.key as VariableKey
+                Bundle.unconstrained(expr.ind.newVariance(varKey)).constrainWith(constraints)
+            }
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

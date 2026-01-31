@@ -456,7 +456,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             methodCallSiteContext.addVar(
-                LValueKey.new(ParameterKey(param, UnknownKey.Lifetime.METHOD)),
+                LValueKey.new(ParameterKey(param, Lifetime.METHOD)),
                 processPsiExpression(arg, methodCallSiteContext)
             )
         }
@@ -474,7 +474,7 @@ object MethodProcessing {
 
         return methodCallSiteContext.c
             .stack(methodContext.c.forcedDynamic())
-            .stripKeys(UnknownKey.Lifetime.METHOD)
+            .stripKeys(Lifetime.METHOD)
     }
 
     private fun processPolyadicExpr(

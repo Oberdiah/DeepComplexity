@@ -106,13 +106,13 @@ class Context private constructor(
 
     fun withoutReturnValue() = mapVars { vars -> vars.filterKeys { it !is ReturnKey } }
 
-    fun stripKeys(lifetime: UnknownKey.Lifetime) =
+    fun stripKeys(lifetime: Lifetime) =
         mapVars { vars -> vars.filterKeys { !it.shouldBeStripped(lifetime) } }
 
 
     fun stack(other: Context): Context {
         val otherInner = other
-            .stripKeys(UnknownKey.Lifetime.BLOCK)
+            .stripKeys(Lifetime.BLOCK)
             .inner
             .resolveUsing(this.dynamicVars)
             .mapAllVars { other -> dynamicVars.stack(other) }
