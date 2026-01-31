@@ -50,13 +50,13 @@ object ExprConstrain {
     /**
      * Where the expression was previously returning true, it now returns false, and vice versa.
      */
-    fun invert(expr: Expr<Boolean>, scope: ExprEvaluate.Scope): Expr<Boolean> {
+    fun invert(expr: Expr<Boolean>, constraints: ConstraintsOrPile): Expr<Boolean> {
         return when (expr) {
             is BooleanInvertExpr -> expr.expr
             is BooleanExpr -> {
                 BooleanExpr.new(
-                    expr.lhs.inverted(scope),
-                    expr.rhs.inverted(scope),
+                    expr.lhs.inverted(constraints),
+                    expr.rhs.inverted(constraints),
                     when (expr.op) {
                         BooleanOp.AND -> BooleanOp.OR
                         BooleanOp.OR -> BooleanOp.AND
@@ -67,8 +67,8 @@ object ExprConstrain {
             is ComparisonExpr<*> -> ComparisonExpr.new(expr.lhs, expr.rhs, expr.comp.invert())
             is ConstExpr -> ConstExpr.new(!expr.value, expr.ind)
             is IfExpr -> IfExpr.new(
-                expr.trueExpr.inverted(scope),
-                expr.falseExpr.inverted(scope),
+                expr.trueExpr.inverted(constraints),
+                expr.falseExpr.inverted(constraints),
                 expr.thisCondition
             )
 
@@ -84,24 +84,23 @@ object ExprConstrain {
      * This is the only place we should generate constraints. They then get applied to constants when traversing
      * evaluation, and those constants then cling onto bundles and go for a ride.
      */
-    fun getConstraints(condition: Expr<Boolean>, scope: ExprEvaluate.Scope): ConstraintsOrPile {
+    fun getConstraints(condition: Expr<Boolean>, constraints: ConstraintsOrPile): ConstraintsOrPile {
         val startTime = System.currentTimeMillis()
-        val constraints = when (condition) {
+        val newConstraints = when (condition) {
             is BooleanExpr -> {
                 when (condition.op) {
                     BooleanOp.OR -> {
-                        val lhsConstrained = getConstraints(condition.lhs, scope)
+                        val lhsConstrained = getConstraints(condition.lhs, constraints)
                         // In the OR case the two clauses don't constrain each other.
-                        val rhsConstrained = getConstraints(condition.rhs, scope)
+                        val rhsConstrained = getConstraints(condition.rhs, constraints)
 
                         lhsConstrained.or(rhsConstrained)
                     }
 
                     BooleanOp.AND -> {
                         // In the AND case, they do.
-                        val lhsConstrained = getConstraints(condition.lhs, scope)
-                        val constrainedScope = scope.constrainWith(lhsConstrained)
-                        val rhsConstrained = getConstraints(condition.rhs, constrainedScope)
+                        val lhsConstrained = getConstraints(condition.lhs, constraints)
+                        val rhsConstrained = getConstraints(condition.rhs, constraints.and(lhsConstrained))
 
                         lhsConstrained.and(rhsConstrained)
                     }
@@ -115,8 +114,8 @@ object ExprConstrain {
                     // and tracer.trueConstraints() and use those when calling getConstraints from
                     // the `evaluate` section to keep these separate from the standard evaluations. Currently
                     // there's nowhere to display that information even if we had it, so we don't bother.
-                    val lhsBundleSet = me.lhs.evaluate(scope, Tracer(emptyMap(), isDummy = true))
-                    val rhsBundleSet = me.rhs.evaluate(scope, Tracer(emptyMap(), isDummy = true))
+                    val lhsBundleSet = me.lhs.evaluate(constraints, Tracer(emptyMap(), isDummy = true))
+                    val rhsBundleSet = me.rhs.evaluate(constraints, Tracer(emptyMap(), isDummy = true))
 
                     return lhsBundleSet.generateConstraintsFrom(
                         rhsBundleSet,
@@ -141,7 +140,7 @@ object ExprConstrain {
                 // You might think that this is a bit silly, and we should just invert the produced constraints
                 // instead, but there's no easy way to invert constraints due to the uninvertability
                 // of sets.
-                getConstraints(condition.expr.inverted(scope), scope)
+                getConstraints(condition.expr.inverted(constraints), constraints)
             }
 
             is IfExpr -> {
@@ -160,7 +159,7 @@ object ExprConstrain {
                         BooleanOp.OR
                     )
 
-                getConstraints(convertedToBooleanExpr, scope)
+                getConstraints(convertedToBooleanExpr, constraints)
             }
 
             else -> TODO("Not implemented constraints for $condition")
@@ -170,6 +169,6 @@ object ExprConstrain {
             println("Warning: getConstraints took ${endTime - startTime}ms")
         }
 
-        return constraints
+        return newConstraints
     }
 }

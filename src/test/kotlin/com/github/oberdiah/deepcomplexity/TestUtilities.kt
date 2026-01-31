@@ -1,8 +1,12 @@
 package com.oberdiah.deepcomplexity
 
-import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.ExpressionTagger
+import com.oberdiah.deepcomplexity.evaluation.MethodProcessing
+import com.oberdiah.deepcomplexity.evaluation.Tracer
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.ShortIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
@@ -166,7 +170,10 @@ object TestUtilities {
         val range = try {
             val evaluationStartTime = System.nanoTime()
             val tracer = Tracer(ExpressionTagger.buildTags(returnValue))
-            val bundle: Bundle<*> = returnValue.evaluate(ExprEvaluate.Scope(), tracer)
+            val bundle: Bundle<*> = returnValue.evaluate(
+                ExprConstrain.ConstraintsOrPile.unconstrained(),
+                tracer
+            )
             println("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
 
             // Must come after the `evaluate` call.

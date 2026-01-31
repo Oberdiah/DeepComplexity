@@ -6,6 +6,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.oberdiah.deepcomplexity.utilities.MathematicalSet
+import java.math.BigInteger
 
 /**
  * Tracks the possible heap allocations of a variable.
@@ -25,7 +26,7 @@ data class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>
 
     override fun toString(): String = values.toString()
 
-    override fun size(): Long = values.size.toLong()
+    override fun size(): BigInteger? = values.nullableSize()?.let { BigInteger.valueOf(it.toLong()) }
     override fun contains(element: HeapMarker): Boolean = values.contains(element)
     override fun isEmpty(): Boolean = values.isEmpty()
     override fun isFull(): Boolean = values.isFull()

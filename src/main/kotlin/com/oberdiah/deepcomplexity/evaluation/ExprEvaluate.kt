@@ -1,6 +1,5 @@
 package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.solver.CastSolver
@@ -10,49 +9,21 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
-import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 object ExprEvaluate {
-    data class Scope(
-        val constraints: ExprConstrain.ConstraintsOrPile = ExprConstrain.ConstraintsOrPile.unconstrained(),
-        val toKeep: Set<Key.ExpressionKey> = setOf(),
-    ) {
-        override fun toString(): String = constraints.toString()
-        fun shouldKeep(key: Key): Boolean = toKeep.contains(key) || !key.isExpr()
-
-        /**
-         * Adds the expression's keys to the scopes we want to keep around.
-         * You call this on all expressions that are not your own.
-         *
-         * For example, in the expression (x + y) * y, when you are evaluating the x + y part,
-         * any y-specific information you calculate you should keep around as it's going to be used.
-         */
-        fun withScope(expr: Expr<*>): Scope {
-            val newScopes = expr.recursiveSubExprs.mapToSet { it.exprKey }
-            return Scope(constraints, toKeep + newScopes)
-        }
-
-        fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Scope {
-            return Scope(
-                constraints.and(this.constraints),
-                toKeep,
-            )
-        }
-    }
-
-    fun <T : Any> evaluate(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
+    fun <T : Any> evaluate(expr: Expr<T>, constraints: ExprConstrain.ConstraintsOrPile, tracer: Tracer): Bundle<T> {
         @Suppress("UNCHECKED_CAST")
         val evaluatedBundle = when (expr.ind) {
             is NumberIndicator<*> -> {
                 // Split into two lines for nicer debugging
                 val castExpr = expr.castToNumbers()
-                evaluateNums(castExpr, scope, tracer)
+                evaluateNums(castExpr, constraints, tracer)
             }
 
-            is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, scope, tracer)
+            is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, constraints, tracer)
             BooleanIndicator -> {
                 val castExpr = expr.castToBoolean()
-                evaluateBools(castExpr, scope, tracer)
+                evaluateBools(castExpr, constraints, tracer)
             }
 
             VarsIndicator -> WONT_IMPLEMENT()
@@ -60,59 +31,78 @@ object ExprEvaluate {
 
         tracer.trace(expr, evaluatedBundle)
 
-        return evaluatedBundle.reduceAndSimplify(scope)
+        return evaluatedBundle
     }
 
-    private fun <T : Number> evaluateNums(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
+    private fun <T : Number> evaluateNums(
+        expr: Expr<T>,
+        constraints: ExprConstrain.ConstraintsOrPile,
+        tracer: Tracer
+    ): Bundle<T> {
         val toReturn = when (expr) {
             is ArithmeticExpr -> {
-                val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs), tracer.leftPath())
-                val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs), tracer.rightPath())
+                val lhs = evaluate(expr.lhs, constraints, tracer.leftPath())
+                val rhs = evaluate(expr.rhs, constraints, tracer.rightPath())
 
                 lhs.arithmeticOperation(rhs, expr.op, expr.exprKey)
             }
 
-            is NegateExpr -> evaluate(expr.expr, scope, tracer.onlyPath()).negate()
+            is NegateExpr -> evaluate(expr.expr, constraints, tracer.onlyPath()).negate()
 
-            else -> evaluateAnythings(expr, scope, tracer)
+            else -> evaluateAnythings(expr, constraints, tracer)
         }
         return toReturn
     }
 
-    private fun evaluateBools(expr: Expr<Boolean>, scope: Scope, tracer: Tracer): Bundle<Boolean> {
+    private fun evaluateBools(
+        expr: Expr<Boolean>,
+        constraints: ExprConstrain.ConstraintsOrPile,
+        tracer: Tracer
+    ): Bundle<Boolean> {
         val toReturn = when (expr) {
             is BooleanExpr -> {
-                val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs), tracer.leftPath())
-                val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs), tracer.rightPath())
+                val lhs = evaluate(expr.lhs, constraints, tracer.leftPath())
+                val rhs = evaluate(expr.rhs, constraints, tracer.rightPath())
 
                 lhs.booleanOperation(rhs, expr.op, expr.exprKey)
             }
 
             is ComparisonExpr<*> -> {
-                fun <T : Any> evalC(expr: ComparisonExpr<T>, scope: Scope): Bundle<Boolean> {
-                    val lhs = evaluate(expr.lhs, scope.withScope(expr.rhs), tracer.leftPath())
-                    val rhs = evaluate(expr.rhs, scope.withScope(expr.lhs), tracer.rightPath())
+                fun <T : Any> evalC(
+                    expr: ComparisonExpr<T>,
+                    constraints: ExprConstrain.ConstraintsOrPile
+                ): Bundle<Boolean> {
+                    val lhs = evaluate(expr.lhs, constraints, tracer.leftPath())
+                    val rhs = evaluate(expr.rhs, constraints, tracer.rightPath())
 
                     return lhs.comparisonOperation(rhs, expr.comp, expr.exprKey)
                 }
-                evalC(expr, scope)
+                evalC(expr, constraints)
             }
 
-            is BooleanInvertExpr -> evaluate(expr, scope, tracer.onlyPath()).booleanInvert()
-            else -> evaluateAnythings(expr, scope, tracer)
+            is BooleanInvertExpr -> evaluate(expr, constraints, tracer.onlyPath()).booleanInvert()
+            else -> evaluateAnythings(expr, constraints, tracer)
         }
 
         return toReturn
     }
 
-    private fun <T : Any> evaluateGenerics(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
-        return evaluateAnythings(expr, scope, tracer)
+    private fun <T : Any> evaluateGenerics(
+        expr: Expr<T>,
+        constraints: ExprConstrain.ConstraintsOrPile,
+        tracer: Tracer
+    ): Bundle<T> {
+        return evaluateAnythings(expr, constraints, tracer)
     }
 
-    private fun <T : Any> evaluateAnythings(expr: Expr<T>, scope: Scope, tracer: Tracer): Bundle<T> {
+    private fun <T : Any> evaluateAnythings(
+        expr: Expr<T>,
+        constraints: ExprConstrain.ConstraintsOrPile,
+        tracer: Tracer
+    ): Bundle<T> {
         val toReturn: Bundle<T> = when (expr) {
-            is UnionExpr -> evaluate(expr.lhs, scope, tracer.leftPath()).union(
-                evaluate(expr.rhs, scope, tracer.rightPath())
+            is UnionExpr -> evaluate(expr.lhs, constraints, tracer.leftPath()).union(
+                evaluate(expr.rhs, constraints, tracer.rightPath())
             )
 
             is IfExpr -> {
@@ -130,40 +120,34 @@ object ExprEvaluate {
 
                 val ifCondition = expr.thisCondition
 
-                var trueScope = scope.withScope(expr.thisCondition).withScope(expr.falseExpr)
-                var falseScope = scope.withScope(expr.thisCondition).withScope(expr.trueExpr)
-
-                trueScope = trueScope.constrainWith(
-                    ExprConstrain.getConstraints(ifCondition, trueScope)
+                val trueConstraints = constraints.and(
+                    ExprConstrain.getConstraints(ifCondition, constraints)
                 )
-                falseScope = falseScope.constrainWith(
-                    ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
+                val falseConstraints = constraints.and(
+                    ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), constraints)
                 )
 
-                if (falseScope.constraints.unreachable) {
-                    evaluate(expr.trueExpr, trueScope, tracer.truePath())
-                } else if (trueScope.constraints.unreachable) {
-                    evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                if (falseConstraints.unreachable) {
+                    evaluate(expr.trueExpr, trueConstraints, tracer.truePath())
+                } else if (trueConstraints.unreachable) {
+                    evaluate(expr.falseExpr, falseConstraints, tracer.falsePath())
                 } else {
-                    val trueValue = evaluate(expr.trueExpr, trueScope, tracer.truePath())
-
-                    ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), falseScope)
-
-                    val falseValue = evaluate(expr.falseExpr, falseScope, tracer.falsePath())
+                    val trueValue = evaluate(expr.trueExpr, trueConstraints, tracer.truePath())
+                    val falseValue = evaluate(expr.falseExpr, falseConstraints, tracer.falsePath())
                     trueValue.union(falseValue)
                 }
             }
 
             is TypeCastExpr<*, *> -> {
-                val toCast = evaluate(expr.expr, scope, tracer.onlyPath())
+                val toCast = evaluate(expr.expr, constraints, tracer.onlyPath())
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 
             is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())
-                .constrainWith(scope.constraints)
+                .constrainWith(constraints)
 
             is VariableExpr ->
-                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(scope.constraints)
+                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(constraints)
 
             else -> {
                 throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")

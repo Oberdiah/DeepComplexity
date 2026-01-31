@@ -4,7 +4,6 @@ import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
@@ -38,6 +37,13 @@ data class NumberVariances<T : Number> private constructor(
     override val ind: NumberIndicator<T>,
     private val multipliers: Map<Key, NumberSet<T>> = mapOf()
 ) : Variances<T> {
+    init {
+        require(multipliers.size < 10) {
+            "Too many multipliers in NumberVariances: ${multipliers.size}. " +
+                    "This isn't a hard limit, but it's questionable from a performance perspective."
+        }
+    }
+
     override fun toString(): String {
         return multipliers.entries.joinToString(", ") { (key, multiplier) ->
             "$key: ($multiplier)"
@@ -70,21 +76,6 @@ data class NumberVariances<T : Number> private constructor(
 
     override fun varsTracking(): Collection<Key> {
         return multipliers.keys.filter { !it.isConstant() }
-    }
-
-    override fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<T> {
-        val newMultipliers = multipliers.entries.map { (key, v) ->
-            if (scope.shouldKeep(key)) {
-                key to v
-            } else {
-                Key.ConstantKey to v.multiply(grabConstraint(constraints, key))
-            }
-        }
-            // If multiple keys got turned into the constant key, we need to combine them.
-            .groupingBy { it.first }
-            .fold(ind.onlyZeroSet()) { acc, (_, v) -> acc.add(v) }
-
-        return NumberVariances(ind, newMultipliers)
     }
 
     fun grabConstraint(constraints: Constraints, key: Key): NumberSet<T> {

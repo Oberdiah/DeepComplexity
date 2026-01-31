@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.Key
-import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
@@ -29,6 +28,12 @@ data class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
     val constraints: Map<Key, ISet<*>>,
 ) {
+    init {
+        require(constraints.size < 10) {
+            "No reason for 10 to be the upper bound, but I thought I ought to know about it. Found: ${constraints.size}"
+        }
+    }
+
     /**
      * The constraints as a whole are unsatisfiable if any individual
      * constraint is unsatisfiable as the map of constraints acts as an AND.
@@ -58,10 +63,6 @@ data class Constraints private constructor(
         }
     }
 
-    fun reduceAndSimplify(scope: ExprEvaluate.Scope): Constraints {
-        return Constraints(constraints.filterKeys { scope.shouldKeep(it) })
-    }
-
     fun isUnconstrained(): Boolean {
         return constraints.isEmpty()
     }
@@ -81,6 +82,7 @@ data class Constraints private constructor(
         return and(constrainedBy(mapOf(key to iSet)))
     }
 
+    @Suppress("unused")
     fun invert(): Constraints {
         // Inverting a Constraints is too risky; both constraints and sets operate
         // on a best-effort basis with a bubble of uncertainty. Values outside a set are guaranteed

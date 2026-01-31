@@ -13,6 +13,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.oberdiah.deepcomplexity.utilities.Utilities.sum
 import java.math.BigInteger
 
@@ -180,7 +181,8 @@ sealed class Expr<T : Any> {
      */
     open fun simplify(): Expr<T> = this
 
-    fun evaluate(scope: ExprEvaluate.Scope, tracer: Tracer): Bundle<T> = ExprEvaluate.evaluate(this, scope, tracer)
+    fun evaluate(constraints: ExprConstrain.ConstraintsOrPile, tracer: Tracer): Bundle<T> =
+        ExprEvaluate.evaluate(this, constraints, tracer)
 }
 
 /**

@@ -16,6 +16,8 @@ data class MathematicalSet<T> private constructor(
     fun intersect(other: MathematicalSet<T>): MathematicalSet<T> =
         MathematicalSet(impl.intersect(other.impl))
 
+    fun nullableSize(): Int? = impl.nullableSize()
+
     companion object {
         fun <T> empty(): MathematicalSet<T> =
             MathematicalSet(Normal(emptySet()))
@@ -34,6 +36,7 @@ data class MathematicalSet<T> private constructor(
         fun remove(element: T): Impl<T>
         fun union(other: Impl<T>): Impl<T>
         fun intersect(other: Impl<T>): Impl<T>
+        fun nullableSize(): Int? = if (this is Normal) size else null
     }
 
     private data class Normal<T>(val elements: Set<T>) : Impl<T> {

@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.Key
-import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
@@ -82,13 +81,6 @@ data class Bundle<T : Any> private constructor(
             return toDebugString()
         }
 
-        fun reduceAndSimplify(scope: ExprEvaluate.Scope): ConstrainedVariances<T> {
-            return ConstrainedVariances(
-                variances.reduceAndSimplify(scope, constraints),
-                constraints.reduceAndSimplify(scope)
-            )
-        }
-
         fun toDebugString(): String {
             if (constraints.isUnconstrained()) {
                 return variances.toDebugString(constraints)
@@ -126,11 +118,7 @@ data class Bundle<T : Any> private constructor(
             it.toDebugString()
         }
     }
-
-    fun reduceAndSimplify(scope: ExprEvaluate.Scope): Bundle<T> {
-        return Bundle(ind, variances.mapToSet { it.reduceAndSimplify(scope) })
-    }
-
+    
     fun union(other: Bundle<T>): Bundle<T> {
         return Bundle(ind, variances.union(other.variances))
     }

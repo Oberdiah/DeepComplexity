@@ -18,6 +18,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.max
 import com.oberdiah.deepcomplexity.utilities.Utilities.min
 import com.oberdiah.deepcomplexity.utilities.Utilities.negate
 import com.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
+import java.math.BigInteger
 import kotlin.reflect.KClass
 
 @ConsistentCopyVisibility
@@ -28,6 +29,12 @@ data class NumberSet<T : Number> private constructor(
     val ranges: List<NumberRange<T>>
 ) : ISet<T> {
     val clazz: KClass<T> = ind.clazz
+
+    init {
+        require(ranges.size < 10) {
+            "NumberSet ($this) has more than 10 ranges (${ranges.size}), this may be slow."
+        }
+    }
 
     override fun toString(): String {
         val mainStr = ranges.joinToString {
@@ -346,17 +353,8 @@ data class NumberSet<T : Number> private constructor(
         return binaryMakeNew(other, newList)
     }
 
-    override fun size(): Long? {
-        var total: Long = 0
-        for (range in ranges) {
-            val rangeSize = range.size() ?: return null
-            total += rangeSize
-            if (total < 0) {
-                // Overflow, just return null
-                return null
-            }
-        }
-        return total
+    override fun size(): BigInteger = ranges.fold(BigInteger.ZERO) { acc, range ->
+        acc + range.size()
     }
 
     fun isOne(): Boolean {

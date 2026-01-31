@@ -2,7 +2,6 @@ package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
 import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
@@ -24,7 +23,6 @@ interface Variances<T : Any> {
      * return a different value if that key was constrained.
      */
     fun varsTracking(): Collection<Key>
-    fun reduceAndSimplify(scope: ExprEvaluate.Scope, constraints: Constraints): Variances<T>
 
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,

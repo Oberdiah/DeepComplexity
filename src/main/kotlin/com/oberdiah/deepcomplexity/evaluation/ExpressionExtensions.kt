@@ -6,7 +6,8 @@ import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 object ExpressionExtensions {
-    fun Expr<Boolean>.inverted(scope: ExprEvaluate.Scope): Expr<Boolean> = ExprConstrain.invert(this, scope)
+    fun Expr<Boolean>.inverted(constraints: ExprConstrain.ConstraintsOrPile): Expr<Boolean> =
+        ExprConstrain.invert(this, constraints)
 
     /**
      * Only supports [nonTrivial] = [Behaviour.Throw].
@@ -64,6 +65,7 @@ object ExpressionExtensions {
         }
     }
 
+    @Suppress("unused")
     inline fun <reified T : Any> Expr<*>.tryCastToReifiedExprType(): Expr<T>? {
         return if (this.ind.clazz == T::class) {
             @Suppress("UNCHECKED_CAST")
@@ -73,6 +75,7 @@ object ExpressionExtensions {
         }
     }
 
+    @Suppress("unused")
     inline fun <reified T : Any> Expr<*>.tryCastToReifiedIndicatorType(): Expr<T>? {
         return if (this.ind is T) {
             @Suppress("UNCHECKED_CAST")

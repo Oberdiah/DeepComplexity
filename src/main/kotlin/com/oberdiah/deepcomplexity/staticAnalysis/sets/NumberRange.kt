@@ -46,14 +46,14 @@ data class NumberRange<T : Number> private constructor(
     /**
      * Returns the size of this range, in terms of how many discrete values it contains.
      */
-    fun size(): Long {
+    fun size(): BigInteger {
         if (clazz.isFloatingPoint()) {
             if (start == end) {
-                return 1L
+                return BigInteger.ONE
             }
             TODO("Not implemented full FP size yet, not sure if we'll ever need it")
         } else {
-            return end.toLong() - start.toLong() + 1
+            return BigInteger.valueOf(end.toLong()) - BigInteger.valueOf(start.toLong()) + BigInteger.ONE
         }
     }
 

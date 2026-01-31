@@ -3,6 +3,7 @@ package com.oberdiah.deepcomplexity.staticAnalysis.sets
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import java.math.BigInteger
 
 /**
  * A set of possible values of type T. In essence, this represents an OR between the values of T listed.
@@ -15,10 +16,10 @@ interface ISet<T : Any> {
     val ind: Indicator<T>
 
     /**
-     * The number of elements in the set, if it can be easily computed.
-     * Otherwise, null.
+     * The number of elements in the set, if it can be computed, otherwise null.
+     * The size of generic sets cannot be known.
      */
-    fun size(): Long?
+    fun size(): BigInteger?
 
     // We intentionally don't implement invert; all situations I can think of that would use it are
     // inherently dangerous — a set is a bubble of uncertainty, to invert that doesn't get us the inverse
@@ -66,7 +67,10 @@ interface ISet<T : Any> {
 
         val areEqual = when {
             intersection.isEmpty() -> BooleanSet.FALSE
-            this.size() == 1L && other.size() == 1L && intersection.size() == 1L -> BooleanSet.TRUE
+            this.size() == BigInteger.ONE
+                    && other.size() == BigInteger.ONE
+                    && intersection.size() == BigInteger.ONE -> BooleanSet.TRUE
+
             else -> BooleanSet.EITHER
         }
 
