@@ -2522,17 +2522,17 @@ public class MyTestData {
 		foo.x++;
 		foo.x++;
 		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
-		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
+//		foo.x++;
 		return (short) foo.getX();
 	}
 	
