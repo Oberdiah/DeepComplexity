@@ -14,19 +14,13 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 object ExprEvaluate {
     data class CacheKey(val expr: Expr<*>, val constraints: ExprConstrain.ConstraintsOrPile)
 
-    val expressionCache = mutableMapOf<CacheKey, Bundle<*>>()
-    var totalEvaluatesAttempted = 0
-
     fun <T : Any> evaluate(
         expr: Expr<T>,
         constraints: ExprConstrain.ConstraintsOrPile,
         assistant: EvaluatorAssistant
     ): Bundle<T> {
-        totalEvaluatesAttempted++
-        val cacheKey = CacheKey(expr, constraints)
-
-        val result = expressionCache.getOrPut(cacheKey) {
-            val evaluatedBundle = when (expr.ind) {
+        return assistant.getOrPut(expr, constraints) {
+            when (expr.ind) {
                 is NumberIndicator<*> -> {
                     // Split into two lines for nicer debugging
                     val castExpr = expr.castToNumbers()
@@ -41,13 +35,7 @@ object ExprEvaluate {
 
                 VarsIndicator -> WONT_IMPLEMENT()
             }
-
-            assistant.trace(expr, evaluatedBundle)
-
-            evaluatedBundle
         }
-
-        return result.castOrThrow(expr.ind)
     }
 
     private fun <T : Number> evaluateNums(

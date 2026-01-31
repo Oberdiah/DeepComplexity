@@ -1,15 +1,29 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate.CacheKey
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
 
 class EvaluatorAssistant(
     private val tagsMap: TagsMap,
-    private val path: List<Direction> = emptyList(),
+    private val path: List<Direction>,
     // Mutable, and the one instance is shared between tracers, which can be confusing.
-    private val evaluatedStrings: MutableMap<List<Direction>, String> = mutableMapOf(),
-    private val isInsideCondition: Boolean = false,
+    private val evaluatedStrings: MutableMap<List<Direction>, String>,
+    private val expressionCache: MutableMap<CacheKey, Bundle<*>>,
+    private val isInsideCondition: Boolean,
 ) {
+    companion object {
+        fun createInitial(tagsMap: TagsMap): EvaluatorAssistant =
+            EvaluatorAssistant(
+                tagsMap,
+                emptyList(),
+                mutableMapOf(),
+                mutableMapOf(),
+                isInsideCondition = false
+            )
+    }
+
     enum class Direction {
         Only,
         Left,
@@ -23,17 +37,41 @@ class EvaluatorAssistant(
      * This will turn off tracing, which isn't surfaced for conditions anyway.
      */
     fun enteredCondition(): EvaluatorAssistant =
-        EvaluatorAssistant(tagsMap, path, evaluatedStrings, isInsideCondition = true)
+        EvaluatorAssistant(tagsMap, path, evaluatedStrings, expressionCache, true)
 
     fun leftPath(): EvaluatorAssistant = direction(Direction.Left)
     fun rightPath(): EvaluatorAssistant = direction(Direction.Right)
     fun falsePath(): EvaluatorAssistant = direction(Direction.False)
     fun truePath(): EvaluatorAssistant = direction(Direction.True)
-
     fun onlyPath(): EvaluatorAssistant = direction(Direction.Only)
 
     private fun direction(direction: Direction): EvaluatorAssistant =
-        EvaluatorAssistant(tagsMap, path + direction, evaluatedStrings, isInsideCondition)
+        EvaluatorAssistant(tagsMap, path + direction, evaluatedStrings, expressionCache, isInsideCondition)
+
+    fun <T : Any> getOrPut(
+        expr: Expr<T>,
+        constraints: ExprConstrain.ConstraintsOrPile,
+        evalFunc: () -> Bundle<*>
+    ): Bundle<T> {
+        val cacheKey = CacheKey(expr, constraints)
+
+        return expressionCache.getOrPut(cacheKey) {
+            val bundle = evalFunc()
+            trace(expr, bundle)
+            bundle
+        }.castOrThrow(expr.ind)
+    }
+
+    fun getCacheReadout(): String {
+        val cacheHitRate = String.format(
+            "%.2f",
+            100.0 * (1.0 - expressionCache.size.toDouble() / Double.NaN)
+        );
+
+        return "Expressions evaluated: ${expressionCache.size}" +
+                " out of ${Double.NaN} total," +
+                " cache hit rate: $cacheHitRate%"
+    }
 
     fun getTrace(): String {
         if (isInsideCondition) return "<| IS INSIDE CONDITION |>"

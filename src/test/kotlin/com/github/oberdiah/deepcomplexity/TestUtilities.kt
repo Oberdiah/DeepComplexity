@@ -1,6 +1,9 @@
 package com.oberdiah.deepcomplexity
 
-import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.EvaluatorAssistant
+import com.oberdiah.deepcomplexity.evaluation.ExpressionTagger
+import com.oberdiah.deepcomplexity.evaluation.MethodProcessing
+import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.ShortIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
@@ -167,22 +170,10 @@ object TestUtilities {
         val range = try {
             val evaluationStartTime = System.nanoTime()
 
-            ExprEvaluate.totalEvaluatesAttempted = 0
-            ExprEvaluate.expressionCache.clear()
-            val assistant = EvaluatorAssistant(ExpressionTagger.buildTags(returnValue))
+            val assistant = EvaluatorAssistant.createInitial(ExpressionTagger.buildTags(returnValue))
             val bundle: Bundle<*> = returnValue.evaluate(ExprConstrain.ConstraintsOrPile.unconstrained(), assistant)
             println("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
-            println(
-                "\tExpressions evaluated: ${ExprEvaluate.expressionCache.size}" +
-                        " out of ${ExprEvaluate.totalEvaluatesAttempted} total," +
-                        " cache hit rate: " +
-                        String.format(
-                            "%.2f",
-                            100.0 * (1.0 - ExprEvaluate.expressionCache.size.toDouble() / ExprEvaluate.totalEvaluatesAttempted.toDouble())
-                        ) + "%"
-            )
-
-            // Must come after the `evaluate` call.
+            println(assistant.getCacheReadout().prependIndent())
             println((assistant.getTrace()).prependIndent())
 
             // Good to calculate this after we've done our debug printing, just so if this ends up throwing
