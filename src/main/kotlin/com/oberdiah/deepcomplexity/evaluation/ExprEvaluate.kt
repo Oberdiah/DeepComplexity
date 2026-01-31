@@ -11,27 +11,36 @@ import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
+    data class CacheKey(val expr: Expr<*>, val constraints: ExprConstrain.ConstraintsOrPile)
+
+    val expressionCache = mutableMapOf<CacheKey, Bundle<*>>()
+
     fun <T : Any> evaluate(expr: Expr<T>, constraints: ExprConstrain.ConstraintsOrPile, tracer: Tracer): Bundle<T> {
-        @Suppress("UNCHECKED_CAST")
-        val evaluatedBundle = when (expr.ind) {
-            is NumberIndicator<*> -> {
-                // Split into two lines for nicer debugging
-                val castExpr = expr.castToNumbers()
-                evaluateNums(castExpr, constraints, tracer)
+        val cacheKey = CacheKey(expr, constraints)
+
+        val result = expressionCache.getOrPut(cacheKey) {
+            val evaluatedBundle = when (expr.ind) {
+                is NumberIndicator<*> -> {
+                    // Split into two lines for nicer debugging
+                    val castExpr = expr.castToNumbers()
+                    evaluateNums(castExpr, constraints, tracer)
+                }
+
+                is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, constraints, tracer)
+                BooleanIndicator -> {
+                    val castExpr = expr.castToBoolean()
+                    evaluateBools(castExpr, constraints, tracer)
+                }
+
+                VarsIndicator -> WONT_IMPLEMENT()
             }
 
-            is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, constraints, tracer)
-            BooleanIndicator -> {
-                val castExpr = expr.castToBoolean()
-                evaluateBools(castExpr, constraints, tracer)
-            }
+            tracer.trace(expr, evaluatedBundle)
 
-            VarsIndicator -> WONT_IMPLEMENT()
-        } as Bundle<T>
+            evaluatedBundle
+        }
 
-        tracer.trace(expr, evaluatedBundle)
-
-        return evaluatedBundle
+        return result.castOrThrow(expr.ind)
     }
 
     private fun <T : Number> evaluateNums(

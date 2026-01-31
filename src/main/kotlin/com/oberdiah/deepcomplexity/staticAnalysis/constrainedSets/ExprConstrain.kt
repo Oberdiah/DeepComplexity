@@ -1,7 +1,9 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
+import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
+import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 object ExprConstrain {
     /**
@@ -19,6 +21,10 @@ object ExprConstrain {
             require(pile.isNotEmpty()) {
                 "ConstraintsOrPile must have at least one constraint."
             }
+        }
+
+        fun onlyConstraining(keys: Set<Key>): ConstraintsOrPile {
+            return ConstraintsOrPile(pile.mapToSet { it.onlyConstraining(keys) })
         }
 
         @Suppress("Unused")

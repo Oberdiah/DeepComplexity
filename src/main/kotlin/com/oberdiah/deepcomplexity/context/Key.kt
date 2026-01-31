@@ -4,7 +4,7 @@ import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
-sealed class Key() {
+sealed class Key {
     abstract val ind: Indicator<*>
 
     /**

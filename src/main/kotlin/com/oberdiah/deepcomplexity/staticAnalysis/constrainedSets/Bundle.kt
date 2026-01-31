@@ -118,11 +118,12 @@ data class Bundle<T : Any> private constructor(
             it.toDebugString()
         }
     }
-    
+
     fun union(other: Bundle<T>): Bundle<T> {
         return Bundle(ind, variances.union(other.variances))
     }
 
+    @Suppress("unused")
     fun <Q : Any> unaryMapAndUnion(
         newInd: Indicator<Q>,
         op: (Variances<T>, Constraints) -> Bundle<Q>
@@ -248,6 +249,16 @@ data class Bundle<T : Any> private constructor(
 
         return variances.fold(ind.newEmptySet()) { acc, bundle ->
             acc.union(bundle.variances.collapse(bundle.constraints))
+        }
+    }
+
+    fun <Q : Any> castOrThrow(indicator: Indicator<Q>): Bundle<Q> {
+        if (indicator == ind) {
+            // Safety: The indicators are the same, so the cast is valid
+            @Suppress("UNCHECKED_CAST")
+            return this as Bundle<Q>
+        } else {
+            throw IllegalArgumentException("Cannot cast bundle with indicator $ind to $indicator")
         }
     }
 

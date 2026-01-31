@@ -41,10 +41,6 @@ data class Constraints private constructor(
         get() = constraints.any { it.value.isEmpty() }
 
     companion object {
-        fun constrainedBy(constraints: Map<Key, ISet<*>>): Constraints {
-            return Constraints(constraints)
-        }
-
         fun completelyUnconstrained(): Constraints {
             return Constraints(emptyMap())
         }
@@ -62,6 +58,10 @@ data class Constraints private constructor(
         }
     }
 
+    fun onlyConstraining(keys: Set<Key>): Constraints {
+        return Constraints(constraints.filterKeys { it in keys })
+    }
+
     fun isUnconstrained(): Boolean {
         return constraints.isEmpty()
     }
@@ -77,7 +77,7 @@ data class Constraints private constructor(
         require(key.ind == iSet.ind) {
             "Key and bundle must have the same type. (${key.ind} != ${iSet.ind})"
         }
-        return and(constrainedBy(mapOf(key to iSet)))
+        return and(Constraints(mapOf(key to iSet)))
     }
 
     @Suppress("unused")
@@ -107,6 +107,6 @@ data class Constraints private constructor(
             ugly(lhs)
         }
 
-        return constrainedBy(newConstraints)
+        return Constraints(newConstraints)
     }
 }
