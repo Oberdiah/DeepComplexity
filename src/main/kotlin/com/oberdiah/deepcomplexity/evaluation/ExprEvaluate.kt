@@ -16,7 +16,6 @@ object ExprEvaluate {
     data class Scope(
         val constraints: ExprConstrain.ConstraintsOrPile = ExprConstrain.ConstraintsOrPile.unconstrained(),
         val toKeep: Set<Key.ExpressionKey> = setOf(),
-        val tagsMap: TagsMap = mapOf(),
     ) {
         override fun toString(): String = constraints.toString()
         fun shouldKeep(key: Key): Boolean = toKeep.contains(key) || !key.isExpr()
@@ -30,22 +29,13 @@ object ExprEvaluate {
          */
         fun withScope(expr: Expr<*>): Scope {
             val newScopes = expr.recursiveSubExprs.mapToSet { it.exprKey }
-            return Scope(constraints, toKeep + newScopes, tagsMap)
+            return Scope(constraints, toKeep + newScopes)
         }
 
         fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Scope {
             return Scope(
                 constraints.and(this.constraints),
                 toKeep,
-                tagsMap,
-            )
-        }
-
-        fun withTags(tagsMap: TagsMap): Scope {
-            return Scope(
-                constraints,
-                toKeep,
-                tagsMap + this.tagsMap,
             )
         }
     }
@@ -167,10 +157,6 @@ object ExprEvaluate {
             is TypeCastExpr<*, *> -> {
                 val toCast = evaluate(expr.expr, scope, tracer.onlyPath())
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
-            }
-
-            is TagsExpr -> {
-                evaluate(expr.expr, scope.withTags(expr.tags), tracer.onlyPath())
             }
 
             is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())

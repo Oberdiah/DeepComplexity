@@ -116,9 +116,6 @@ class Tracer(
             }
 
             is VarsExpr -> "CtxExpr"
-            is TagsExpr<*> -> {
-                "${expr.prettyTags()}\n${getStr(Direction.Only, expr.expr)}"
-            }
         }
     }
 }

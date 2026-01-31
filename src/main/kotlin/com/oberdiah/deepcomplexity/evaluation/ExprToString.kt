@@ -59,9 +59,6 @@ object ExprToString {
 
             is VariableExpr -> expr.key.toString()
             is VarsExpr -> expr.vars.toString()
-            is TagsExpr<*> -> {
-                "${expr.prettyTags()}\n${toStringWithTags(expr.expr, tagsMap + expr.tags)}"
-            }
         }
     }
 
@@ -78,7 +75,6 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
-            is TagsExpr<*> -> toExprKeyString(expr.expr)
         }
     }
 }

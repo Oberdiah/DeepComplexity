@@ -119,11 +119,6 @@ object ExprTreeRebuilder {
                         )
                     }
 
-                    is TagsExpr<*> -> TagsExpr.new(
-                        expr.tags.mapKeys { inner(it.key, isInCondition, replacer) },
-                        inner(expr.expr, isInCondition, replacer)
-                    )
-
                     is AnyBinaryExpr<*> -> {
                         ConversionsAndPromotion.castAToB(
                             inner(expr.lhs, isInCondition, replacer),
