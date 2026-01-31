@@ -181,8 +181,8 @@ sealed class Expr<T : Any> {
      */
     open fun simplify(): Expr<T> = this
 
-    fun evaluate(constraints: ExprConstrain.ConstraintsOrPile, tracer: Tracer): Bundle<T> =
-        ExprEvaluate.evaluate(this, constraints, tracer)
+    fun evaluate(constraints: ExprConstrain.ConstraintsOrPile, assistant: EvaluatorAssistant): Bundle<T> =
+        ExprEvaluate.evaluate(this, constraints, assistant)
 }
 
 /**

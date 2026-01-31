@@ -15,8 +15,14 @@ object ExprEvaluate {
     data class CacheKey(val expr: Expr<*>, val constraints: ExprConstrain.ConstraintsOrPile)
 
     val expressionCache = mutableMapOf<CacheKey, Bundle<*>>()
+    var totalEvaluatesAttempted = 0
 
-    fun <T : Any> evaluate(expr: Expr<T>, constraints: ExprConstrain.ConstraintsOrPile, tracer: Tracer): Bundle<T> {
+    fun <T : Any> evaluate(
+        expr: Expr<T>,
+        constraints: ExprConstrain.ConstraintsOrPile,
+        assistant: EvaluatorAssistant
+    ): Bundle<T> {
+        totalEvaluatesAttempted++
         val cacheKey = CacheKey(expr, constraints)
 
         val result = expressionCache.getOrPut(cacheKey) {
@@ -24,19 +30,19 @@ object ExprEvaluate {
                 is NumberIndicator<*> -> {
                     // Split into two lines for nicer debugging
                     val castExpr = expr.castToNumbers()
-                    evaluateNums(castExpr, constraints, tracer)
+                    evaluateNums(castExpr, constraints, assistant)
                 }
 
-                is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, constraints, tracer)
+                is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, constraints, assistant)
                 BooleanIndicator -> {
                     val castExpr = expr.castToBoolean()
-                    evaluateBools(castExpr, constraints, tracer)
+                    evaluateBools(castExpr, constraints, assistant)
                 }
 
                 VarsIndicator -> WONT_IMPLEMENT()
             }
 
-            tracer.trace(expr, evaluatedBundle)
+            assistant.trace(expr, evaluatedBundle)
 
             evaluatedBundle
         }
@@ -47,19 +53,19 @@ object ExprEvaluate {
     private fun <T : Number> evaluateNums(
         expr: Expr<T>,
         constraints: ExprConstrain.ConstraintsOrPile,
-        tracer: Tracer
+        assistant: EvaluatorAssistant
     ): Bundle<T> {
         val toReturn = when (expr) {
             is ArithmeticExpr -> {
-                val lhs = evaluate(expr.lhs, constraints, tracer.leftPath())
-                val rhs = evaluate(expr.rhs, constraints, tracer.rightPath())
+                val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
+                val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
 
                 lhs.arithmeticOperation(rhs, expr.op, expr.exprKey)
             }
 
-            is NegateExpr -> evaluate(expr.expr, constraints, tracer.onlyPath()).negate()
+            is NegateExpr -> evaluate(expr.expr, constraints, assistant.onlyPath()).negate()
 
-            else -> evaluateAnythings(expr, constraints, tracer)
+            else -> evaluateAnythings(expr, constraints, assistant)
         }
         return toReturn
     }
@@ -67,12 +73,12 @@ object ExprEvaluate {
     private fun evaluateBools(
         expr: Expr<Boolean>,
         constraints: ExprConstrain.ConstraintsOrPile,
-        tracer: Tracer
+        assistant: EvaluatorAssistant
     ): Bundle<Boolean> {
         val toReturn = when (expr) {
             is BooleanExpr -> {
-                val lhs = evaluate(expr.lhs, constraints, tracer.leftPath())
-                val rhs = evaluate(expr.rhs, constraints, tracer.rightPath())
+                val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
+                val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
 
                 lhs.booleanOperation(rhs, expr.op, expr.exprKey)
             }
@@ -82,16 +88,16 @@ object ExprEvaluate {
                     expr: ComparisonExpr<T>,
                     constraints: ExprConstrain.ConstraintsOrPile
                 ): Bundle<Boolean> {
-                    val lhs = evaluate(expr.lhs, constraints, tracer.leftPath())
-                    val rhs = evaluate(expr.rhs, constraints, tracer.rightPath())
+                    val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
+                    val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
 
                     return lhs.comparisonOperation(rhs, expr.comp, expr.exprKey)
                 }
                 evalC(expr, constraints)
             }
 
-            is BooleanInvertExpr -> evaluate(expr, constraints, tracer.onlyPath()).booleanInvert()
-            else -> evaluateAnythings(expr, constraints, tracer)
+            is BooleanInvertExpr -> evaluate(expr, constraints, assistant.onlyPath()).booleanInvert()
+            else -> evaluateAnythings(expr, constraints, assistant)
         }
 
         return toReturn
@@ -100,19 +106,19 @@ object ExprEvaluate {
     private fun <T : Any> evaluateGenerics(
         expr: Expr<T>,
         constraints: ExprConstrain.ConstraintsOrPile,
-        tracer: Tracer
+        assistant: EvaluatorAssistant
     ): Bundle<T> {
-        return evaluateAnythings(expr, constraints, tracer)
+        return evaluateAnythings(expr, constraints, assistant)
     }
 
     private fun <T : Any> evaluateAnythings(
         expr: Expr<T>,
         constraints: ExprConstrain.ConstraintsOrPile,
-        tracer: Tracer
+        assistant: EvaluatorAssistant
     ): Bundle<T> {
         val toReturn: Bundle<T> = when (expr) {
-            is UnionExpr -> evaluate(expr.lhs, constraints, tracer.leftPath()).union(
-                evaluate(expr.rhs, constraints, tracer.rightPath())
+            is UnionExpr -> evaluate(expr.lhs, constraints, assistant.leftPath()).union(
+                evaluate(expr.rhs, constraints, assistant.rightPath())
             )
 
             is IfExpr -> {
@@ -138,18 +144,18 @@ object ExprEvaluate {
                 )
 
                 if (falseConstraints.unreachable) {
-                    evaluate(expr.trueExpr, trueConstraints, tracer.truePath())
+                    evaluate(expr.trueExpr, trueConstraints, assistant.truePath())
                 } else if (trueConstraints.unreachable) {
-                    evaluate(expr.falseExpr, falseConstraints, tracer.falsePath())
+                    evaluate(expr.falseExpr, falseConstraints, assistant.falsePath())
                 } else {
-                    val trueValue = evaluate(expr.trueExpr, trueConstraints, tracer.truePath())
-                    val falseValue = evaluate(expr.falseExpr, falseConstraints, tracer.falsePath())
+                    val trueValue = evaluate(expr.trueExpr, trueConstraints, assistant.truePath())
+                    val falseValue = evaluate(expr.falseExpr, falseConstraints, assistant.falsePath())
                     trueValue.union(falseValue)
                 }
             }
 
             is TypeCastExpr<*, *> -> {
-                val toCast = evaluate(expr.expr, constraints, tracer.onlyPath())
+                val toCast = evaluate(expr.expr, constraints, assistant.onlyPath())
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 

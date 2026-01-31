@@ -167,17 +167,23 @@ object TestUtilities {
         val range = try {
             val evaluationStartTime = System.nanoTime()
 
+            ExprEvaluate.totalEvaluatesAttempted = 0
             ExprEvaluate.expressionCache.clear()
-            val tracer = Tracer(ExpressionTagger.buildTags(returnValue))
-            val bundle: Bundle<*> = returnValue.evaluate(
-                ExprConstrain.ConstraintsOrPile.unconstrained(),
-                tracer
-            )
+            val assistant = EvaluatorAssistant(ExpressionTagger.buildTags(returnValue))
+            val bundle: Bundle<*> = returnValue.evaluate(ExprConstrain.ConstraintsOrPile.unconstrained(), assistant)
             println("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
-            println("\tNumber of uncached expressions evaluated: ${ExprEvaluate.expressionCache.size}")
+            println(
+                "\tExpressions evaluated: ${ExprEvaluate.expressionCache.size}" +
+                        " out of ${ExprEvaluate.totalEvaluatesAttempted} total," +
+                        " cache hit rate: " +
+                        String.format(
+                            "%.2f",
+                            100.0 * (1.0 - ExprEvaluate.expressionCache.size.toDouble() / ExprEvaluate.totalEvaluatesAttempted.toDouble())
+                        ) + "%"
+            )
 
             // Must come after the `evaluate` call.
-            println((tracer.getTrace()).prependIndent())
+            println((assistant.getTrace()).prependIndent())
 
             // Good to calculate this after we've done our debug printing, just so if this ends up throwing
             // we still get to see the expression tree.

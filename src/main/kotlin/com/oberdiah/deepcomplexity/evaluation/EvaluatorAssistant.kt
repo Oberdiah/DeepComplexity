@@ -3,7 +3,7 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 
 
-class Tracer(
+class EvaluatorAssistant(
     private val tagsMap: TagsMap,
     private val path: List<Direction> = emptyList(),
     // Mutable, and the one instance is shared between tracers, which can be confusing.
@@ -18,14 +18,14 @@ class Tracer(
         False
     }
 
-    fun leftPath(): Tracer = direction(Direction.Left)
-    fun rightPath(): Tracer = direction(Direction.Right)
-    fun falsePath(): Tracer = direction(Direction.False)
-    fun truePath(): Tracer = direction(Direction.True)
-    fun onlyPath(): Tracer = direction(Direction.Only)
+    fun leftPath(): EvaluatorAssistant = direction(Direction.Left)
+    fun rightPath(): EvaluatorAssistant = direction(Direction.Right)
+    fun falsePath(): EvaluatorAssistant = direction(Direction.False)
+    fun truePath(): EvaluatorAssistant = direction(Direction.True)
+    fun onlyPath(): EvaluatorAssistant = direction(Direction.Only)
 
-    private fun direction(direction: Direction): Tracer =
-        Tracer(tagsMap, path + direction, evaluatedStrings, isDummy)
+    private fun direction(direction: Direction): EvaluatorAssistant =
+        EvaluatorAssistant(tagsMap, path + direction, evaluatedStrings, isDummy)
 
     fun getTrace(): String {
         if (isDummy) return "<| DUMMY TRACER |>"
