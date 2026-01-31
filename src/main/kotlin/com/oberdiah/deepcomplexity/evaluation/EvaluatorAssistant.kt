@@ -8,7 +8,7 @@ class EvaluatorAssistant(
     private val path: List<Direction> = emptyList(),
     // Mutable, and the one instance is shared between tracers, which can be confusing.
     private val evaluatedStrings: MutableMap<List<Direction>, String> = mutableMapOf(),
-    private val isDummy: Boolean = false,
+    private val isInsideCondition: Boolean = false,
 ) {
     enum class Direction {
         Only,
@@ -18,17 +18,25 @@ class EvaluatorAssistant(
         False
     }
 
+    /**
+     * Call when the evaluator has just entered a condition.
+     * This will turn off tracing, which isn't surfaced for conditions anyway.
+     */
+    fun enteredCondition(): EvaluatorAssistant =
+        EvaluatorAssistant(tagsMap, path, evaluatedStrings, isInsideCondition = true)
+
     fun leftPath(): EvaluatorAssistant = direction(Direction.Left)
     fun rightPath(): EvaluatorAssistant = direction(Direction.Right)
     fun falsePath(): EvaluatorAssistant = direction(Direction.False)
     fun truePath(): EvaluatorAssistant = direction(Direction.True)
+
     fun onlyPath(): EvaluatorAssistant = direction(Direction.Only)
 
     private fun direction(direction: Direction): EvaluatorAssistant =
-        EvaluatorAssistant(tagsMap, path + direction, evaluatedStrings, isDummy)
+        EvaluatorAssistant(tagsMap, path + direction, evaluatedStrings, isInsideCondition)
 
     fun getTrace(): String {
-        if (isDummy) return "<| DUMMY TRACER |>"
+        if (isInsideCondition) return "<| IS INSIDE CONDITION |>"
 
         val mainStr = "${ExpressionTagger.tagsToString(tagsMap)}\n${evaluatedStrings[emptyList()]!!}"
 
@@ -44,7 +52,7 @@ class EvaluatorAssistant(
     private val likelyCompromised: Boolean get() = System.getenv("TEST_FILTER") == "go"
 
     fun trace(expr: Expr<*>, bundle: Bundle<*>) {
-        if (isDummy) return
+        if (isInsideCondition) return
 
         fun getStr(direction: Direction, fallback: Expr<*>): String {
             return evaluatedStrings.getOrElse(path + direction) {

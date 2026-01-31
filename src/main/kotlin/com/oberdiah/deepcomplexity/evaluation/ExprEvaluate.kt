@@ -137,10 +137,14 @@ object ExprEvaluate {
                 val ifCondition = expr.thisCondition
 
                 val trueConstraints = constraints.and(
-                    ExprConstrain.getConstraints(ifCondition, constraints)
+                    ExprConstrain.getConstraints(ifCondition, constraints, assistant.enteredCondition())
                 )
                 val falseConstraints = constraints.and(
-                    ExprConstrain.getConstraints(BooleanInvertExpr.new(ifCondition), constraints)
+                    ExprConstrain.getConstraints(
+                        BooleanInvertExpr.new(ifCondition),
+                        constraints,
+                        assistant.enteredCondition()
+                    )
                 )
 
                 if (falseConstraints.unreachable) {

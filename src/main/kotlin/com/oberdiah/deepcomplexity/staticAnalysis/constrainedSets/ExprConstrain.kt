@@ -88,23 +88,27 @@ object ExprConstrain {
      * This is the only place we should generate constraints. They then get applied to constants when traversing
      * evaluation, and those constants then cling onto bundles and go for a ride.
      */
-    fun getConstraints(condition: Expr<Boolean>, constraints: ConstraintsOrPile): ConstraintsOrPile {
+    fun getConstraints(
+        condition: Expr<Boolean>,
+        constraints: ConstraintsOrPile,
+        assistant: EvaluatorAssistant
+    ): ConstraintsOrPile {
         val startTime = System.currentTimeMillis()
         val newConstraints = when (condition) {
             is BooleanExpr -> {
                 when (condition.op) {
                     BooleanOp.OR -> {
-                        val lhsConstrained = getConstraints(condition.lhs, constraints)
+                        val lhsConstrained = getConstraints(condition.lhs, constraints, assistant)
                         // In the OR case the two clauses don't constrain each other.
-                        val rhsConstrained = getConstraints(condition.rhs, constraints)
+                        val rhsConstrained = getConstraints(condition.rhs, constraints, assistant)
 
                         lhsConstrained.or(rhsConstrained)
                     }
 
                     BooleanOp.AND -> {
                         // In the AND case, they do.
-                        val lhsConstrained = getConstraints(condition.lhs, constraints)
-                        val rhsConstrained = getConstraints(condition.rhs, constraints.and(lhsConstrained))
+                        val lhsConstrained = getConstraints(condition.lhs, constraints, assistant)
+                        val rhsConstrained = getConstraints(condition.rhs, constraints.and(lhsConstrained), assistant)
 
                         lhsConstrained.and(rhsConstrained)
                     }
@@ -118,8 +122,8 @@ object ExprConstrain {
                     // and tracer.trueConstraints() and use those when calling getConstraints from
                     // the `evaluate` section to keep these separate from the standard evaluations. Currently
                     // there's nowhere to display that information even if we had it, so we don't bother.
-                    val lhsBundleSet = me.lhs.evaluate(constraints, EvaluatorAssistant(emptyMap(), isDummy = true))
-                    val rhsBundleSet = me.rhs.evaluate(constraints, EvaluatorAssistant(emptyMap(), isDummy = true))
+                    val lhsBundleSet = me.lhs.evaluate(constraints, assistant)
+                    val rhsBundleSet = me.rhs.evaluate(constraints, assistant)
 
                     return lhsBundleSet.generateConstraintsFrom(
                         rhsBundleSet,
@@ -144,7 +148,7 @@ object ExprConstrain {
                 // You might think that this is a bit silly, and we should just invert the produced constraints
                 // instead, but there's no easy way to invert constraints due to the uninvertability
                 // of sets.
-                getConstraints(condition.expr.inverted(constraints), constraints)
+                getConstraints(condition.expr.inverted(constraints), constraints, assistant)
             }
 
             is IfExpr -> {
@@ -163,7 +167,7 @@ object ExprConstrain {
                         BooleanOp.OR
                     )
 
-                getConstraints(convertedToBooleanExpr, constraints)
+                getConstraints(convertedToBooleanExpr, constraints, assistant)
             }
 
             else -> TODO("Not implemented constraints for $condition")
