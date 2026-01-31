@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
@@ -25,7 +25,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 @ConsistentCopyVisibility
 data class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    val constraints: Map<Key, ISet<*>>,
+    val constraints: Map<EvaluationKey, ISet<*>>,
 ) {
     init {
         require(constraints.size < 10) {
@@ -46,7 +46,7 @@ data class Constraints private constructor(
         }
 
         fun unreachable(): Constraints {
-            return Constraints(mapOf(Key.ConstantKey to BooleanSet.NEITHER))
+            return Constraints(mapOf(EvaluationKey.ConstantKey to BooleanSet.NEITHER))
         }
     }
 
@@ -58,7 +58,7 @@ data class Constraints private constructor(
         }
     }
 
-    fun onlyConstraining(keys: Set<Key>): Constraints {
+    fun onlyConstraining(keys: Set<EvaluationKey>): Constraints {
         return Constraints(constraints.filterKeys { it in keys })
     }
 
@@ -66,12 +66,12 @@ data class Constraints private constructor(
         return constraints.isEmpty()
     }
 
-    fun <T : Any> getConstraint(ind: Indicator<T>, key: Key): ISet<T> {
+    fun <T : Any> getConstraint(ind: Indicator<T>, key: EvaluationKey): ISet<T> {
         return constraints[key]?.cast(ind) ?: ind.newFullSet()
     }
 
-    fun withConstraint(key: Key, iSet: ISet<*>): Constraints {
-        require(key !is Key.ConstantKey) {
+    fun withConstraint(key: EvaluationKey, iSet: ISet<*>): Constraints {
+        require(key !is EvaluationKey.ConstantKey) {
             "Constant keys shouldn't be allowed to be added to constraints."
         }
         require(key.ind == iSet.ind) {

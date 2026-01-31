@@ -10,27 +10,11 @@ import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 
-enum class Lifetime {
-    /**
-     * The key will be removed as soon as it moves out of the block it was created in.
-     */
-    BLOCK,
-
-    /**
-     * The key will be removed as soon as it moves out of the method it was created in.
-     */
-    METHOD,
-
-    /**
-     * The key will never be removed.
-     */
-    FOREVER
-}
-
 /**
- * Keys used in Method processing.
+ * Keys used in Method processing. Contains things such as ThisKey and ReturnKey which are just there
+ * to aid method processing.
  */
-sealed interface UnknownKey {
+sealed interface MethodProcessingKey {
     val ind: Indicator<*>
     val lifetime: Lifetime
         get() = Lifetime.FOREVER
@@ -48,7 +32,24 @@ sealed interface UnknownKey {
     }
 }
 
-sealed class VariableKey(val variable: PsiVariable) : UnknownKey, Key {
+enum class Lifetime {
+    /**
+     * The key will be removed as soon as it moves out of the block it was created in.
+     */
+    BLOCK,
+
+    /**
+     * The key will be removed as soon as it moves out of the method it was created in.
+     */
+    METHOD,
+
+    /**
+     * The key will never be removed.
+     */
+    FOREVER
+}
+
+sealed class VariableKey(val variable: PsiVariable) : MethodProcessingKey, EvaluationKey {
     override val ind: Indicator<*> = Utilities.psiTypeToIndicator(variable.type)
     override fun toString(): String = variable.toStringPretty()
     override fun equals(other: Any?): Boolean = other is VariableKey && this.variable == other.variable
@@ -59,7 +60,7 @@ class LocalVariableKey(variable: PsiLocalVariable) : VariableKey(variable)
 class ParameterKey(variable: PsiParameter, override val lifetime: Lifetime = Lifetime.FOREVER) :
     VariableKey(variable)
 
-data class ThisKey(val type: PsiType) : UnknownKey {
+data class ThisKey(val type: PsiType) : MethodProcessingKey {
     override val lifetime: Lifetime = Lifetime.METHOD
     override val ind: Indicator<*> = Utilities.psiTypeToIndicator(type)
     override fun toString(): String = "this"
@@ -67,11 +68,11 @@ data class ThisKey(val type: PsiType) : UnknownKey {
     override fun equals(other: Any?): Boolean = other is ThisKey
 }
 
-data class ReturnKey(override val ind: Indicator<*>) : UnknownKey {
+data class ReturnKey(override val ind: Indicator<*>) : MethodProcessingKey {
     override fun toString(): String = "Return value"
 }
 
-data class QualifiedFieldKey(val qualifier: LeafExpr<HeapMarker>, val field: Field) : UnknownKey {
+data class QualifiedFieldKey(val qualifier: LeafExpr<HeapMarker>, val field: Field) : MethodProcessingKey {
     init {
         require(qualifier.ind is ObjectIndicator) {
             "Cannot create a qualified field key with a qualifier of indicator ${qualifier.ind}"

@@ -1,7 +1,7 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
+import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
@@ -23,7 +23,7 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
 
     override fun collapse(constraints: Constraints): ISet<HeapMarker> = value
 
-    override fun varsTracking(): Collection<Key> = emptyList()
+    override fun varsTracking(): Collection<EvaluationKey> = emptyList()
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 }

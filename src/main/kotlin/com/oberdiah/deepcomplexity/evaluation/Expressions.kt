@@ -3,9 +3,9 @@ package com.oberdiah.deepcomplexity.evaluation
 import ai.grazie.utils.merge
 import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.context.EvaluationKey.ExpressionKey
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.Key.ExpressionKey
-import com.oberdiah.deepcomplexity.context.UnknownKey
+import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.context.Vars
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTreeSameType
@@ -441,19 +441,16 @@ sealed class LeafExpr<T : Any> : Expr<T>() {
 }
 
 /**
- * This represents a variable in code which we do not know the value of yet within our scope. Variable expressions
+ * This represents an unknown in code which we do not know the value of yet within our scope. Variable expressions
  * are resolved at method processing time.
- *
- * Related to a specific context (The context that created it).
- * This context is only used for ensuring proper usage, it's never used within the logic.
  */
 class VariableExpr<T : Any> private constructor(
-    val key: UnknownKey,
+    val key: MethodProcessingKey,
     override val ind: Indicator<T>
 ) : LeafExpr<T>() {
     companion object {
-        fun <T : Any> new(key: UnknownKey, ind: Indicator<T>): VariableExpr<T> = ExprPool.create(key, ind)
-        fun new(key: UnknownKey): VariableExpr<*> = new(key, key.ind)
+        fun <T : Any> new(key: MethodProcessingKey, ind: Indicator<T>): VariableExpr<T> = ExprPool.create(key, ind)
+        fun new(key: MethodProcessingKey): VariableExpr<*> = new(key, key.ind)
     }
 
     override fun parts(): List<Any> = listOf(key, ind)

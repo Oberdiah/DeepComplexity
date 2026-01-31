@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
-import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
@@ -22,7 +22,7 @@ interface Variances<T : Any> {
      * Returns true if this variance is currently tracking the given key, i.e. the variance would
      * return a different value if that key was constrained.
      */
-    fun varsTracking(): Collection<Key>
+    fun varsTracking(): Collection<EvaluationKey>
 
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,

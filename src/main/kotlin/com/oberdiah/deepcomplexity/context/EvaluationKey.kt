@@ -4,13 +4,16 @@ import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
-sealed interface Key {
+/**
+ * Used in constraints and evaluation.
+ */
+sealed interface EvaluationKey {
     val ind: Indicator<*>
 
     /**
      * Used to allow us to equate expressions.
      */
-    data class ExpressionKey(val expr: Expr<*>) : Key {
+    data class ExpressionKey(val expr: Expr<*>) : EvaluationKey {
         override val ind: Indicator<*>
             get() = expr.ind
 
@@ -20,7 +23,7 @@ sealed interface Key {
     /**
      * Purely used to represent the constant value in a NumberVariance
      */
-    object ConstantKey : Key {
+    object ConstantKey : EvaluationKey {
         override val ind: Indicator<*>
             get() = throw IllegalStateException("Constant keys don't have a type.")
 

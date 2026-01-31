@@ -13,7 +13,7 @@ data class Vars(
     // There may be a way to add protections back, in the form of a 'variables already resolved' set, but
     // ensuring we always update that when a resolution is done is tricky, so I didn't bother. If it's
     // annoying in future, that's worth investigating. See 'Placeholder Behaviour Change' in ChatGPT for more ideas.
-    private val map: Map<UnknownKey, Expr<*>>
+    private val map: Map<MethodProcessingKey, Expr<*>>
 ) {
     val keys = map.keys
     val returnValue = map.filterKeys { it is ReturnKey }.values.firstOrNull()
@@ -21,7 +21,7 @@ data class Vars(
     /**
      * Retains all entries that satisfy the given predicate.
      */
-    fun filterKeys(operation: (UnknownKey) -> Boolean) = Vars(map.filterKeys(operation))
+    fun filterKeys(operation: (MethodProcessingKey) -> Boolean) = Vars(map.filterKeys(operation))
     fun resolveUsing(vars: Vars): Vars =
         mapExpressions(ExprTreeRebuilder.ExprReplacerWithKey { _, e -> vars.resolveKnownVariables(e) })
 
@@ -43,7 +43,7 @@ data class Vars(
     /**
      * Keys need resolved too, at least when they're qualified and have the possibility of containing variables.
      */
-    fun resolveKey(key: UnknownKey): LValue<*> {
+    fun resolveKey(key: MethodProcessingKey): LValue<*> {
         return if (key is QualifiedFieldKey) {
             LValueField.new(key.field, key.qualifier.resolve(this))
         } else {
@@ -55,7 +55,7 @@ data class Vars(
         fun new(): Vars = Vars(mapOf())
 
         /**
-         * Merges the two variable maps, combining variables with identical [UnknownKey]s using [how].
+         * Merges the two variable maps, combining variables with identical [MethodProcessingKey]s using [how].
          */
         fun combine(lhs: Vars, rhs: Vars, how: (Expr<*>, Expr<*>) -> Expr<*>): Vars {
             val newKeys = (lhs.keys + rhs.keys) - lhs.keys.intersect(rhs.keys)
@@ -132,7 +132,7 @@ data class Vars(
     /**
      * Grab the variable expression assigned to the given key.
      */
-    private fun get(key: UnknownKey): Expr<*> {
+    private fun get(key: MethodProcessingKey): Expr<*> {
         // If we have it, return it.
         map[key]?.let { return it }
 
@@ -142,7 +142,7 @@ data class Vars(
         return VariableExpr.new(key)
     }
 
-    private fun getPlaceholderFor(key: UnknownKey): Expr<*>? {
+    private fun getPlaceholderFor(key: MethodProcessingKey): Expr<*>? {
         if (key is QualifiedFieldKey) {
             // This is straightforward; wherever the placeholder for the entire key exists,
             // we replace it with the key itself.
@@ -241,7 +241,7 @@ data class Vars(
      * This second private [with] handles any potential aliasing.
      * Using this alone should be perfectly correct.
      */
-    fun with(key: UnknownKey, rExpr: Expr<*>): Vars {
+    fun with(key: MethodProcessingKey, rExpr: Expr<*>): Vars {
         var newVars = Vars(map + (key to rExpr))
 
         if (key !is QualifiedFieldKey) {

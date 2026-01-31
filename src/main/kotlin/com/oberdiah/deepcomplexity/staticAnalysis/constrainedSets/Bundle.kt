@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
@@ -157,7 +157,7 @@ data class Bundle<T : Any> private constructor(
 
     fun performBinaryOperation(
         other: Bundle<T>,
-        exprKey: Key,
+        exprKey: EvaluationKey,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>
     ): Bundle<T> =
         binaryMapToVariances(ind, other, exprKey, op)
@@ -165,7 +165,7 @@ data class Bundle<T : Any> private constructor(
     fun <Q : Any> binaryMapToVariances(
         newInd: Indicator<Q>,
         other: Bundle<T>,
-        exprKey: Key,
+        exprKey: EvaluationKey,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
     ): Bundle<Q> {
         require(ind == other.ind) {

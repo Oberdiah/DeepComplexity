@@ -1,8 +1,8 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.context.QualifiedFieldKey
-import com.oberdiah.deepcomplexity.context.UnknownKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 sealed class LValue<T : Any> {
@@ -15,9 +15,9 @@ sealed class LValue<T : Any> {
  * If you've got a key you want to assign to, you can use this. It doesn't matter if it's
  * a [QualifiedFieldKey] or not.
  */
-data class LValueKey<T : Any>(val key: UnknownKey, override val ind: Indicator<T>) : LValue<T>() {
+data class LValueKey<T : Any>(val key: MethodProcessingKey, override val ind: Indicator<T>) : LValue<T>() {
     companion object {
-        fun new(key: UnknownKey): LValueKey<*> = LValueKey(key, key.ind)
+        fun new(key: MethodProcessingKey): LValueKey<*> = LValueKey(key, key.ind)
     }
 }
 

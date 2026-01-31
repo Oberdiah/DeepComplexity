@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.variances
 
-import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.evaluation.BooleanOp
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
@@ -25,7 +25,7 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
 
     override fun collapse(constraints: Constraints): ISet<Boolean> = value
 
-    override fun varsTracking(): Collection<Key> = emptyList()
+    override fun varsTracking(): Collection<EvaluationKey> = emptyList()
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 

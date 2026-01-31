@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.oberdiah.deepcomplexity.context.Key
+import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
@@ -23,7 +23,7 @@ object ExprConstrain {
             }
         }
 
-        fun onlyConstraining(keys: Set<Key>): ConstraintsOrPile {
+        fun onlyConstraining(keys: Set<EvaluationKey>): ConstraintsOrPile {
             return ConstraintsOrPile(pile.mapToSet { it.onlyConstraining(keys) })
         }
 

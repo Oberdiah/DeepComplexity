@@ -1,8 +1,8 @@
 package com.oberdiah.deepcomplexity.staticAnalysis
 
 import com.intellij.psi.PsiType
+import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.Key
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
@@ -40,7 +40,7 @@ sealed class Indicator<T : Any>(val clazz: KClass<T>) {
      */
     abstract fun newFullSet(): ISet<T>
 
-    abstract fun newVariance(key: Key): Variances<T>
+    abstract fun newVariance(key: EvaluationKey): Variances<T>
 
     companion object {
         fun <T : Any> fromClass(clazz: KClass<T>): Indicator<T> {
@@ -108,7 +108,7 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
     override fun newFullSet(): NumberSet<T> = NumberSet.newFull(this)
     override fun newEmptySet(): NumberSet<T> = NumberSet.newEmpty(this)
     override fun newConstantSet(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
-    override fun newVariance(key: Key): Variances<T> = NumberVariances.newFromVariance(this, key)
+    override fun newVariance(key: EvaluationKey): Variances<T> = NumberVariances.newFromVariance(this, key)
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
@@ -181,7 +181,7 @@ data object ByteIndicator : NumberIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanIndicator : Indicator<Boolean>(Boolean::class) {
-    override fun newVariance(key: Key): Variances<Boolean> = BooleanVariances(BooleanSet.EITHER)
+    override fun newVariance(key: EvaluationKey): Variances<Boolean> = BooleanVariances(BooleanSet.EITHER)
     override fun newFullSet(): ISet<Boolean> = BooleanSet.EITHER
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
     override fun newConstantSet(constant: Boolean): ISet<Boolean> =
@@ -191,7 +191,7 @@ data object BooleanIndicator : Indicator<Boolean>(Boolean::class) {
 data class ObjectIndicator(val type: PsiType) : Indicator<HeapMarker>(HeapMarker::class) {
     override fun toString(): String = "ObjectIndicator(${type.toStringPretty()})"
 
-    override fun newVariance(key: Key): Variances<HeapMarker> =
+    override fun newVariance(key: EvaluationKey): Variances<HeapMarker> =
         ObjectVariances(ObjectSet.newEmptySet(this), this)
 
     override fun newConstantSet(constant: HeapMarker): ISet<HeapMarker> =
@@ -207,5 +207,5 @@ object VarsIndicator : Indicator<VarsMarker>(VarsMarker::class) {
     override fun newEmptySet(): ISet<VarsMarker> = WONT_IMPLEMENT()
     override fun newConstantSet(constant: VarsMarker): ISet<VarsMarker> = WONT_IMPLEMENT()
     override fun newFullSet(): ISet<VarsMarker> = WONT_IMPLEMENT()
-    override fun newVariance(key: Key): Variances<VarsMarker> = WONT_IMPLEMENT()
+    override fun newVariance(key: EvaluationKey): Variances<VarsMarker> = WONT_IMPLEMENT()
 }

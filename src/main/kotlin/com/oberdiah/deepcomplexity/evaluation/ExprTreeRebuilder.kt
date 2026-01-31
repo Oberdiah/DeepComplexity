@@ -1,6 +1,6 @@
 package com.oberdiah.deepcomplexity.evaluation
 
-import com.oberdiah.deepcomplexity.context.UnknownKey
+import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
@@ -23,12 +23,12 @@ object ExprTreeRebuilder {
      * from the root of an expression tree where the key of the expression is also known.
      */
     interface ExprReplacerWithKey {
-        fun <T : Any> replace(key: UnknownKey, expr: Expr<T>): Expr<T>
+        fun <T : Any> replace(key: MethodProcessingKey, expr: Expr<T>): Expr<T>
 
         companion object {
-            operator fun invoke(block: (UnknownKey, Expr<*>) -> Expr<*>): ExprReplacerWithKey {
+            operator fun invoke(block: (MethodProcessingKey, Expr<*>) -> Expr<*>): ExprReplacerWithKey {
                 return object : ExprReplacerWithKey {
-                    override fun <T : Any> replace(key: UnknownKey, expr: Expr<T>): Expr<T> {
+                    override fun <T : Any> replace(key: MethodProcessingKey, expr: Expr<T>): Expr<T> {
                         return block(key, expr).castOrThrow(expr.ind)
                     }
                 }

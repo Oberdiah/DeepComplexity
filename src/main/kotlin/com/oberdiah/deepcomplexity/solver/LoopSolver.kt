@@ -1,14 +1,14 @@
 package com.oberdiah.deepcomplexity.solver
 
 import com.oberdiah.deepcomplexity.context.Context
-import com.oberdiah.deepcomplexity.context.UnknownKey
+import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder
 
 object LoopSolver {
     private data class SolverInformation(
-        val key: UnknownKey,
-        val allKeysInLoop: Set<UnknownKey>,
+        val key: MethodProcessingKey,
+        val allKeysInLoop: Set<MethodProcessingKey>,
         val numLoopsExpr: Expr<Int>
     )
 

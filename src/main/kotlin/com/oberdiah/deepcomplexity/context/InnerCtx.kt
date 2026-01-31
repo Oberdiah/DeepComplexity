@@ -92,7 +92,7 @@ class InnerCtx private constructor(
         dynamicVars?.resolveUsing(vars)
     )
 
-    val keys: Set<UnknownKey> = staticExpr.allSubExprsOfType<VarsExpr>().flatMap {
+    val keys: Set<MethodProcessingKey> = staticExpr.allSubExprsOfType<VarsExpr>().flatMap {
         getVarsFromVarsExpr(it).keys
     }.toSet()
 
