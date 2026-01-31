@@ -1,5 +1,8 @@
 package com.oberdiah.deepcomplexity.evaluation
 
+import com.oberdiah.deepcomplexity.utilities.Utilities.decrementCount
+import com.oberdiah.deepcomplexity.utilities.Utilities.incrementCount
+
 object ExprTreeVisitor {
     fun <OUTPUT> reduce(
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
@@ -29,42 +32,34 @@ object ExprTreeVisitor {
 
         return cache.getValue(initial)
     }
-    
+
     fun getTopologicalOrdering(root: Expr<*>): List<Expr<*>> {
         val reachable = root.recursiveSubExprs
         val indegree = reachable.associateWith { 0 }.toMutableMap()
-        reachable.forEach { parent ->
-            parent.directSubExprs
-                .forEach { child ->
-                    indegree.merge(child, 1, Int::plus)
-                }
-        }
-
-        val q = ArrayDeque<Expr<*>>().apply {
-            indegree
-                .filter { (_, deg) -> deg == 0 }
-                .map { (n, _) -> n }
-                .forEach(::addLast)
-        }
-
-        val topoParent = buildList(reachable.size) {
-            while (q.isNotEmpty()) {
-                val n = q.removeFirst()
-                add(n)
-
-                n.directSubExprs
-                    .forEach { child ->
-                        val newDeg = indegree.getValue(child) - 1
-                        indegree[child] = newDeg
-                        if (newDeg == 0) q.addLast(child)
-                    }
+        for (parent in reachable) {
+            for (child in parent.directSubExprs) {
+                indegree.incrementCount(child)
             }
         }
 
-        require(topoParent.size == reachable.size) {
+        val stillToProcess = ArrayDeque(indegree.filterValues { it == 0 }.keys)
+
+        val resultingList = buildList(reachable.size) {
+            while (true) {
+                val expr = stillToProcess.removeFirstOrNull() ?: break
+                add(expr)
+                for (child in expr.directSubExprs) {
+                    if (indegree.decrementCount(child) == 0) {
+                        stillToProcess.addLast(child)
+                    }
+                }
+            }
+        }
+
+        require(resultingList.size == reachable.size) {
             "Graph contains a cycle; topological ordering does not exist."
         }
 
-        return topoParent
+        return resultingList
     }
 }

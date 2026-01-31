@@ -456,6 +456,47 @@ object Utilities {
     fun String.betterPrependIndent(indent: String = "    "): String =
         lineSequence().joinToString("\n") { indent + it }
 
+    /**
+     * Increments the count for the given key by the specified amount (default is 1).
+     * If the key does not exist in the map, it is added with the initial count equal to the amount.
+     * Returns the new count.
+     * Throws an exception if the increment amount is negative.
+     */
+    fun <T> MutableMap<T, Int>.incrementCount(key: T, amount: Int = 1): Int {
+        require(amount >= 0) {
+            "Amount to increment must be non-negative."
+        }
+        val current = this[key] ?: 0
+        val new = current + amount
+        this[key] = new
+        return new
+    }
+
+    /**
+     * Decreases the count value associated with a given key in the mutable map by a specified amount.
+     * If the resulting count reaches zero, the key is removed from the map.
+     * Throws an exception if the decrement amount is negative or greater than the current count.
+     */
+    fun <T> MutableMap<T, Int>.decrementCount(key: T, amount: Int = 1): Int {
+        require(amount >= 0) {
+            "Amount to decrement must be non-negative."
+        }
+        val current = this[key] ?: 0
+        val new = current - amount
+
+        require(new >= 0) {
+            "Cannot decrement count for key $key below zero ($current - $amount = $new)."
+        }
+
+        if (new == 0) {
+            this.remove(key)
+        } else {
+            this[key] = new
+        }
+
+        return new
+    }
+
     @Suppress("FunctionName")
     fun WONT_IMPLEMENT(reason: String = "This function is intentionally unimplemented."): Nothing {
         throw NotImplementedError(reason)
