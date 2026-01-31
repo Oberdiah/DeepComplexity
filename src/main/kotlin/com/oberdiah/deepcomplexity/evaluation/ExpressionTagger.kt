@@ -21,6 +21,10 @@ object ExpressionTagger {
      * for those tags. Useful for pretty-printing large expressions.
      */
     fun buildTags(expr: Expr<*>): TagsMap {
+        if (expr.size < BigInteger.valueOf(500)) {
+            return emptyMap()
+        }
+
         val counts = expr.subExprCounts
         val ordering: List<Expr<*>> = ExprTreeVisitor.getTopologicalOrdering(expr).asReversed()
         val tags = mutableMapOf<Expr<*>, String>()
