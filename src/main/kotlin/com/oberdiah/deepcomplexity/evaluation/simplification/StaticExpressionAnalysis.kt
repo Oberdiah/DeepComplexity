@@ -1,4 +1,6 @@
-package com.oberdiah.deepcomplexity.evaluation
+package com.oberdiah.deepcomplexity.evaluation.simplification
+
+import com.oberdiah.deepcomplexity.evaluation.*
 
 object StaticExpressionAnalysis {
     const val SKIP_OPTIMIZATIONS = false
@@ -144,7 +146,7 @@ object StaticExpressionAnalysis {
         if (simplifiedTrueExpr is IfExpr) {
             // if c then (if t then x else y) else y ==> if (c AND t) then x else y
             if (simplifiedFalseExpr == simplifiedTrueExpr.falseExpr) {
-                return IfExpr.newRaw(
+                return IfExpr.new(
                     simplifiedTrueExpr.trueExpr,
                     simplifiedFalseExpr,
                     BooleanExpr.new(condition, simplifiedTrueExpr.thisCondition, BooleanOp.AND)
@@ -152,7 +154,7 @@ object StaticExpressionAnalysis {
             }
             // if c then (if t then x else y) else x ==> if (c AND !t) then y else x
             if (simplifiedFalseExpr == simplifiedTrueExpr.trueExpr) {
-                return IfExpr.newRaw(
+                return IfExpr.new(
                     simplifiedTrueExpr.falseExpr,
                     simplifiedFalseExpr,
                     BooleanExpr.new(condition, BooleanInvertExpr.new(simplifiedTrueExpr.thisCondition), BooleanOp.AND)
@@ -163,7 +165,7 @@ object StaticExpressionAnalysis {
         if (simplifiedFalseExpr is IfExpr) {
             // if c then x else (if t then x else y) ==> if (c OR t) then x else y
             if (simplifiedTrueExpr == simplifiedFalseExpr.trueExpr) {
-                return IfExpr.newRaw(
+                return IfExpr.new(
                     simplifiedTrueExpr,
                     simplifiedFalseExpr.falseExpr,
                     BooleanExpr.new(condition, simplifiedFalseExpr.thisCondition, BooleanOp.OR)
@@ -171,7 +173,7 @@ object StaticExpressionAnalysis {
             }
             // if c then y else (if t then x else y) ==> if (c OR !t) then y else x
             if (simplifiedTrueExpr == simplifiedFalseExpr.falseExpr) {
-                return IfExpr.newRaw(
+                return IfExpr.new(
                     simplifiedTrueExpr,
                     simplifiedFalseExpr.trueExpr,
                     BooleanExpr.new(condition, BooleanInvertExpr.new(simplifiedFalseExpr.thisCondition), BooleanOp.OR)
@@ -184,9 +186,9 @@ object StaticExpressionAnalysis {
             if (simplifiedTrueExpr.thisCondition == simplifiedFalseExpr.thisCondition &&
                 simplifiedTrueExpr.trueExpr == simplifiedFalseExpr.trueExpr
             ) {
-                return IfExpr.newRaw(
+                return IfExpr.new(
                     simplifiedTrueExpr.trueExpr,
-                    IfExpr.newRaw(simplifiedTrueExpr.falseExpr, simplifiedFalseExpr.falseExpr, condition),
+                    IfExpr.new(simplifiedTrueExpr.falseExpr, simplifiedFalseExpr.falseExpr, condition),
                     simplifiedTrueExpr.thisCondition
                 )
             }
