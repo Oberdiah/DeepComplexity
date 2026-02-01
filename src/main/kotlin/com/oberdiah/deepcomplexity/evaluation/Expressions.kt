@@ -11,12 +11,16 @@ import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTreeSameType
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
-import com.oberdiah.deepcomplexity.evaluation.simplification.StaticExpressionAnalysis
+import com.oberdiah.deepcomplexity.evaluation.simplification.BooleanSimplification
+import com.oberdiah.deepcomplexity.evaluation.simplification.ComparisonSimplification
+import com.oberdiah.deepcomplexity.evaluation.simplification.IfSimplification
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 import com.oberdiah.deepcomplexity.utilities.Utilities.sum
 import java.math.BigInteger
+
+const val SKIP_OPTIMIZATIONS = false
 
 sealed class Expr<T : Any> {
     init {
@@ -274,7 +278,7 @@ class ComparisonExpr<T : Any> private constructor(
          */
         fun <A : Any> new(lhs: Expr<A>, rhs: Expr<*>, comp: ComparisonOp): Expr<Boolean> {
             val rhs = rhs.castOrThrow(lhs.ind)
-            return StaticExpressionAnalysis.attemptToSimplifyComparison(lhs, rhs, comp)
+            return ComparisonSimplification.attemptToSimplifyComparison(lhs, rhs, comp)
         }
     }
 
@@ -368,7 +372,7 @@ class IfExpr<T : Any> private constructor(
          */
         fun <A : Any> new(trueExpr: Expr<A>, falseExpr: Expr<*>, condition: Expr<Boolean>): Expr<A> {
             val falseExpr = falseExpr.castOrThrow(trueExpr.ind)
-            return StaticExpressionAnalysis.attemptToSimplifyIfExpr(trueExpr, falseExpr, condition)
+            return IfSimplification.attemptToSimplifyIfExpr(trueExpr, falseExpr, condition)
         }
     }
 }
@@ -393,7 +397,7 @@ class BooleanExpr private constructor(
             ExprPool.create(lhs, rhs, op)
 
         fun new(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
-            return StaticExpressionAnalysis.attemptToSimplifyBooleanExpr(lhs, rhs, op)
+            return BooleanSimplification.attemptToSimplifyBooleanExpr(lhs, rhs, op)
         }
     }
 
