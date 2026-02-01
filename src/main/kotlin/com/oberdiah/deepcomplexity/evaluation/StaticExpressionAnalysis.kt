@@ -102,45 +102,96 @@ object StaticExpressionAnalysis {
         return false
     }
 
-    fun <A : Any> attemptToSimplifyIfExpr(trueExpr: Expr<A>, falseExpr: Expr<A>, condition: Expr<Boolean>): Expr<A> {
+    fun <A : Any> attemptToSimplifyIfExpr(
+        trueBranchExpr: Expr<A>,
+        falseBranchExpr: Expr<A>,
+        condition: Expr<Boolean>
+    ): Expr<A> {
         if (SKIP_OPTIMIZATIONS) {
-            return IfExpr.newRaw(trueExpr, falseExpr, condition)
+            return IfExpr.newRaw(trueBranchExpr, falseBranchExpr, condition)
         }
 
-        val trueExpr = if (trueExpr is IfExpr && trueExpr.thisCondition == condition) {
-            trueExpr.trueExpr
-        } else {
-            trueExpr
-        }
-        val falseExpr = if (falseExpr is IfExpr && falseExpr.thisCondition == condition) {
-            // If my condition is equal to the condition of the false branch's inner `if`'s condition, we know that that
-            // inner `if` can never be true, so we can safely return its false branch.
-            falseExpr.falseExpr
-        } else {
-            falseExpr
+        if (condition is BooleanInvertExpr) {
+            // The condition is just inverted, so we can simplify that.
+            return attemptToSimplifyIfExpr(falseBranchExpr, trueBranchExpr, condition.expr)
         }
 
-        if (trueExpr == falseExpr) {
-            return trueExpr
+        val invertedCondition = BooleanInvertExpr.new(condition)
+
+        val simplifiedTrueExpr = when (trueBranchExpr) {
+            is IfExpr if trueBranchExpr.thisCondition == condition -> trueBranchExpr.trueExpr
+            is IfExpr if trueBranchExpr.thisCondition == invertedCondition -> trueBranchExpr.falseExpr
+            else -> trueBranchExpr
         }
 
-        if (trueExpr is IfExpr) {
-            // If we've got two nested ifs with the same false branch, we can merge them into a single if.
-            if (falseExpr == trueExpr.falseExpr) {
+        val simplifiedFalseExpr = when (falseBranchExpr) {
+            is IfExpr if falseBranchExpr.thisCondition == condition -> falseBranchExpr.falseExpr
+            is IfExpr if falseBranchExpr.thisCondition == invertedCondition -> falseBranchExpr.trueExpr
+            else -> falseBranchExpr
+        }
+
+        if (simplifiedTrueExpr == simplifiedFalseExpr) {
+            return simplifiedTrueExpr
+        }
+        if (condition == ConstExpr.TRUE) {
+            return simplifiedTrueExpr
+        }
+        if (condition == ConstExpr.FALSE) {
+            return simplifiedFalseExpr
+        }
+
+        // Merge nested ifs.
+        if (simplifiedTrueExpr is IfExpr) {
+            // if c then (if t then x else y) else y ==> if (c AND t) then x else y
+            if (simplifiedFalseExpr == simplifiedTrueExpr.falseExpr) {
                 return IfExpr.newRaw(
-                    trueExpr.trueExpr,
-                    falseExpr,
-                    BooleanExpr.new(condition, trueExpr.thisCondition, BooleanOp.AND)
+                    simplifiedTrueExpr.trueExpr,
+                    simplifiedFalseExpr,
+                    BooleanExpr.new(condition, simplifiedTrueExpr.thisCondition, BooleanOp.AND)
+                )
+            }
+            // if c then (if t then x else y) else x ==> if (c AND !t) then y else x
+            if (simplifiedFalseExpr == simplifiedTrueExpr.trueExpr) {
+                return IfExpr.newRaw(
+                    simplifiedTrueExpr.falseExpr,
+                    simplifiedFalseExpr,
+                    BooleanExpr.new(condition, BooleanInvertExpr.new(simplifiedTrueExpr.thisCondition), BooleanOp.AND)
                 )
             }
         }
 
-        if (condition == ConstExpr.TRUE) {
-            return trueExpr
-        } else if (condition == ConstExpr.FALSE) {
-            return falseExpr
+        if (simplifiedFalseExpr is IfExpr) {
+            // if c then x else (if t then x else y) ==> if (c OR t) then x else y
+            if (simplifiedTrueExpr == simplifiedFalseExpr.trueExpr) {
+                return IfExpr.newRaw(
+                    simplifiedTrueExpr,
+                    simplifiedFalseExpr.falseExpr,
+                    BooleanExpr.new(condition, simplifiedFalseExpr.thisCondition, BooleanOp.OR)
+                )
+            }
+            // if c then y else (if t then x else y) ==> if (c OR !t) then y else x
+            if (simplifiedTrueExpr == simplifiedFalseExpr.falseExpr) {
+                return IfExpr.newRaw(
+                    simplifiedTrueExpr,
+                    simplifiedFalseExpr.trueExpr,
+                    BooleanExpr.new(condition, BooleanInvertExpr.new(simplifiedFalseExpr.thisCondition), BooleanOp.OR)
+                )
+            }
         }
 
-        return IfExpr.newRaw(trueExpr, falseExpr, condition)
+        // if c then (if t then x else y) else (if t then x else z) ==> if t then x else (if c then y else z)
+        if (simplifiedTrueExpr is IfExpr && simplifiedFalseExpr is IfExpr) {
+            if (simplifiedTrueExpr.thisCondition == simplifiedFalseExpr.thisCondition &&
+                simplifiedTrueExpr.trueExpr == simplifiedFalseExpr.trueExpr
+            ) {
+                return IfExpr.newRaw(
+                    simplifiedTrueExpr.trueExpr,
+                    IfExpr.newRaw(simplifiedTrueExpr.falseExpr, simplifiedFalseExpr.falseExpr, condition),
+                    simplifiedTrueExpr.thisCondition
+                )
+            }
+        }
+
+        return IfExpr.newRaw(simplifiedTrueExpr, simplifiedFalseExpr, condition)
     }
 }

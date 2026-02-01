@@ -1,9 +1,9 @@
 package testdata.ai;
 
+import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
 import com.oberdiah.deepcomplexity.RequiredScore;
 
-import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
-
+@SuppressWarnings("ALL")
 public class IfStatementVariableConstraintTrackerTest {
 	// Testing basic constraint propagation through if statement
 	@RequiredScore(1.0)
@@ -59,7 +59,7 @@ public class IfStatementVariableConstraintTrackerTest {
 	
 	// Testing constraint propagation in else branch
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(11)
+	@ExpectedExpressionSize(12)
 	public static short elseConstraint(short x) {
 		int a = x;
 		if (a > 100) {

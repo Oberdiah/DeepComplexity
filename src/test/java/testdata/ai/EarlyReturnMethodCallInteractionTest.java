@@ -3,6 +3,7 @@ package testdata.ai;
 import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
 import com.oberdiah.deepcomplexity.RequiredScore;
 
+@SuppressWarnings("ALL")
 public class EarlyReturnMethodCallInteractionTest {
 	// Testing early return with no method calls
 	@RequiredScore(1.0)
@@ -68,7 +69,7 @@ public class EarlyReturnMethodCallInteractionTest {
 	
 	// Testing early return with recursive method call
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(16)
+	@ExpectedExpressionSize(18)
 	public static short earlyReturnRecursive(short x) {
 		if (x <= 0) {
 			return 0;
