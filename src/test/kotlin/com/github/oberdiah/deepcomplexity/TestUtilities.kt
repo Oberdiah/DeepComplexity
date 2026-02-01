@@ -306,7 +306,7 @@ object TestUtilities {
             }
         }
 
-        val expressionSize = returnValue.recursiveSubExprs.map { 1 }.sum()
+        val expressionSize = returnValue.recursiveSubExprs.size
 
         return MethodRan("$numEntriesCorrect/$numEntriesPredicted", scoreFraction, expressionSize)
     }

@@ -5,7 +5,10 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 
 object IfSimplification {
     private sealed interface Result
-    private data class SimplerIf(val trueExpr: Expr<*>, val falseExpr: Expr<*>, val cond: Expr<Boolean>) : Result
+    private data class SimplerIf(val trueExpr: Expr<*>, val falseExpr: Expr<*>, val cond: Expr<Boolean>) : Result {
+        val size get() = (trueExpr.recursiveSubExprs + falseExpr.recursiveSubExprs + cond.recursiveSubExprs).size + 1
+    }
+
     private data class NoLongerAnIf(val expr: Expr<*>) : Result
 
     /**
@@ -242,50 +245,7 @@ object IfSimplification {
         return iff
     }
 
-    /**
-     * Turns
-     * ```
-     * if (if (cond) { foo } else { bar }) {
-     *     trueExpr
-     * } else {
-     *     falseExpr
-     * }
-     * ```
-     * into
-     * ```
-     * if (cond) {
-     *     if (foo) {
-     *         trueExpr
-     *     } else {
-     *         falseExpr
-     *     }
-     * } else {
-     *     if (bar) {
-     *         trueExpr
-     *     } else {
-     *         falseExpr
-     *     }
-     * }
-     * ```
-     */
-    private fun expandConditionalCondition(iff: SimplerIf): SimplerIf {
-        val conditionIf = iff.cond as? IfExpr ?: return iff
-
-        if (conditionIf.trueExpr == ConstExpr.TRUE && conditionIf.falseExpr == ConstExpr.FALSE) {
-            return SimplerIf(iff.trueExpr, iff.falseExpr, conditionIf.thisCondition)
-        }
-        if (conditionIf.trueExpr == ConstExpr.FALSE && conditionIf.falseExpr == ConstExpr.TRUE) {
-            return SimplerIf(iff.falseExpr, iff.trueExpr, conditionIf.thisCondition)
-        }
-
-        val whenTrue = makeUntypedIfExpr(iff.trueExpr, iff.falseExpr, conditionIf.trueExpr)
-        val whenFalse = makeUntypedIfExpr(iff.trueExpr, iff.falseExpr, conditionIf.falseExpr)
-
-        return SimplerIf(whenTrue, whenFalse, conditionIf.thisCondition)
-    }
-
     private val OPTIMIZATIONS = listOf<(SimplerIf) -> Result>(
-//        ::expandConditionalCondition,
         ::uninvertCond,
         ::nestedIfWithMatchingCondition,
         ::equalBranches,
@@ -303,6 +263,14 @@ object IfSimplification {
             return IfExpr.newRaw(trueBranchExpr, falseBranchExpr, condition)
         }
 
+        // SUPER IMPORTANT NOTE:
+        // These simplifications should probably not output a larger expression than they consumed. (where larger
+        // means the number of unique nodes in the expression tree)
+        // This is a dangerous thing to do because it's a soft expectation of the program that
+        // the number of unique nodes in an expression tree is at least kinda linear to the size of the input code.
+        // (in practice I believe the best we'll be able to do is quadratic but at least not exponential)
+        // At the moment we're not requiring it as a hard constraint, but we may one day.
+
         val indicator = trueBranchExpr.ind
         require(indicator == falseBranchExpr.ind)
 
@@ -312,6 +280,9 @@ object IfSimplification {
                 when (val result = optimisation(current)) {
                     is SimplerIf -> {
                         if (result != current) {
+//                            require(result.size <= current.size) {
+//                                "If simplification produced a larger expression tree!"
+//                            }
                             current = result
                             continue@optimizationLoop
                         }
@@ -325,13 +296,11 @@ object IfSimplification {
             break
         }
 
-        return IfExpr.newRaw(
+        val final = IfExpr.newRaw(
             current.trueExpr.castOrThrow(indicator),
             current.falseExpr.castOrThrow(indicator),
             current.cond
         )
+        return final
     }
-
-    private fun <T : Any> makeUntypedIfExpr(trueExpr: Expr<T>, falseExpr: Expr<*>, cond: Expr<Boolean>): IfExpr<*> =
-        IfExpr.newRaw(trueExpr, falseExpr.castOrThrow(trueExpr.ind), cond)
 }

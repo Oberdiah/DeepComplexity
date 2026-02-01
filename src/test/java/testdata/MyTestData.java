@@ -1727,7 +1727,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(12)
 	public static short ternaryTest1(short x) {
 		int a = 0;
 		int b = 0;

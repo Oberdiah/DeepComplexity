@@ -5,7 +5,10 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 
 object ComparisonSimplification {
     private sealed interface Result
-    private data class SimplerComparison(val lhs: Expr<*>, val rhs: Expr<*>, val comp: ComparisonOp) : Result
+    private data class SimplerComparison(val lhs: Expr<*>, val rhs: Expr<*>, val comp: ComparisonOp) : Result {
+        val size get() = (lhs.recursiveSubExprs + rhs.recursiveSubExprs).size + 1
+    }
+
     private data class NoLongerAComparison(val expr: Expr<Boolean>) : Result
 
     /**
@@ -30,34 +33,16 @@ object ComparisonSimplification {
     }
 
     /**
-     * Turns this (and its symmetric variant):
+     * Turns
      * ```
-     * (if c then a else b) OP k
+     * x OP x
      * ```
      * into
      * ```
-     * if c then (a OP k) else (b OP k)
+     * TRUE / FALSE
      * ```
+     * depending on OP.
      */
-    private fun oneSideIsIf(cmp: SimplerComparison): Result {
-        val lhs = cmp.lhs
-        val rhs = cmp.rhs
-
-        if (lhs is IfExpr) {
-            val trueBranch = ComparisonExpr.new(lhs.trueExpr, rhs, cmp.comp)
-            val falseBranch = ComparisonExpr.new(lhs.falseExpr, rhs, cmp.comp)
-            return NoLongerAComparison(IfExpr.new(trueBranch, falseBranch, lhs.thisCondition))
-        }
-
-        if (rhs is IfExpr) {
-            val trueBranch = ComparisonExpr.new(lhs, rhs.trueExpr, cmp.comp)
-            val falseBranch = ComparisonExpr.new(lhs, rhs.falseExpr, cmp.comp)
-            return NoLongerAComparison(IfExpr.new(trueBranch, falseBranch, rhs.thisCondition))
-        }
-
-        return cmp
-    }
-
     private fun selfComparison(cmp: SimplerComparison): Result {
         val lhs = cmp.lhs
         val rhs = cmp.rhs
@@ -75,6 +60,17 @@ object ComparisonSimplification {
         }
     }
 
+
+    /**
+     * Turns
+     * ```
+     * 1 == 2
+     * ```
+     * into
+     * ```
+     * FALSE
+     * ```
+     */
     private fun equalityAndInequality(cmp: SimplerComparison): Result {
         return when (cmp.comp) {
             ComparisonOp.EQUAL ->
@@ -88,8 +84,7 @@ object ComparisonSimplification {
     }
 
     private val OPTIMIZATIONS = listOf<(SimplerComparison) -> Result>(
-//        ::ifsWithMatchingCondition,
-//        ::oneSideIsIf,
+        ::ifsWithMatchingCondition,
         ::selfComparison,
         ::equalityAndInequality
     )
@@ -104,6 +99,13 @@ object ComparisonSimplification {
             return ComparisonExpr.newRaw(lhs, rhs, comp)
         }
 
+        // SUPER IMPORTANT NOTE:
+        // These simplifications should probably not output a larger expression than they consumed. (where larger
+        // means the number of unique nodes in the expression tree)
+        // This is a dangerous thing to do because it's a soft expectation of the program that
+        // the number of unique nodes in an expression tree is at least kinda linear to the size of the input code.
+        // In practice at the moment we're not requiring that, but we may one day.
+
         val indicator = lhs.ind
         require(indicator == rhs.ind)
 
@@ -112,6 +114,9 @@ object ComparisonSimplification {
             for (optimisation in OPTIMIZATIONS) {
                 when (val result = optimisation(current)) {
                     is SimplerComparison -> if (result != current) {
+//                            require(result.size <= current.size) {
+//                                "If simplification produced a larger expression tree!"
+//                            }
                         current = result
                         continue@optimizationLoop
                     }
