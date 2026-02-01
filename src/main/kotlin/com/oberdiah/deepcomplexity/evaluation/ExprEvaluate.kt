@@ -66,7 +66,7 @@ object ExprEvaluate {
                 // OR set.
 
                 val ifCondition = expr.thisCondition
-
+                
                 val trueConstraints = constraints.and(
                     ExprConstrain.getConstraints(ifCondition, constraints, assistant.enteredCondition())
                 )

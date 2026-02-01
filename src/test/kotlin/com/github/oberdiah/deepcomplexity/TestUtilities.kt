@@ -151,6 +151,10 @@ object TestUtilities {
     private fun getMethodScore(method: Method, testInfo: SimpleMustPassTest.TestInfo): MethodScoreResults {
         val contextStartTime = System.nanoTime()
         val returnValue = try {
+            repeat(System.getenv("NUM_EXTRA_RUNS")?.toIntOrNull() ?: 0) {
+                MethodProcessing.getMethodContext(testInfo.psiMethod)
+            }
+
             MethodProcessing.getMethodContext(testInfo.psiMethod)
         } catch (e: Throwable) {
             // If it's an assertion error, we should fully error out regardless.
@@ -170,7 +174,14 @@ object TestUtilities {
         val range = try {
             val evaluationStartTime = System.nanoTime()
 
-            val assistant = EvaluatorAssistant.createInitial(ExpressionTagger.buildTags(returnValue))
+            val tags = ExpressionTagger.buildTags(returnValue)
+
+            repeat(System.getenv("NUM_EXTRA_RUNS")?.toIntOrNull() ?: 0) {
+                val assistant = EvaluatorAssistant.createInitial(tags)
+                returnValue.evaluate(ConstraintsOrPile.unconstrained(), assistant)
+            }
+
+            val assistant = EvaluatorAssistant.createInitial(tags)
             val bundle: Bundle<*> = returnValue.evaluate(ConstraintsOrPile.unconstrained(), assistant)
             println("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
             println(assistant.getCacheReadout().prependIndent())
