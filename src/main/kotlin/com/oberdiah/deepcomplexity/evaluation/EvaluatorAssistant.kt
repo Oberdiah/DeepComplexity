@@ -140,11 +140,6 @@ class EvaluatorAssistant(
             }
 
             is BooleanInvertExpr -> "!${getStr(Direction.Only, expr.expr)} = $myResult"
-            is UnionExpr -> "(${
-                getStr(Direction.Left, expr.lhs)
-            } ∪ ${
-                getStr(Direction.Right, expr.rhs)
-            }) = $myResult"
 
             is BooleanExpr -> "(${
                 getStr(Direction.Left, expr.lhs)

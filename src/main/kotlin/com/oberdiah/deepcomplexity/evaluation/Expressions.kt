@@ -372,23 +372,6 @@ class IfExpr<T : Any> private constructor(
     }
 }
 
-class UnionExpr<T : Any> private constructor(override val lhs: Expr<T>, override val rhs: Expr<T>) : Expr<T>(),
-    AnyBinaryExpr<T> {
-    init {
-        require(lhs.ind == rhs.ind) {
-            "Unioning expressions with different set indicators: ${lhs.ind} and ${rhs.ind}"
-        }
-    }
-
-    override fun parts(): List<Any> = listOf(lhs, rhs)
-
-    companion object {
-        fun <T : Any> new(lhs: Expr<T>, rhs: Expr<T>): UnionExpr<T> = ExprPool.create(lhs, rhs)
-    }
-
-    override val ind: Indicator<T> = lhs.ind
-}
-
 class BooleanExpr private constructor(
     override val lhs: Expr<Boolean>,
     override val rhs: Expr<Boolean>,

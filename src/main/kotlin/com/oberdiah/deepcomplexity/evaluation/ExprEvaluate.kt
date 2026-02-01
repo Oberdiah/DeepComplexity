@@ -52,10 +52,6 @@ object ExprEvaluate {
                 inner(expr, constraints)
             }
 
-            is UnionExpr -> evaluate(expr.lhs, constraints, assistant.leftPath()).union(
-                evaluate(expr.rhs, constraints, assistant.rightPath())
-            )
-
             is IfExpr -> {
                 // Useful note for future reference:
                 // A good way to think of this is constraints in towards the leaves, bundles back out again.

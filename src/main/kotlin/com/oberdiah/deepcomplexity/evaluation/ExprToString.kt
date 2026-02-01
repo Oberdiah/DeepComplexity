@@ -41,7 +41,6 @@ object ExprToString {
 
             is BooleanInvertExpr -> "!${toStringWithTags(expr.expr, tagsMap)}"
             is NegateExpr -> "-${toStringWithTags(expr.expr, tagsMap)}"
-            is UnionExpr -> "(${toStringWithTags(expr.lhs, tagsMap)} ∪ ${toStringWithTags(expr.rhs, tagsMap)})"
             is BooleanExpr -> "(${toStringWithTags(expr.lhs, tagsMap)} ${expr.op} ${
                 toStringWithTags(
                     expr.rhs,
@@ -70,7 +69,6 @@ object ExprToString {
             is IfExpr -> "'if'"
             is BooleanInvertExpr -> "'!'"
             is NegateExpr -> "'-'"
-            is UnionExpr -> "'∪'"
             is BooleanExpr -> "(${toString(expr.lhs)} ${expr.op} ${toString(expr.rhs)})"
             is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)

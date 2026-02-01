@@ -127,7 +127,6 @@ object ExprTreeRebuilder {
                         ).map { lhs, rhs ->
                             when (expr) {
                                 is ComparisonExpr<*> -> ComparisonExpr.new(lhs, rhs, expr.comp)
-                                is UnionExpr<*> -> UnionExpr.new(lhs, rhs)
                                 is ArithmeticExpr<*> ->
                                     ConversionsAndPromotion.castAToB(lhs, rhs.castToNumbers(), Behaviour.Throw)
                                         .map { l, r ->
