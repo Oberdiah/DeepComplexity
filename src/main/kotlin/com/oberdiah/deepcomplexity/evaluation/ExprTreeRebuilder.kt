@@ -70,13 +70,6 @@ object ExprTreeRebuilder {
         ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<*> {
-        return innerRewrite(ifTraversal, replacer)
-    }
-
-    private fun <T : Any> Expr<T>.innerRewrite(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
-        replacer: (Expr<*>) -> Expr<*>,
-    ): Expr<*> {
         val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
 
         /**
