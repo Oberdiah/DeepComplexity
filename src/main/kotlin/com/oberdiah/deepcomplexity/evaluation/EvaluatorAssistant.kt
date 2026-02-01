@@ -94,8 +94,8 @@ class EvaluatorAssistant(
 
         fun getStr(direction: Direction, fallback: Expr<*>): String {
             return evaluatedStrings.getOrElse(path + direction) {
-                "<| NOT EVALUATED |>"
-//                "${ExprToString.toStringWithTags(fallback, tagsMap)} = <| NOT EVALUATED |>"
+//                "<| NOT EVALUATED |>"
+                "${ExprToString.toStringWithTags(fallback, tagsMap)} = <| NOT EVALUATED |>"
             }
         }
 

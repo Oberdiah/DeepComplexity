@@ -242,7 +242,50 @@ object IfSimplification {
         return iff
     }
 
+    /**
+     * Turns
+     * ```
+     * if (if (cond) { foo } else { bar }) {
+     *     trueExpr
+     * } else {
+     *     falseExpr
+     * }
+     * ```
+     * into
+     * ```
+     * if (cond) {
+     *     if (foo) {
+     *         trueExpr
+     *     } else {
+     *         falseExpr
+     *     }
+     * } else {
+     *     if (bar) {
+     *         trueExpr
+     *     } else {
+     *         falseExpr
+     *     }
+     * }
+     * ```
+     */
+    private fun expandConditionalCondition(iff: SimplerIf): SimplerIf {
+        val conditionIf = iff.cond as? IfExpr ?: return iff
+
+        if (conditionIf.trueExpr == ConstExpr.TRUE && conditionIf.falseExpr == ConstExpr.FALSE) {
+            return SimplerIf(iff.trueExpr, iff.falseExpr, conditionIf.thisCondition)
+        }
+        if (conditionIf.trueExpr == ConstExpr.FALSE && conditionIf.falseExpr == ConstExpr.TRUE) {
+            return SimplerIf(iff.falseExpr, iff.trueExpr, conditionIf.thisCondition)
+        }
+
+        val whenTrue = makeUntypedIfExpr(iff.trueExpr, iff.falseExpr, conditionIf.trueExpr)
+        val whenFalse = makeUntypedIfExpr(iff.trueExpr, iff.falseExpr, conditionIf.falseExpr)
+
+        return SimplerIf(whenTrue, whenFalse, conditionIf.thisCondition)
+    }
+
     private val OPTIMIZATIONS = listOf<(SimplerIf) -> Result>(
+//        ::expandConditionalCondition,
         ::uninvertCond,
         ::nestedIfWithMatchingCondition,
         ::equalBranches,
@@ -288,4 +331,7 @@ object IfSimplification {
             current.cond
         )
     }
+
+    private fun <T : Any> makeUntypedIfExpr(trueExpr: Expr<T>, falseExpr: Expr<*>, cond: Expr<Boolean>): IfExpr<*> =
+        IfExpr.newRaw(trueExpr, falseExpr.castOrThrow(trueExpr.ind), cond)
 }
