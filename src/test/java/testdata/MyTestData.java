@@ -2538,7 +2538,7 @@ public class MyTestData {
 	
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(52)
+	@ExpectedExpressionSize(35)
 	public static short nastyPerformanceTest3(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
