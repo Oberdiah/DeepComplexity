@@ -107,25 +107,6 @@ object StaticExpressionAnalysis {
             return IfExpr.newRaw(trueExpr, falseExpr, condition)
         }
 
-        /**
-         * These simplifications do actually allow our tests to pass at the moment;
-         * without their inlining some impossible conditions pollute the expression tree,
-         * and the tests don't like that much.
-         * For example, the case
-         * ```
-         * if (x > 5) {
-         *     foo = new MyClass(20);
-         * }
-         * ```
-         * leads to `#1.x = (x > 5) ? 20 : #1.x'`.
-         * Now, we know for certain that #1 is never going to appear earlier in the expression tree;
-         * it was created in the branch itself.
-         * We previously had an optimization where we'd check for assigning to defined objects
-         * inside branches and remove those early, but that complicated the code and I'm
-         * concerned that further down the line with globals it might lead to problems.
-         * So for now, we just rely on the if statement simplifications to hide them from us.
-         */
-
         val trueExpr = if (trueExpr is IfExpr && trueExpr.thisCondition == condition) {
             trueExpr.trueExpr
         } else {
@@ -141,6 +122,17 @@ object StaticExpressionAnalysis {
 
         if (trueExpr == falseExpr) {
             return trueExpr
+        }
+
+        if (trueExpr is IfExpr) {
+            // If we've got two nested ifs with the same false branch, we can merge them into a single if.
+            if (falseExpr == trueExpr.falseExpr) {
+                return IfExpr.newRaw(
+                    trueExpr.trueExpr,
+                    falseExpr,
+                    BooleanExpr.new(condition, trueExpr.thisCondition, BooleanOp.AND)
+                )
+            }
         }
 
         if (condition == ConstExpr.TRUE) {

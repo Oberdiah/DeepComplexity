@@ -834,7 +834,7 @@ public class MyTestData {
 		return (short) 1;
 	}
 	
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(11)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
 	@RequiredScore(0.5)
 	public static short challenge2(short x) {
@@ -2455,7 +2455,7 @@ public class MyTestData {
 	
 	@RequiredScore(0.4)
 	@GoodEnough(GAPS_FROM_MULTIPLICATION)
-	@ExpectedExpressionSize(20)
+	@ExpectedExpressionSize(22)
 	public static short nastyPerformanceTest(short x) {
 		int a = 0;
 		
@@ -2477,7 +2477,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(929)
+	@ExpectedExpressionSize(65)
 	public static short nastyPerformanceTest2(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
@@ -2538,7 +2538,7 @@ public class MyTestData {
 	
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(101)
+	@ExpectedExpressionSize(55)
 	public static short nastyPerformanceTest3(short x) {
 		MyClass foo = new MyClass(50);
 		if (x > 100) {
