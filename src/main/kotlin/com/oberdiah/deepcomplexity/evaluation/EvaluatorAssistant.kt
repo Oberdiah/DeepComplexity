@@ -2,7 +2,7 @@ package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.evaluation.ExprEvaluate.CacheKey
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 
 
 class EvaluatorAssistant(
@@ -50,7 +50,7 @@ class EvaluatorAssistant(
 
     fun <T : Any> getOrPut(
         expr: Expr<T>,
-        constraints: ExprConstrain.ConstraintsOrPile,
+        constraints: ConstraintsOrPile,
         evalFunc: () -> Bundle<*>
     ): Bundle<T> {
         val cacheKey = CacheKey(expr, constraints)
@@ -66,7 +66,7 @@ class EvaluatorAssistant(
         val cacheHitRate = String.format(
             "%.2f",
             100.0 * (1.0 - expressionCache.size.toDouble() / Double.NaN)
-        );
+        )
 
         return "Expressions evaluated: ${expressionCache.size}" +
                 " out of ${Double.NaN} total," +

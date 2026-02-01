@@ -5,52 +5,52 @@ import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
-object ExprConstrain {
-    /**
-     * A pile of constraints is a set of one or more constraints that may be in effect.
-     * I.e. constraints joined by OR.
-     * At least one of these constraints must be met.
-     */
-    data class ConstraintsOrPile(val pile: Set<Constraints>) {
-        companion object {
-            fun unconstrained(): ConstraintsOrPile = ConstraintsOrPile(setOf(Constraints.completelyUnconstrained()))
-            fun unreachable(): ConstraintsOrPile = ConstraintsOrPile(setOf(Constraints.unreachable()))
-        }
+/**
+ * A pile of constraints is a set of one or more constraints that may be in effect.
+ * I.e. constraints joined by OR.
+ * At least one of these constraints must be met.
+ */
+data class ConstraintsOrPile(val pile: Set<Constraints>) {
+    companion object {
+        fun unconstrained(): ConstraintsOrPile = ConstraintsOrPile(setOf(Constraints.completelyUnconstrained()))
+        fun unreachable(): ConstraintsOrPile = ConstraintsOrPile(setOf(Constraints.unreachable()))
+    }
 
-        init {
-            require(pile.isNotEmpty()) {
-                "ConstraintsOrPile must have at least one constraint."
-            }
-        }
-
-        fun onlyConstraining(keys: Set<EvaluationKey>): ConstraintsOrPile {
-            return ConstraintsOrPile(pile.mapToSet { it.onlyConstraining(keys) })
-        }
-
-        @Suppress("Unused")
-        val unreachable: Boolean
-            get() = pile.all { it.unreachable }
-
-        fun and(other: ConstraintsOrPile): ConstraintsOrPile {
-            val outputConstraints: MutableSet<Constraints> = mutableSetOf()
-
-            require(pile.size < 10 && other.pile.size < 10) {
-                "Combining constraints with size > 10: $pile , $other. This surely can't be efficient."
-            }
-
-            for (lhs in pile) {
-                for (rhs in other.pile) {
-                    outputConstraints.add(lhs.and(rhs))
-                }
-            }
-            return ConstraintsOrPile(outputConstraints)
-        }
-
-        fun or(other: ConstraintsOrPile): ConstraintsOrPile {
-            return ConstraintsOrPile(this.pile + other.pile)
+    init {
+        require(pile.isNotEmpty()) {
+            "ConstraintsOrPile must have at least one constraint."
         }
     }
 
+    fun onlyConstraining(keys: Set<EvaluationKey>): ConstraintsOrPile {
+        return ConstraintsOrPile(pile.mapToSet { it.onlyConstraining(keys) })
+    }
+
+    @Suppress("Unused")
+    val unreachable: Boolean
+        get() = pile.all { it.unreachable }
+
+    fun and(other: ConstraintsOrPile): ConstraintsOrPile {
+        val outputConstraints: MutableSet<Constraints> = mutableSetOf()
+
+        require(pile.size < 10 && other.pile.size < 10) {
+            "Combining constraints with size > 10: $pile , $other. This surely can't be efficient."
+        }
+
+        for (lhs in pile) {
+            for (rhs in other.pile) {
+                outputConstraints.add(lhs.and(rhs))
+            }
+        }
+        return ConstraintsOrPile(outputConstraints)
+    }
+
+    fun or(other: ConstraintsOrPile): ConstraintsOrPile {
+        return ConstraintsOrPile(this.pile + other.pile)
+    }
+}
+
+object ExprConstrain {
     /**
      * Where the expression was previously returning true, it now returns false, and vice versa.
      */

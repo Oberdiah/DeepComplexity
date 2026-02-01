@@ -1,110 +1,57 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.VariableKey
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.solver.CastSolver
-import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ExprEvaluate {
-    data class CacheKey(val expr: Expr<*>, val constraints: ExprConstrain.ConstraintsOrPile)
+    data class CacheKey(val expr: Expr<*>, val constraints: ConstraintsOrPile)
 
     fun <T : Any> evaluate(
         expr: Expr<T>,
-        constraints: ExprConstrain.ConstraintsOrPile,
+        constraints: ConstraintsOrPile,
         assistant: EvaluatorAssistant
     ): Bundle<T> {
         return assistant.getOrPut(expr, constraints) {
-            when (expr.ind) {
-                is NumberIndicator<*> -> {
-                    // Split into two lines for nicer debugging
-                    val castExpr = expr.castToNumbers()
-                    evaluateNums(castExpr, constraints, assistant)
-                }
-
-                is ObjectIndicator -> evaluateGenerics(expr as Expr<*>, constraints, assistant)
-                BooleanIndicator -> {
-                    val castExpr = expr.castToBoolean()
-                    evaluateBools(castExpr, constraints, assistant)
-                }
-
-                VarsIndicator -> WONT_IMPLEMENT()
-            }
+            evaluateInner(expr, constraints, assistant)
         }
     }
 
-    private fun <T : Number> evaluateNums(
+    fun <T : Any> evaluateInner(
         expr: Expr<T>,
-        constraints: ExprConstrain.ConstraintsOrPile,
+        constraints: ConstraintsOrPile,
         assistant: EvaluatorAssistant
-    ): Bundle<T> {
-        val toReturn = when (expr) {
-            is ArithmeticExpr -> {
-                val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
-                val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
+    ): Bundle<*> {
+        val toRet = when (expr) {
+            is NegateExpr -> evaluate(expr.expr.castToNumbers(), constraints, assistant.onlyPath()).negate()
+            is BooleanInvertExpr -> evaluate(expr, constraints, assistant.onlyPath()).booleanInvert()
 
-                lhs.arithmeticOperation(rhs, expr.op, expr.exprKey)
+            is ArithmeticExpr<*> -> {
+                fun <T : Number> inner(expr: ArithmeticExpr<T>, constraints: ConstraintsOrPile): Bundle<T> {
+                    val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
+                    val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
+                    return lhs.arithmeticOperation(rhs, expr.op, expr.exprKey)
+                }
+                inner(expr, constraints)
             }
 
-            is NegateExpr -> evaluate(expr.expr, constraints, assistant.onlyPath()).negate()
-
-            else -> evaluateAnythings(expr, constraints, assistant)
-        }
-        return toReturn
-    }
-
-    private fun evaluateBools(
-        expr: Expr<Boolean>,
-        constraints: ExprConstrain.ConstraintsOrPile,
-        assistant: EvaluatorAssistant
-    ): Bundle<Boolean> {
-        val toReturn = when (expr) {
             is BooleanExpr -> {
                 val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
                 val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
-
                 lhs.booleanOperation(rhs, expr.op, expr.exprKey)
             }
 
             is ComparisonExpr<*> -> {
-                fun <T : Any> evalC(
-                    expr: ComparisonExpr<T>,
-                    constraints: ExprConstrain.ConstraintsOrPile
-                ): Bundle<Boolean> {
+                fun <T : Any> inner(expr: ComparisonExpr<T>, constraints: ConstraintsOrPile): Bundle<Boolean> {
                     val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
                     val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
-
                     return lhs.comparisonOperation(rhs, expr.comp, expr.exprKey)
                 }
-                evalC(expr, constraints)
+                inner(expr, constraints)
             }
 
-            is BooleanInvertExpr -> evaluate(expr, constraints, assistant.onlyPath()).booleanInvert()
-            else -> evaluateAnythings(expr, constraints, assistant)
-        }
-
-        return toReturn
-    }
-
-    private fun <T : Any> evaluateGenerics(
-        expr: Expr<T>,
-        constraints: ExprConstrain.ConstraintsOrPile,
-        assistant: EvaluatorAssistant
-    ): Bundle<T> {
-        return evaluateAnythings(expr, constraints, assistant)
-    }
-
-    private fun <T : Any> evaluateAnythings(
-        expr: Expr<T>,
-        constraints: ExprConstrain.ConstraintsOrPile,
-        assistant: EvaluatorAssistant
-    ): Bundle<T> {
-        val toReturn: Bundle<T> = when (expr) {
             is UnionExpr -> evaluate(expr.lhs, constraints, assistant.leftPath()).union(
                 evaluate(expr.rhs, constraints, assistant.rightPath())
             )
@@ -163,11 +110,8 @@ object ExprEvaluate {
                 Bundle.unconstrained(expr.ind.newVariance(varKey)).constrainWith(constraints)
             }
 
-            else -> {
-                throw IllegalStateException("Unknown expression type: ${expr::class.simpleName}")
-            }
+            is VarsExpr -> WONT_IMPLEMENT("VarsExpr should never reach the evaluation stage")
         }
-
-        return toReturn
+        return toRet
     }
 }

@@ -2,11 +2,12 @@ package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.staticAnalysis.*
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 object ExpressionExtensions {
-    fun Expr<Boolean>.inverted(constraints: ExprConstrain.ConstraintsOrPile): Expr<Boolean> =
+    fun Expr<Boolean>.inverted(constraints: ConstraintsOrPile): Expr<Boolean> =
         ExprConstrain.invert(this, constraints)
 
     /**

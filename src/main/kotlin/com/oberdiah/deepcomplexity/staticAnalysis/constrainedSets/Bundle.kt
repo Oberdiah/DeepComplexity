@@ -224,7 +224,7 @@ data class Bundle<T : Any> private constructor(
         return listOut
     }
 
-    fun constrainWith(constraints: ExprConstrain.ConstraintsOrPile): Bundle<T> {
+    fun constrainWith(constraints: ConstraintsOrPile): Bundle<T> {
         return Bundle(ind, variances.flatMap { bundle ->
             constraints.pile.flatMap { constraint ->
                 val newConstraints = bundle.constraints.and(constraint)

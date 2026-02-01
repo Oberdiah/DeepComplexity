@@ -19,16 +19,16 @@ fun <T : Number> Bundle<T>.arithmeticOperation(
 fun <T : Any> Bundle<T>.generateConstraintsFrom(
     other: Bundle<T>,
     operation: ComparisonOp,
-): ExprConstrain.ConstraintsOrPile {
+): ConstraintsOrPile {
     if (this.isEmpty() || other.isEmpty()) {
-        return ExprConstrain.ConstraintsOrPile.unreachable()
+        return ConstraintsOrPile.unreachable()
     }
 
     val newConstraintsGenerated = this.binaryMap(other) { a, b, constraints ->
         a.generateConstraintsFrom(b, operation, constraints)
     }.toSet()
 
-    return ExprConstrain.ConstraintsOrPile(newConstraintsGenerated)
+    return ConstraintsOrPile(newConstraintsGenerated)
 }
 
 fun Bundle<Boolean>.booleanOperation(
