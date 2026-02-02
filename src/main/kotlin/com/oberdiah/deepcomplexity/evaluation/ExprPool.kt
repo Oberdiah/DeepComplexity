@@ -4,7 +4,6 @@ import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.reflect.jvm.isAccessible
 
 object ExprPool {
     private val creationFlag = ThreadLocal.withInitial { false }
@@ -30,14 +29,10 @@ object ExprPool {
 
     private val table = ConcurrentHashMap<Key, Entry>()
 
-    internal inline fun <reified T : Expr<*>> create(vararg args: Any?): T {
-        val constructor = T::class.constructors.firstOrNull()
-            ?: throw IllegalArgumentException("No constructor found for ${T::class}")
-
+    internal inline fun <reified T : Expr<*>> create(exprMaker: () -> T): T {
         creationFlag.set(true)
         val instance = try {
-            constructor.isAccessible = true
-            constructor.call(*args)
+            exprMaker()
         } catch (e: Exception) {
             throw RuntimeException("Failed to create ${T::class.simpleName}", e)
         } finally {

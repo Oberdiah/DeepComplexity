@@ -206,7 +206,7 @@ fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
 class VarsExpr private constructor(val vars: DynamicOrStatic = DynamicOrStatic.Dynamic) : Expr<VarsMarker>() {
     companion object {
         const val STRING_PLACEHOLDER = "##VarsExpr##"
-        fun new(vars: DynamicOrStatic = DynamicOrStatic.Dynamic): VarsExpr = ExprPool.create<VarsExpr>(vars)
+        fun new(vars: DynamicOrStatic = DynamicOrStatic.Dynamic): VarsExpr = ExprPool.create { VarsExpr(vars) }
     }
 
     override fun parts(): List<Any> = listOf(vars)
@@ -248,7 +248,7 @@ class ArithmeticExpr<T : Number> private constructor(
 ) : Expr<T>(), AnyBinaryExpr<T> {
     companion object {
         fun <T : Number> new(lhs: Expr<T>, rhs: Expr<T>, op: BinaryNumberOp): ArithmeticExpr<T> =
-            ExprPool.create(lhs, rhs, op)
+            ExprPool.create { ArithmeticExpr(lhs, rhs, op) }
     }
 
     init {
@@ -270,7 +270,7 @@ class ComparisonExpr<T : Any> private constructor(
 ) : Expr<Boolean>(), AnyBinaryExpr<T> {
     companion object {
         fun <T : Any> newRaw(lhs: Expr<T>, rhs: Expr<T>, comp: ComparisonOp): ComparisonExpr<T> =
-            ExprPool.create(lhs, rhs, comp)
+            ExprPool.create { ComparisonExpr(lhs, rhs, comp) }
 
         /**
          * Compile-time casts [rhs] for you so you don't have to worry about it. If you provide
@@ -317,7 +317,7 @@ class TypeCastExpr<T : Any, Q : Any> private constructor(
             if (expr.ind == targetInd) {
                 return expr.castOrThrow(targetInd)
             }
-            return ExprPool.create<TypeCastExpr<T, Q>>(expr, targetInd, explicit)
+            return ExprPool.create { TypeCastExpr(expr, targetInd, explicit) }
         }
     }
 
@@ -364,7 +364,7 @@ class IfExpr<T : Any> private constructor(
          * be incorrect.
          */
         fun <T : Any> newRaw(trueExpr: Expr<T>, falseExpr: Expr<T>, condition: Expr<Boolean>): IfExpr<T> =
-            ExprPool.create(trueExpr, falseExpr, condition)
+            ExprPool.create { IfExpr(trueExpr, falseExpr, condition) }
 
         /**
          * Compile-time casts [falseExpr] for you so you don't have to worry about it. If you provide
@@ -394,7 +394,7 @@ class BooleanExpr private constructor(
 
     companion object {
         fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanExpr =
-            ExprPool.create(lhs, rhs, op)
+            ExprPool.create { BooleanExpr(lhs, rhs, op) }
 
         fun new(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
             return BooleanSimplification.attemptToSimplifyBooleanExpr(lhs, rhs, op)
@@ -406,7 +406,7 @@ class BooleanExpr private constructor(
 
 class BooleanInvertExpr private constructor(val expr: Expr<Boolean>) : Expr<Boolean>() {
     companion object {
-        fun new(expr: Expr<Boolean>): BooleanInvertExpr = ExprPool.create(expr)
+        fun new(expr: Expr<Boolean>): BooleanInvertExpr = ExprPool.create { BooleanInvertExpr(expr) }
     }
 
     override fun parts(): List<Any> = listOf(expr)
@@ -416,7 +416,7 @@ class BooleanInvertExpr private constructor(val expr: Expr<Boolean>) : Expr<Bool
 
 class NegateExpr<T : Number> private constructor(val expr: Expr<T>) : Expr<T>() {
     companion object {
-        fun <T : Number> new(expr: Expr<T>): NegateExpr<T> = ExprPool.create(expr)
+        fun <T : Number> new(expr: Expr<T>): NegateExpr<T> = ExprPool.create { NegateExpr(expr) }
     }
 
     override fun parts(): List<Any> = listOf(expr)
@@ -437,7 +437,9 @@ class VariableExpr<T : Any> private constructor(
     override val ind: Indicator<T>
 ) : LeafExpr<T>() {
     companion object {
-        fun <T : Any> new(key: MethodProcessingKey, ind: Indicator<T>): VariableExpr<T> = ExprPool.create(key, ind)
+        fun <T : Any> new(key: MethodProcessingKey, ind: Indicator<T>): VariableExpr<T> =
+            ExprPool.create { VariableExpr(key, ind) }
+
         fun new(key: MethodProcessingKey): VariableExpr<*> = new(key, key.ind)
     }
 
@@ -464,7 +466,7 @@ class ConstExpr<T : Any> private constructor(val value: T, override val ind: Ind
 
     companion object {
         fun <T : Any> new(value: T, indicator: Indicator<T>): ConstExpr<T> =
-            ExprPool.create(value, indicator)
+            ExprPool.create { ConstExpr(value, indicator) }
 
         val TRUE = new(true, BooleanIndicator)
         val FALSE = new(false, BooleanIndicator)
