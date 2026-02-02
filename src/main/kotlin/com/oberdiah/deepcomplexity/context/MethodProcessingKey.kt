@@ -1,6 +1,9 @@
 package com.oberdiah.deepcomplexity.context
 
-import com.intellij.psi.*
+import com.intellij.psi.PsiField
+import com.intellij.psi.PsiLocalVariable
+import com.intellij.psi.PsiParameter
+import com.intellij.psi.PsiVariable
 import com.oberdiah.deepcomplexity.evaluation.ConstExpr
 import com.oberdiah.deepcomplexity.evaluation.LeafExpr
 import com.oberdiah.deepcomplexity.evaluation.VariableExpr
@@ -60,9 +63,9 @@ class LocalVariableKey(variable: PsiLocalVariable) : VariableKey(variable)
 class ParameterKey(variable: PsiParameter, override val lifetime: Lifetime = Lifetime.FOREVER) :
     VariableKey(variable)
 
-data class ThisKey(val type: PsiType) : MethodProcessingKey {
+data class ThisKey(val type: MyPsiType) : MethodProcessingKey {
     override val lifetime: Lifetime = Lifetime.METHOD
-    override val ind: Indicator<*> = Utilities.psiTypeToIndicator(type)
+    override val ind: Indicator<*> = Utilities.psiTypeToIndicator(type.psiType)
     override fun toString(): String = "this"
     override fun hashCode(): Int = 0
     override fun equals(other: Any?): Boolean = other is ThisKey

@@ -233,7 +233,7 @@ object MethodProcessing {
             }
 
             is PsiThisExpression -> {
-                return context.c.get(LValueKey.new(ThisKey(psi.type!!)))
+                return context.c.get(LValueKey.new(ThisKey(MyPsiType.of(psi.type!!))))
             }
 
             is PsiMethodCallExpression -> {
@@ -415,7 +415,7 @@ object MethodProcessing {
                     requireNotNull(thisType) {
                         "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                     }
-                    context.c.get(LValueKey.new(ThisKey(thisType)))
+                    context.c.get(LValueKey.new(ThisKey(MyPsiType.of(thisType))))
                 }.castToObject()
 
                 LValueField.new(QualifiedFieldKey.Field(resolved), qualifierExpr)

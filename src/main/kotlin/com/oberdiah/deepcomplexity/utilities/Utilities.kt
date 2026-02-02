@@ -2,6 +2,7 @@ package com.oberdiah.deepcomplexity.utilities
 
 import com.intellij.psi.*
 import com.oberdiah.deepcomplexity.context.LocalVariableKey
+import com.oberdiah.deepcomplexity.context.MyPsiType
 import com.oberdiah.deepcomplexity.context.ParameterKey
 import com.oberdiah.deepcomplexity.context.ReturnKey
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
@@ -91,7 +92,7 @@ object Utilities {
     }
 
     fun psiTypeToIndicator(type: PsiType): Indicator<*> {
-        val clazz = psiTypeToKClass(type) ?: return ObjectIndicator(type)
+        val clazz = psiTypeToKClass(type) ?: return ObjectIndicator(MyPsiType.of(type))
         return Indicator.fromClass(clazz)
     }
 

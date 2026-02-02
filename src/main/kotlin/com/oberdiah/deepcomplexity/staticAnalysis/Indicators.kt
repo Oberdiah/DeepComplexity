@@ -1,8 +1,8 @@
 package com.oberdiah.deepcomplexity.staticAnalysis
 
-import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.context.MyPsiType
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
@@ -13,7 +13,6 @@ import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
-import com.oberdiah.deepcomplexity.utilities.Utilities.toStringPretty
 import kotlin.reflect.KClass
 
 /**
@@ -188,8 +187,8 @@ data object BooleanIndicator : Indicator<Boolean>(Boolean::class) {
         BooleanSet.fromBoolean(constant)
 }
 
-data class ObjectIndicator(val type: PsiType) : Indicator<HeapMarker>(HeapMarker::class) {
-    override fun toString(): String = "ObjectIndicator(${type.toStringPretty()})"
+data class ObjectIndicator(val type: MyPsiType) : Indicator<HeapMarker>(HeapMarker::class) {
+    override fun toString(): String = "ObjectIndicator($type)"
 
     override fun newVariance(key: EvaluationKey): Variances<HeapMarker> =
         ObjectVariances(ObjectSet.newEmptySet(this), this)

@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
-import com.intellij.psi.PsiTypes
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 
 /**
@@ -11,23 +10,24 @@ import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 @ConsistentCopyVisibility
 data class HeapMarker private constructor(
     private val idx: Int,
-    val type: PsiType,
+    val type: MyPsiType,
     val isPlaceholder: Boolean
 ) {
     companion object {
-        private var placeholders = mutableMapOf<PsiType, HeapMarker>()
+        private var placeholders = mutableMapOf<MyPsiType, HeapMarker>()
 
-        val NULL = HeapMarker(0, PsiTypes.nullType(), false)
-        val VOID = HeapMarker(1, PsiTypes.voidType(), false)
+        val NULL = HeapMarker(0, MyPsiType.NULL_TYPE, false)
+        val VOID = HeapMarker(1, MyPsiType.VOID_TYPE, false)
         private var KEY_INDEX = 2
 
-        fun new(type: PsiType): HeapMarker {
-            if (type == PsiTypes.nullType()) return NULL
-            if (type == PsiTypes.voidType()) return VOID
+        fun new(type: PsiType) = new(MyPsiType.of(type))
+        fun new(type: MyPsiType): HeapMarker {
+            if (type == MyPsiType.NULL_TYPE) return NULL
+            if (type == MyPsiType.VOID_TYPE) return VOID
             return HeapMarker(KEY_INDEX++, type, false)
         }
 
-        fun newPlaceholder(type: PsiType): HeapMarker {
+        fun newPlaceholder(type: MyPsiType): HeapMarker {
             return placeholders.getOrPut(type) {
                 HeapMarker(KEY_INDEX++, type, true)
             }

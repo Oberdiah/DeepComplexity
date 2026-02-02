@@ -1,12 +1,8 @@
 package com.oberdiah.deepcomplexity.evaluation
 
 import ai.grazie.utils.merge
-import com.intellij.psi.PsiTypes
-import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.EvaluationKey.ExpressionKey
-import com.oberdiah.deepcomplexity.context.HeapMarker
-import com.oberdiah.deepcomplexity.context.MethodProcessingKey
-import com.oberdiah.deepcomplexity.context.Vars
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTreeSameType
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
@@ -470,7 +466,7 @@ class ConstExpr<T : Any> private constructor(val value: T, override val ind: Ind
 
         val TRUE = new(true, BooleanIndicator)
         val FALSE = new(false, BooleanIndicator)
-        val VOID = fromHeapMarker(HeapMarker.new(PsiTypes.voidType()))
+        val VOID = fromHeapMarker(HeapMarker.new(MyPsiType.VOID_TYPE))
 
         @Suppress("unused")
         fun <T : Number> zero(ind: NumberIndicator<T>): ConstExpr<T> = new(ind.getZero(), ind)
