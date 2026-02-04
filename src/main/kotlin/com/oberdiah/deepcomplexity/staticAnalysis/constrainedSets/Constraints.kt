@@ -58,10 +58,6 @@ data class Constraints private constructor(
         }
     }
 
-    fun onlyConstraining(keys: Set<EvaluationKey>): Constraints {
-        return Constraints(constraints.filterKeys { it in keys })
-    }
-
     fun isUnconstrained(): Boolean {
         return constraints.isEmpty()
     }

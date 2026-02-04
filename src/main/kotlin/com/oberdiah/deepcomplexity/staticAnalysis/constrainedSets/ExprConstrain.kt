@@ -1,9 +1,7 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
-import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
-import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 /**
  * A pile of constraints is a set of one or more constraints that may be in effect.
@@ -20,10 +18,6 @@ data class ConstraintsOrPile(val pile: Set<Constraints>) {
         require(pile.isNotEmpty()) {
             "ConstraintsOrPile must have at least one constraint."
         }
-    }
-
-    fun onlyConstraining(keys: Set<EvaluationKey>): ConstraintsOrPile {
-        return ConstraintsOrPile(pile.mapToSet { it.onlyConstraining(keys) })
     }
 
     @Suppress("Unused")

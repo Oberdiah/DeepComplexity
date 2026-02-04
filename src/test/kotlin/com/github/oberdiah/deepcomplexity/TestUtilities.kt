@@ -34,7 +34,7 @@ object TestUtilities {
 
     data class MethodFailed(val failureMessage: String) : MethodScoreResults {
         override val score: Double = 0.0
-        override val expressionSize: Int = 0
+        override val expressionSize: Int = -9999999
         override val scoreReceivedColumn: String = "N/A"
         override val extraInfoColumn: String = failureMessage
     }

@@ -53,6 +53,22 @@ class EvaluatorAssistant(
         constraints: ConstraintsOrPile,
         evalFunc: () -> Bundle<*>
     ): Bundle<T> {
+        // Note:
+        // It is not correct to trivially remove any of these constraints before creating this [CacheKey]
+        // if the constraint's key in question does not appear in [expr] at all. This is because
+        // we attach constraints to values even when they appear irrelevant at the time, in the chance
+        // that they'll appear later somewhere else.
+        // e.g.
+        // ```
+        // int i = 0;
+        // if (x > 5) {
+        //      i = 3;
+        // }
+        // ```
+        // the '3' here is imbued with [x > 5]'ness even though it has nothing to do with it.
+        // This may be possible to solve, but you'll need to be more thorough about it, probably
+        // ending up with a system more similar to how the Scope ExprKey filter used to work
+        // before we removed it.
         val cacheKey = CacheKey(expr, constraints)
 
         return expressionCache.getOrPut(cacheKey) {
