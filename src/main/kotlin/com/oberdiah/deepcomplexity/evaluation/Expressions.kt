@@ -373,7 +373,7 @@ class IfExpr<T : Any> private constructor(
     }
 }
 
-class BooleanExpr private constructor(
+class BooleanOpExpr private constructor(
     override val lhs: Expr<Boolean>,
     override val rhs: Expr<Boolean>,
     val op: BooleanOp
@@ -389,8 +389,8 @@ class BooleanExpr private constructor(
     override val ind: Indicator<Boolean> = BooleanIndicator
 
     companion object {
-        fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanExpr =
-            ExprPool.create { BooleanExpr(lhs, rhs, op) }
+        fun newRaw(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): BooleanOpExpr =
+            ExprPool.create { BooleanOpExpr(lhs, rhs, op) }
 
         fun new(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
             return BooleanSimplification.attemptToSimplifyBooleanExpr(lhs, rhs, op)

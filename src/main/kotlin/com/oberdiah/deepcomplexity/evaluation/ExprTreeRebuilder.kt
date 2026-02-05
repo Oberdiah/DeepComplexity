@@ -126,10 +126,10 @@ object ExprTreeRebuilder {
                                             ArithmeticExpr.new(l, r, expr.op)
                                         }
 
-                                is BooleanExpr ->
+                                is BooleanOpExpr ->
                                     ConversionsAndPromotion.castAToB(lhs, rhs.castToBoolean(), Behaviour.Throw)
                                         .map { l, r ->
-                                            BooleanExpr.newRaw(l, r, expr.op)
+                                            BooleanOpExpr.newRaw(l, r, expr.op)
                                         }
                             }
                         }

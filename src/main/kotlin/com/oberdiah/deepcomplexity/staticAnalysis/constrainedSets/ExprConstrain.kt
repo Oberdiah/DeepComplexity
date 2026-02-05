@@ -51,8 +51,8 @@ object ExprConstrain {
     fun invert(expr: Expr<Boolean>, constraints: ConstraintsOrPile): Expr<Boolean> {
         return when (expr) {
             is BooleanInvertExpr -> expr.expr
-            is BooleanExpr -> {
-                BooleanExpr.new(
+            is BooleanOpExpr -> {
+                BooleanOpExpr.new(
                     expr.lhs.inverted(constraints),
                     expr.rhs.inverted(constraints),
                     when (expr.op) {
@@ -89,7 +89,7 @@ object ExprConstrain {
     ): ConstraintsOrPile {
         val startTime = System.currentTimeMillis()
         val newConstraints = when (condition) {
-            is BooleanExpr -> {
+            is BooleanOpExpr -> {
                 when (condition.op) {
                     BooleanOp.OR -> {
                         val lhsConstrained = getConstraints(condition.lhs, constraints, assistant)
@@ -154,14 +154,14 @@ object ExprConstrain {
                 val trueCondition = condition.trueExpr
                 val falseCondition = condition.falseExpr
 
-                val convertedToBooleanExpr =
-                    BooleanExpr.new(
-                        BooleanExpr.new(ifCondition, trueCondition, BooleanOp.AND),
-                        BooleanExpr.new(invertedIf, falseCondition, BooleanOp.AND),
+                val convertedToBooleanOpExpr =
+                    BooleanOpExpr.new(
+                        BooleanOpExpr.new(ifCondition, trueCondition, BooleanOp.AND),
+                        BooleanOpExpr.new(invertedIf, falseCondition, BooleanOp.AND),
                         BooleanOp.OR
                     )
 
-                getConstraints(convertedToBooleanExpr, constraints, assistant)
+                getConstraints(convertedToBooleanOpExpr, constraints, assistant)
             }
 
             else -> TODO("Not implemented constraints for $condition")

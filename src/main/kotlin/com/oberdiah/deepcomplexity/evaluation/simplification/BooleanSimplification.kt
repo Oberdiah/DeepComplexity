@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.*
 object BooleanSimplification {
     fun attemptToSimplifyBooleanExpr(lhs: Expr<Boolean>, rhs: Expr<Boolean>, op: BooleanOp): Expr<Boolean> {
         if (SKIP_OPTIMIZATIONS) {
-            return BooleanExpr.newRaw(lhs, rhs, op)
+            return BooleanOpExpr.newRaw(lhs, rhs, op)
         }
 
         if (lhs == rhs) {
@@ -24,7 +24,7 @@ object BooleanSimplification {
                 } else if (lhs == ConstExpr.TRUE) {
                     rhs
                 } else {
-                    BooleanExpr.newRaw(lhs, rhs, op)
+                    BooleanOpExpr.newRaw(lhs, rhs, op)
                 }
             }
 
@@ -36,7 +36,7 @@ object BooleanSimplification {
                 } else if (lhs == ConstExpr.FALSE) {
                     rhs
                 } else {
-                    BooleanExpr.newRaw(lhs, rhs, op)
+                    BooleanOpExpr.newRaw(lhs, rhs, op)
                 }
             }
         }

@@ -157,7 +157,7 @@ class EvaluatorAssistant(
 
             is BooleanInvertExpr -> "!${getStr(Direction.Only, expr.expr)} = $myResult"
 
-            is BooleanExpr -> "(${
+            is BooleanOpExpr -> "(${
                 getStr(Direction.Left, expr.lhs)
             } ${expr.op} ${
                 getStr(Direction.Right, expr.rhs)

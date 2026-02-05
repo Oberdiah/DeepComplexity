@@ -129,7 +129,7 @@ object IfSimplification {
                 return SimplerIf(
                     trueExpr = thenExpr.trueExpr,
                     falseExpr = iff.falseExpr,
-                    cond = BooleanExpr.new(iff.cond, thenExpr.thisCondition, BooleanOp.AND)
+                    cond = BooleanOpExpr.new(iff.cond, thenExpr.thisCondition, BooleanOp.AND)
                 )
             }
             // if c then (if t then x else y) else x ==> if (c AND !t) then y else x
@@ -137,7 +137,7 @@ object IfSimplification {
                 return SimplerIf(
                     trueExpr = thenExpr.falseExpr,
                     falseExpr = iff.falseExpr,
-                    cond = BooleanExpr.new(
+                    cond = BooleanOpExpr.new(
                         iff.cond,
                         BooleanInvertExpr.new(thenExpr.thisCondition),
                         BooleanOp.AND
@@ -153,7 +153,7 @@ object IfSimplification {
                 return SimplerIf(
                     trueExpr = iff.trueExpr,
                     falseExpr = elseExpr.falseExpr,
-                    cond = BooleanExpr.new(iff.cond, elseExpr.thisCondition, BooleanOp.OR)
+                    cond = BooleanOpExpr.new(iff.cond, elseExpr.thisCondition, BooleanOp.OR)
                 )
             }
             // if c then y else (if t then x else y) ==> if (c OR !t) then y else x
@@ -161,7 +161,7 @@ object IfSimplification {
                 return SimplerIf(
                     trueExpr = iff.trueExpr,
                     falseExpr = elseExpr.trueExpr,
-                    cond = BooleanExpr.new(
+                    cond = BooleanOpExpr.new(
                         iff.cond,
                         BooleanInvertExpr.new(elseExpr.thisCondition),
                         BooleanOp.OR

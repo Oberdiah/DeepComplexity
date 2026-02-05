@@ -37,7 +37,7 @@ object ExprEvaluate {
                 inner(expr, constraints)
             }
 
-            is BooleanExpr -> {
+            is BooleanOpExpr -> {
                 val lhs = evaluate(expr.lhs, constraints, assistant.leftPath())
                 val rhs = evaluate(expr.rhs, constraints, assistant.rightPath())
                 lhs.booleanOperation(rhs, expr.op, expr.exprKey)
@@ -66,7 +66,7 @@ object ExprEvaluate {
                 // OR set.
 
                 val ifCondition = expr.thisCondition
-                
+
                 val trueConstraints = constraints.and(
                     ExprConstrain.getConstraints(ifCondition, constraints, assistant.enteredCondition())
                 )

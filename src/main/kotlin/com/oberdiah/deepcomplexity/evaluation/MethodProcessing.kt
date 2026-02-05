@@ -563,7 +563,7 @@ object MethodProcessing {
                 }
             }
 
-            return BooleanExpr.new(lhs, rhs, booleanOp)
+            return BooleanOpExpr.new(lhs, rhs, booleanOp)
         } else {
             val rhsPrecast = processPsiExpression(rhsPsi, context)
 
