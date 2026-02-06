@@ -12,10 +12,11 @@ The VM arguments for the tests in IntelliJ are fairly complicated
 You may see some errors in the console output when running tests, e.g.
 `java.lang.NoClassDefFoundError: Could not initialize class com.sun.jna.Native`
 
-These are harmless, but if they're annoying you, you can get rid of them by setting $IDEA_DIST to the path
-of your IntelliJ installation.
+These are harmless, but if they're annoying you, you can get rid of them by setting a path variable named `IDEA_DIST`
+to the path of your IntelliJ installation.
 (For me that's `C:/Users/richa/.gradle/caches/9.3.1/transforms/6a5b75f7cfd65f06c79d8214b5118977/workspace/transformed/ideaIC-2023.3.8-win
 `)
+Path variables can be easily set in IntelliJ with Settings -> Appearance & Behaviour -> Path Variables.
 
 You could also run the tests using the gradle runner instead, but then you wouldn't get double-click to go to
 source functionality.
