@@ -8,13 +8,30 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 
-enum class IfTraversal {
-    ConditionAndBranches,
-    BranchesOnly,
-    ConditionOnly;
+enum class TreeTraversal {
+    /**
+     * Traverse all sub-expressions in the tree.
+     */
+    All,
 
-    fun doCondition(): Boolean = this == ConditionAndBranches || this == ConditionOnly
-    fun doBranches(): Boolean = this == ConditionAndBranches || this == BranchesOnly
+    /**
+     * Only traverse the 'primary path'. A good way to think of whether an expression is on the
+     * primary path is to imagine sticking a '.x' to the end of your full expression. If that field access
+     * should be inlined to your sub-expression, then that sub-expression is on the primary path.
+     * Otherwise, it's on an auxiliary path.
+     *
+     * For example, in the expression 'if (a) b else c', only 'b' and 'c' are on the primary path.
+     */
+    PrimaryPathOnly,
+
+    /**
+     * Only traverse the 'auxiliary paths', i.e. the paths that aren't on the primary path.
+     * See [PrimaryPathOnly] for an explanation of what the primary path is.
+     */
+    AuxPathsOnly;
+
+    fun doCondition(): Boolean = this == All || this == AuxPathsOnly
+    fun doBranches(): Boolean = this == All || this == PrimaryPathOnly
 }
 
 object ExprTreeRebuilder {
@@ -46,10 +63,10 @@ object ExprTreeRebuilder {
      * All traversal and caching behaviour is identical to [rewriteInTree].
      */
     fun <T : Any> Expr<T>.rewriteInTreeSameType(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        treeTraversal: TreeTraversal = TreeTraversal.All,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<T> =
-        this.rewriteInTree(ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(this.ind)
+        this.rewriteInTree(treeTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(this.ind)
 
     /**
      * Rebuilds the expression tree using a post-order (leaves-first) traversal.
@@ -64,10 +81,10 @@ object ExprTreeRebuilder {
      *
      * Return the same expression to indicate “no change”.
      *
-     * [ifTraversal] controls how IfExpr nodes are traversed.
+     * [treeTraversal] controls how IfExpr nodes are traversed.
      */
     fun <T : Any> Expr<T>.rewriteInTree(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        treeTraversal: TreeTraversal = TreeTraversal.All,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<*> {
         val replacerCache = mutableMapOf<Expr<*>, Expr<*>>()
@@ -136,7 +153,7 @@ object ExprTreeRebuilder {
                     }
                 }
 
-                if ((isInCondition && ifTraversal.doCondition()) || (!isInCondition && ifTraversal.doBranches())) {
+                if ((isInCondition && treeTraversal.doCondition()) || (!isInCondition && treeTraversal.doBranches())) {
                     replacer(replacedExpr)
                 } else {
                     replacedExpr

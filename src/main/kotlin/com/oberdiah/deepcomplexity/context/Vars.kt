@@ -122,7 +122,7 @@ data class Vars(
 
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueField<*> -> expr.qualifier.rewriteTypeInTree<LeafExpr<*>>(IfTraversal.BranchesOnly) {
+            is LValueField<*> -> expr.qualifier.rewriteTypeInTree<LeafExpr<*>>(TreeTraversal.PrimaryPathOnly) {
                 require(it.ind is ObjectIndicator) {
                     // This indicates that either the qualifier is messed up and isn't an object,
                     // or the traversal mechanism managed to hit a non-primary path somehow.
@@ -227,7 +227,7 @@ data class Vars(
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
             val newValue =
-                qualifierExpr.rewriteTypeInTree<LeafExpr<*>>(IfTraversal.BranchesOnly) { expr ->
+                qualifierExpr.rewriteTypeInTree<LeafExpr<*>>(TreeTraversal.PrimaryPathOnly) { expr ->
                     if (expr == resolvesTo) {
                         rExpr
                     } else {

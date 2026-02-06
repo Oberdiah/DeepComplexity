@@ -94,32 +94,32 @@ sealed class Expr<T : Any> {
      */
     val size: BigInteger by lazy { subExprCounts.values.sum() }
 
-    val directSubExprs by lazy { subExprs(IfTraversal.ConditionAndBranches) }
+    val directSubExprs by lazy { subExprs(TreeTraversal.All) }
 
-    fun subExprs(ifTraversal: IfTraversal): List<Expr<*>> {
+    fun subExprs(treeTraversal: TreeTraversal): List<Expr<*>> {
         return when (this) {
-            is IfExpr -> when (ifTraversal) {
-                IfTraversal.ConditionAndBranches -> listOf(trueExpr, falseExpr, thisCondition)
-                IfTraversal.BranchesOnly -> listOf(trueExpr, falseExpr)
-                IfTraversal.ConditionOnly -> listOf(thisCondition)
+            is IfExpr -> when (treeTraversal) {
+                TreeTraversal.All -> listOf(trueExpr, falseExpr, thisCondition)
+                TreeTraversal.PrimaryPathOnly -> listOf(trueExpr, falseExpr)
+                TreeTraversal.AuxPathsOnly -> listOf(thisCondition)
             }
 
             else -> parts().filterIsInstance<Expr<*>>()
         }
     }
 
-    fun allLeaves(): Set<LeafExpr<*>> = collectToSet(IfTraversal.BranchesOnly) { it as? LeafExpr<*> }
+    fun allLeaves(): Set<LeafExpr<*>> = collectToSet(TreeTraversal.PrimaryPathOnly) { it as? LeafExpr<*> }
 
     internal inline fun <reified Q : Expr<*>> allSubExprsOfType(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches
-    ): Set<Q> = collectToSet(ifTraversal) { it as? Q }
+        treeTraversal: TreeTraversal = TreeTraversal.All
+    ): Set<Q> = collectToSet(treeTraversal) { it as? Q }
 
     fun <O> collectToSet(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        treeTraversal: TreeTraversal = TreeTraversal.All,
         getItem: (Expr<*>) -> O?
     ): Set<O> {
         return ExprTreeVisitor.reduce(
-            ifTraversal,
+            treeTraversal,
             this,
             { expr ->
                 val item = getItem(expr)
@@ -145,9 +145,9 @@ sealed class Expr<T : Any> {
      * All traversal and caching behaviour is identical to [rewriteInTree].
      */
     inline fun <reified Q : Expr<*>> rewriteTypeInTreeSameType(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        treeTraversal: TreeTraversal = TreeTraversal.All,
         crossinline replacer: (Q) -> Expr<*>
-    ): Expr<T> = this.rewriteTypeInTree<Q>(ifTraversal) { e -> replacer(e).castOrThrow(e.ind) }
+    ): Expr<T> = this.rewriteTypeInTree<Q>(treeTraversal) { e -> replacer(e).castOrThrow(e.ind) }
         .castOrThrow(this.ind)
 
     /**
@@ -159,10 +159,10 @@ sealed class Expr<T : Any> {
      * All traversal and caching behaviour is identical to [rewriteInTree].
      */
     inline fun <reified Q : Expr<*>> rewriteTypeInTree(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        treeTraversal: TreeTraversal = TreeTraversal.All,
         crossinline replacer: (Q) -> Expr<*>
     ): Expr<*> {
-        return this.rewriteInTree(ifTraversal) { expr: Expr<*> ->
+        return this.rewriteInTree(treeTraversal) { expr: Expr<*> ->
             if (expr is Q) {
                 replacer(expr)
             } else {

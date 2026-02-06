@@ -5,7 +5,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.incrementCount
 
 object ExprTreeVisitor {
     fun <OUTPUT> reduce(
-        ifTraversal: IfTraversal = IfTraversal.ConditionAndBranches,
+        treeTraversal: TreeTraversal = TreeTraversal.All,
         initial: Expr<*>,
         producer: (Expr<*>) -> OUTPUT,
         combiner: (OUTPUT, OUTPUT) -> OUTPUT,
@@ -19,7 +19,7 @@ object ExprTreeVisitor {
             val (expr, isEntering) = stack.removeLast()
             if (expr in cache) continue
 
-            val children = expr.subExprs(ifTraversal)
+            val children = expr.subExprs(treeTraversal)
             if (isEntering) {
                 stack.addLast(Frame(expr, false))
                 stack.addAll(children.filter { it !in cache }.map { Frame(it, true) })
