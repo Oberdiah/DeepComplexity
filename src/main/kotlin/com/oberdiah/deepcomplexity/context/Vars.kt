@@ -4,6 +4,7 @@ import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
+import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
@@ -121,8 +122,13 @@ data class Vars(
 
     fun <T : Any> get(expr: LValue<T>): Expr<T> {
         return when (expr) {
-            is LValueField<*> -> expr.qualifier.rewriteTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) {
-                get(QualifiedFieldKey(it, expr.field))
+            is LValueField<*> -> expr.qualifier.rewriteTypeInTree<LeafExpr<*>>(IfTraversal.BranchesOnly) {
+                require(it.ind is ObjectIndicator) {
+                    // This indicates that either the qualifier is messed up and isn't an object,
+                    // or the traversal mechanism managed to hit a non-primary path somehow.
+                    "Traversal of a qualifier encountered a leaf with a non-object indicator ${it.ind}"
+                }
+                get(QualifiedFieldKey(it.castToObject() as LeafExpr, expr.field))
             }
 
             is LValueKey<*> -> get(expr.key)
@@ -221,7 +227,7 @@ data class Vars(
             // and replace it with the qualifier expression itself, but with each leaf
             // replaced with either what we used to be, or [rExpr].
             val newValue =
-                qualifierExpr.rewriteTypeInTree<LeafExpr<HeapMarker>>(IfTraversal.BranchesOnly) { expr ->
+                qualifierExpr.rewriteTypeInTree<LeafExpr<*>>(IfTraversal.BranchesOnly) { expr ->
                     if (expr == resolvesTo) {
                         rExpr
                     } else {
