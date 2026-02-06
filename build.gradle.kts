@@ -1,6 +1,7 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.extensions.intellijPlatform
 
 plugins {
     id("idea") // IntelliJ
@@ -12,19 +13,38 @@ plugins {
     alias(libs.plugins.kover) // Gradle Kover Plugin
 }
 
-tasks.withType<Test> {
-    doFirst {
-        println("Test JVM arguments:")
-        println(allJvmArgs.joinToString(" ") { "$it" })
-    }
-}
-
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
-// Set the JVM language level used to build the project.
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+        vendor.set(JvmVendorSpec.matching("JetBrains"))
+    }
+}
+
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+        vendor.set(JvmVendorSpec.matching("JetBrains"))
+    }
+}
+
+val jetBrainsJbr17Launcher = javaToolchains.launcherFor(java.toolchain)
+
+tasks.withType<Test> {
+    javaLauncher.set(jetBrainsJbr17Launcher)
+
+    doFirst {
+        println("Test JVM arguments:")
+        println(allJvmArgs.joinToString(" ") { it })
+    }
+}
+
+tasks.withType<JavaExec>().configureEach {
+    if (name.startsWith("runIde")) {
+        javaLauncher.set(jetBrainsJbr17Launcher)
+    }
 }
 
 idea {
