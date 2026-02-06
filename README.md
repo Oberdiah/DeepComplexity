@@ -6,13 +6,16 @@
 
 ## Notes
 
-To grab the JVM arguments for the IntelliJ JUnit tests, run:
+The VM arguments for the tests in IntelliJ are fairly complicated
+(see https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1757 for why).
 
-```shell
-./gradlew :test --tests "com.oberdiah.deepcomplexity.SimpleMustPassTest"
-```
+You may see some errors in the console output when running tests, e.g.
+`java.lang.NoClassDefFoundError: Could not initialize class com.sun.jna.Native`
 
-See https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1757 for why we have to do that.
+These are harmless, but if they're annoying you, you can get rid of them by setting $IDEA_DIST to the path
+of your IntelliJ installation.
+(For me that's `C:/Users/richa/.gradle/caches/9.3.1/transforms/6a5b75f7cfd65f06c79d8214b5118977/workspace/transformed/ideaIC-2023.3.8-win
+`)
 
 You could also run the tests using the gradle runner instead, but then you wouldn't get double-click to go to
 source functionality.
