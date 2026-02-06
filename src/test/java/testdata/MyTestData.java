@@ -1643,6 +1643,16 @@ public class MyTestData {
 		return (short) foo.getX();
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(10)
+	public static short simpleClassTest41(short x) {
+		MyClass foo = new MyClass(50);
+		if (foo == foo) {
+			foo = new MyClass(100);
+		}
+		return (short) foo.getX();
+	}
+	
 	private static void updateNesting(MyNestingClass nesting, int val) {
 		nesting.nested.x = val;
 	}
