@@ -214,7 +214,7 @@ data class Vars(
         val field = lExpr.field
 
         val qualifiersMentionedInQualifierExpr: Set<LeafExpr<HeapMarker>> =
-            qualifierExpr.allLeaves().mapToSet { it.castToObject() as LeafExpr }
+            qualifierExpr.allPrimaryPathLeaves().mapToSet { it.castToObject() as LeafExpr }
 
         var vars = this
 
