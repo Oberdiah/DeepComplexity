@@ -56,6 +56,11 @@ sealed class Expr<T : Any> {
 
     /**
      * Subclasses should return their properties here for equality/hashcode purposes.
+     *
+     * Note: This is also used by default for tree traversal. If you return anything here that
+     * isn't an expression but contain expressions, be sure to add your class to [subExprs]
+     * to ensure your sub expressions are properly represented. This also applies
+     * if you have any requirements around [TreeTraversal] behaviour.
      */
     protected abstract fun parts(): List<Any>
 
@@ -102,6 +107,12 @@ sealed class Expr<T : Any> {
                 TreeTraversal.All -> listOf(trueExpr, falseExpr, thisCondition)
                 TreeTraversal.PrimaryPathOnly -> listOf(trueExpr, falseExpr)
                 TreeTraversal.AuxPathsOnly -> listOf(thisCondition)
+            }
+
+            is LoopExpr -> {
+                // This isn't complete, eventually we'll have to deal with the primary paths and aux paths
+                // todo loops
+                listOf(condition) + variables.values.flatMap { listOf(it.initial, it.update) }
             }
 
             else -> parts().filterIsInstance<Expr<*>>()
@@ -418,6 +429,84 @@ class NegateExpr<T : Number> private constructor(val expr: Expr<T>) : Expr<T>() 
     override fun parts(): List<Any> = listOf(expr)
 
     override val ind: Indicator<T> = expr.ind
+}
+
+/**
+ * Here's how loops work in more complicated multiple-object scenarios
+ * ```java
+ * Foo foo = new Foo(5);
+ * Foo bar = new Foo(6);
+ * Foo baz = new Foo(5);
+ * for (int i = 0; i < 10; i++) {
+ *    if (foo == baz) {
+ *      foo = bar;
+ *    }
+ * }
+ * return foo.x;
+ * ```
+ * Now, while we're building the loop, everything is A-OK. We end up with a structure like this:
+ * ```
+ * LoopExpr(
+ *   target = $foo,
+ *   variables = {
+ *     $i: LoopVar(initial = 0, update = $i + 1)
+ *     $foo: LoopVar(initial = foo, update = if ($foo == baz) bar else $foo)
+ *   }
+ * )
+ * ```
+ * Now, what happens when we try to perform `.x` on this loop? Things get a little bit funky.
+ * I believe it still works; however, we do need to be very careful in maintaining that old '$foo'
+ * when we perform the replacement. I'm not quite sure how we detect that.
+ * ```
+ * LoopExpr(
+ *   target = $foo.x,
+ *   variables = {
+ *     $i: LoopVar(initial = 0, update = $i + 1)
+ *     $foo: LoopVar(initial = foo.x, update = if ($foo == baz) bar else $foo)
+ *     $foo.x: LoopVar(initial = foo.x, update = if ($foo == baz) bar.x else $foo.x)
+ *   }
+ * )
+ * ```
+ */
+class LoopExpr<T : Any> private constructor(
+    val target: LoopKey<T>,
+    val condition: Expr<Boolean>,
+    val variables: Map<LoopKey<*>, LoopVar<*>>,
+) : Expr<T>() {
+    companion object {
+        fun <T : Any> new(
+            target: LoopKey<T>,
+            condition: Expr<Boolean>,
+            variables: Map<LoopKey<*>, LoopVar<*>>
+        ): LoopExpr<T> = ExprPool.create { LoopExpr(target, condition, variables) }
+    }
+
+    override val ind: Indicator<T>
+        get() = target.ind
+
+    override fun parts(): List<Any> = listOf(target, condition, variables)
+
+    data class LoopVar<T : Any>(val initial: Expr<T>, val update: Expr<T>)
+
+    @ConsistentCopyVisibility
+    data class LoopKey<T : Any> private constructor(val key: MethodProcessingKey, val idx: Int, val ind: Indicator<T>) {
+        companion object {
+            private var IDX_COUNT = 0
+            fun new(key: MethodProcessingKey): LoopKey<*> = LoopKey(key, IDX_COUNT++, key.ind)
+        }
+    }
+
+    class LoopLeaf<T : Any> private constructor(
+        val key: LoopKey<T>,
+    ) : Expr<T>() {
+        companion object {
+            fun new(key: MethodProcessingKey): LoopLeaf<*> = new(LoopKey.new(key))
+            fun <T : Any> new(key: LoopKey<T>): LoopLeaf<T> = ExprPool.create { LoopLeaf(key) }
+        }
+
+        override fun parts(): List<Any> = listOf(key)
+        override val ind: Indicator<T> get() = key.ind
+    }
 }
 
 sealed class LeafExpr<T : Any> : Expr<T>() {

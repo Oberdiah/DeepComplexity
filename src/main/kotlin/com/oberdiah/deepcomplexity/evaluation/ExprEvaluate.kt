@@ -107,6 +107,11 @@ object ExprEvaluate {
             }
 
             is VarsExpr -> WONT_IMPLEMENT("VarsExpr should never reach the evaluation stage")
+            is LoopExpr<*> -> {
+                TODO()
+            }
+
+            is LoopExpr.LoopLeaf<*> -> TODO()
         }
         return toRet
     }

@@ -5,6 +5,8 @@ import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
+import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopLeaf
+import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopVar
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 
@@ -38,6 +40,8 @@ object ExprTreeRebuilder {
     /**
      * This is just a standard expression replacer that will only be called
      * from the root of an expression tree where the key of the expression is also known.
+     *
+     * This means that the key you receive is guaranteed to have the same indicator as the expression itself.
      */
     interface ExprReplacerWithKey {
         fun <T : Any> replace(key: MethodProcessingKey, expr: Expr<T>): Expr<T>
@@ -46,6 +50,9 @@ object ExprTreeRebuilder {
             operator fun invoke(block: (MethodProcessingKey, Expr<*>) -> Expr<*>): ExprReplacerWithKey {
                 return object : ExprReplacerWithKey {
                     override fun <T : Any> replace(key: MethodProcessingKey, expr: Expr<T>): Expr<T> {
+                        require(expr.ind == key.ind) {
+                            "The expression's indicator (${expr.ind}) must match the key's indicator (${key.ind})."
+                        }
                         return block(key, expr).castOrThrow(expr.ind)
                     }
                 }
@@ -105,6 +112,7 @@ object ExprTreeRebuilder {
                     )
 
                     is VarsExpr -> expr
+                    is LoopLeaf<*> -> expr
                     is LeafExpr<*> -> expr
 
                     is NegateExpr<*> -> NegateExpr.new(
@@ -150,6 +158,25 @@ object ExprTreeRebuilder {
                                         }
                             }
                         }
+                    }
+
+                    is LoopExpr<*> -> {
+                        // This is definitely incomplete - it needs proper handling of isInCondition situations.
+                        // But for now it should handle the basics :)
+                        val newVariables = expr.variables.mapValues { (_, v) ->
+                            ConversionsAndPromotion.castAToB(
+                                inner(v.initial, isInCondition, replacer),
+                                inner(v.update, isInCondition, replacer),
+                                Behaviour.Throw
+                            ).map { initial, next ->
+                                LoopVar(initial, next)
+                            }
+                        }
+                        LoopExpr.new(
+                            target = expr.target,
+                            condition = inner(expr.condition, isInCondition, replacer).castToBoolean(),
+                            variables = newVariables
+                        )
                     }
                 }
 

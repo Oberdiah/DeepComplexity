@@ -2233,6 +2233,29 @@ public class MyTestData {
 		return (short) b;
 	}
 	
+	public static short forLoops17(short x) {
+		MyClass foo = new MyClass(5);
+		MyClass bar = new MyClass(6);
+		MyClass baz = new MyClass(5);
+		for (int i = 0; i < 10; i++) {
+			if (foo == baz) {
+				foo = bar;
+			}
+		}
+		return (short) foo.x;
+	}
+	
+	public static short forLoops18(short x) {
+		int j = 0;
+		for (int i = 0; i < 10; i++) {
+			j += 2;
+			if (j > 5) {
+				break;
+			}
+		}
+		return (short) j;
+	}
+	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(4)
 	public static short sharedState1(short x) {

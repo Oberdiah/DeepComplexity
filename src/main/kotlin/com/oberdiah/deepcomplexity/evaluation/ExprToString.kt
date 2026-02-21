@@ -58,6 +58,21 @@ object ExprToString {
 
             is VariableExpr -> expr.key.toString()
             is VarsExpr -> expr.vars.toString()
+            is LoopExpr<*> -> {
+                val target = expr.target
+                val condition = toStringWithTags(expr.condition, tagsMap)
+                val variables = expr.variables.entries.joinToString("\n") { (key, value) ->
+                    "$key: { initial: ${toStringWithTags(value.initial, tagsMap)}, next: ${
+                        toStringWithTags(value.update, tagsMap)
+                    } }"
+                }
+
+                "Loop(\n  target: $target\n  condition: $condition\n  variables: {\n${
+                    variables.prependIndent("    ")
+                }\n  }\n)"
+            }
+
+            is LoopExpr.LoopLeaf<*> -> "LoopLeaf(${expr.key})"
         }
     }
 
@@ -73,6 +88,8 @@ object ExprToString {
             is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> toExprKeyString(expr.expr)
             is VarsExpr -> "CtxExpr"
+            is LoopExpr<*> -> "Loop(${expr.target})"
+            is LoopExpr.LoopLeaf<*> -> "LoopLeaf(${expr.key})"
         }
     }
 }

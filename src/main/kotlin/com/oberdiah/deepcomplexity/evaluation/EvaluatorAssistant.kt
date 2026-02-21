@@ -24,7 +24,10 @@ class EvaluatorAssistant(
             )
     }
 
-    enum class Direction {
+    interface Direction
+
+    data class DirectionInt(val int: Int) : Direction
+    enum class DirectionEnum : Direction {
         Only,
         Left,
         Right,
@@ -39,11 +42,11 @@ class EvaluatorAssistant(
     fun enteredCondition(): EvaluatorAssistant =
         EvaluatorAssistant(tagsMap, path, evaluatedStrings, expressionCache, true)
 
-    fun leftPath(): EvaluatorAssistant = direction(Direction.Left)
-    fun rightPath(): EvaluatorAssistant = direction(Direction.Right)
-    fun falsePath(): EvaluatorAssistant = direction(Direction.False)
-    fun truePath(): EvaluatorAssistant = direction(Direction.True)
-    fun onlyPath(): EvaluatorAssistant = direction(Direction.Only)
+    fun leftPath(): EvaluatorAssistant = direction(DirectionEnum.Left)
+    fun rightPath(): EvaluatorAssistant = direction(DirectionEnum.Right)
+    fun falsePath(): EvaluatorAssistant = direction(DirectionEnum.False)
+    fun truePath(): EvaluatorAssistant = direction(DirectionEnum.True)
+    fun onlyPath(): EvaluatorAssistant = direction(DirectionEnum.Only)
 
     private fun direction(direction: Direction): EvaluatorAssistant =
         EvaluatorAssistant(tagsMap, path + direction, evaluatedStrings, expressionCache, isInsideCondition)
@@ -108,7 +111,7 @@ class EvaluatorAssistant(
     fun trace(expr: Expr<*>, bundle: Bundle<*>) {
         if (isInsideCondition) return
 
-        fun getStr(direction: Direction, fallback: Expr<*>): String {
+        fun getStr(direction: DirectionEnum, fallback: Expr<*>): String {
             return evaluatedStrings.getOrElse(path + direction) {
 //                "<| NOT EVALUATED |>"
                 "${ExprToString.toStringWithTags(fallback, tagsMap)} = <| NOT EVALUATED |>"
@@ -125,8 +128,8 @@ class EvaluatorAssistant(
 
         evaluatedStrings[path] = tagsMap[expr] ?: when (expr) {
             is ArithmeticExpr -> {
-                val lhsStr = getStr(Direction.Left, expr.lhs)
-                val rhsStr = getStr(Direction.Right, expr.rhs)
+                val lhsStr = getStr(DirectionEnum.Left, expr.lhs)
+                val rhsStr = getStr(DirectionEnum.Right, expr.rhs)
 
                 if (!lhsStr.contains("|>") && !rhsStr.contains("|>")) {
                     "(${lhsStr} ${expr.op} ${rhsStr}) = $myResult"
@@ -138,41 +141,59 @@ class EvaluatorAssistant(
                 }
             }
 
-            is NegateExpr -> "-${getStr(Direction.Only, expr.expr)}"
+            is NegateExpr -> "-${getStr(DirectionEnum.Only, expr.expr)}"
 
             is ComparisonExpr<*> -> "(${
-                getStr(Direction.Left, expr.lhs)
+                getStr(DirectionEnum.Left, expr.lhs)
             } ${expr.comp} ${
-                getStr(Direction.Right, expr.rhs)
+                getStr(DirectionEnum.Right, expr.rhs)
             }) = $myResult"
 
             is ConstExpr<*> -> expr.value.toString()
             is IfExpr -> {
                 "if ${ExprToString.toStringWithTags(expr.thisCondition, tagsMap)} {\n${
-                    getStr(Direction.True, expr.trueExpr).prependIndent()
+                    getStr(DirectionEnum.True, expr.trueExpr).prependIndent()
                 }\n} else {\n${
-                    getStr(Direction.False, expr.falseExpr).prependIndent()
+                    getStr(DirectionEnum.False, expr.falseExpr).prependIndent()
                 }\n} = $myResult"
             }
 
-            is BooleanInvertExpr -> "!${getStr(Direction.Only, expr.expr)} = $myResult"
+            is BooleanInvertExpr -> "!${getStr(DirectionEnum.Only, expr.expr)} = $myResult"
 
             is BooleanOpExpr -> "(${
-                getStr(Direction.Left, expr.lhs)
+                getStr(DirectionEnum.Left, expr.lhs)
             } ${expr.op} ${
-                getStr(Direction.Right, expr.rhs)
+                getStr(DirectionEnum.Right, expr.rhs)
             })"
 
             is VariableExpr -> expr.key.toString()
             is TypeCastExpr<*, *> -> {
                 if (expr.explicit) {
-                    "(${expr.ind}) ${getStr(Direction.Only, expr.expr)}"
+                    "(${expr.ind}) ${getStr(DirectionEnum.Only, expr.expr)}"
                 } else {
-                    getStr(Direction.Only, expr.expr)
+                    getStr(DirectionEnum.Only, expr.expr)
                 }
             }
 
             is VarsExpr -> "CtxExpr"
+            is LoopExpr<*> -> {
+                // todo loops
+                val target = expr.target
+                // Obviously, not implemented with evaluation values in mind at the moment, this
+                // is just to get us off the ground.
+                val condition = ExprToString.toStringWithTags(expr.condition, tagsMap)
+                val variables = expr.variables.entries.joinToString("\n") { (key, value) ->
+                    "$key: { initial: ${ExprToString.toStringWithTags(value.initial, tagsMap)}, next: ${
+                        ExprToString.toStringWithTags(value.update, tagsMap)
+                    } }"
+                }
+
+                "Loop(\n  target: $target\n  condition: $condition\n  variables: {\n${
+                    variables.prependIndent("    ")
+                }\n  }\n)"
+            }
+
+            is LoopExpr.LoopLeaf<*> -> TODO("Not gonna bother with that yet")
         }
     }
 }

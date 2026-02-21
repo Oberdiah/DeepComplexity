@@ -212,8 +212,8 @@ object MethodProcessing {
                 val loopedContext = LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
 
                 context.stack(loopedContext)
+                
                 doNothing(context)
-                TODO("Not completed.")
             }
 
             is PsiReturnStatement -> {
