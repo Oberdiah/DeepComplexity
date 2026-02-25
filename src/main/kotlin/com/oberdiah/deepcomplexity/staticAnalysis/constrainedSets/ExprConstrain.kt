@@ -166,11 +166,8 @@ object ExprConstrain {
 
             else -> TODO("Not implemented constraints for $condition")
         }
-        val endTime = System.currentTimeMillis()
-        if (endTime - startTime > 10) {
-            println("Warning: getConstraints took ${endTime - startTime}ms")
-        }
-
+        val duration = System.currentTimeMillis() - startTime
+        if (duration > 10) println("Warning: getConstraints took ${duration}ms")
         return newConstraints
     }
 }

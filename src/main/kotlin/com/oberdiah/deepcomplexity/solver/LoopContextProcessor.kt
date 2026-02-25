@@ -41,11 +41,7 @@ object LoopContextProcessor {
 
     private fun <T : Any> convertExprToLoopableExpr(expr: Expr<T>, keysToReplace: Set<MethodProcessingKey>): Expr<T> {
         return expr.rewriteTypeInTreeSameType<VariableExpr<*>> {
-            if (keysToReplace.contains(it.key)) {
-                LoopExpr.LoopLeaf.new(it.key)
-            } else {
-                it
-            }
+            if (it.key in keysToReplace) LoopExpr.LoopLeaf.new(it.key) else it
         }
     }
 }

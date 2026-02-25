@@ -180,11 +180,8 @@ object ExprTreeRebuilder {
                     }
                 }
 
-                if ((isInCondition && treeTraversal.doCondition()) || (!isInCondition && treeTraversal.doBranches())) {
-                    replacer(replacedExpr)
-                } else {
-                    replacedExpr
-                }
+                val shouldReplace = if (isInCondition) treeTraversal.doCondition() else treeTraversal.doBranches()
+                if (shouldReplace) replacer(replacedExpr) else replacedExpr
             }
         }
 

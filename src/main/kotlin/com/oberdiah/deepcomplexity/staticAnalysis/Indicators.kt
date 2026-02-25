@@ -118,13 +118,7 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
      * Returns a string representation of the number, or the empty string
      * if the number is the minimum or maximum value. Useful for printing ranges.
      */
-    fun stringify(i: T): String {
-        return if (i == getMaxValue() || i == getMinValue()) {
-            ""
-        } else {
-            i.toString()
-        }
-    }
+    fun stringify(i: T): String = if (i == getMaxValue() || i == getMinValue()) "" else i.toString()
 
     fun isWholeNum(): Boolean {
         return this is IntIndicator

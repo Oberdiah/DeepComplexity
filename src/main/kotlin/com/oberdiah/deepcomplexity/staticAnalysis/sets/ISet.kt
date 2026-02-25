@@ -60,7 +60,7 @@ interface ISet<T : Any> {
     fun comparisonOperation(other: ISet<T>, operation: ComparisonOp): BooleanSet {
         // A default implementation for non-numeric sets that just handles EQ and NE
         require(operation == ComparisonOp.EQUAL || operation == ComparisonOp.NOT_EQUAL) {
-            throw IllegalArgumentException("Only EQ and NE are supported for non-numeric sets")
+            "Only EQ and NE are supported for non-numeric sets"
         }
 
         val intersection = this.intersect(other)

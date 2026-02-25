@@ -192,10 +192,7 @@ object MethodProcessing {
             }
 
             is PsiForStatement -> {
-                val initialization = psi.initialization
-                if (initialization != null) {
-                    processPsiStatement(initialization, context)
-                }
+                psi.initialization?.let { processPsiStatement(it, context) }
 
                 val bodyContext = newContext(context.c.thisType)
 
@@ -289,7 +286,6 @@ object MethodProcessing {
                 val tokenType = psi.operationSign.tokenType
                 val unaryOp = UnaryNumberOp.fromJavaTokenType(tokenType)
                     ?: throw IllegalArgumentException("As-yet unsupported unary operation: ${psi.operationSign}")
-
 
                 // Build the expression before the assignment for a postfix increment/decrement
                 val builtExpr = processPsiExpression(psi.operand, context)

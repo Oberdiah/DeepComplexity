@@ -14,10 +14,8 @@ object ExprEvaluate {
         expr: Expr<T>,
         constraints: ConstraintsOrPile,
         assistant: EvaluatorAssistant
-    ): Bundle<T> {
-        return assistant.getOrPut(expr, constraints) {
-            evaluateInner(expr, constraints, assistant)
-        }
+    ): Bundle<T> = assistant.getOrPut(expr, constraints) {
+        evaluateInner(expr, constraints, assistant)
     }
 
     fun <T : Any> evaluateInner(
@@ -25,7 +23,7 @@ object ExprEvaluate {
         constraints: ConstraintsOrPile,
         assistant: EvaluatorAssistant
     ): Bundle<*> {
-        val toRet = when (expr) {
+        return when (expr) {
             is NegateExpr -> evaluate(expr.expr.castToNumbers(), constraints, assistant.onlyPath()).negate()
             is BooleanInvertExpr -> evaluate(expr, constraints, assistant.onlyPath()).booleanInvert()
 
@@ -116,6 +114,5 @@ object ExprEvaluate {
 
             is LoopExpr.LoopLeaf<*> -> TODO()
         }
-        return toRet
     }
 }

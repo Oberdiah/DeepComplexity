@@ -8,12 +8,10 @@ import java.math.BigInteger
 typealias TagsMap = Map<Expr<*>, String>
 
 object ExpressionTagger {
-    fun tagsToString(tags: TagsMap): String {
-        val strBuilder = StringBuilder()
+    fun tagsToString(tags: TagsMap): String = buildString {
         for ((subExpr, tag) in tags) {
-            strBuilder.appendLine("$tag = ${toStringWithTags(subExpr, tags - subExpr)}")
+            appendLine("$tag = ${toStringWithTags(subExpr, tags - subExpr)}")
         }
-        return strBuilder.toString()
     }
 
     /**

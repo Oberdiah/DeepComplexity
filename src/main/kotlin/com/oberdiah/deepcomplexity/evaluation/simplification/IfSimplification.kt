@@ -280,9 +280,6 @@ object IfSimplification {
                 when (val result = optimisation(current)) {
                     is SimplerIf -> {
                         if (result != current) {
-//                            require(result.size <= current.size) {
-//                                "If simplification produced a larger expression tree!"
-//                            }
                             current = result
                             continue@optimizationLoop
                         }

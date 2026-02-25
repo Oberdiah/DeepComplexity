@@ -36,18 +36,8 @@ data class NumberSet<T : Number> private constructor(
         }
     }
 
-    override fun toString(): String {
-        val mainStr = ranges.joinToString {
-            it.toString()
-        }
-        val divideByZeroWarning = if (hasThrownDivideByZero) {
-            " (divide by zero)"
-        } else {
-            ""
-        }
-
-        return "$mainStr$divideByZeroWarning"
-    }
+    override fun toString() =
+        ranges.joinToString() + if (hasThrownDivideByZero) " (divide by zero)" else ""
 
     override fun isEmpty(): Boolean = ranges.isEmpty()
 
@@ -315,15 +305,7 @@ data class NumberSet<T : Number> private constructor(
         return unaryMakeNew(newData)
     }
 
-    override fun contains(element: T): Boolean {
-        val value = element
-        for (range in ranges) {
-            if (value >= range.start && value <= range.end) {
-                return true
-            }
-        }
-        return false
-    }
+    override fun contains(element: T): Boolean = ranges.any { element >= it.start && element <= it.end }
 
     override fun union(other: ISet<T>): NumberSet<T> {
         require(ind == other.ind)

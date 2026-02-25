@@ -84,11 +84,9 @@ data class QualifiedFieldKey(val qualifier: LeafExpr<HeapMarker>, val field: Fie
 
     override val ind: Indicator<*> = field.ind
     override val lifetime: Lifetime
-        get() {
-            return when (this.qualifier) {
-                is VariableExpr<*> -> qualifier.key.lifetime
-                else -> Lifetime.FOREVER
-            }
+        get() = when (qualifier) {
+            is VariableExpr<*> -> qualifier.key.lifetime
+            else -> Lifetime.FOREVER
         }
 
     override fun toString(): String = "$qualifier.$field"
