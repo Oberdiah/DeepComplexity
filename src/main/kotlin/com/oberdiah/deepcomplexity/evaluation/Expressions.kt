@@ -489,11 +489,14 @@ class LoopExpr<T : Any> private constructor(
     data class LoopVar<T : Any>(val initial: Expr<T>, val update: Expr<T>)
 
     @ConsistentCopyVisibility
-    data class LoopKey<T : Any> private constructor(val key: MethodProcessingKey, val idx: Int, val ind: Indicator<T>) {
+    data class LoopKey<T : Any> private constructor(val key: MethodProcessingKey, val ind: Indicator<T>) {
+        // Some form of index/distinguishing feature may be needed at some point to tell keys apart,
+        // I've not quite figured that out yet. For now, we'll do without.
         companion object {
-            private var IDX_COUNT = 0
-            fun new(key: MethodProcessingKey): LoopKey<*> = LoopKey(key, IDX_COUNT++, key.ind)
+            fun new(key: MethodProcessingKey): LoopKey<*> = LoopKey(key, key.ind)
         }
+
+        override fun toString(): String = "$$key"
     }
 
     class LoopLeaf<T : Any> private constructor(

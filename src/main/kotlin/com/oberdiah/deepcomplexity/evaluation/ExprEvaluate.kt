@@ -3,6 +3,7 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.oberdiah.deepcomplexity.context.VariableKey
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.solver.CastSolver
+import com.oberdiah.deepcomplexity.solver.LoopSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
@@ -108,7 +109,9 @@ object ExprEvaluate {
 
             is VarsExpr -> WONT_IMPLEMENT("VarsExpr should never reach the evaluation stage")
             is LoopExpr<*> -> {
-                TODO()
+                val numberOfTimesLooped =
+                    LoopSolver.calculateNumLoops(expr.condition, expr.variables, constraints, assistant)
+                LoopSolver.evaluateTarget(expr.target, expr.variables, numberOfTimesLooped, constraints, assistant)
             }
 
             is LoopExpr.LoopLeaf<*> -> TODO()

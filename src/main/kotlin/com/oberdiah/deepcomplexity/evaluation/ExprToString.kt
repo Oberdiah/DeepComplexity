@@ -72,7 +72,7 @@ object ExprToString {
                 }\n  }\n)"
             }
 
-            is LoopExpr.LoopLeaf<*> -> "LoopLeaf(${expr.key})"
+            is LoopExpr.LoopLeaf<*> -> "${expr.key}"
         }
     }
 

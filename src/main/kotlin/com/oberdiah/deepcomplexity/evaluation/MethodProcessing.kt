@@ -9,7 +9,7 @@ import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
-import com.oberdiah.deepcomplexity.solver.LoopSolver
+import com.oberdiah.deepcomplexity.solver.LoopContextProcessor
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
@@ -209,10 +209,10 @@ object MethodProcessing {
                 psi.body?.let { processPsiStatement(it, bodyContext) }
                 psi.update?.let { processPsiStatement(it, bodyContext) }
 
-                val loopedContext = LoopSolver.processLoopContext(bodyContext.c, conditionExpr)
+                val loopedContext = LoopContextProcessor.processLoopContext(bodyContext.c, conditionExpr)
 
                 context.stack(loopedContext)
-                
+
                 doNothing(context)
             }
 
