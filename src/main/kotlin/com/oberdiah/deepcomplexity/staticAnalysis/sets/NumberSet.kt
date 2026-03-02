@@ -50,29 +50,8 @@ data class NumberSet<T : Number> private constructor(
         return range.first == ind.getMinValue() && range.second == ind.getMaxValue()
     }
 
-    /**
-     * Use when called from a binary operation context.
-     * `other` is for tracking hasThrownDivideByZero. You can override this if you want with `thrownDivByZero`.
-     */
-    private fun binaryMakeNew(
-        other: NumberSet<T>,
-        ranges: List<NumberRange<T>>,
-        thrownDivByZero: Boolean? = null
-    ): NumberSet<T> {
-        return NumberSet(
-            ind,
-            thrownDivByZero ?: (other.hasThrownDivideByZero || hasThrownDivideByZero),
-            NumberUtilities.mergeAndDeduplicate(ranges)
-        )
-    }
-
-    private fun unaryMakeNew(ranges: List<NumberRange<T>>, thrownDivByZero: Boolean? = null): NumberSet<T> {
-        return NumberSet(
-            ind,
-            thrownDivByZero ?: hasThrownDivideByZero,
-            NumberUtilities.mergeAndDeduplicate(ranges)
-        )
-    }
+    private fun makeNew(ranges: List<NumberRange<T>>, divByZero: Boolean = hasThrownDivideByZero) =
+        NumberSet(ind, divByZero, NumberUtilities.mergeAndDeduplicate(ranges))
 
     /**
      * Returns the full range of this number set (Smallest possible value to largest)
@@ -85,7 +64,7 @@ data class NumberSet<T : Number> private constructor(
 
     fun negate(): NumberSet<T> {
         val zero = NumberRange.fromConstant(ind.getZero())
-        return unaryMakeNew(ranges.flatMap { elem -> zero.subtract(elem) })
+        return makeNew(ranges.flatMap { elem -> zero.subtract(elem) })
     }
 
     /**
@@ -143,20 +122,17 @@ data class NumberSet<T : Number> private constructor(
             throw RuntimeException("NumberSet has more than 10 ranges, this may be slow.")
         }
 
-        var hasThrownDivideByZero = this.hasThrownDivideByZero || other.hasThrownDivideByZero
+        var divByZero = hasThrownDivideByZero || other.hasThrownDivideByZero
         val newList: MutableList<NumberRange<T>> = mutableListOf()
         for (range in ranges) {
             for (otherRange in other.ranges) {
-                val ranges = rangeOp(range, otherRange)
-
-                if (ranges.any { it == null }) {
-                    hasThrownDivideByZero = true
-                }
-                newList.addAll(ranges.filterNotNull())
+                val results = rangeOp(range, otherRange)
+                if (results.any { it == null }) divByZero = true
+                newList.addAll(results.filterNotNull())
             }
         }
 
-        return binaryMakeNew(other, newList, hasThrownDivideByZero)
+        return makeNew(newList, divByZero)
     }
 
     private fun doModulo(other: NumberSet<T>): NumberSet<T> {
@@ -302,7 +278,7 @@ data class NumberSet<T : Number> private constructor(
                 }
             }
 
-        return unaryMakeNew(newData)
+        return makeNew(newData)
     }
 
     override fun contains(element: T): Boolean = ranges.any { element >= it.start && element <= it.end }
@@ -310,7 +286,8 @@ data class NumberSet<T : Number> private constructor(
     override fun union(other: ISet<T>): NumberSet<T> {
         require(ind == other.ind)
 
-        return binaryMakeNew(other.into(), ranges + other.into().ranges)
+        val other = other.into()
+        return makeNew(ranges + other.ranges, hasThrownDivideByZero || other.hasThrownDivideByZero)
     }
 
     override fun intersect(other: ISet<T>): NumberSet<T> {
@@ -332,7 +309,7 @@ data class NumberSet<T : Number> private constructor(
             }
         }
 
-        return binaryMakeNew(other, newList)
+        return makeNew(newList, hasThrownDivideByZero || other.hasThrownDivideByZero)
     }
 
     override fun size(): BigInteger = ranges.fold(BigInteger.ZERO) { acc, range ->
