@@ -193,7 +193,7 @@ class EvaluatorAssistant(
                 }\n  }\n)"
             }
 
-            is LoopExpr.LoopLeaf<*> -> TODO("Not gonna bother with that yet")
+            is LoopExpr.LoopLeaf<*> -> "${expr.key}"
         }
     }
 }

@@ -162,6 +162,14 @@ data class NumberRange<T : Number> private constructor(
         }
     }
 
+    fun min(other: NumberRange<T>): Iterable<NumberRange<T>> {
+        return listOf(newRange(start.min(other.start), end.min(other.end)))
+    }
+
+    fun max(other: NumberRange<T>): Iterable<NumberRange<T>> {
+        return listOf(newRange(start.max(other.start), end.max(other.end)))
+    }
+
     private fun multiply(a: Number, b: Number): BigInteger {
         return BigInteger.valueOf(a.toLong()).multiply(BigInteger.valueOf(b.toLong()))
     }

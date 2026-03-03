@@ -112,7 +112,9 @@ object ExprEvaluate {
                 LoopSolver.evaluateTarget(expr.target, expr.variables, numberOfTimesLooped, constraints, assistant)
             }
 
-            is LoopExpr.LoopLeaf<*> -> TODO()
+            is LoopExpr.LoopLeaf<*> -> {
+                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(constraints)
+            }
         }
     }
 }

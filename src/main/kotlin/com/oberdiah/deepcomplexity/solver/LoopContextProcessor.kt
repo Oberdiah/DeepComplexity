@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.solver
 
 import com.oberdiah.deepcomplexity.context.Context
+import com.oberdiah.deepcomplexity.context.LoopKey
 import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
@@ -23,13 +24,13 @@ object LoopContextProcessor {
                     ),
                     Behaviour.Throw
                 ).map { initial, update -> LoopExpr.LoopVar(initial, update) }
-            }.mapKeys { (k, _) -> LoopExpr.LoopKey.new(k) }
+            }.mapKeys { (k, _) -> LoopKey.new(k) }
 
             val loopCondition = convertExprToLoopableExpr(condition, vars.keys)
 
             vars.mapExpressions(ExprTreeRebuilder.ExprReplacerWithKey { key, _ ->
                 LoopExpr.new(
-                    LoopExpr.LoopKey.new(key),
+                    LoopKey.new(key),
                     loopCondition,
                     loopVariables,
                 )

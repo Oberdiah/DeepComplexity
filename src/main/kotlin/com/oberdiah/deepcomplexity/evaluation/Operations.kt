@@ -42,7 +42,9 @@ enum class BinaryNumberOp {
     SUBTRACTION,
     MULTIPLICATION,
     DIVISION,
-    MODULO;
+    MODULO,
+    MAXIMUM,
+    MINIMUM;
 
     override fun toString(): String = when (this) {
         ADDITION -> "+"
@@ -50,6 +52,8 @@ enum class BinaryNumberOp {
         MULTIPLICATION -> "*"
         DIVISION -> "/"
         MODULO -> "%"
+        MAXIMUM -> "max"
+        MINIMUM -> "min"
     }
 
     companion object {

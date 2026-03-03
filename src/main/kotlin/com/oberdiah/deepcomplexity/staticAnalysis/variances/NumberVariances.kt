@@ -217,22 +217,36 @@ data class NumberVariances<T : Number> private constructor(
                 return NumberVariances(ind, newMultipliers)
             }
 
-            MODULO -> {
+            MODULO, MINIMUM, MAXIMUM -> {
+                // In theory, there may be some edge cases where we can retain variable tracking through
+                // a minimum or maximum, but I'm not going to consider them unless they come up.
+                // In the general case it's not doable as we don't have max or min features built into the variance.
                 val meCollapsed = this.collapse(constraints)
                 val otherCollapsed = other.collapse(constraints)
 
                 return newFromConstant(
-                    meCollapsed.arithmeticOperation(otherCollapsed, MODULO)
+                    meCollapsed.arithmeticOperation(otherCollapsed, operation)
                 )
             }
         }
     }
 
+    /**
+     * Given a comparison e.g. 3x + 2y + 5 < 2x + 7,
+     * generate constraints on x and y that would allow this comparison to be satisfied.
+     * It does this by rearranging the equation to the form `ax op c` for every key found, where `a` is the multiplier
+     * of one of the keys, and `c` is a constant representing the rest. All variables in this equation are sets.
+     * Once we have that form, we divide both sides by `a` to get `x op c/a`, and then we can generate a
+     * constraint for x based on the result of that division.
+     */
     override fun generateConstraintsFrom(
         other: Variances<T>,
         comparisonOp: ComparisonOp,
         constraints: Constraints
     ): Constraints {
+        // Note to self: This almost certainly contains bugs of the 'funky-number-edge-cases' variety.
+        // The divide is especially suspect.
+
         val other = other.into()
         val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isConstant() }
 
@@ -246,10 +260,10 @@ data class NumberVariances<T : Number> private constructor(
             val myKeyMultiplier = multipliers[key] ?: ind.onlyZeroSet()
             val otherKeyMultiplier = other.multipliers[key] ?: ind.onlyZeroSet()
 
-            // Move all the keys onto the left
+            // Move all of our key onto the left
             val lhsCoefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
 
-            // Collapse all non-our-key constants into a single value, and move them to the right.
+            // Collapse all non-our-key constants into a single value and move them to the right.
             val collapsedLhsBeforeMove =
                 NumberVariances(ind, multipliers.filter { it.key != key })
                     .collapse(constraints)

@@ -10,16 +10,29 @@ object ExpressionExtensions {
     fun Expr<Boolean>.inverted(constraints: ConstraintsOrPile): Expr<Boolean> =
         ExprConstrain.invert(this, constraints)
 
+    fun Expr<*>.tryCastToNumbers(): Expr<out Number>? {
+        return if (this.ind is NumberIndicator<*>) {
+            @Suppress("UNCHECKED_CAST")
+            this as Expr<out Number>
+        } else {
+            null
+        }
+    }
+
     /**
      * Only supports [nonTrivial] = [Behaviour.Throw].
      */
     fun Expr<*>.castToNumbers(nonTrivial: Behaviour = Behaviour.Throw): Expr<out Number> {
         require(nonTrivial == Behaviour.Throw)
-        if (this.ind is NumberIndicator<*>) {
+        return tryCastToNumbers() ?: throw IllegalStateException("Failed to cast to a number expr: $this ($ind)")
+    }
+
+    fun tryCastToObject(expr: Expr<*>): Expr<HeapMarker>? {
+        return if (expr.ind is ObjectIndicator) {
             @Suppress("UNCHECKED_CAST")
-            return this as Expr<out Number>
+            expr as Expr<HeapMarker>
         } else {
-            throw IllegalStateException("Failed to cast to a number expr: $this ($ind)")
+            null
         }
     }
 
@@ -28,12 +41,7 @@ object ExpressionExtensions {
      */
     fun Expr<*>.castToObject(nonTrivial: Behaviour = Behaviour.Throw): Expr<HeapMarker> {
         require(nonTrivial == Behaviour.Throw)
-        if (this.ind is ObjectIndicator) {
-            @Suppress("UNCHECKED_CAST")
-            return this as Expr<HeapMarker>
-        } else {
-            throw IllegalStateException("Failed to cast to an object expr: $this ($ind)")
-        }
+        return tryCastToObject(this) ?: throw IllegalStateException("Failed to cast to an object expr: $this ($ind)")
     }
 
     fun Expr<*>.castToBoolean(nonTrivial: Behaviour = Behaviour.Throw): Expr<Boolean> =

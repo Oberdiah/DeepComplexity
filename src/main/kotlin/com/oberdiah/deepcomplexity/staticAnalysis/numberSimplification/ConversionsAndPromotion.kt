@@ -3,6 +3,7 @@ package com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.staticAnalysis.*
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 
 /**
  * What to do when casting an expression actually has to do something.
@@ -14,22 +15,26 @@ enum class Behaviour {
 }
 
 object ConversionsAndPromotion {
-    class TypedPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {
+    class TypedBundlePair<T : Any>(val first: Bundle<T>, val second: Bundle<T>) {
+        fun <R> map(operation: (Bundle<T>, Bundle<T>) -> R): R = operation(first, second)
+    }
+
+    class TypedExprPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {
         fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
     }
 
-    fun <T : Any> castAToB(exprA: Expr<*>, exprB: Expr<T>, nonTrivial: Behaviour): TypedPair<T> {
+    fun <T : Any> castAToB(exprA: Expr<*>, exprB: Expr<T>, nonTrivial: Behaviour): TypedExprPair<T> {
         val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
-        return TypedPair(castExprA, exprB)
+        return TypedExprPair(castExprA, exprB)
     }
 
     fun <T : Number> castNumbersAToB(
         exprA: Expr<out Number>,
         exprB: Expr<T>,
         nonTrivial: Behaviour
-    ): TypedPair<T> {
+    ): TypedExprPair<T> {
         val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
-        return TypedPair(castExprA, exprB)
+        return TypedExprPair(castExprA, exprB)
     }
 
     fun <T : Number> castBothNumbersTo(
@@ -37,10 +42,10 @@ object ConversionsAndPromotion {
         exprB: Expr<out Number>,
         indicator: NumberIndicator<T>,
         nonTrivial: Behaviour
-    ): TypedPair<T> {
+    ): TypedExprPair<T> {
         val castExprA: Expr<T> = exprA.castTo(indicator, nonTrivial)
         val castExprB: Expr<T> = exprB.castTo(indicator, nonTrivial)
-        return TypedPair(castExprA, castExprB)
+        return TypedExprPair(castExprA, castExprB)
     }
 
     // This applies to:
@@ -61,7 +66,7 @@ object ConversionsAndPromotion {
     fun binaryNumericPromotion(
         exprA: Expr<out Number>,
         exprB: Expr<out Number>,
-    ): TypedPair<out Number> {
+    ): TypedExprPair<out Number> {
         // Java Spec 5.6.2:
         // If either operand is of type double, the other is converted to double.
         // Otherwise, if either operand is of type float, the other is converted to float.

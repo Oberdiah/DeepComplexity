@@ -114,6 +114,8 @@ data class NumberSet<T : Number> private constructor(
             SUBTRACTION -> NumberRange<T>::subtract
             MULTIPLICATION -> NumberRange<T>::multiply
             DIVISION -> NumberRange<T>::divide
+            MINIMUM -> NumberRange<T>::min
+            MAXIMUM -> NumberRange<T>::max
             // No point doing the ranges^2 stuff here.
             MODULO -> return doModulo(other)
         }

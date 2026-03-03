@@ -39,8 +39,9 @@ sealed interface EvaluationKey {
      */
     fun importance(): Int {
         return when (this) {
-            is VariableKey -> 2
-            is ExpressionKey -> 1
+            is VariableKey -> 3
+            is ExpressionKey -> 2
+            is LoopKey<*> -> 1
             is ConstantKey -> 0
         }
     }

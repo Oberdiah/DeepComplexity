@@ -64,6 +64,8 @@ data class Bundle<T : Any> private constructor(
                 )
             )
         }
+
+        fun <T : Any> unreachable(ind: Indicator<T>): Bundle<T> = Bundle(ind, emptySet())
     }
 
     @ConsistentCopyVisibility
