@@ -1,12 +1,12 @@
 package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
+import com.oberdiah.deepcomplexity.utilities.castOrThrow
+import com.oberdiah.deepcomplexity.utilities.castTo
+import com.oberdiah.deepcomplexity.utilities.castToObject
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 data class Vars(

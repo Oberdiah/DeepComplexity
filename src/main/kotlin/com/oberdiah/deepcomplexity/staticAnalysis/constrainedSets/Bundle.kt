@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.EvaluationKey
+import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
@@ -46,9 +47,9 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
  */
 @ConsistentCopyVisibility
 data class Bundle<T : Any> private constructor(
-    val ind: Indicator<T>,
+    override val ind: Indicator<T>,
     val variances: Set<ConstrainedVariances<T>>
-) {
+) : HasIndicator {
     init {
         require(variances.size < 50) {
             "Bundle has far too many variances: ${variances.size} ($variances)"

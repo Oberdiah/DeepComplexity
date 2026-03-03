@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
+import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import java.math.BigInteger
@@ -12,8 +13,8 @@ import java.math.BigInteger
  * What we do know, for certain, is that no values outside the set are. This means an inversion
  * of this type of set is impossible to compute.
  */
-interface ISet<T : Any> {
-    val ind: Indicator<T>
+interface ISet<T : Any> : HasIndicator {
+    override val ind: Indicator<T>
 
     /**
      * The number of elements in the set, if it can be computed, otherwise null.

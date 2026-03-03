@@ -2,9 +2,9 @@ package com.oberdiah.deepcomplexity.context
 
 import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToContext
 import com.oberdiah.deepcomplexity.evaluation.LValue
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
+import com.oberdiah.deepcomplexity.utilities.castToContext
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never

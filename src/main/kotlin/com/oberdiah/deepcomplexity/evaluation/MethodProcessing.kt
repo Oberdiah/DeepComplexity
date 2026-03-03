@@ -3,11 +3,6 @@ package com.oberdiah.deepcomplexity.evaluation
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 import com.oberdiah.deepcomplexity.context.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToObject
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.tryCastTo
 import com.oberdiah.deepcomplexity.exceptions.ExpressionIncompleteException
 import com.oberdiah.deepcomplexity.solver.LoopContextProcessor
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
@@ -15,7 +10,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
-import com.oberdiah.deepcomplexity.utilities.Utilities
+import com.oberdiah.deepcomplexity.utilities.*
 import com.oberdiah.deepcomplexity.utilities.Utilities.doNothing
 import com.oberdiah.deepcomplexity.utilities.Utilities.getThisType
 import com.oberdiah.deepcomplexity.utilities.Utilities.orElse

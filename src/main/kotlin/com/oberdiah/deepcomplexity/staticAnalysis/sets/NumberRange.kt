@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
+import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
@@ -17,10 +18,10 @@ import kotlin.reflect.KClass
 
 @ConsistentCopyVisibility
 data class NumberRange<T : Number> private constructor(
-    val ind: NumberIndicator<T>,
+    override val ind: NumberIndicator<T>,
     val start: T,
     val end: T
-) {
+) : HasIndicator {
     private val clazz: KClass<*> = ind.clazz
 
     init {

@@ -9,8 +9,8 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.into
 import com.oberdiah.deepcomplexity.utilities.Functional
+import com.oberdiah.deepcomplexity.utilities.into
 
 /**
  * Think of this as a linear equation like the form: `2x + 3y + 4z + c`

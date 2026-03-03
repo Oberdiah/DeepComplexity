@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.context.*
 import com.oberdiah.deepcomplexity.context.EvaluationKey.ExpressionKey
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTreeSameType
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
 import com.oberdiah.deepcomplexity.evaluation.IfExpr.Companion.new
 import com.oberdiah.deepcomplexity.evaluation.simplification.BooleanSimplification
 import com.oberdiah.deepcomplexity.evaluation.simplification.ComparisonSimplification
@@ -13,12 +12,14 @@ import com.oberdiah.deepcomplexity.evaluation.simplification.IfSimplification
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 import com.oberdiah.deepcomplexity.utilities.Utilities.sum
+import com.oberdiah.deepcomplexity.utilities.castOrThrow
 import java.math.BigInteger
 
 const val SKIP_OPTIMIZATIONS = false
 
-sealed class Expr<T : Any> {
+sealed class Expr<T : Any> : HasIndicator {
     init {
         require(ExprPool.isCreating()) {
             "Expressions must be created via ExprPool.create() to ensure proper pooling."
@@ -72,7 +73,7 @@ sealed class Expr<T : Any> {
     /**
      * The indicator represents what the expression will be once evaluated.
      */
-    abstract val ind: Indicator<T>
+    abstract override val ind: Indicator<T>
 
     final override fun toString(): String {
         return ExprToString.toString(this)
@@ -206,6 +207,9 @@ sealed interface AnyBinaryExpr<T : Any> {
 }
 
 fun <T : Number> Expr<T>.getNumberIndicator() = ind as NumberIndicator<T>
+
+fun Expr<Boolean>.inverted(constraints: ConstraintsOrPile): Expr<Boolean> =
+    ExprConstrain.invert(this, constraints)
 
 /**
  * Represents a link to an entire context of variables.

@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.inverted
 
 /**
  * A pile of constraints is a set of one or more constraints that may be in effect.

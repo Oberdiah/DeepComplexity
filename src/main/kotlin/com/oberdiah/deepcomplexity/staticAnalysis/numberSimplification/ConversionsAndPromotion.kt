@@ -1,9 +1,9 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castTo
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.utilities.castTo
 
 /**
  * What to do when casting an expression actually has to do something.

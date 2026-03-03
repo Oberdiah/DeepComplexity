@@ -1,7 +1,8 @@
 package com.oberdiah.deepcomplexity.evaluation.simplification
 
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
+import com.oberdiah.deepcomplexity.utilities.castOrThrow
+
 
 object IfSimplification {
     private sealed interface Result

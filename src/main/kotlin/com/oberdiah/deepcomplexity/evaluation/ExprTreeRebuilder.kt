@@ -2,13 +2,13 @@ package com.oberdiah.deepcomplexity.evaluation
 
 import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castOrThrow
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToBoolean
-import com.oberdiah.deepcomplexity.evaluation.ExpressionExtensions.castToNumbers
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopLeaf
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopVar
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
+import com.oberdiah.deepcomplexity.utilities.castOrThrow
+import com.oberdiah.deepcomplexity.utilities.castToBoolean
+import com.oberdiah.deepcomplexity.utilities.castToNumbers
 
 enum class TreeTraversal {
     /**
