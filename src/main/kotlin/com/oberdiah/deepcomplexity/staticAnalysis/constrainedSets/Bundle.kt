@@ -49,7 +49,7 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 data class Bundle<T : Any> private constructor(
     override val ind: Indicator<T>,
     val variances: Set<ConstrainedVariances<T>>
-) : HasIndicator {
+) : HasIndicator<T> {
     init {
         require(variances.size < 50) {
             "Bundle has far too many variances: ${variances.size} ($variances)"

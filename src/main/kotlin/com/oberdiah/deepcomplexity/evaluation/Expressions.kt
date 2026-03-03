@@ -19,7 +19,7 @@ import java.math.BigInteger
 
 const val SKIP_OPTIMIZATIONS = false
 
-sealed class Expr<T : Any> : HasIndicator {
+sealed class Expr<T : Any> : HasIndicator<T> {
     init {
         require(ExprPool.isCreating()) {
             "Expressions must be created via ExprPool.create() to ensure proper pooling."

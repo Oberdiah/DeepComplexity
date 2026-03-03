@@ -1,5 +1,5 @@
 package com.oberdiah.deepcomplexity.staticAnalysis
 
-interface HasIndicator {
-    val ind: Indicator<*>
+interface HasIndicator<T : Any> {
+    val ind: Indicator<T>
 }

@@ -21,7 +21,7 @@ data class NumberRange<T : Number> private constructor(
     override val ind: NumberIndicator<T>,
     val start: T,
     val end: T
-) : HasIndicator {
+) : HasIndicator<T> {
     private val clazz: KClass<*> = ind.clazz
 
     init {

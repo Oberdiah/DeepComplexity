@@ -13,7 +13,7 @@ import java.math.BigInteger
  * What we do know, for certain, is that no values outside the set are. This means an inversion
  * of this type of set is impossible to compute.
  */
-interface ISet<T : Any> : HasIndicator {
+interface ISet<T : Any> : HasIndicator<T> {
     override val ind: Indicator<T>
 
     /**
