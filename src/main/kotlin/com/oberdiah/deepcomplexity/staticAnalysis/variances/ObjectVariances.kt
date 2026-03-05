@@ -12,7 +12,10 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
     Variances<HeapMarker> {
     override fun toString(): String = value.toString()
 
-    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> {
+    override fun <Q : Any> attemptHardCastTo(
+        newInd: Indicator<Q>,
+        constraints: Constraints
+    ): Variances<Q> {
         if (newInd == ind) {
             // Safety: newInd == ind.
             @Suppress("UNCHECKED_CAST")

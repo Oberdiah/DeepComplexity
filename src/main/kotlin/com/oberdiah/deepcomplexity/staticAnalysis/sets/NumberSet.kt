@@ -74,14 +74,14 @@ data class NumberSet<T : Number> private constructor(
     fun <Q : Any> clampCast(newInd: Indicator<Q>): ISet<Q>? {
         // Intersect with the new indicator's full set, removing anything that might
         // result in wrapping, and then cast to the new indicator, guaranteed wrap-free.
-        val newIndFullSet = newInd.newFullSet().cast(ind) ?: return null
-        return this.intersect(newIndFullSet).cast(newInd)
+        val newIndFullSet = newInd.newFullSet().attemptHardCastTo(ind) ?: return null
+        return this.intersect(newIndFullSet).attemptHardCastTo(newInd)
     }
 
-    override fun <Q : Any> cast(newInd: Indicator<Q>): ISet<Q>? {
-        if (newInd !is NumberIndicator<*>) {
-            return null
-        }
+    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): ISet<Q>? {
+        @Suppress("UNCHECKED_CAST")
+        if (newInd == ind) return this as ISet<Q>
+        if (newInd !is NumberIndicator<*>) return null
 
         fun <OutT : Number> extra(newInd: NumberIndicator<OutT>): NumberSet<OutT> {
             require(newInd.isWholeNum() && ind.isWholeNum()) {

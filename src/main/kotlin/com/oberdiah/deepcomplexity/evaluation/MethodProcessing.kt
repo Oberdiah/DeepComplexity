@@ -10,7 +10,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
-import com.oberdiah.deepcomplexity.utilities.*
+import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.doNothing
 import com.oberdiah.deepcomplexity.utilities.Utilities.getThisType
 import com.oberdiah.deepcomplexity.utilities.Utilities.orElse
@@ -116,7 +116,7 @@ object MethodProcessing {
                 val condition = processPsiExpression(
                     psi.condition ?: throw ExpressionIncompleteException(),
                     ifContext
-                ).castToBoolean()
+                ).castOrThrow(BooleanIndicator)
 
                 val trueBranch = psi.thenBranch ?: throw ExpressionIncompleteException()
                 val trueBranchContext = ifContext.copy()
@@ -140,7 +140,7 @@ object MethodProcessing {
 
             is PsiConditionalExpression -> {
                 val ifContext = newContext(context.c.thisType)
-                val condition = processPsiExpression(psi.condition, ifContext).castToBoolean()
+                val condition = processPsiExpression(psi.condition, ifContext).castOrThrow(BooleanIndicator)
 
                 val trueBranch = psi.thenExpression ?: throw ExpressionIncompleteException()
                 val trueExprContext = ifContext.copy()
@@ -167,8 +167,8 @@ object MethodProcessing {
                             // Java will re-interpret int constants down to smaller types if they fit in those smaller types
                             // and the other type is that smaller type.
                             ConversionsAndPromotion.binaryNumericPromotion(
-                                trueResult.castToNumbers(),
-                                falseResult.castToNumbers()
+                                trueResult.castToNumbersOrThrow(),
+                                falseResult.castToNumbersOrThrow()
                             ).map { lhs, rhs ->
                                 IfExpr.new(lhs, rhs, condition)
                             }
@@ -192,8 +192,7 @@ object MethodProcessing {
                 val bodyContext = newContext(context.c.thisType)
 
                 val conditionExpr = psi.condition?.let { condition ->
-                    processPsiExpression(condition, bodyContext)
-                        .tryCastTo(BooleanIndicator)
+                    processPsiExpression(condition, bodyContext).attemptHardCastTo(BooleanIndicator)
                 }.orElse {
                     ConstExpr.TRUE
                 }
@@ -211,8 +210,7 @@ object MethodProcessing {
             is PsiReturnStatement -> {
                 val returnKey = psi.toKey()
                 val returnExpr = psi.returnValue?.let {
-                    processPsiExpression(it, context)
-                        .castTo(returnKey.ind, Behaviour.WrapWithTypeCastImplicit)
+                    processPsiExpression(it, context).castTo(returnKey.ind, Behaviour.PerformHardCast)
                 } ?: ConstExpr.VOID
 
                 context.addVar(LValueKey.new(returnKey), returnExpr)
@@ -231,7 +229,7 @@ object MethodProcessing {
             is PsiMethodCallExpression -> {
                 val methodContext = processMethod(psi) { methodCallSiteContext ->
                     psi.methodExpression.qualifier?.let {
-                        processPsiExpression(it, methodCallSiteContext).castToObject()
+                        processPsiExpression(it, methodCallSiteContext).castToObjectOrThrow()
                     }
                 }
 
@@ -257,7 +255,7 @@ object MethodProcessing {
                 return when (unaryOp) {
                     UnaryNumberOp.NEGATE, UnaryNumberOp.PLUS -> {
                         val operand = ConversionsAndPromotion.unaryNumericPromotion(
-                            processPsiExpression(operand, context).castToNumbers()
+                            processPsiExpression(operand, context).castToNumbersOrThrow()
                         )
 
                         unaryOp.applyToExpr(operand)
@@ -268,11 +266,11 @@ object MethodProcessing {
 
                         context.addVar(
                             lValue,
-                            unaryOp.applyToExpr(context.c.get(lValue).castToNumbers())
+                            unaryOp.applyToExpr(context.c.get(lValue).castToNumbersOrThrow())
                         )
 
                         // Build the expression after the assignment for a prefix increment/decrement
-                        processPsiExpression(operand, context).castToNumbers()
+                        processPsiExpression(operand, context).castToNumbersOrThrow()
                     }
                 }
             }
@@ -289,10 +287,10 @@ object MethodProcessing {
                 val lValue = processReference(psi.operand, context)
                 context.addVar(
                     lValue,
-                    unaryOp.applyToExpr(context.c.get(lValue).castToNumbers())
+                    unaryOp.applyToExpr(context.c.get(lValue).castToNumbersOrThrow())
                 )
 
-                return builtExpr.castToNumbers()
+                return builtExpr.castToNumbersOrThrow()
             }
 
             is PsiBinaryExpression -> {
@@ -338,13 +336,13 @@ object MethodProcessing {
                     }
 
                     JavaTokenType.PLUSEQ, JavaTokenType.MINUSEQ, JavaTokenType.ASTERISKEQ, JavaTokenType.DIVEQ -> {
-                        val rhs = processPsiExpression(rExpression, context).castToNumbers()
-                        val lhs = context.c.get(lhsLvalue).castToNumbers()
+                        val rhs = processPsiExpression(rExpression, context).castToNumbersOrThrow()
+                        val lhs = context.c.get(lhsLvalue).castToNumbersOrThrow()
 
                         ConversionsAndPromotion.castNumbersAToB(
                             rhs,
                             lhs,
-                            Behaviour.WrapWithTypeCastImplicit
+                            Behaviour.PerformHardCast
                         ).map { innerRhs, innerLhs ->
                             val expr = ArithmeticExpr.new(
                                 innerLhs,
@@ -407,7 +405,7 @@ object MethodProcessing {
                         "No qualifier on field ${resolved.name}, but also no `this` type in context?"
                     }
                     context.c.get(LValueKey.new(ThisKey(MyPsiType.of(thisType))))
-                }.castToObject()
+                }.castToObjectOrThrow()
 
                 LValueField.new(QualifiedFieldKey.Field(resolved), qualifierExpr)
             }
@@ -520,10 +518,10 @@ object MethodProcessing {
         if (booleanOp != null) {
             // We need to worry about short-circuiting here.
 
-            val lhs = lhsPrecast.castToBoolean()
+            val lhs = lhsPrecast.castOrThrow(BooleanIndicator)
 
             val rhsContext = context.copy()
-            val rhs = processPsiExpression(rhsPsi, rhsContext).castToBoolean()
+            val rhs = processPsiExpression(rhsPsi, rhsContext).castOrThrow(BooleanIndicator)
 
             if (rhsContext != context) {
                 /**
@@ -560,8 +558,8 @@ object MethodProcessing {
 
             return if (lhsPrecast.ind is NumberIndicator || rhsPrecast.ind is NumberIndicator) {
                 ConversionsAndPromotion.binaryNumericPromotion(
-                    lhsPrecast.castToNumbers(),
-                    rhsPrecast.castToNumbers()
+                    lhsPrecast.castToNumbersOrThrow(),
+                    rhsPrecast.castToNumbersOrThrow()
                 ).map { lhs, rhs ->
                     return@map when {
                         comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)
@@ -573,7 +571,7 @@ object MethodProcessing {
                 ConversionsAndPromotion.castAToB(
                     lhsPrecast,
                     rhsPrecast,
-                    Behaviour.WrapWithTypeCastImplicit
+                    Behaviour.PerformHardCast
                 ).map { lhs, rhs ->
                     return@map when {
                         comparisonOp != null -> ComparisonExpr.new(lhs, rhs, comparisonOp)

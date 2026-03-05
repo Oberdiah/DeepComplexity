@@ -63,7 +63,7 @@ data class Constraints private constructor(
     }
 
     fun <T : Any> getConstraint(ind: Indicator<T>, key: EvaluationKey): ISet<T> {
-        return constraints[key]?.cast(ind) ?: ind.newFullSet()
+        return constraints[key]?.attemptHardCastTo(ind) ?: ind.newFullSet()
     }
 
     fun withConstraint(key: EvaluationKey, iSet: ISet<*>): Constraints {

@@ -1,8 +1,10 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.EvaluationKey
-import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.staticAnalysis.CanBeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -49,7 +51,7 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 data class Bundle<T : Any> private constructor(
     override val ind: Indicator<T>,
     val variances: Set<ConstrainedVariances<T>>
-) : HasIndicator<T> {
+) : CanBeCast<T> {
     init {
         require(variances.size < 50) {
             "Bundle has far too many variances: ${variances.size} ($variances)"
@@ -255,28 +257,30 @@ data class Bundle<T : Any> private constructor(
         }
     }
 
-    fun <Q : Any> castOrThrow(indicator: Indicator<Q>): Bundle<Q> {
-        if (indicator == ind) {
-            // Safety: The indicators are the same, so the cast is valid
-            @Suppress("UNCHECKED_CAST")
-            return this as Bundle<Q>
-        } else {
-            throw IllegalArgumentException("Cannot cast bundle with indicator $ind to $indicator")
-        }
-    }
-
-    fun <Q : Any> cast(indicator: Indicator<Q>): Bundle<Q>? {
-        if (indicator == ind) {
+    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): Bundle<Q>? {
+        if (newInd == ind) {
             // Safety: The indicators are the same, so the cast is valid
             @Suppress("UNCHECKED_CAST")
             return this as Bundle<Q>
         }
 
         val cast = Bundle(
-            indicator, variances.mapToSet {
-                ConstrainedVariances.new(it.variances.cast(indicator, it.constraints) ?: return null, it.constraints)
+            newInd, variances.mapToSet {
+                ConstrainedVariances.new(
+                    it.variances.attemptHardCastTo(newInd, it.constraints) ?: return null,
+                    it.constraints
+                )
             }
         )
         return cast
     }
+
+    // Start the painful boilerplate I'm really not a fan of but can't figure my way out of.
+    override fun castToNumbersOrThrow(): Bundle<out Number> = super.castToNumbersOrThrow() as Bundle<out Number>
+    override fun castToObjectOrThrow(): Bundle<HeapMarker> = super.castToObjectOrThrow() as Bundle<HeapMarker>
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): Bundle<Q>? = super.tryCastTo(newInd) as Bundle<Q>?
+    override fun <Q : Any> castOrThrow(newInd: Indicator<Q>): Bundle<Q> = super.castOrThrow(newInd) as Bundle<Q>
+    override fun <Q : Any> castTo(newInd: Indicator<Q>, nonTrivial: Behaviour): Bundle<Q> =
+        super.castTo(newInd, nonTrivial) as Bundle<Q>
+    // End painful boilerplate
 }

@@ -1,0 +1,40 @@
+@file:Suppress("SpellCheckingInspection", "unused")
+
+package com.oberdiah.deepcomplexity.utilities
+
+import com.oberdiah.deepcomplexity.context.HeapMarker
+import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+
+// ###################
+// #     Intos      #
+// ###################
+
+fun <T : Number> ISet<T>.into(): NumberSet<T> =
+    this as NumberSet<T>
+
+fun ISet<Boolean>.into(): BooleanSet =
+    this as BooleanSet
+
+fun ISet<HeapMarker>.into(): ObjectSet =
+    this as ObjectSet
+
+fun <T : Number> Variances<T>.into(): NumberVariances<T> =
+    this as NumberVariances<T>
+
+fun Variances<Boolean>.into(): BooleanVariances =
+    this as BooleanVariances
+
+fun Variances<HeapMarker>.into(): ObjectVariances =
+    this as ObjectVariances
+
+fun <T : Number> Indicator<T>.into(): NumberIndicator<T> =
+    this as NumberIndicator<T>

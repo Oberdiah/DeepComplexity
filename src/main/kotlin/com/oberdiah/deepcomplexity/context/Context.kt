@@ -4,7 +4,7 @@ import com.intellij.psi.PsiType
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.LValue
 import com.oberdiah.deepcomplexity.evaluation.VarsExpr
-import com.oberdiah.deepcomplexity.utilities.castToContext
+import com.oberdiah.deepcomplexity.staticAnalysis.VarsIndicator
 
 /**
  * A potentially subtle but important point is that an unknown variable in a context never
@@ -63,7 +63,7 @@ class Context private constructor(
                             // in the dynamic section.
                             // Unfortunately, we can't really help it as both static sides need to reference the same
                             // dynamic expression unless we're prepared for a large change in how things work.
-                            how(lhs, rhs).castToContext()
+                            how(lhs, rhs).castOrThrow(VarsIndicator)
                         }
                     },
                     { vars1, vars2 ->

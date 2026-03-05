@@ -4,11 +4,9 @@ import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopLeaf
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopVar
+import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
-import com.oberdiah.deepcomplexity.utilities.castOrThrow
-import com.oberdiah.deepcomplexity.utilities.castToBoolean
-import com.oberdiah.deepcomplexity.utilities.castToNumbers
 
 enum class TreeTraversal {
     /**
@@ -108,7 +106,7 @@ object ExprTreeRebuilder {
             return replacerCache.getOrPut(expr) {
                 val replacedExpr: Expr<*> = when (expr) {
                     is BooleanInvertExpr -> BooleanInvertExpr.new(
-                        inner(expr.expr, isInCondition, replacer).castToBoolean()
+                        inner(expr.expr, isInCondition, replacer).castOrThrow(BooleanIndicator)
                     )
 
                     is VarsExpr -> expr
@@ -116,7 +114,7 @@ object ExprTreeRebuilder {
                     is LeafExpr<*> -> expr
 
                     is NegateExpr<*> -> NegateExpr.new(
-                        inner(expr.expr, isInCondition, replacer).castToNumbers()
+                        inner(expr.expr, isInCondition, replacer).castToNumbersOrThrow()
                     )
 
                     is TypeCastExpr<*, *> -> TypeCastExpr.new(
@@ -133,7 +131,7 @@ object ExprTreeRebuilder {
                         IfExpr.newRaw(
                             trueE,
                             falseE,
-                            inner(expr.thisCondition, true, replacer).castToBoolean()
+                            inner(expr.thisCondition, true, replacer).castOrThrow(BooleanIndicator)
                         )
                     }
 
@@ -146,13 +144,21 @@ object ExprTreeRebuilder {
                             when (expr) {
                                 is ComparisonExpr<*> -> ComparisonExpr.new(lhs, rhs, expr.comp)
                                 is ArithmeticExpr<*> ->
-                                    ConversionsAndPromotion.castAToB(lhs, rhs.castToNumbers(), Behaviour.Throw)
+                                    ConversionsAndPromotion.castAToB(
+                                        lhs,
+                                        rhs.castToNumbersOrThrow(),
+                                        Behaviour.Throw
+                                    )
                                         .map { l, r ->
                                             ArithmeticExpr.new(l, r, expr.op)
                                         }
 
                                 is BooleanOpExpr ->
-                                    ConversionsAndPromotion.castAToB(lhs, rhs.castToBoolean(), Behaviour.Throw)
+                                    ConversionsAndPromotion.castAToB(
+                                        lhs,
+                                        rhs.castOrThrow(BooleanIndicator),
+                                        Behaviour.Throw
+                                    )
                                         .map { l, r ->
                                             BooleanOpExpr.newRaw(l, r, expr.op)
                                         }
@@ -174,7 +180,7 @@ object ExprTreeRebuilder {
                         }
                         LoopExpr.new(
                             target = expr.target,
-                            condition = inner(expr.condition, isInCondition, replacer).castToBoolean(),
+                            condition = inner(expr.condition, isInCondition, replacer).castOrThrow(BooleanIndicator),
                             variables = newVariables
                         )
                     }

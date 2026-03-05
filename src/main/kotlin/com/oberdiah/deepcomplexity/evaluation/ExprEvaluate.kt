@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.solver.CastSolver
 import com.oberdiah.deepcomplexity.solver.LoopSolver
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
-import com.oberdiah.deepcomplexity.utilities.castToNumbers
 
 object ExprEvaluate {
     data class CacheKey(val expr: Expr<*>, val constraints: ConstraintsOrPile)
@@ -24,7 +23,7 @@ object ExprEvaluate {
         assistant: EvaluatorAssistant
     ): Bundle<*> {
         return when (expr) {
-            is NegateExpr -> evaluate(expr.expr.castToNumbers(), constraints, assistant.onlyPath()).negate()
+            is NegateExpr -> evaluate(expr.expr.castToNumbersOrThrow(), constraints, assistant.onlyPath()).negate()
             is BooleanInvertExpr -> evaluate(expr, constraints, assistant.onlyPath()).booleanInvert()
 
             is ArithmeticExpr<*> -> {

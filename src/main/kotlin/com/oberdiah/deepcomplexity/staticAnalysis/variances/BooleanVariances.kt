@@ -14,7 +14,10 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
     fun booleanInvert(): BooleanVariances = BooleanVariances(value.booleanInvert())
     override val ind: Indicator<Boolean> = BooleanIndicator
 
-    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q> {
+    override fun <Q : Any> attemptHardCastTo(
+        newInd: Indicator<Q>,
+        constraints: Constraints
+    ): Variances<Q> {
         if (newInd == ind) {
             // Safety: newInd == ind.
             @Suppress("UNCHECKED_CAST")

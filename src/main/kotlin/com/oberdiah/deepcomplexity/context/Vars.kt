@@ -4,9 +4,6 @@ import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
-import com.oberdiah.deepcomplexity.utilities.castOrThrow
-import com.oberdiah.deepcomplexity.utilities.castTo
-import com.oberdiah.deepcomplexity.utilities.castToObject
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 data class Vars(
@@ -128,7 +125,7 @@ data class Vars(
                     // or the traversal mechanism managed to hit a non-primary path somehow.
                     "Traversal of a qualifier encountered a leaf with a non-object indicator ${it.ind}"
                 }
-                get(QualifiedFieldKey(it.castToObject() as LeafExpr, expr.field))
+                get(QualifiedFieldKey(it.castToObjectOrThrow() as LeafExpr, expr.field))
             }
 
             is LValueKey<*> -> get(expr.key)
@@ -202,7 +199,7 @@ data class Vars(
      *  which is exactly as desired.
      */
     fun with(lExpr: LValue<*>, rExpr: Expr<*>): Vars {
-        val rExpr = rExpr.castTo(lExpr.ind, Behaviour.WrapWithTypeCastImplicit)
+        val rExpr = rExpr.castTo(lExpr.ind, Behaviour.PerformHardCast)
 
         if (lExpr is LValueKey) {
             return with(lExpr.key, rExpr)
@@ -214,7 +211,7 @@ data class Vars(
         val field = lExpr.field
 
         val qualifiersMentionedInQualifierExpr: Set<LeafExpr<HeapMarker>> =
-            qualifierExpr.allPrimaryPathLeaves().mapToSet { it.castToObject() as LeafExpr }
+            qualifierExpr.allPrimaryPathLeaves().mapToSet { it.castToObjectOrThrow() as LeafExpr }
 
         var vars = this
 

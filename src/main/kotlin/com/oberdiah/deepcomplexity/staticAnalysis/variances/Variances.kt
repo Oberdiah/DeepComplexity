@@ -12,10 +12,14 @@ import com.oberdiah.deepcomplexity.utilities.into
 /**
  * A set of possible values of type T, alongside optional variance data that can be used to
  * track the values as operations are performed on them.
+ *
+ * Doesn't inherit `CanBeCast` because it requires `constraints` in order to do so in the best manner.
  */
 interface Variances<T : Any> : HasIndicator<T> {
     override val ind: Indicator<T>
-    fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q>?
+
+    fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>, constraints: Constraints): Variances<Q>?
+
     fun collapse(constraints: Constraints): ISet<T>
     fun toDebugString(constraints: Constraints): String
 

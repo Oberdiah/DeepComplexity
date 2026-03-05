@@ -7,6 +7,7 @@ import com.oberdiah.deepcomplexity.evaluation.VariableExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.ShortIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.into
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
@@ -197,7 +198,7 @@ object TestUtilities {
                 "Method '${method.name}' has unknowns in return value: ${unknownsInReturn.joinToString(", ")}"
             }
 
-            val castBundle = bundle.cast(ShortIndicator)!!
+            val castBundle = bundle.castTo(ShortIndicator, Behaviour.PerformHardCast)
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle
         } catch (e: Throwable) {

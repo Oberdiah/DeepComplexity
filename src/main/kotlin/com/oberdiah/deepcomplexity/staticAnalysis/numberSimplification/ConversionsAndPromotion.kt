@@ -3,15 +3,24 @@ package com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-import com.oberdiah.deepcomplexity.utilities.castTo
 
 /**
- * What to do when casting an expression actually has to do something.
+ * What to do when casting actually has to do something.
  */
 enum class Behaviour {
+    /** Just throw an exception, don't allow any non-trivial casts. */
     Throw,
-    WrapWithTypeCastExplicit,
-    WrapWithTypeCastImplicit
+
+    /**
+     * Attempts to perform a hard cast, throwing an exception if that isn't possible.
+     *
+     * A hard cast is a cast that physically changes the object in some way.
+     *
+     * In the case of expressions, this wraps us in a type-cast expression.
+     * In the case of bundles, variances, sets, etc. it attempts a Java-style cast with the same success/failure
+     * conditions. (e.g. you can cast a `NumberSet<Int>` to a `NumberSet<Double>`, but not to a `NumberSet<String>`).
+     */
+    PerformHardCast
 }
 
 object ConversionsAndPromotion {
@@ -59,7 +68,7 @@ object ConversionsAndPromotion {
         // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
         return when (expr.ind) {
             DoubleIndicator, FloatIndicator, LongIndicator, IntIndicator -> expr
-            else -> expr.castTo(IntIndicator, Behaviour.WrapWithTypeCastImplicit)
+            else -> expr.castTo(IntIndicator, Behaviour.PerformHardCast)
         }
     }
 
@@ -79,6 +88,6 @@ object ConversionsAndPromotion {
             else -> IntIndicator
         }
 
-        return castBothNumbersTo(exprA, exprB, targetIndicator, Behaviour.WrapWithTypeCastImplicit)
+        return castBothNumbersTo(exprA, exprB, targetIndicator, Behaviour.PerformHardCast)
     }
 }

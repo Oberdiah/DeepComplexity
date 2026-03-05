@@ -2,6 +2,7 @@ package com.oberdiah.deepcomplexity.solver
 
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 
 object CastSolver {
     fun <T : Any> castFrom(
@@ -14,6 +15,6 @@ object CastSolver {
             return from as Bundle<T>
         }
 
-        return from.cast(targetType)!!
+        return from.castTo(targetType, Behaviour.PerformHardCast)
     }
 }

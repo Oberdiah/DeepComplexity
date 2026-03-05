@@ -13,13 +13,13 @@ import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.utilities.Utilities.sum
-import com.oberdiah.deepcomplexity.utilities.castOrThrow
 import java.math.BigInteger
 
 const val SKIP_OPTIMIZATIONS = false
 
-sealed class Expr<T : Any> : HasIndicator<T> {
+sealed class Expr<T : Any> : CanBeCast<T> {
     init {
         require(ExprPool.isCreating()) {
             "Expressions must be created via ExprPool.create() to ensure proper pooling."
@@ -196,6 +196,20 @@ sealed class Expr<T : Any> : HasIndicator<T> {
 
     fun evaluate(constraints: ConstraintsOrPile, assistant: EvaluatorAssistant): Bundle<T> =
         ExprEvaluate.evaluate(this, constraints, assistant)
+
+    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): Expr<Q>? =
+        TypeCastExpr.new(this, newInd, explicit = false)
+
+    // Start the painful boilerplate I'm really not a fan of but can't figure my way out of.
+    override fun castToNumbersOrThrow(): Expr<out Number> = super.castToNumbersOrThrow() as Expr<out Number>
+    override fun castToObjectOrThrow(): Expr<HeapMarker> = super.castToObjectOrThrow() as Expr<HeapMarker>
+    override fun tryCastToNumbers(): Expr<out Number>? = super.tryCastToNumbers() as Expr<out Number>?
+    override fun tryCastToObject(): Expr<HeapMarker>? = super.tryCastToObject() as Expr<HeapMarker>?
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): Expr<Q>? = super.tryCastTo(newInd) as Expr<Q>?
+    override fun <Q : Any> castOrThrow(newInd: Indicator<Q>): Expr<Q> = super.castOrThrow(newInd) as Expr<Q>
+    override fun <Q : Any> castTo(newInd: Indicator<Q>, nonTrivial: Behaviour): Expr<Q> =
+        super.castTo(newInd, nonTrivial) as Expr<Q>
+    // End painful boilerplate
 }
 
 /**

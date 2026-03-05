@@ -98,7 +98,10 @@ data class NumberVariances<T : Number> private constructor(
             acc.add(multiplier.multiply(grabConstraint(constraints, key)))
         }
 
-    override fun <Q : Any> cast(newInd: Indicator<Q>, constraints: Constraints): Variances<Q>? {
+    override fun <Q : Any> attemptHardCastTo(
+        newInd: Indicator<Q>,
+        constraints: Constraints
+    ): Variances<Q>? {
         if (newInd !is NumberIndicator<*>) {
             return null
         }
@@ -117,7 +120,7 @@ data class NumberVariances<T : Number> private constructor(
                 }
             }
 
-            val q = collapse(constraints).cast(newInd)?.into() ?: return null
+            val q = collapse(constraints).attemptHardCastTo(newInd)?.into() ?: return null
             return newFromConstant(q)
         }
 

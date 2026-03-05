@@ -6,7 +6,6 @@ import com.oberdiah.deepcomplexity.staticAnalysis.IntIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.arithmeticOperation
-import com.oberdiah.deepcomplexity.utilities.tryCastToNumbers
 
 object LoopSolver {
     private fun noIdea(): Bundle<Int> =
