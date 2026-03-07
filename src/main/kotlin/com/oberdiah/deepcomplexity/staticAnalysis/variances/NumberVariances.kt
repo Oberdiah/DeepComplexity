@@ -120,7 +120,7 @@ data class NumberVariances<T : Number> private constructor(
                 }
             }
 
-            val q = collapse(constraints).attemptHardCastTo(newInd)?.into() ?: return null
+            val q = collapse(constraints).tryCastTo(newInd)?.into() ?: return null
             return newFromConstant(q)
         }
 

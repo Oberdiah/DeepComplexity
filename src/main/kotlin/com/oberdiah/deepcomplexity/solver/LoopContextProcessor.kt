@@ -4,7 +4,6 @@ import com.oberdiah.deepcomplexity.context.Context
 import com.oberdiah.deepcomplexity.context.LoopKey
 import com.oberdiah.deepcomplexity.context.MethodProcessingKey
 import com.oberdiah.deepcomplexity.evaluation.*
-import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import org.jetbrains.kotlin.utils.keysToMap
 
@@ -16,13 +15,12 @@ object LoopContextProcessor {
         // We'll ignore the control flow (returns and breaks) for now.
         val newContext = loopContext.forcedDynamic().mapVars { vars ->
             val loopVariables = vars.keys.keysToMap { k ->
-                ConversionsAndPromotion.castAToB(
+                ConversionsAndPromotion.coerceAToB(
                     VariableExpr.new(k),
                     convertExprToLoopableExpr(
                         vars.get(LValueKey.new(k)),
                         vars.keys
-                    ),
-                    Behaviour.Throw
+                    )
                 ).map { initial, update -> LoopExpr.LoopVar(initial, update) }
             }.mapKeys { (k, _) -> LoopKey.new(k) }
 

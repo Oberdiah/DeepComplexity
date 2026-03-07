@@ -2,59 +2,32 @@ package com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.staticAnalysis.*
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-
-/**
- * What to do when casting actually has to do something.
- */
-enum class Behaviour {
-    /** Just throw an exception, don't allow any non-trivial casts. */
-    Throw,
-
-    /**
-     * Attempts to perform a hard cast, throwing an exception if that isn't possible.
-     *
-     * A hard cast is a cast that physically changes the object in some way.
-     *
-     * In the case of expressions, this wraps us in a type-cast expression.
-     * In the case of bundles, variances, sets, etc. it attempts a Java-style cast with the same success/failure
-     * conditions. (e.g. you can cast a `NumberSet<Int>` to a `NumberSet<Double>`, but not to a `NumberSet<String>`).
-     */
-    PerformHardCast
-}
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion.binaryPromotion
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion.coerceAToB
+import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ConversionsAndPromotion {
-    class TypedBundlePair<T : Any>(val first: Bundle<T>, val second: Bundle<T>) {
-        fun <R> map(operation: (Bundle<T>, Bundle<T>) -> R): R = operation(first, second)
-    }
-
     class TypedExprPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {
         fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
     }
 
-    fun <T : Any> castAToB(exprA: Expr<*>, exprB: Expr<T>, nonTrivial: Behaviour): TypedExprPair<T> {
-        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
-        return TypedExprPair(castExprA, exprB)
+    /**
+     * Coerces [exprA] to the same type as [exprB], and returns a pair of the coerced [exprA] and [exprB].
+     */
+    fun <T : Any> coerceAToB(exprA: Expr<*>, exprB: Expr<T>): TypedExprPair<T> {
+        val coercedExprA: Expr<T> = exprA.coerceTo(exprB.ind)
+        return TypedExprPair(coercedExprA, exprB)
     }
 
-    fun <T : Number> castNumbersAToB(
-        exprA: Expr<out Number>,
-        exprB: Expr<T>,
-        nonTrivial: Behaviour
-    ): TypedExprPair<T> {
-        val castExprA: Expr<T> = exprA.castTo(exprB.ind, nonTrivial)
-        return TypedExprPair(castExprA, exprB)
-    }
-
-    fun <T : Number> castBothNumbersTo(
-        exprA: Expr<out Number>,
-        exprB: Expr<out Number>,
-        indicator: NumberIndicator<T>,
-        nonTrivial: Behaviour
-    ): TypedExprPair<T> {
-        val castExprA: Expr<T> = exprA.castTo(indicator, nonTrivial)
-        val castExprB: Expr<T> = exprB.castTo(indicator, nonTrivial)
-        return TypedExprPair(castExprA, castExprB)
+    fun castAToB(exprA: Expr<*>, exprB: Expr<*>): TypedExprPair<*> {
+        /**
+         * Whenever you may want to use cast A to B, it's likely you should be using other tools
+         * at your disposal instead. An implied cast like this typically comes with strict
+         * rules about which gets cast to what and when, and it would be good if we could
+         * follow those. Look into [coerceAToB] (for casts that are just type wrangling) or
+         * [binaryPromotion] (for casts that cause genuine behaviour change) instead.
+         */
+        WONT_IMPLEMENT()
     }
 
     // This applies to:
@@ -68,7 +41,26 @@ object ConversionsAndPromotion {
         // If the operand is of type byte, short, or char, it is promoted to a value of type int by a widening primitive conversion.
         return when (expr.ind) {
             DoubleIndicator, FloatIndicator, LongIndicator, IntIndicator -> expr
-            else -> expr.castTo(IntIndicator, Behaviour.PerformHardCast)
+            else -> expr.castTo(IntIndicator)
+        }
+    }
+
+    fun binaryPromotion(
+        exprA: Expr<*>,
+        exprB: Expr<*>,
+    ): TypedExprPair<*> {
+        if (exprA.ind == exprB.ind) {
+            @Suppress("UNCHECKED_CAST")
+            return TypedExprPair(exprA as Expr<Any>, exprB as Expr<Any>)
+        }
+
+        return when {
+            exprA.ind is NumberIndicator<*> && exprB.ind is NumberIndicator<*> -> binaryNumericPromotion(
+                exprA.coerceToNumbers(),
+                exprB.coerceToNumbers()
+            )
+
+            else -> throw IllegalStateException("Unsupported binary promotion for indicators ${exprA.ind} and ${exprB.ind}")
         }
     }
 
@@ -88,6 +80,16 @@ object ConversionsAndPromotion {
             else -> IntIndicator
         }
 
-        return castBothNumbersTo(exprA, exprB, targetIndicator, Behaviour.PerformHardCast)
+        return castBothNumbersTo(exprA, exprB, targetIndicator)
+    }
+
+    fun <T : Number> castBothNumbersTo(
+        exprA: Expr<out Number>,
+        exprB: Expr<out Number>,
+        indicator: NumberIndicator<T>
+    ): TypedExprPair<T> {
+        val castExprA: Expr<T> = exprA.castTo(indicator)
+        val castExprB: Expr<T> = exprB.castTo(indicator)
+        return TypedExprPair(castExprA, castExprB)
     }
 }

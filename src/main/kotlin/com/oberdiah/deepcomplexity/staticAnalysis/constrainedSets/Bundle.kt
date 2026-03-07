@@ -4,7 +4,6 @@ import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.staticAnalysis.CanBeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
-import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
@@ -257,7 +256,7 @@ data class Bundle<T : Any> private constructor(
         }
     }
 
-    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): Bundle<Q>? {
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): Bundle<Q>? {
         if (newInd == ind) {
             // Safety: The indicators are the same, so the cast is valid
             @Suppress("UNCHECKED_CAST")
@@ -275,12 +274,8 @@ data class Bundle<T : Any> private constructor(
         return cast
     }
 
-    // Start the painful boilerplate I'm really not a fan of but can't figure my way out of.
-    override fun castToNumbersOrThrow(): Bundle<out Number> = super.castToNumbersOrThrow() as Bundle<out Number>
-    override fun castToObjectOrThrow(): Bundle<HeapMarker> = super.castToObjectOrThrow() as Bundle<HeapMarker>
-    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): Bundle<Q>? = super.tryCastTo(newInd) as Bundle<Q>?
-    override fun <Q : Any> castOrThrow(newInd: Indicator<Q>): Bundle<Q> = super.castOrThrow(newInd) as Bundle<Q>
-    override fun <Q : Any> castTo(newInd: Indicator<Q>, nonTrivial: Behaviour): Bundle<Q> =
-        super.castTo(newInd, nonTrivial) as Bundle<Q>
-    // End painful boilerplate
+    override fun coerceToNumbers(): Bundle<out Number> = super.coerceToNumbers() as Bundle<out Number>
+    override fun coerceToObject(): Bundle<HeapMarker> = super.coerceToObject() as Bundle<HeapMarker>
+    override fun <Q : Any> coerceTo(newInd: Indicator<Q>): Bundle<Q> = super.coerceTo(newInd) as Bundle<Q>
+    override fun <Q : Any> castTo(newInd: Indicator<Q>): Bundle<Q> = super.castTo(newInd) as Bundle<Q>
 }

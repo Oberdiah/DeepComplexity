@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.evaluation.ExprTreeRebuilder.rewriteInTree
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopLeaf
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.LoopVar
 import com.oberdiah.deepcomplexity.staticAnalysis.BooleanIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 
 enum class TreeTraversal {
@@ -51,7 +50,7 @@ object ExprTreeRebuilder {
                         require(expr.ind == key.ind) {
                             "The expression's indicator (${expr.ind}) must match the key's indicator (${key.ind})."
                         }
-                        return block(key, expr).castOrThrow(expr.ind)
+                        return block(key, expr).coerceTo(expr.ind)
                     }
                 }
             }
@@ -71,7 +70,7 @@ object ExprTreeRebuilder {
         treeTraversal: TreeTraversal = TreeTraversal.All,
         replacer: (Expr<*>) -> Expr<*>,
     ): Expr<T> =
-        this.rewriteInTree(treeTraversal) { e -> replacer(e).castOrThrow(e.ind) }.castOrThrow(this.ind)
+        this.rewriteInTree(treeTraversal) { e -> replacer(e).coerceTo(e.ind) }.coerceTo(this.ind)
 
     /**
      * Rebuilds the expression tree using a post-order (leaves-first) traversal.
@@ -106,7 +105,7 @@ object ExprTreeRebuilder {
             return replacerCache.getOrPut(expr) {
                 val replacedExpr: Expr<*> = when (expr) {
                     is BooleanInvertExpr -> BooleanInvertExpr.new(
-                        inner(expr.expr, isInCondition, replacer).castOrThrow(BooleanIndicator)
+                        inner(expr.expr, isInCondition, replacer).coerceTo(BooleanIndicator)
                     )
 
                     is VarsExpr -> expr
@@ -114,7 +113,7 @@ object ExprTreeRebuilder {
                     is LeafExpr<*> -> expr
 
                     is NegateExpr<*> -> NegateExpr.new(
-                        inner(expr.expr, isInCondition, replacer).castToNumbersOrThrow()
+                        inner(expr.expr, isInCondition, replacer).coerceToNumbers()
                     )
 
                     is TypeCastExpr<*, *> -> TypeCastExpr.new(
@@ -123,41 +122,37 @@ object ExprTreeRebuilder {
                         expr.explicit
                     )
 
-                    is IfExpr -> ConversionsAndPromotion.castAToB(
+                    is IfExpr -> ConversionsAndPromotion.coerceAToB(
                         inner(expr.trueExpr, isInCondition, replacer),
                         inner(expr.falseExpr, isInCondition, replacer),
-                        Behaviour.Throw
                     ).map { trueE, falseE ->
                         IfExpr.newRaw(
                             trueE,
                             falseE,
-                            inner(expr.thisCondition, true, replacer).castOrThrow(BooleanIndicator)
+                            inner(expr.thisCondition, true, replacer).coerceTo(BooleanIndicator)
                         )
                     }
 
                     is AnyBinaryExpr<*> -> {
-                        ConversionsAndPromotion.castAToB(
+                        ConversionsAndPromotion.coerceAToB(
                             inner(expr.lhs, isInCondition, replacer),
                             inner(expr.rhs, isInCondition, replacer),
-                            Behaviour.Throw
                         ).map { lhs, rhs ->
                             when (expr) {
                                 is ComparisonExpr<*> -> ComparisonExpr.new(lhs, rhs, expr.comp)
                                 is ArithmeticExpr<*> ->
-                                    ConversionsAndPromotion.castAToB(
+                                    ConversionsAndPromotion.coerceAToB(
                                         lhs,
-                                        rhs.castToNumbersOrThrow(),
-                                        Behaviour.Throw
+                                        rhs.coerceToNumbers(),
                                     )
                                         .map { l, r ->
                                             ArithmeticExpr.new(l, r, expr.op)
                                         }
 
                                 is BooleanOpExpr ->
-                                    ConversionsAndPromotion.castAToB(
+                                    ConversionsAndPromotion.coerceAToB(
                                         lhs,
-                                        rhs.castOrThrow(BooleanIndicator),
-                                        Behaviour.Throw
+                                        rhs.coerceTo(BooleanIndicator),
                                     )
                                         .map { l, r ->
                                             BooleanOpExpr.newRaw(l, r, expr.op)
@@ -170,17 +165,16 @@ object ExprTreeRebuilder {
                         // This is definitely incomplete - it needs proper handling of isInCondition situations.
                         // But for now it should handle the basics :)
                         val newVariables = expr.variables.mapValues { (_, v) ->
-                            ConversionsAndPromotion.castAToB(
+                            ConversionsAndPromotion.coerceAToB(
                                 inner(v.initial, isInCondition, replacer),
-                                inner(v.update, isInCondition, replacer),
-                                Behaviour.Throw
+                                inner(v.update, isInCondition, replacer)
                             ).map { initial, next ->
                                 LoopVar(initial, next)
                             }
                         }
                         LoopExpr.new(
                             target = expr.target,
-                            condition = inner(expr.condition, isInCondition, replacer).castOrThrow(BooleanIndicator),
+                            condition = inner(expr.condition, isInCondition, replacer).coerceTo(BooleanIndicator),
                             variables = newVariables
                         )
                     }

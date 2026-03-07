@@ -127,8 +127,8 @@ object ComparisonSimplification {
         }
 
         return ComparisonExpr.newRaw(
-            current.lhs.castOrThrow(indicator),
-            current.rhs.castOrThrow(indicator),
+            current.lhs.coerceTo(indicator),
+            current.rhs.coerceTo(indicator),
             current.comp
         )
     }

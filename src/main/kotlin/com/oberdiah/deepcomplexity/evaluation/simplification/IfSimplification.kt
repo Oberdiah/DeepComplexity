@@ -286,7 +286,7 @@ object IfSimplification {
                     }
 
                     is NoLongerAnIf -> {
-                        return result.expr.castOrThrow(indicator)
+                        return result.expr.coerceTo(indicator)
                     }
                 }
             }
@@ -294,8 +294,8 @@ object IfSimplification {
         }
 
         val final = IfExpr.newRaw(
-            current.trueExpr.castOrThrow(indicator),
-            current.falseExpr.castOrThrow(indicator),
+            current.trueExpr.coerceTo(indicator),
+            current.falseExpr.coerceTo(indicator),
             current.cond
         )
         return final

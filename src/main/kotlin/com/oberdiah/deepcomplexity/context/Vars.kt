@@ -3,7 +3,6 @@ package com.oberdiah.deepcomplexity.context
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.staticAnalysis.ObjectIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.into
-import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
 data class Vars(
@@ -125,11 +124,11 @@ data class Vars(
                     // or the traversal mechanism managed to hit a non-primary path somehow.
                     "Traversal of a qualifier encountered a leaf with a non-object indicator ${it.ind}"
                 }
-                get(QualifiedFieldKey(it.castToObjectOrThrow() as LeafExpr, expr.field))
+                get(QualifiedFieldKey(it.coerceToObject() as LeafExpr, expr.field))
             }
 
             is LValueKey<*> -> get(expr.key)
-        }.castOrThrow(expr.ind)
+        }.coerceTo(expr.ind)
     }
 
     /**
@@ -199,7 +198,7 @@ data class Vars(
      *  which is exactly as desired.
      */
     fun with(lExpr: LValue<*>, rExpr: Expr<*>): Vars {
-        val rExpr = rExpr.castTo(lExpr.ind, Behaviour.PerformHardCast)
+        val rExpr = rExpr.castTo(lExpr.ind)
 
         if (lExpr is LValueKey) {
             return with(lExpr.key, rExpr)
@@ -211,7 +210,7 @@ data class Vars(
         val field = lExpr.field
 
         val qualifiersMentionedInQualifierExpr: Set<LeafExpr<HeapMarker>> =
-            qualifierExpr.allPrimaryPathLeaves().mapToSet { it.castToObjectOrThrow() as LeafExpr }
+            qualifierExpr.allPrimaryPathLeaves().mapToSet { it.coerceToObject() as LeafExpr }
 
         var vars = this
 
@@ -230,7 +229,7 @@ data class Vars(
                     } else {
                         existingExpr
                     }
-                }.castOrThrow(rExpr.ind)
+                }.coerceTo(rExpr.ind)
 
             // In the simple cases this will just perform a basic assignment, but
             // in reality under the hood it may do other stuff due to aliasing.

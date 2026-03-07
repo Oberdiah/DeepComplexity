@@ -63,7 +63,7 @@ class Context private constructor(
                             // in the dynamic section.
                             // Unfortunately, we can't really help it as both static sides need to reference the same
                             // dynamic expression unless we're prepared for a large change in how things work.
-                            how(lhs, rhs).castOrThrow(VarsIndicator)
+                            how(lhs, rhs).coerceTo(VarsIndicator)
                         }
                     },
                     { vars1, vars2 ->

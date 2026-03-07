@@ -3,7 +3,6 @@ package com.oberdiah.deepcomplexity.staticAnalysis.sets
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.CanBeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
-import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import java.math.BigInteger
 
@@ -17,14 +16,11 @@ import java.math.BigInteger
 interface ISet<T : Any> : CanBeCast<T> {
     override val ind: Indicator<T>
 
-    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): ISet<Q>?
-    override fun castToNumbersOrThrow(): NumberSet<out Number> = super.castToNumbersOrThrow() as NumberSet
-    override fun castToObjectOrThrow(): ObjectSet = super.castToObjectOrThrow() as ObjectSet
-    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): ISet<Q>? = super.tryCastTo(newInd) as ISet<Q>?
-    override fun <Q : Any> castOrThrow(newInd: Indicator<Q>): ISet<Q> = super.castOrThrow(newInd) as ISet<Q>
-
-    override fun <Q : Any> castTo(newInd: Indicator<Q>, nonTrivial: Behaviour): ISet<Q> =
-        super.castTo(newInd, nonTrivial) as ISet<Q>
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): ISet<Q>?
+    override fun coerceToNumbers(): NumberSet<out Number> = super.coerceToNumbers() as NumberSet
+    override fun coerceToObject(): ObjectSet = super.coerceToObject() as ObjectSet
+    override fun <Q : Any> coerceTo(newInd: Indicator<Q>): ISet<Q> = super.coerceTo(newInd) as ISet<Q>
+    override fun <Q : Any> castTo(newInd: Indicator<Q>): ISet<Q> = super.castTo(newInd) as ISet<Q>
 
     /**
      * The number of elements in the set, if it can be computed, otherwise null.

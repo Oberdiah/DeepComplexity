@@ -78,7 +78,7 @@ class EvaluatorAssistant(
             val bundle = evalFunc()
             trace(expr, bundle)
             bundle
-        }.castOrThrow(expr.ind)
+        }.coerceTo(expr.ind)
     }
 
     fun getCacheReadout(): String {

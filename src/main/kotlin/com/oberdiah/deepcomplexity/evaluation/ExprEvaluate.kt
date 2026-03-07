@@ -23,7 +23,7 @@ object ExprEvaluate {
         assistant: EvaluatorAssistant
     ): Bundle<*> {
         return when (expr) {
-            is NegateExpr -> evaluate(expr.expr.castToNumbersOrThrow(), constraints, assistant.onlyPath()).negate()
+            is NegateExpr -> evaluate(expr.expr.coerceToNumbers(), constraints, assistant.onlyPath()).negate()
             is BooleanInvertExpr -> evaluate(expr, constraints, assistant.onlyPath()).booleanInvert()
 
             is ArithmeticExpr<*> -> {

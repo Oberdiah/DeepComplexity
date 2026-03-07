@@ -37,7 +37,7 @@ data class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>
 
     override fun union(other: ISet<HeapMarker>): ISet<HeapMarker> = ObjectSet(values.union(other.into().values), ind)
 
-    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): ISet<Q> {
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): ISet<Q> {
         TODO("Not yet implemented")
     }
 }

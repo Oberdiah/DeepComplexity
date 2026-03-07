@@ -94,7 +94,7 @@ enum class BooleanSet : ISet<Boolean> {
         return this == EITHER
     }
 
-    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): ISet<Q>? {
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): ISet<Q>? {
         @Suppress("UNCHECKED_CAST")
         if (newInd == BooleanIndicator) return this as ISet<Q>
         return null

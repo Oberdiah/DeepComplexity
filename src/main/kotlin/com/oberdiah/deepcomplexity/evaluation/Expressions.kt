@@ -13,7 +13,6 @@ import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
-import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.Behaviour
 import com.oberdiah.deepcomplexity.utilities.Utilities.sum
 import java.math.BigInteger
 
@@ -159,8 +158,8 @@ sealed class Expr<T : Any> : CanBeCast<T> {
     inline fun <reified Q : Expr<*>> rewriteTypeInTreeSameType(
         treeTraversal: TreeTraversal = TreeTraversal.All,
         crossinline replacer: (Q) -> Expr<*>
-    ): Expr<T> = this.rewriteTypeInTree<Q>(treeTraversal) { e -> replacer(e).castOrThrow(e.ind) }
-        .castOrThrow(this.ind)
+    ): Expr<T> = this.rewriteTypeInTree<Q>(treeTraversal) { e -> replacer(e).coerceTo(e.ind) }
+        .coerceTo(this.ind)
 
     /**
      * Variant of [rewriteInTree] that only applies [replacer] to expressions of type [Q].
@@ -197,19 +196,13 @@ sealed class Expr<T : Any> : CanBeCast<T> {
     fun evaluate(constraints: ConstraintsOrPile, assistant: EvaluatorAssistant): Bundle<T> =
         ExprEvaluate.evaluate(this, constraints, assistant)
 
-    override fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>): Expr<Q>? =
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): Expr<Q>? =
         TypeCastExpr.new(this, newInd, explicit = false)
 
-    // Start the painful boilerplate I'm really not a fan of but can't figure my way out of.
-    override fun castToNumbersOrThrow(): Expr<out Number> = super.castToNumbersOrThrow() as Expr<out Number>
-    override fun castToObjectOrThrow(): Expr<HeapMarker> = super.castToObjectOrThrow() as Expr<HeapMarker>
-    override fun tryCastToNumbers(): Expr<out Number>? = super.tryCastToNumbers() as Expr<out Number>?
-    override fun tryCastToObject(): Expr<HeapMarker>? = super.tryCastToObject() as Expr<HeapMarker>?
-    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): Expr<Q>? = super.tryCastTo(newInd) as Expr<Q>?
-    override fun <Q : Any> castOrThrow(newInd: Indicator<Q>): Expr<Q> = super.castOrThrow(newInd) as Expr<Q>
-    override fun <Q : Any> castTo(newInd: Indicator<Q>, nonTrivial: Behaviour): Expr<Q> =
-        super.castTo(newInd, nonTrivial) as Expr<Q>
-    // End painful boilerplate
+    override fun coerceToNumbers(): Expr<out Number> = super.coerceToNumbers() as Expr<out Number>
+    override fun coerceToObject(): Expr<HeapMarker> = super.coerceToObject() as Expr<HeapMarker>
+    override fun <Q : Any> coerceTo(newInd: Indicator<Q>): Expr<Q> = super.coerceTo(newInd) as Expr<Q>
+    override fun <Q : Any> castTo(newInd: Indicator<Q>): Expr<Q> = super.castTo(newInd) as Expr<Q>
 }
 
 /**
@@ -302,7 +295,7 @@ class ComparisonExpr<T : Any> private constructor(
          * a wrongly typed [rhs] you'll get a runtime exception.
          */
         fun <A : Any> new(lhs: Expr<A>, rhs: Expr<*>, comp: ComparisonOp): Expr<Boolean> {
-            val rhs = rhs.castOrThrow(lhs.ind)
+            val rhs = rhs.coerceTo(lhs.ind)
             return ComparisonSimplification.attemptToSimplifyComparison(lhs, rhs, comp)
         }
     }
@@ -340,7 +333,7 @@ class TypeCastExpr<T : Any, Q : Any> private constructor(
             explicit: Boolean = false
         ): Expr<T> {
             if (expr.ind == targetInd) {
-                return expr.castOrThrow(targetInd)
+                return expr.coerceTo(targetInd)
             }
             return ExprPool.create { TypeCastExpr(expr, targetInd, explicit) }
         }
@@ -396,7 +389,7 @@ class IfExpr<T : Any> private constructor(
          * a wrongly typed [falseExpr] you'll get a runtime exception.
          */
         fun <A : Any> new(trueExpr: Expr<A>, falseExpr: Expr<*>, condition: Expr<Boolean>): Expr<A> {
-            val falseExpr = falseExpr.castOrThrow(trueExpr.ind)
+            val falseExpr = falseExpr.coerceTo(trueExpr.ind)
             return IfSimplification.attemptToSimplifyIfExpr(trueExpr, falseExpr, condition)
         }
     }
@@ -541,7 +534,7 @@ class VariableExpr<T : Any> private constructor(
     override fun parts(): List<Any> = listOf(key, ind)
 
     override fun resolve(vars: Vars): Expr<T> {
-        return vars.get(vars.resolveKey(key)).castOrThrow(ind)
+        return vars.get(vars.resolveKey(key)).coerceTo(ind)
     }
 }
 

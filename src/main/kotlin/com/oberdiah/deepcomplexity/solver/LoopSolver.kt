@@ -3,6 +3,7 @@ package com.oberdiah.deepcomplexity.solver
 import com.oberdiah.deepcomplexity.context.LoopKey
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.staticAnalysis.IntIndicator
+import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.arithmeticOperation
@@ -66,9 +67,13 @@ object LoopSolver {
         constraints: ConstraintsOrPile,
         assistant: EvaluatorAssistant
     ): Bundle<Int> {
+        if (condition.lhs.ind !is NumberIndicator<*> || condition.rhs.ind !is NumberIndicator<*>) {
+            return noIdea()
+        }
+
         // Let's only deal with numbers for now.
-        val lhs = condition.lhs.tryCastToNumbers() ?: return noIdea()
-        val rhs = condition.rhs.tryCastToNumbers() ?: return noIdea()
+        val lhs = condition.lhs.coerceToNumbers()
+        val rhs = condition.rhs.coerceToNumbers()
 
         val lhsBundle = lhs.evaluate(constraints, assistant.leftPath())
         val rhsBundle = rhs.evaluate(constraints, assistant.rightPath())
