@@ -26,7 +26,7 @@ class EvaluatorAssistant(
 
     interface Direction
 
-    data class DirectionInt(val int: Int) : Direction
+    data class DirectionKey(val key: Any) : Direction
     enum class DirectionEnum : Direction {
         Only,
         Left,
@@ -47,6 +47,7 @@ class EvaluatorAssistant(
     fun falsePath(): EvaluatorAssistant = direction(DirectionEnum.False)
     fun truePath(): EvaluatorAssistant = direction(DirectionEnum.True)
     fun onlyPath(): EvaluatorAssistant = direction(DirectionEnum.Only)
+    fun keyedPath(key: Any): EvaluatorAssistant = direction(DirectionKey(key))
 
     private fun direction(direction: Direction): EvaluatorAssistant =
         EvaluatorAssistant(tagsMap, path + direction, evaluatedStrings, expressionCache, isInsideCondition)

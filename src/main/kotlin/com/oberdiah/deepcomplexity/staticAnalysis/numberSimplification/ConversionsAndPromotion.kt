@@ -2,11 +2,16 @@ package com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.staticAnalysis.*
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion.binaryPromotion
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion.coerceAToB
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ConversionsAndPromotion {
+    class TypedBundlePair<T : Any>(val first: Bundle<T>, val second: Bundle<T>) {
+        fun <R> map(operation: (Bundle<T>, Bundle<T>) -> R): R = operation(first, second)
+    }
+
     class TypedExprPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {
         fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
     }
@@ -17,6 +22,11 @@ object ConversionsAndPromotion {
     fun <T : Any> coerceAToB(exprA: Expr<*>, exprB: Expr<T>): TypedExprPair<T> {
         val coercedExprA: Expr<T> = exprA.coerceTo(exprB.ind)
         return TypedExprPair(coercedExprA, exprB)
+    }
+
+    fun <T : Any> coerceAToB(bundleA: Bundle<*>, bundleB: Bundle<T>): TypedBundlePair<T> {
+        val coercedExprA: Bundle<T> = bundleA.coerceTo(bundleB.ind)
+        return TypedBundlePair(coercedExprA, bundleB)
     }
 
     fun castAToB(exprA: Expr<*>, exprB: Expr<*>): TypedExprPair<*> {

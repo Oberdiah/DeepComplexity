@@ -7,18 +7,27 @@ interface HasIndicator<T : Any> {
 }
 
 interface CanBeCast<T : Any> : HasIndicator<T> {
+    /**
+     * If this object is already a number, does nothing, otherwise throws.
+     */
     fun coerceToNumbers(): HasIndicator<out Number> {
         if (this.ind !is NumberIndicator<*>) throw IllegalStateException("Failed to cast to a number: $this ($ind)")
         @Suppress("UNCHECKED_CAST")
         return this as HasIndicator<out Number>
     }
 
+    /**
+     * If this object is already an object, does nothing, otherwise throws.
+     */
     fun coerceToObject(): HasIndicator<HeapMarker> {
         if (this.ind !is ObjectIndicator) throw IllegalStateException("Failed to cast to an object: $this ($ind)")
         @Suppress("UNCHECKED_CAST")
         return this as HasIndicator<HeapMarker>
     }
 
+    /**
+     * If this object already has type [newInd], does nothing, otherwise throws.
+     */
     fun <Q : Any> coerceTo(newInd: Indicator<Q>): HasIndicator<Q> {
         if (this.ind != newInd) throw IllegalStateException("Failed to cast to $newInd: $this ($ind)")
         @Suppress("UNCHECKED_CAST")

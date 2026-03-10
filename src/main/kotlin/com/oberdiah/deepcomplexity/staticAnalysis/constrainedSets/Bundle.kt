@@ -49,7 +49,7 @@ import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 @ConsistentCopyVisibility
 data class Bundle<T : Any> private constructor(
     override val ind: Indicator<T>,
-    val variances: Set<ConstrainedVariances<T>>
+    private val variances: Set<ConstrainedVariances<T>>
 ) : CanBeCast<T> {
     init {
         require(variances.size < 50) {
@@ -150,10 +150,31 @@ data class Bundle<T : Any> private constructor(
             }
         }.toSet())
 
+    fun <Q : Any> binaryMapToList(
+        other: Bundle<T>,
+        op: (Variances<T>, Variances<T>, Constraints) -> Q
+    ): List<Q> {
+        val listOut = mutableListOf<Q>()
+        for (myBundle in variances) {
+            for (otherBundle in other.variances) {
+                val newConstraints = myBundle.constraints.and(otherBundle.constraints)
+                if (newConstraints.unreachable) continue
+                listOut.add(op(myBundle.variances, otherBundle.variances, newConstraints))
+            }
+        }
+        return listOut
+    }
+
+    fun <Q : Any> unaryMapToList(op: (Variances<T>, Constraints) -> Q): List<Q> {
+        return variances.map { op(it.variances, it.constraints) }
+    }
 
     fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): Bundle<T> = unaryMap(ind, op)
 
     fun <Q : Any> unaryMap(newInd: Indicator<Q>, op: (Variances<T>) -> Variances<Q>): Bundle<Q> {
+        // Note, I've never had the need to do the complicated ExprKey tracking here, so
+        // it doesn't exist. If you find you need it, you should be able to add it similar
+        // to how [binaryMap] does.
         return Bundle(newInd, variances.mapToSet {
             ConstrainedVariances.new(op(it.variances), it.constraints)
         })
@@ -163,10 +184,9 @@ data class Bundle<T : Any> private constructor(
         other: Bundle<T>,
         exprKey: EvaluationKey,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>
-    ): Bundle<T> =
-        binaryMapToVariances(ind, other, exprKey, op)
+    ): Bundle<T> = binaryMap(ind, other, exprKey, op)
 
-    fun <Q : Any> binaryMapToVariances(
+    fun <Q : Any> binaryMap(
         newInd: Indicator<Q>,
         other: Bundle<T>,
         exprKey: EvaluationKey,
@@ -213,21 +233,6 @@ data class Bundle<T : Any> private constructor(
         return Bundle(newInd, newBundles)
     }
 
-    fun <Q : Any> binaryMap(
-        other: Bundle<T>,
-        op: (Variances<T>, Variances<T>, Constraints) -> Q
-    ): List<Q> {
-        val listOut = mutableListOf<Q>()
-        for (myBundle in variances) {
-            for (otherBundle in other.variances) {
-                val newConstraints = myBundle.constraints.and(otherBundle.constraints)
-                if (newConstraints.unreachable) continue
-                listOut.add(op(myBundle.variances, otherBundle.variances, newConstraints))
-            }
-        }
-        return listOut
-    }
-
     fun constrainWith(constraints: ConstraintsOrPile): Bundle<T> {
         return Bundle(ind, variances.flatMap { bundle ->
             constraints.pile.flatMap { constraint ->
@@ -242,7 +247,7 @@ data class Bundle<T : Any> private constructor(
     }
 
     /**
-     * Collapses the full set of bundles into a single bundle, treating the constraints as an OR.
+     * Collapses the full set of bundles into a single set.
      *
      * @return A single bundle representing the collapsed state of the current bundle set.
      */

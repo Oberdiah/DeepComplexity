@@ -1,12 +1,14 @@
 package com.oberdiah.deepcomplexity.solver
 
 import com.oberdiah.deepcomplexity.context.LoopKey
-import com.oberdiah.deepcomplexity.evaluation.*
+import com.oberdiah.deepcomplexity.evaluation.EvaluatorAssistant
+import com.oberdiah.deepcomplexity.evaluation.Expr
+import com.oberdiah.deepcomplexity.evaluation.LoopExpr
 import com.oberdiah.deepcomplexity.staticAnalysis.IntIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.arithmeticOperation
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
 
 object LoopSolver {
     private fun noIdea(): Bundle<Int> =
@@ -23,69 +25,42 @@ object LoopSolver {
         constraints: ConstraintsOrPile,
         assistant: EvaluatorAssistant
     ): Bundle<Int> {
-        val returnValue = when (condition) {
-            is BooleanOpExpr -> {
-                val lhs = calculateNumLoops(condition.lhs, variables, constraints, assistant.leftPath())
-                val rhs = calculateNumLoops(condition.rhs, variables, constraints, assistant.rightPath())
-                when (condition.op) {
-                    BooleanOp.AND -> lhs.arithmeticOperation(
-                        rhs,
-                        BinaryNumberOp.MAXIMUM,
-                        condition.exprKey
-                    )
+        val withinLoopConstraints = ExprConstrain.getConstraints(condition, constraints, assistant.enteredCondition())
 
-                    BooleanOp.OR -> lhs.arithmeticOperation(
-                        rhs,
-                        BinaryNumberOp.MINIMUM,
-                        condition.exprKey
-                    )
-                }
-            }
-
-            is ComparisonExpr<*> -> calculateNumLoops(condition, variables, constraints, assistant)
-
-            is ConstExpr -> {
-                val value = condition.value
-                if (value) {
-                    noIdea()
-                } else {
-                    Bundle.unconstrained(IntIndicator.onlyZeroSet().toConstVariance())
-                }
-            }
-
-            is BooleanInvertExpr -> TODO("Who knows")
-            is IfExpr -> TODO("Can probably figure out with some work")
-            else -> TODO("Might be able to do one day")
+        val initialStates = variables.mapValues {
+            it.value.initial.evaluate(constraints, assistant.keyedPath("initial").keyedPath("${it.key}"))
         }
 
-        return returnValue
-    }
+        val changePerStep = variables.mapValues { (loopKey, loopVar) ->
+            val changes = loopVar.update.evaluate(constraints, assistant.keyedPath("update").keyedPath("$loopKey"))
 
-    private fun calculateNumLoops(
-        condition: ComparisonExpr<*>,
-        variables: Map<LoopKey<*>, LoopExpr.LoopVar<*>>,
-        constraints: ConstraintsOrPile,
-        assistant: EvaluatorAssistant
-    ): Bundle<Int> {
-        if (condition.lhs.ind !is NumberIndicator<*> || condition.rhs.ind !is NumberIndicator<*>) {
-            return noIdea()
+            val changelist = changes.unaryMapToList { variances, constraints ->
+                if (variances.ind !is NumberIndicator) {
+                    TODO("Not figured this out yet")
+                }
+
+                // For next time: We need to perform this iteratively over the 'variables'
+                // We'll iterate through, deriving all changes for each variable.
+                // If a 'variances'...
+
+                // Wait, no, this won't work at all.
+                // Variances is happy to drop variable tracking if it needs to
+                // We need to keep it otherwise everything explodes.
+                // That's a shame
+                // We'll need to rethink.
+
+                loopKey.key
+
+                TODO()
+            }
+
+            if (changelist.size > 1) {
+                TODO("Interested in what this looks like when it happens")
+            }
+
+            TODO()
         }
 
-        // Let's only deal with numbers for now.
-        val lhs = condition.lhs.coerceToNumbers()
-        val rhs = condition.rhs.coerceToNumbers()
-
-        val lhsBundle = lhs.evaluate(constraints, assistant.leftPath())
-        val rhsBundle = rhs.evaluate(constraints, assistant.rightPath())
-
-        // For now, we're only going to deal with situations where only one side of the comparison contains
-        // a LoopVar. Maybe one day we can deal with more, but things are complex enough as it is.
-
-        // The plan here is pretty simple - we literally just evaluate lhs and rhs here, and then run a standard
-        // numberVariances comparison on the results. We'll get a Constraints object back that we can query
-        // for what is 'within loop'
-        // We'll then query elsewhere for the simple loop evaluation algorithm, and get the increment per step.
-        // Badda bing badda boom we'll have our answer.
         TODO()
     }
 

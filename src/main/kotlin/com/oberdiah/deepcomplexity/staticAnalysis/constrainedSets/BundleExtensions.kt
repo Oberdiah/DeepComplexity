@@ -24,7 +24,7 @@ fun <T : Any> Bundle<T>.generateConstraintsFrom(
         return ConstraintsOrPile.unreachable()
     }
 
-    val newConstraintsGenerated = this.binaryMap(other) { a, b, constraints ->
+    val newConstraintsGenerated = this.binaryMapToList(other) { a, b, constraints ->
         a.generateConstraintsFrom(b, operation, constraints)
     }.toSet()
 
@@ -44,17 +44,12 @@ fun Bundle<Boolean>.booleanInvert() = performUnaryOperation {
     it.into().booleanInvert()
 }
 
-@Suppress("Unused")
-fun <T : Number> Bundle<T>.isOne(): Boolean = this.variances.all {
-    it.variances.into().isOne(it.constraints)
-}
-
 fun <T : Any> Bundle<T>.comparisonOperation(
     other: Bundle<T>,
     comparisonOp: ComparisonOp,
     exprKey: EvaluationKey
 ): Bundle<Boolean> {
-    return this.binaryMapToVariances(BooleanIndicator, other, exprKey) { a, b, constraints ->
+    return this.binaryMap(BooleanIndicator, other, exprKey) { a, b, constraints ->
         a.comparisonOperation(b, comparisonOp, constraints)
     }
 }
