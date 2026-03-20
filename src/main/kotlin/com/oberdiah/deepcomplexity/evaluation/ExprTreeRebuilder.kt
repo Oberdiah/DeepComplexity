@@ -110,6 +110,7 @@ object ExprTreeRebuilder {
 
                     is VarsExpr -> expr
                     is LoopLeaf<*> -> expr
+                    is LoopExpr.ConstEvaluatedLeaf<*> -> expr
                     is LeafExpr<*> -> expr
 
                     is NegateExpr<*> -> NegateExpr.new(
@@ -166,7 +167,7 @@ object ExprTreeRebuilder {
                         // But for now it should handle the basics :)
                         val newVariables = expr.variables.mapValues { (_, v) ->
                             ConversionsAndPromotion.coerceAToB(
-                                inner(v.initial, isInCondition, replacer),
+                                inner(v.initialState, isInCondition, replacer),
                                 inner(v.update, isInCondition, replacer)
                             ).map { initial, next ->
                                 LoopVar(initial, next)

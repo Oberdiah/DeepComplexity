@@ -112,7 +112,7 @@ sealed class Expr<T : Any> : CanBeCast<T> {
             is LoopExpr -> {
                 // This isn't complete, eventually we'll have to deal with the primary paths and aux paths
                 // todo loops
-                listOf(condition) + variables.values.flatMap { listOf(it.initial, it.update) }
+                listOf(condition) + variables.values.flatMap { listOf(it.initialState, it.update) }
             }
 
             else -> parts().filterIsInstance<Expr<*>>()
@@ -497,7 +497,7 @@ class LoopExpr<T : Any> private constructor(
 
     override fun parts(): List<Any> = listOf(target, condition, variables)
 
-    data class LoopVar<T : Any>(val initial: Expr<T>, val update: Expr<T>)
+    data class LoopVar<T : Any>(val initialState: Expr<T>, val update: Expr<T>)
 
     class LoopLeaf<T : Any> private constructor(
         val key: LoopKey<T>,
@@ -509,6 +509,18 @@ class LoopExpr<T : Any> private constructor(
 
         override fun parts(): List<Any> = listOf(key)
         override val ind: Indicator<T> get() = key.ind
+    }
+
+    class ConstEvaluatedLeaf<T : Any> private constructor(
+        val value: Bundle<T>,
+        override val ind: Indicator<T>
+    ) : Expr<T>() {
+        companion object {
+            fun <T : Any> new(value: Bundle<T>): ConstEvaluatedLeaf<T> =
+                ExprPool.create { ConstEvaluatedLeaf(value, value.ind) }
+        }
+
+        override fun parts(): List<Any> = listOf(value, ind)
     }
 }
 

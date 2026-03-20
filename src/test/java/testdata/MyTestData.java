@@ -2256,6 +2256,136 @@ public class MyTestData {
 		return (short) j;
 	}
 	
+	public static short forLoops19(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			i++;
+			a++;
+			i++;
+			a++;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops20(short x) {
+		if (x >= 0 && x < 10) {
+			int a = 0;
+			for (int i = 0; i < x; i++) {
+				a++;
+			}
+			return (short) (a - x);
+		}
+		return 0;
+	}
+	
+	public static short forLoops21(short x) {
+		if (x >= 0 && x < 10) {
+			int a = 0;
+			for (int i = 0; i < x; i++) {
+				a += 2;
+			}
+			return (short) (a - x * 2);
+		}
+		return 0;
+	}
+	
+	public static short forLoops22(short x) {
+		if (x >= 0 && x < 10) {
+			int a = 0;
+			int b = 0;
+			for (int i = 0; i < x; i++) {
+				b += a;
+				if (b - 5 == b + 5 - 10) {
+					a += 2;
+				}
+			}
+			return (short) (a - x * 2);
+		}
+		return 0;
+	}
+	
+	public static short forLoops23(short x) {
+		int a = 0;
+		int b = 0;
+		int c = 0;
+		for (int i = 0; i < 10; i++) {
+			a = a + 1;
+			b = a + 1;
+		}
+		return (short) b;
+	}
+	
+	public static short forLoops24(short x) {
+		int a = 0;
+		int b = 0;
+		int c = 0;
+		for (int i = 0; i < 10; i++) {
+			for (int j = 0; j < 10; j++) {
+				a = a + 1;
+				b = a + 1;
+			}
+		}
+		return (short) b;
+	}
+	
+	public static short forLoops25(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			a = a + a - a + 1;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops26(short x) {
+		int a = 2147483646;
+		for (int i = 0; i < 10; i++) {
+			a = a + 1;
+		}
+		if (a < 0) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short forLoops27(short x) {
+		int a = 2147483635;
+		int b = 0;
+		for (int i = 0; i < 10; i++) {
+			a = a + 1;
+			b = a + 5;
+		}
+		if (b < 0) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short forLoops28(short x) {
+		int a = 0;
+		int b = 0;
+		int c = 0;
+		for (int i = 0; i < 2; i++) {
+			a = a + 1_000_000_000;
+			b = b + 1_000_000_000;
+			c = a + b;
+		}
+		if (c < 0) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short forLoops29(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			a = a + (a % 5);
+		}
+		return (short) a;
+	}
+	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(4)
 	public static short sharedState1(short x) {

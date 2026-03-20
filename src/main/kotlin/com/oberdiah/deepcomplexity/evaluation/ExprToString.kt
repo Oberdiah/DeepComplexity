@@ -62,7 +62,7 @@ object ExprToString {
                 val target = expr.target
                 val condition = toStringWithTags(expr.condition, tagsMap)
                 val variables = expr.variables.entries.joinToString("\n") { (key, value) ->
-                    "$key: { initial: ${toStringWithTags(value.initial, tagsMap)}, next: ${
+                    "$key: { initial: ${toStringWithTags(value.initialState, tagsMap)}, next: ${
                         toStringWithTags(value.update, tagsMap)
                     } }"
                 }
@@ -73,6 +73,7 @@ object ExprToString {
             }
 
             is LoopExpr.LoopLeaf<*> -> "${expr.key}"
+            is LoopExpr.ConstEvaluatedLeaf<*> -> "${expr.value}"
         }
     }
 
@@ -90,6 +91,7 @@ object ExprToString {
             is VarsExpr -> "CtxExpr"
             is LoopExpr<*> -> "Loop(${expr.target})"
             is LoopExpr.LoopLeaf<*> -> "LoopLeaf(${expr.key})"
+            is LoopExpr.ConstEvaluatedLeaf<*> -> "ConstEval"
         }
     }
 }

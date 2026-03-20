@@ -114,6 +114,8 @@ object ExprEvaluate {
             is LoopExpr.LoopLeaf<*> -> {
                 Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(constraints)
             }
+
+            is LoopExpr.ConstEvaluatedLeaf<*> -> expr.value.constrainWith(constraints)
         }
     }
 }

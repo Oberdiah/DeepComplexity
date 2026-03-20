@@ -184,7 +184,7 @@ class EvaluatorAssistant(
                 // is just to get us off the ground.
                 val condition = ExprToString.toStringWithTags(expr.condition, tagsMap)
                 val variables = expr.variables.entries.joinToString("\n") { (key, value) ->
-                    "$key: { initial: ${ExprToString.toStringWithTags(value.initial, tagsMap)}, next: ${
+                    "$key: { initial: ${ExprToString.toStringWithTags(value.initialState, tagsMap)}, next: ${
                         ExprToString.toStringWithTags(value.update, tagsMap)
                     } }"
                 }
@@ -195,6 +195,7 @@ class EvaluatorAssistant(
             }
 
             is LoopExpr.LoopLeaf<*> -> "${expr.key}"
+            is LoopExpr.ConstEvaluatedLeaf<*> -> "${expr.value}"
         }
     }
 }

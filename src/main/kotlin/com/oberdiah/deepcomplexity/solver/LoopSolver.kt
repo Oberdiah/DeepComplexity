@@ -4,8 +4,8 @@ import com.oberdiah.deepcomplexity.context.LoopKey
 import com.oberdiah.deepcomplexity.evaluation.EvaluatorAssistant
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr
+import com.oberdiah.deepcomplexity.evaluation.LoopExpr.ConstEvaluatedLeaf
 import com.oberdiah.deepcomplexity.staticAnalysis.IntIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
@@ -27,40 +27,88 @@ object LoopSolver {
     ): Bundle<Int> {
         val withinLoopConstraints = ExprConstrain.getConstraints(condition, constraints, assistant.enteredCondition())
 
-        val initialStates = variables.mapValues {
-            it.value.initial.evaluate(constraints, assistant.keyedPath("initial").keyedPath("${it.key}"))
+        TODO()
+    }
+
+    data class Solve(
+        val updateExpression: Expr<*>,
+        var initialState: Bundle<*>,
+        var changePerStep: Bundle<*>?
+    )
+
+    private fun calculateChangePerStep(
+        variables: Map<LoopKey<*>, LoopExpr.LoopVar<*>>,
+        constraints: ConstraintsOrPile,
+        assistant: EvaluatorAssistant
+    ) {
+        val solves = variables.mapValues {
+            Solve(
+                it.value.update,
+                it.value.initialState.evaluate(
+                    constraints,
+                    assistant.keyedPath("initial").keyedPath("${it.key}")
+                ),
+                null
+            )
         }
 
-        val changePerStep = variables.mapValues { (loopKey, loopVar) ->
-            val changes = loopVar.update.evaluate(constraints, assistant.keyedPath("update").keyedPath("$loopKey"))
+        myWhile@ while (true) {
+            var madeProgress = false
+            for ((key, solve) in solves) {
+                if (solve.changePerStep != null) continue
 
-            val changelist = changes.unaryMapToList { variances, constraints ->
-                if (variances.ind !is NumberIndicator) {
-                    TODO("Not figured this out yet")
+                val stepsExpr = solve.updateExpression.rewriteTypeInTreeSameType<LoopExpr.LoopLeaf<*>> { loopLeaf ->
+                    solves[loopLeaf.key]!!.changePerStep?.let { ConstEvaluatedLeaf.new(it) } ?: loopLeaf
                 }
 
-                // For next time: We need to perform this iteratively over the 'variables'
-                // We'll iterate through, deriving all changes for each variable.
-                // If a 'variances'...
-
-                // Wait, no, this won't work at all.
-                // Variances is happy to drop variable tracking if it needs to
-                // We need to keep it otherwise everything explodes.
-                // That's a shame
-                // We'll need to rethink.
-
-                loopKey.key
+                val initialStatesExpr =
+                    solve.updateExpression.rewriteTypeInTreeSameType<LoopExpr.LoopLeaf<*>> { loopLeaf ->
+                        ConstEvaluatedLeaf.new(solves[loopLeaf.key]!!.initialState)
+                    }
 
                 TODO()
             }
-
-            if (changelist.size > 1) {
-                TODO("Interested in what this looks like when it happens")
-            }
-
-            TODO()
+            if (!madeProgress) break
         }
+    }
 
+    /*
+     * It's been verified at this point that the expression only contains our loop key. Everything else can be
+     * considered a 'constant'.
+     *
+     * Wait, this doesn't work - we'd get here if we had
+     * x = x + 1
+     * y = y + x // Once x was solved, this would be a valid 1-key calculation, which is obviously wrong.
+     *
+     * I suspect there are only two valid cases - where the rhs contains our key and no other loop leaves,
+     * or cases where the rhs contains only other loop leaves.
+     *
+     * I guess there is the third case of cancelling out actually
+     * e.g.
+     * x = x + 1
+     * y = y + 1
+     * z = x + 1 - (x + y)
+     *
+     * Who knows though. I may need more powerful machinery.
+     */
+
+    /**
+     * Figure out, in an expression `x = expr`, how much x changes per step of the loop, assuming the rest of the
+     * expression is a constant.
+     * For `x = y`, this would return 0.
+     * For `x = x + 1`, this would return 1.
+     * For `x = (y > 6) ? x + 1 : x`, this would return 1 constrained by the condition `y > 6`,
+     * and 0 constrained by the condition `y <= 6`.
+     * For `x = (y > 6) ? x + 1 : x * 2;`, this would return 1 constrained by the condition `y > 6`, and
+     * `ind.fullSet()` constrained by y <= 6, as that branch is too complex to evaluate.
+     * Can handle and return a correct, if perhaps non-useful, answer for every possible expression input.
+     */
+    private fun calculateChangePerStep(
+        loopKey: LoopKey<*>,
+        rhs: Expr<*>,
+        constraints: ConstraintsOrPile,
+        assistant: EvaluatorAssistant
+    ): Bundle<out Number> {
         TODO()
     }
 
