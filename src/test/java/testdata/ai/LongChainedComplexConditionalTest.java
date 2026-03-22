@@ -1,8 +1,7 @@
 package testdata.ai;
 
-import com.oberdiah.deepcomplexity.RequiredScore;
-
 import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
+import com.oberdiah.deepcomplexity.RequiredScore;
 
 public class LongChainedComplexConditionalTest {
 	// Testing long chain of if-else with simple conditions
@@ -274,7 +273,7 @@ public class LongChainedComplexConditionalTest {
 	}
 	
 	// Testing chained if with complex arithmetic in conditions
-	@RequiredScore(1.0)
+	@RequiredScore(0.75)
 	@ExpectedExpressionSize(31)
 	public static short chainedIfComplexArithmetic(short x) {
 		int result = 0;

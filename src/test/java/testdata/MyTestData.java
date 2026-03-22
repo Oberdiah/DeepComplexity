@@ -790,6 +790,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(0.0039)
+	@ExpectedExpressionSize(6)
 	public static short numberVarianceCasting1(short x) {
 		return (short) (x - (byte) x);
 	}
@@ -1649,7 +1650,7 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(10)
+	@ExpectedExpressionSize(2)
 	public static short simpleClassTest41(short x) {
 		MyClass foo = new MyClass(50);
 		if (foo == foo) {

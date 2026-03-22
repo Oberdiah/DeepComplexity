@@ -49,7 +49,7 @@ public class ShortArithmeticWrappingTest {
 	
 	// Testing compound assignment addition wrap
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(5)
+	@ExpectedExpressionSize(6)
 	public static short compoundAddWrap(short x) {
 		short val = 32767;
 		val += 2;
@@ -58,7 +58,7 @@ public class ShortArithmeticWrappingTest {
 	
 	// Testing compound assignment subtraction wrap
 	@RequiredScore(1.0)
-	@ExpectedExpressionSize(6)
+	@ExpectedExpressionSize(7)
 	public static short compoundSubWrap(short x) {
 		short val = -32768;
 		val -= 2;

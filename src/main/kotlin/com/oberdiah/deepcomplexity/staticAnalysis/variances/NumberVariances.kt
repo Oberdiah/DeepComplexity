@@ -230,11 +230,15 @@ data class NumberVariances<T : Number> private constructor(
                     return this
                 }
 
-                val denominator = other.collapseWithoutLimits(constraints)
+                val meCollapsed = this.collapse(constraints)
+                val otherCollapsed = other.collapse(constraints)
 
-                return NumberVariances(
-                    ind,
-                    multipliers.mapValues { it.value.divide(denominator) }
+                // I don't think we can do any better, at least for whole numbers.
+                // If you imagine we have 1x, and we're dividing by 2, there's really nothing we can do in that
+                // situation other than collapse.
+
+                return newFromConstant(
+                    meCollapsed.divide(otherCollapsed)
                 )
             }
 
