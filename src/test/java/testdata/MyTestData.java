@@ -789,6 +789,10 @@ public class MyTestData {
 		return 0;
 	}
 	
+	public static short numberVarianceCasting1(short x) {
+		return (short) (x - (byte) x);
+	}
+	
 	@ExpectedExpressionSize(5)
 	public static short largeMultiplication1(short x) {
 		return (short) (x * 65536);

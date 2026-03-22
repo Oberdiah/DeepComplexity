@@ -5,6 +5,7 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
+import com.oberdiah.deepcomplexity.staticAnalysis.LongIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
@@ -21,21 +22,22 @@ import com.oberdiah.deepcomplexity.utilities.into
  * range from this alone. So intuitively, when we want to collapse, we take the constraints for each key
  * and multiply them by the multiplier, and then add them all together.
  *
- * The way this works with casting is that if the key is not of the base indicator type, we'll assume
- * casting is the first thing that happens.
+ * When operations are performed, both variances must have the same indicator. That's just how operations
+ * work in Java. Any variance that is legal before the operation should be legal after without too much fuss.
  *
- * This means we need to be able to figure out whether an equation *could* have wrapped, and if so,
- * we have no choice but to collapse it. Simple tracking with a constant of 1,
- * such as `Variances<Short>(x(short): 1)`, can be guaranteed not to wrap, so that stuff is straightforward.
+ * Casting is more interesting. It is very desirable for us to keep the original keys around as long as we legally
+ * can; this gets us the best chance of successfully constraining them down the road, but we must be able
+ * to drop them as soon as we cannot.
+ * Take the following scenario:
+ * long x;
+ * long y = (long) (int) x;
  *
- * However, `Variances<Short>(x(short): 2)`, and `Variances<Short>(x(short): 1, y(short): 1)` both may have
- * ended up wrapping, so with a naive implementation they'd need to be collapsed. Whether I actually
- * end up doing that or not remains to be seen.
+ * We're considering NumberVariances a whole-number-only zone for now, so we first cast everything into Long.
  */
 @ConsistentCopyVisibility
 data class NumberVariances<T : Number> private constructor(
     override val ind: NumberIndicator<T>,
-    private val multipliers: Map<EvaluationKey, NumberSet<T>> = mapOf()
+    private val multipliers: Map<EvaluationKey, NumberSet<Long>> = mapOf()
 ) : Variances<T> {
     init {
         require(multipliers.size < 10) {
@@ -52,10 +54,10 @@ data class NumberVariances<T : Number> private constructor(
 
     companion object {
         fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
-            NumberVariances(constant.ind, mapOf(EvaluationKey.ConstantKey to constant))
+            NumberVariances(constant.ind, mapOf(EvaluationKey.ConstantKey to constant.castTo(LongIndicator).into()))
 
         fun <T : Number> newFromVariance(ind: NumberIndicator<T>, key: EvaluationKey): NumberVariances<T> =
-            NumberVariances(ind, mapOf(key to ind.onlyOneSet()))
+            NumberVariances(ind, mapOf(key to LongIndicator.onlyOneSet()))
     }
 
     override fun toDebugString(constraints: Constraints): String {
@@ -78,13 +80,13 @@ data class NumberVariances<T : Number> private constructor(
         return multipliers.keys.filter { !it.isConstant() }
     }
 
-    fun grabConstraint(constraints: Constraints, key: EvaluationKey): NumberSet<T> {
+    fun grabConstraint(constraints: Constraints, key: EvaluationKey): NumberSet<Long> {
         return if (key.isConstant()) {
             // Constants don't have any variance or constraints,
             // so the 'variable', if you can call it that, is always constrained to exactly 1.
-            ind.onlyOneSet()
+            LongIndicator.onlyOneSet()
         } else {
-            constraints.getConstraint(ind, key).into()
+            constraints.getConstraint(ind, key).castTo(LongIndicator).into()
         }
     }
 
@@ -94,7 +96,10 @@ data class NumberVariances<T : Number> private constructor(
      * all the information it needs alone.
      */
     override fun collapse(constraints: Constraints): NumberSet<T> =
-        multipliers.entries.fold(ind.onlyZeroSet()) { acc, (key, multiplier) ->
+        collapseWithoutLimits(constraints).castTo(ind).into()
+
+    private fun collapseWithoutLimits(constraints: Constraints): NumberSet<Long> =
+        multipliers.entries.fold(LongIndicator.onlyZeroSet()) { acc, (key, multiplier) ->
             acc.add(multiplier.multiply(grabConstraint(constraints, key)))
         }
 
@@ -116,7 +121,7 @@ data class NumberVariances<T : Number> private constructor(
             // we can safely cast ourselves directly to the new indicator.
             if (multipliers.size == 1) {
                 if (multipliers.values.first().isOne() && !multipliers.keys.first().isConstant()) {
-                    return NumberVariances(newInd, mapOf(multipliers.keys.first() to newInd.onlyOneSet()))
+                    return newFromVariance(newInd, multipliers.keys.first())
                 }
             }
 
@@ -147,7 +152,7 @@ data class NumberVariances<T : Number> private constructor(
                     ind, Functional.mergeMapsWithBlank(
                         multipliers,
                         other.multipliers,
-                        ind.onlyZeroSet()
+                        LongIndicator.onlyZeroSet()
                     ) { me, other ->
                         if (operation == ADDITION) {
                             me.add(other)
@@ -158,7 +163,7 @@ data class NumberVariances<T : Number> private constructor(
             }
 
             MULTIPLICATION -> {
-                val newMultipliers = mutableMapOf<EvaluationKey, NumberSet<T>>()
+                val newMultipliers = mutableMapOf<EvaluationKey, NumberSet<Long>>()
 
                 for ((key, meMultiplier) in multipliers) {
                     for ((otherKey, otherMultiplier) in other.multipliers) {
@@ -202,7 +207,7 @@ data class NumberVariances<T : Number> private constructor(
                     return this
                 }
 
-                val newMultipliers = mutableMapOf<EvaluationKey, NumberSet<T>>()
+                val newMultipliers = mutableMapOf<EvaluationKey, NumberSet<Long>>()
 
                 for ((key, meMultiplier) in multipliers) {
                     for ((otherKey, otherMultiplier) in other.multipliers) {
@@ -260,8 +265,8 @@ data class NumberVariances<T : Number> private constructor(
         var constraints = constraints
 
         for (key in allKeys) {
-            val myKeyMultiplier = multipliers[key] ?: ind.onlyZeroSet()
-            val otherKeyMultiplier = other.multipliers[key] ?: ind.onlyZeroSet()
+            val myKeyMultiplier = multipliers[key] ?: LongIndicator.onlyZeroSet()
+            val otherKeyMultiplier = other.multipliers[key] ?: LongIndicator.onlyZeroSet()
 
             // Move all of our key onto the left
             val lhsCoefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
@@ -269,10 +274,10 @@ data class NumberVariances<T : Number> private constructor(
             // Collapse all non-our-key constants into a single value and move them to the right.
             val collapsedLhsBeforeMove =
                 NumberVariances(ind, multipliers.filter { it.key != key })
-                    .collapse(constraints)
+                    .collapseWithoutLimits(constraints)
             val collapsedRhsBeforeMove =
                 NumberVariances(ind, other.multipliers.filter { it.key != key })
-                    .collapse(constraints)
+                    .collapseWithoutLimits(constraints)
 
             val rhsConstant = collapsedRhsBeforeMove.subtract(collapsedLhsBeforeMove)
 
@@ -281,13 +286,13 @@ data class NumberVariances<T : Number> private constructor(
                 // either the constraint is met, or it isn't.
                 // The equation at this point looks like `0x op constant`
                 // So we can just check the constant against zero.
-                val meetsConstraint = ind.onlyZeroSet().comparisonOperation(rhsConstant, comparisonOp)
+                val meetsConstraint = LongIndicator.onlyZeroSet().comparisonOperation(rhsConstant, comparisonOp)
                 constraints = when (meetsConstraint) {
                     BooleanSet.EITHER, BooleanSet.TRUE -> constraints.withConstraint(key, key.ind.newFullSet())
                     BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, key.ind.newEmptySet())
                 }
             } else {
-                val shouldFlip = lhsCoefficient.comparisonOperation(ind.onlyZeroSet(), ComparisonOp.LESS_THAN)
+                val shouldFlip = lhsCoefficient.comparisonOperation(LongIndicator.onlyZeroSet(), ComparisonOp.LESS_THAN)
                 val rhs = rhsConstant.divide(lhsCoefficient)
                 val constraint = when (shouldFlip) {
                     BooleanSet.TRUE -> rhs.getSetSatisfying(comparisonOp.flip())

@@ -203,7 +203,7 @@ data class NumberRange<T : Number> private constructor(
 
         val indMin = BigInteger.valueOf(ind.getMinValue().toLong())
         val indMax = BigInteger.valueOf(ind.getMaxValue().toLong())
-        val setSize = BigInteger.valueOf(ind.clazz.getSetSize().toLong())
+        val setSize = ind.clazz.getSetSize()
 
         val distanceToShunt = setSize * if (initialLower < indMin) {
             (indMin - initialLower - BigInteger.ONE) / setSize + BigInteger.ONE
