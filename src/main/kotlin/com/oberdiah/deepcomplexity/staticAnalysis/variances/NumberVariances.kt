@@ -68,7 +68,7 @@ data class NumberVariances<T : Number> private constructor(
                 .joinToString(" + ") { (key, multiplier) ->
                     val multiplierStr = if (multiplier.isOne() && !key.isConstant()) "" else "$multiplier"
                     val keyStr = if (key.isConstant()) "" else key.toString()
-                    val constraint = constraints.getConstraint(ind, key)
+                    val constraint = grabConstraint(constraints, key)
                     val constraintStr = if (constraint.isFull()) "" else "[$constraint]"
 
                     "$multiplierStr$keyStr$constraintStr"
@@ -86,7 +86,7 @@ data class NumberVariances<T : Number> private constructor(
             // so the 'variable', if you can call it that, is always constrained to exactly 1.
             LongIndicator.onlyOneSet()
         } else {
-            constraints.getConstraint(ind, key).castTo(LongIndicator).into()
+            constraints.getConstraint(key).castTo(LongIndicator).into()
         }
     }
 

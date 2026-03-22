@@ -1,7 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.EvaluationKey
-import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.utilities.Functional
@@ -62,8 +61,13 @@ data class Constraints private constructor(
         return constraints.isEmpty()
     }
 
-    fun <T : Any> getConstraint(ind: Indicator<T>, key: EvaluationKey): ISet<T> {
-        return constraints[key]?.tryCastTo(ind) ?: ind.newFullSet()
+    /**
+     * Returns how the key is constrained. The set returned will always match the key's indicator.
+     */
+    fun getConstraint(key: EvaluationKey): ISet<*> {
+        val retVal = constraints[key] ?: key.ind.newFullSet()
+        require(key.ind == retVal.ind)
+        return retVal
     }
 
     fun withConstraint(key: EvaluationKey, iSet: ISet<*>): Constraints {
