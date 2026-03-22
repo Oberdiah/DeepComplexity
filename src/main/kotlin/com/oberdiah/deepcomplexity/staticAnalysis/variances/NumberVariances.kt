@@ -25,18 +25,33 @@ import com.oberdiah.deepcomplexity.utilities.into
  * When operations are performed, both variances must have the same indicator. That's just how operations
  * work in Java. Any variance that is legal before the operation should be legal after without too much fuss.
  *
- * Casting is more interesting. It is very desirable for us to keep the original keys around as long as we legally
- * can; this gets us the best chance of successfully constraining them down the road, but we must be able
- * to drop them as soon as we cannot.
- * Take the following scenario:
- * long x;
- * long y = (long) (int) x;
- *
  * We're considering NumberVariances a whole-number-only zone for now, so we first cast everything into Long.
+ *
+ * A NumberVariances instance collapses by first turning everything into longs, then multiplying and adding over those
+ * longs, and then finally squishing down into the type.
+ *
+ * What this means for casting (here x is an integer):
+ * `(short) x`        -> A simple type swap is fine, NumberVariances<Short>(1*int) is ok.
+ *                       The int comes in and becomes a `short` during collapse, no problems there.
+ * `(short) 2x`       -> Fine as well. NumberVariances<Short>(2*int) also contains all the information required
+ *                       for a full reconstruction.
+ * `(long) x`         -> Fine too, for a similar reason. This is starting to get risky, though, as we can only do this
+ *                       if the underlying equation couldn't get beyond its old bounds (int). If it could,
+ *                       we could no longer do this. For example,
+ * `(long) 2x`        -> Must be collapsed. Converting this naively to NumberVariances<Long>(2*int) would change its
+ *                       meaning.
+ * `(int) ((byte) x)` -> Big problem, must be collapsed. Can't possibly be represented.
+ *
+ * In summary, if the underlying equation could get beyond the bounds we previously had it under, and we're
+ * growing in size, we must collapse.
  */
 @ConsistentCopyVisibility
 data class NumberVariances<T : Number> private constructor(
     override val ind: NumberIndicator<T>,
+    /**
+     * The indicator of the key is important; it lets us know the underlying constraints of the types we're
+     * dealing with.
+     */
     private val multipliers: Map<EvaluationKey, NumberSet<Long>> = mapOf()
 ) : Variances<T> {
     init {
@@ -117,16 +132,24 @@ data class NumberVariances<T : Number> private constructor(
         }
 
         fun <OutT : Number> extra(newInd: NumberIndicator<OutT>): NumberVariances<OutT>? {
-            // If we're only tracking a single variable with a multiplier of 1, and there's no constant offset,
-            // we can safely cast ourselves directly to the new indicator.
-            if (multipliers.size == 1) {
-                if (multipliers.values.first().isOne() && !multipliers.keys.first().isConstant()) {
-                    return newFromVariance(newInd, multipliers.keys.first())
+            if (ind.canSafelyContain(newInd)) {
+                // If we've shrunken down, we don't need to do anything, and we can continue as-is.
+                return NumberVariances(newInd, multipliers)
+            } else {
+                // Ok, so we're being asked to grow (e.g. from a short to an int)
+
+                // Was it possible that our previous setup could overflow?
+                val totalRange = collapseWithoutLimits(constraints).getRange()
+                val indRange = ind.getTotalRange()
+                if (indRange.contains(totalRange.first) && indRange.contains(totalRange.second)) {
+                    // No risk of overflow, we can just do a type swap and be done with it.
+                    return NumberVariances(newInd, multipliers)
+                } else {
+                    // Unfortunately, we have to collapse :(
+                    val collapsedSet = collapse(constraints).tryCastTo(newInd)?.into() ?: return null
+                    return newFromConstant(collapsedSet)
                 }
             }
-
-            val q = collapse(constraints).tryCastTo(newInd)?.into() ?: return null
-            return newFromConstant(q)
         }
 
         @Suppress("UNCHECKED_CAST") // Safety: Trivially true by checking the signature of extra().
@@ -153,11 +176,11 @@ data class NumberVariances<T : Number> private constructor(
                         multipliers,
                         other.multipliers,
                         LongIndicator.onlyZeroSet()
-                    ) { me, other ->
+                    ) { mySet, otherSet ->
                         if (operation == ADDITION) {
-                            me.add(other)
+                            mySet.add(otherSet)
                         } else {
-                            me.subtract(other)
+                            mySet.subtract(otherSet)
                         }
                     })
             }
@@ -207,22 +230,12 @@ data class NumberVariances<T : Number> private constructor(
                     return this
                 }
 
-                val newMultipliers = mutableMapOf<EvaluationKey, NumberSet<Long>>()
+                val denominator = other.collapseWithoutLimits(constraints)
 
-                for ((key, meMultiplier) in multipliers) {
-                    for ((otherKey, otherMultiplier) in other.multipliers) {
-                        val meCollapsed = meMultiplier.multiply(grabConstraint(constraints, key))
-                        val otherCollapsed = otherMultiplier.multiply(grabConstraint(constraints, otherKey))
-
-                        val newValue = meCollapsed.divide(otherCollapsed)
-
-                        newMultipliers.compute(key) { _, set ->
-                            set?.add(newValue) ?: newValue
-                        }
-                    }
-                }
-
-                return NumberVariances(ind, newMultipliers)
+                return NumberVariances(
+                    ind,
+                    multipliers.mapValues { it.value.divide(denominator) }
+                )
             }
 
             MODULO, MINIMUM, MAXIMUM -> {

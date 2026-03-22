@@ -40,6 +40,10 @@ data class NumberRange<T : Number> private constructor(
         }
     }
 
+    fun contains(value: Number): Boolean {
+        return value >= start && value <= end
+    }
+
     private fun newRange(start: T, end: T): NumberRange<T> {
         return NumberRange(ind, start, end)
     }

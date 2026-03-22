@@ -789,6 +789,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(0.0039)
 	public static short numberVarianceCasting1(short x) {
 		return (short) (x - (byte) x);
 	}

@@ -4,10 +4,7 @@ import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.context.MyPsiType
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
-import com.oberdiah.deepcomplexity.staticAnalysis.sets.ObjectSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.*
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.BooleanVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
@@ -109,6 +106,11 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
     override fun newConstantSet(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
     override fun newVariance(key: EvaluationKey): Variances<T> = NumberVariances.newFromVariance(this, key)
 
+    /**
+     * Returns a pair of the minimum and maximum values of this number type, in that order.
+     */
+    fun getTotalRange(): NumberRange<T> = NumberRange.new(getMinValue(), getMaxValue())
+
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
 
@@ -125,6 +127,23 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
                 || this is LongIndicator
                 || this is ShortIndicator
                 || this is ByteIndicator
+    }
+
+    /**
+     * Returns true if this indicator can safely contain all values of [otherInd] without risking
+     * overflow or loss of precision.
+     */
+    fun canSafelyContain(otherInd: Indicator<*>): Boolean {
+        if (otherInd !is NumberIndicator<*>) return false
+
+        if (!this.isWholeNum() || !otherInd.isWholeNum()) {
+            TODO("Not implemented yet, might need to check integer ranges of float/double?")
+        }
+
+        val myRange = getMinValue().toLong()..getMaxValue().toLong()
+        val otherRange = otherInd.getMinValue().toLong()..otherInd.getMaxValue().toLong()
+
+        return myRange.contains(otherRange.first) && myRange.contains(otherRange.last)
     }
 
     fun onlyZeroSet(): NumberSet<T> = newConstantSet(getZero())
