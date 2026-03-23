@@ -286,6 +286,31 @@ data class NumberSet<T : Number> private constructor(
 
     override fun contains(element: T): Boolean = ranges.any { element >= it.start && element <= it.end }
 
+    override fun invert(): ISet<T> {
+        if (ranges.isEmpty()) {
+            return makeNew(listOf(ind.getTotalRange()), hasThrownDivideByZero)
+        }
+
+        val gaps = buildList {
+            val minValue = ind.getMinValue()
+            val maxValue = ind.getMaxValue()
+
+            if (minValue < ranges.first().start) {
+                add(NumberRange.new(minValue, ranges.first().start.downOneEpsilon()))
+            }
+
+            ranges.zipWithNext().forEach { (current, next) ->
+                add(NumberRange.new(current.end.upOneEpsilon(), next.start.downOneEpsilon()))
+            }
+
+            if (ranges.last().end < maxValue) {
+                add(NumberRange.new(ranges.last().end.upOneEpsilon(), maxValue))
+            }
+        }
+
+        return makeNew(gaps, hasThrownDivideByZero)
+    }
+
     override fun union(other: ISet<T>): NumberSet<T> {
         require(ind == other.ind)
 

@@ -143,6 +143,20 @@ enum class BooleanSet : ISet<Boolean> {
         }
     }
 
+    /**
+     * Inverts the set itself, rather than the boolean meaning of the set.
+     *
+     * (TRUE becomes FALSE, FALSE becomes TRUE, EITHER becomes NEITHER, and NEITHER becomes EITHER.)
+     */
+    override fun invert(): ISet<Boolean> {
+        return when (this) {
+            TRUE -> FALSE
+            FALSE -> TRUE
+            EITHER -> NEITHER
+            NEITHER -> EITHER
+        }
+    }
+
     override fun intersect(other: ISet<Boolean>): ISet<Boolean> {
         // Set intersection
         return when (other.into()) {

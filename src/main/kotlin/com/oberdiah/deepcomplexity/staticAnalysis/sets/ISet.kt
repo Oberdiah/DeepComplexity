@@ -42,6 +42,8 @@ interface ISet<T : Any> : CanBeCast<T> {
     fun isFull(): Boolean
     fun intersect(other: ISet<T>): ISet<T>
     fun union(other: ISet<T>): ISet<T>
+    fun invert(): ISet<T>
+    fun difference(other: ISet<T>): ISet<T> = intersect(other.invert())
     fun toConstVariance(): Variances<T>
 
     /**

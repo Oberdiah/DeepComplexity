@@ -6,6 +6,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUti
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.oberdiah.deepcomplexity.utilities.Utilities.div
+import com.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
 import com.oberdiah.deepcomplexity.utilities.Utilities.getSetSize
 import com.oberdiah.deepcomplexity.utilities.Utilities.isFloatingPoint
 import com.oberdiah.deepcomplexity.utilities.Utilities.max
@@ -13,6 +14,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.min
 import com.oberdiah.deepcomplexity.utilities.Utilities.minus
 import com.oberdiah.deepcomplexity.utilities.Utilities.plus
 import com.oberdiah.deepcomplexity.utilities.Utilities.times
+import com.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
@@ -173,6 +175,42 @@ data class NumberRange<T : Number> private constructor(
 
     fun max(other: NumberRange<T>): Iterable<NumberRange<T>> {
         return listOf(newRange(start.max(other.start), end.max(other.end)))
+    }
+
+    fun overlaps(other: NumberRange<T>): Boolean {
+        return start <= other.end && end >= other.start
+    }
+
+    @Suppress("unused")
+    fun intersection(other: NumberRange<T>): NumberRange<T>? {
+        if (!overlaps(other)) {
+            return null
+        }
+        return newRange(start.max(other.start), end.min(other.end))
+    }
+
+    /**
+     * Chops out the given range from this range. May return 0, 1, or 2 ranges.
+     */
+    @Suppress("unused")
+    fun chopOut(other: NumberRange<T>): Iterable<NumberRange<T>> {
+        if (!overlaps(other)) {
+            return listOf(this)
+        }
+
+        val results = mutableListOf<NumberRange<T>>()
+
+        // If our start is less than the other's start, there's a prefix left over.
+        if (this.start < other.start) {
+            results.add(newRange(this.start, other.start.downOneEpsilon()))
+        }
+
+        // If our end is greater than the other's end, there's a suffix left over.
+        if (this.end > other.end) {
+            results.add(newRange(other.end.upOneEpsilon(), this.end))
+        }
+
+        return results
     }
 
     private fun multiply(a: Number, b: Number): BigInteger {

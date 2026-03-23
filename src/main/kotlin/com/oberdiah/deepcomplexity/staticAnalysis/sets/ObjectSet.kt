@@ -35,6 +35,8 @@ data class ObjectSet private constructor(val values: MathematicalSet<HeapMarker>
     override fun intersect(other: ISet<HeapMarker>): ISet<HeapMarker> =
         ObjectSet(values.intersect(other.into().values), ind)
 
+    override fun invert(): ISet<HeapMarker> = ObjectSet(values.invert(), ind)
+
     override fun union(other: ISet<HeapMarker>): ISet<HeapMarker> = ObjectSet(values.union(other.into().values), ind)
 
     override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): ISet<Q> {
