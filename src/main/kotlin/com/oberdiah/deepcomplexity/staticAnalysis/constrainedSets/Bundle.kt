@@ -165,22 +165,18 @@ data class Bundle<T : Any> private constructor(
         return listOut
     }
 
-    fun <Q : Any> unaryMapToList(op: (Variances<T>, Constraints) -> Q): List<Q> {
-        return variances.map { op(it.variances, it.constraints) }
-    }
+    fun unaryMapSameType(op: (Variances<T>, Constraints) -> Variances<T>): Bundle<T> = unaryMap(ind, op)
 
-    fun performUnaryOperation(op: (Variances<T>) -> Variances<T>): Bundle<T> = unaryMap(ind, op)
-
-    fun <Q : Any> unaryMap(newInd: Indicator<Q>, op: (Variances<T>) -> Variances<Q>): Bundle<Q> {
+    fun <Q : Any> unaryMap(newInd: Indicator<Q>, op: (Variances<T>, Constraints) -> Variances<Q>): Bundle<Q> {
         // Note, I've never had the need to do the complicated ExprKey tracking here, so
         // it doesn't exist. If you find you need it, you should be able to add it similar
         // to how [binaryMap] does.
         return Bundle(newInd, variances.mapToSet {
-            ConstrainedVariances.new(op(it.variances), it.constraints)
+            ConstrainedVariances.new(op(it.variances, it.constraints), it.constraints)
         })
     }
 
-    fun performBinaryOperation(
+    fun binaryMapSameType(
         other: Bundle<T>,
         exprKey: EvaluationKey,
         op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>

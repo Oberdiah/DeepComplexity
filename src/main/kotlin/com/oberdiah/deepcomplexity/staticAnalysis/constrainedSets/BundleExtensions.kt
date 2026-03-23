@@ -12,7 +12,7 @@ fun <T : Number> Bundle<T>.arithmeticOperation(
     operation: BinaryNumberOp,
     exprKey: EvaluationKey
 ): Bundle<T> =
-    this.performBinaryOperation(other, exprKey) { a, b, constraints ->
+    this.binaryMapSameType(other, exprKey) { a, b, constraints ->
         a.into().arithmeticOperation(b.into(), operation, constraints)
     }
 
@@ -36,12 +36,12 @@ fun Bundle<Boolean>.booleanOperation(
     operation: BooleanOp,
     exprKey: EvaluationKey
 ): Bundle<Boolean> =
-    this.performBinaryOperation(other, exprKey) { a, b, _ ->
+    this.binaryMapSameType(other, exprKey) { a, b, _ ->
         a.into().booleanOperation(b.into(), operation)
     }
 
-fun Bundle<Boolean>.booleanInvert() = performUnaryOperation {
-    it.into().booleanInvert()
+fun Bundle<Boolean>.booleanInvert() = unaryMapSameType { variances, _ ->
+    variances.into().booleanInvert()
 }
 
 fun <T : Any> Bundle<T>.comparisonOperation(
@@ -55,6 +55,6 @@ fun <T : Any> Bundle<T>.comparisonOperation(
 }
 
 fun <T : Number> Bundle<T>.negate(): Bundle<T> =
-    this.performUnaryOperation { a ->
-        a.into().negate()
+    this.unaryMapSameType { variances, _ ->
+        variances.into().negate()
     }

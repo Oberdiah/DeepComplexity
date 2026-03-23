@@ -257,6 +257,34 @@ data class NumberVariances<T : Number> private constructor(
     }
 
     /**
+     * Calculates the change that a variable named key, assigned to this variance
+     * in a loop, would experience on each step of that loop.
+     *
+     * For example, using `x`, the variance `x + 2y + 2` constrained to y: [3..5] would have
+     * a change per step of 2 * [3..5] + 2 = [8..12].
+     *
+     * A variance that tracks x more than once e.g. `2x + 4` or tracks it negatively e.g. `-x + 3` can't be
+     * solved for a change per step and will return null.
+     */
+    fun calculateChangePerStep(key: EvaluationKey, constraints: Constraints): NumberVariances<T>? {
+        val multiplier = multipliers[key] ?: ind.onlyZeroSet()
+
+        if (multiplier.isZero()) {
+            // Returning zero may be correct here, but I want to investigate closer later.
+            // Return null for now.
+            return null
+        }
+
+        if (multiplier.isOne()) {
+            return newFromConstant(
+                NumberVariances(ind, multipliers.filter { it.key != key }).collapse(constraints)
+            )
+        }
+
+        return null
+    }
+
+    /**
      * Given a comparison e.g. 3x + 2y + 5 < 2x + 7,
      * generate constraints on x and y that would allow this comparison to be satisfied.
      * It does this by rearranging the equation to the form `ax op c` for every key found, where `a` is the multiplier
