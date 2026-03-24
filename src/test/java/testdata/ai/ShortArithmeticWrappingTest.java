@@ -1,9 +1,9 @@
 package testdata.ai;
 
+import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
 import com.oberdiah.deepcomplexity.RequiredScore;
 
-import com.oberdiah.deepcomplexity.ExpectedExpressionSize;
-
+@SuppressWarnings("ALL")
 public class ShortArithmeticWrappingTest {
 	// Testing short addition wrapping at maximum value
 	@RequiredScore(1.0)
@@ -123,6 +123,8 @@ public class ShortArithmeticWrappingTest {
 	}
 	
 	// Testing successive increments causing multiple wraps
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short multipleWrap(short x) {
 		short val = 32766;
 		for (int i = 0; i < 4; i++) {

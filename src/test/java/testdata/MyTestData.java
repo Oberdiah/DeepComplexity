@@ -2041,6 +2041,8 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(11)
 	public static short forLoops1(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
@@ -2051,6 +2053,8 @@ public class MyTestData {
 	}
 	
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short forLoops2(short x) {
 		int a = 0;
 		for (int i = 3; i < 10; i++) {
@@ -2076,6 +2080,8 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short forLoops5(short x) {
 		for (int i = 0; i < 10; i++) {
 			if (i >= 10) {
@@ -2085,6 +2091,8 @@ public class MyTestData {
 		return (short) 1;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(2)
 	public static short forLoops6(short x) {
 		for (int i = 0; i < 10; i++) {
 			if (i < 0) {
@@ -2225,6 +2233,8 @@ public class MyTestData {
 		return (short) j;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(13)
 	public static short forLoops19(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
@@ -2236,6 +2246,7 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@ExpectedExpressionSize(18)
 	public static short forLoops20(short x) {
 		if (x >= 0 && x < 10) {
 			int a = 0;
@@ -2247,6 +2258,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@ExpectedExpressionSize(20)
 	public static short forLoops21(short x) {
 		if (x >= 0 && x < 10) {
 			int a = 0;
@@ -2258,6 +2270,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@ExpectedExpressionSize(28)
 	public static short forLoops22(short x) {
 		if (x >= 0 && x < 10) {
 			int a = 0;
@@ -2297,6 +2310,8 @@ public class MyTestData {
 		return (short) b;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(12)
 	public static short forLoops25(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
@@ -2305,6 +2320,8 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(14)
 	public static short forLoops26(short x) {
 		int a = 2147483646;
 		for (int i = 0; i < 10; i++) {
@@ -2347,6 +2364,7 @@ public class MyTestData {
 		}
 	}
 	
+	@ExpectedExpressionSize(12)
 	public static short forLoops29(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
@@ -2440,6 +2458,7 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@ExpectedExpressionSize(19)
 	public static short forLoops38(short x) {
 		if (x < 5 || x > 20) {
 			return 0;
@@ -2450,6 +2469,26 @@ public class MyTestData {
 			a++;
 		}
 		return (short) (a - x);
+	}
+	
+	public static short forLoops39(short x) {
+		for (int i = 0; i < 10; i++) {
+			if (i == 5) {
+				return 0;
+			}
+		}
+		return (short) 1;
+	}
+	
+	public static short forLoops40(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			a += 2;
+			if (i == 5) {
+				return (short) a;
+			}
+		}
+		return (short) 1;
 	}
 	
 	@RequiredScore(1.0)

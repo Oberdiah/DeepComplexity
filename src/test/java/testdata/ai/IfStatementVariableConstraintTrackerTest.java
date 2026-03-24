@@ -280,6 +280,8 @@ public class IfStatementVariableConstraintTrackerTest {
 	}
 	
 	// Testing constraint with loop-modified variable
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(17)
 	public static short loopModifiedConstraint(short x) {
 		int a = x;
 		if (a > 0) {
