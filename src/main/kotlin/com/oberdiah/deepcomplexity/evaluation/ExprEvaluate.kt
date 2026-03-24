@@ -106,9 +106,14 @@ object ExprEvaluate {
 
             is VarsExpr -> WONT_IMPLEMENT("VarsExpr should never reach the evaluation stage")
             is LoopExpr<*> -> {
-                val numberOfTimesLooped =
-                    LoopSolver.calculateNumLoops(expr.exprKey, expr.condition, expr.variables, constraints, assistant)
-                LoopSolver.evaluateTarget(expr.target, expr.variables, numberOfTimesLooped, constraints, assistant)
+                LoopSolver.evaluateTarget(
+                    expr.target,
+                    expr.exprKey,
+                    expr.condition,
+                    expr.variables,
+                    constraints,
+                    assistant
+                )
             }
 
             is LoopExpr.LoopLeaf<*> -> {

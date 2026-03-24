@@ -63,6 +63,9 @@ data class NumberSet<T : Number> private constructor(
         return Pair(smallest, largest)
     }
 
+    fun smallestValue(): T = getRange().first
+    fun largestValue(): T = getRange().second
+
     fun negate(): NumberSet<T> {
         val zero = NumberRange.fromConstant(ind.getZero())
         return makeNew(ranges.flatMap { elem -> zero.subtract(elem) })
@@ -344,13 +347,11 @@ data class NumberSet<T : Number> private constructor(
         acc + range.size()
     }
 
-    fun isOne(): Boolean {
-        return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isOne()
-    }
+    fun getSingleValue(): T? = if (isSingleValue()) ranges[0].start else null
+    fun isSingleValue(): Boolean = ranges.size == 1 && ranges[0].start == ranges[0].end
 
-    fun isZero(): Boolean {
-        return ranges.size == 1 && ranges[0].start == ranges[0].end && ranges[0].start.isZero()
-    }
+    fun isOne(): Boolean = getSingleValue()?.isOne() ?: false
+    fun isZero(): Boolean = getSingleValue()?.isZero() ?: false
 
     companion object {
         fun <T : Number> zero(ind: NumberIndicator<T>): NumberSet<T> = NumberSet(
@@ -375,6 +376,9 @@ data class NumberSet<T : Number> private constructor(
                 listOf(NumberRange.fromConstant(constant)),
             )
         }
+
+        fun <T : Number> newFromRange(range: NumberRange<T>): NumberSet<T> =
+            NumberSet(range.ind, false, listOf(range))
 
         fun <T : Number> newEmpty(ind: NumberIndicator<T>): NumberSet<T> =
             NumberSet(ind, false, emptyList())

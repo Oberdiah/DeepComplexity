@@ -2041,7 +2041,7 @@ public class MyTestData {
 		}
 	}
 	
-	public static short go(short x) {
+	public static short forLoops1(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
 			i++;
@@ -2186,17 +2186,6 @@ public class MyTestData {
 			b = b * 2;
 		}
 		
-		// 	Ideal final IR:
-		//
-		//	Loop(
-		//	    target: $a
-		//		condition: $i < 10
-		//		variables: {
-		//			a: { initial: a', next: $a + $b + 1 }
-		//			b: { initial: b', next: $b * 2 }
-		//		}
-		//	)
-		
 		return (short) (a + b);
 	}
 	
@@ -2209,18 +2198,6 @@ public class MyTestData {
 			i1 += 1;
 			i2 += 2;
 		}
-		
-		// 	Ideal final IR:
-		//
-		//	Loop(
-		//	    target: $b
-		//		condition: $i1 + $i2 + $b < 10
-		//		variables: {
-		//			b: { initial: b', next: $b * 2 }
-		//			i1: { initial: i1', next: $i1 + 1 }
-		//			i2: { initial: i2', next: $i2 + 2 }
-		//		}
-		//	)
 		
 		return (short) b;
 	}
@@ -2443,6 +2420,37 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	public static short forLoops36(short x) {
+		int a = 0;
+		for (int i = 0; i != 9 && i < 100; i += 2) {
+			a++;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops37(short x) {
+		if (x < 5 || x > 20) {
+			return 0;
+		}
+		
+		int a = 0;
+		for (int i = 0; i < x; i += 2) {
+			a++;
+		}
+		return (short) a;
+	}
+	
+	public static short forLoops38(short x) {
+		if (x < 5 || x > 20) {
+			return 0;
+		}
+		
+		int a = 0;
+		for (int i = 0; i < x; i++) {
+			a++;
+		}
+		return (short) (a - x);
+	}
 	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(4)

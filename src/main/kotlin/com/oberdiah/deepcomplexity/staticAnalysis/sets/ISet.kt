@@ -43,6 +43,11 @@ interface ISet<T : Any> : CanBeCast<T> {
     fun intersect(other: ISet<T>): ISet<T>
     fun union(other: ISet<T>): ISet<T>
     fun invert(): ISet<T>
+
+    /**
+     * Returns the set difference of this set and [other].
+     * E.g. {1, 2, 3} - {2, 3} = {1}
+     */
     fun difference(other: ISet<T>): ISet<T> = intersect(other.invert())
     fun toConstVariance(): Variances<T>
 
