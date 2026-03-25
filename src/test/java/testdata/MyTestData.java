@@ -2188,6 +2188,7 @@ public class MyTestData {
 		return (short) (a + b);
 	}
 	
+	@ExpectedExpressionSize(16)
 	public static short forLoops15(short x) {
 		int a = 0;
 		int b = 1;
@@ -2350,6 +2351,8 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(17)
 	public static short forLoops28(short x) {
 		int a = 0;
 		int b = 0;
@@ -2387,6 +2390,7 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@ExpectedExpressionSize(20)
 	public static short forLoops31(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
