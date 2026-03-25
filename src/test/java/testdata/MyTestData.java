@@ -2102,6 +2102,8 @@ public class MyTestData {
 		return (short) 1;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(10)
 	public static short forLoops7(short x) {
 		int b = 0;
 		int a = 0;

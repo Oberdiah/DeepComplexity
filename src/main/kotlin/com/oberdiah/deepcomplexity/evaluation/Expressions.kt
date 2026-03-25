@@ -119,7 +119,7 @@ sealed class Expr<T : Any> : CanBeCast<T> {
         }
     }
 
-    fun allPrimaryPathLeaves(): Set<LeafExpr<*>> = collectToSet(TreeTraversal.PrimaryPathOnly) { it as? LeafExpr<*> }
+    fun allPrimaryPathLeaves(): Set<LeafExpr<*>> = allSubExprsOfType<LeafExpr<*>>(TreeTraversal.PrimaryPathOnly)
 
     internal inline fun <reified Q : Expr<*>> allSubExprsOfType(
         treeTraversal: TreeTraversal = TreeTraversal.All

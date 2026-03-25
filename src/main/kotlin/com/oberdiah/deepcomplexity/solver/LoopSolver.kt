@@ -2,10 +2,7 @@ package com.oberdiah.deepcomplexity.solver
 
 import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.context.LoopKey
-import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
-import com.oberdiah.deepcomplexity.evaluation.EvaluatorAssistant
-import com.oberdiah.deepcomplexity.evaluation.Expr
-import com.oberdiah.deepcomplexity.evaluation.LoopExpr
+import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.ConstEvaluatedLeaf
 import com.oberdiah.deepcomplexity.staticAnalysis.LongIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
@@ -42,11 +39,9 @@ object LoopSolver {
         val withinLoopConstraints = ExprConstrain.getConstraints(condition, constraints, assistant.enteredCondition())
         val solves = calculateChangePerStep(variables, withinLoopConstraints, assistant)
 
-        var numLoopsOverall =
-            Bundle.unconstrained(NumberVariances.newFromConstant(NumberSet.newFromConstant(Long.MAX_VALUE)))
-
+        var numLoopsOverall = Bundle.unconstrainedConstant(Long.MAX_VALUE)
         for (constraints in withinLoopConstraints.pile) {
-            var maxNumLoopsHere = Bundle.unconstrained(NumberVariances.newFromConstant(NumberSet.newFromConstant(0L)))
+            var maxNumLoopsHere = Bundle.unconstrainedConstant(0L)
             for ((exprKey, constrainedIn) in constraints.constraints) {
                 val solve = solves[exprKey] ?: continue
 
@@ -220,27 +215,52 @@ object LoopSolver {
             for ((key, solve) in solves) {
                 if (solve.changePerStep != null) continue
 
-                val stepsExpr = solve.updateExpression.rewriteTypeInTreeSameType<LoopExpr.LoopLeaf<*>> { loopLeaf ->
-                    solves[loopLeaf.key]!!.changePerStep?.let { ConstEvaluatedLeaf.new(it) } ?: loopLeaf
-                }
+                val stepsExpr = solve.updateExpression.coerceToNumbers()
+                val allStepKeys = stepsExpr.allSubExprsOfType<LoopExpr.LoopLeaf<*>>().map { it.key }
 
-                val initialStatesExpr =
-                    solve.updateExpression.rewriteTypeInTreeSameType<LoopExpr.LoopLeaf<*>> { loopLeaf ->
-                        ConstEvaluatedLeaf.new(solves[loopLeaf.key]!!.initialState)
-                    }
-
-                val changePerStep = calculateChangePerStep(
-                    key,
-                    stepsExpr.coerceToNumbers(),
-                    constraints,
-                    assistant
-                )
-
-                if (changePerStep.isEmpty()) {
-                    solve.changePerStep = noIdea()
-                } else {
-                    solve.changePerStep = changePerStep
+                if (allStepKeys.isEmpty()) {
+                    solve.changePerStep = Bundle.unconstrainedConstant(stepsExpr.ind.into().getZero())
                     madeProgress = true
+                } else {
+                    if (allStepKeys.contains(key)) {
+                        val changePerStep = calculateChangePerStep(
+                            key,
+                            stepsExpr,
+                            constraints,
+                            assistant
+                        )
+
+                        solve.changePerStep = changePerStep
+
+                        madeProgress = true
+                    } else {
+                        val originalExpr = solve.updateExpression
+
+                        val nextStepExpr =
+                            solve.updateExpression.rewriteTypeInTreeSameType<LoopExpr.LoopLeaf<*>> { loopLeaf ->
+                                solves[loopLeaf.key]!!.changePerStep?.let {
+                                    ConversionsAndPromotion.coerceAToB(
+                                        ConstEvaluatedLeaf.new(it),
+                                        loopLeaf.coerceToNumbers()
+                                    ).map { l, r ->
+                                        ArithmeticExpr.new(l, r, BinaryNumberOp.ADDITION)
+                                    }
+                                } ?: loopLeaf
+                            }
+
+                        val finalExpr = ConversionsAndPromotion.coerceAToB(
+                            nextStepExpr,
+                            originalExpr.coerceToNumbers()
+                        ).map { l, r ->
+                            ArithmeticExpr.new(l, r, BinaryNumberOp.SUBTRACTION)
+                        }
+
+                        val evaluated =
+                            finalExpr.evaluate(constraints, assistant.keyedPath("final").keyedPath("${key}"))
+
+                        solve.changePerStep = evaluated
+                        madeProgress = true
+                    }
                 }
             }
             if (!madeProgress) break

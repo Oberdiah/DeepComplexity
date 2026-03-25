@@ -58,6 +58,9 @@ data class Bundle<T : Any> private constructor(
     }
 
     companion object {
+        fun <T : Any> unconstrainedConstant(a: T): Bundle<T> =
+            unconstrained(Indicator.fromValue(a).newConstantSet(a).toConstVariance())
+
         fun <T : Any> unconstrained(bundle: Variances<T>): Bundle<T> {
             return Bundle(
                 bundle.ind,
