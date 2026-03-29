@@ -20,9 +20,6 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.minus
 import com.oberdiah.deepcomplexity.utilities.into
 
 object LoopSolver {
-    private fun noIdea(): Bundle<Long> =
-        Bundle.unconstrained(LongIndicator.newFullSet().toConstVariance())
-
     /**
      * Returns the bundle representing the number of times that a loop with a given condition could execute,
      * given the variable updates in [variables].
@@ -37,7 +34,7 @@ object LoopSolver {
         assistant: EvaluatorAssistant
     ): Bundle<T> {
         val withinLoopConstraints = ExprConstrain.getConstraints(condition, constraints, assistant.enteredCondition())
-        val solves = calculateChangePerStep(variables, withinLoopConstraints, assistant)
+        val solves = calculateChangePerStep(variables, withinLoopConstraints, assistant, exprKey)
 
         var numLoopsOverall = Bundle.unconstrainedConstant(Long.MAX_VALUE)
         for (constraints in withinLoopConstraints.pile) {
@@ -197,7 +194,8 @@ object LoopSolver {
     private fun calculateChangePerStep(
         variables: Map<LoopKey<*>, LoopExpr.LoopVar<*>>,
         constraints: ConstraintsOrPile,
-        assistant: EvaluatorAssistant
+        assistant: EvaluatorAssistant,
+        exprKey: EvaluationKey.ExpressionKey
     ): Map<LoopKey<*>, Solve> {
         val solves = variables.mapValues {
             Solve(
@@ -216,10 +214,10 @@ object LoopSolver {
             for ((key, solve) in solves) {
                 if (solve.changePerStep != null) continue
 
-                val dependencies = solve.updateExpression.allSubExprsOfType<LoopExpr.LoopLeaf<*>>()
+                val changesPerStepUnknown = solve.updateExpression.allSubExprsOfType<LoopExpr.LoopLeaf<*>>()
                     .associateWith { solves[it.key]?.changePerStep }
 
-                val nulls = dependencies.filterValues { it == null }.keys.map { it.key }
+                val nulls = changesPerStepUnknown.filterValues { it == null }.keys.map { it.key }
                 val nullsMinusKey = nulls - key
 
                 if (nullsMinusKey.isEmpty()) {
@@ -246,45 +244,37 @@ object LoopSolver {
                         ArithmeticExpr.new(l, r, BinaryNumberOp.SUBTRACTION)
                     }
 
+                    // todo: We need to remember to remove all loop keys from constraintsPile here, otherwise
+                    //       we'll end up with unrealistically tight constraints on the loop variables, which
+                    //       cannot use the constraints they had when they entered the loop (which is what these are)
                     val evaluated = finalExpr.evaluate(constraints, assistant.keyedPath("final").keyedPath("$key"))
                     val evaluatedToConstant = evaluated.unaryMapSameType { variances, constraints ->
                         variances.collapse(constraints).toConstVariance()
                     }
 
                     solve.changePerStep = evaluatedToConstant
+
+                    val firstIterExpr =
+                        solve.updateExpression.rewriteTypeInTreeSameType<LoopExpr.LoopLeaf<*>> { loopLeaf ->
+                            ConstEvaluatedLeaf.new(solves[loopLeaf.key]!!.initialState)
+                        }
+                    val firstIterBundle =
+                        firstIterExpr.evaluate(constraints, assistant.keyedPath("firstIter").keyedPath("$key"))
+                    val firstIterConstant = firstIterBundle.unaryMapSameType { variances, c ->
+                        variances.collapse(c).toConstVariance()
+                    }
+
+                    val newInitialState = firstIterConstant.castTo(LongIndicator).arithmeticOperation(
+                        evaluatedToConstant.castTo(LongIndicator),
+                        BinaryNumberOp.SUBTRACTION,
+                        exprKey
+                    ).castTo(solve.initialState.ind)
+
+                    solve.initialState = newInitialState
                 }
             }
         }
 
         return solves
-    }
-
-    /**
-     * Figure out, in an expression `x = expr`, how much x changes per step of the loop, assuming the rest of the
-     * expression is a constant.
-     * For `x = y`, this would return 0.
-     * For `x = x + 1`, this would return 1.
-     * For `x = (y > 6) ? x + 1 : x`, this would return 1 constrained by the condition `y > 6`,
-     * and 0 constrained by the condition `y <= 6`.
-     * For `x = (y > 6) ? x + 1 : x * 2;`, this would return 1 constrained by the condition `y > 6`, and
-     * `ind.fullSet()` constrained by y <= 6, as that branch is too complex to evaluate.
-     */
-    private fun <T : Number> calculateChangePerStep( // not currently used, unsure if we'll need it one day or not.
-        loopKey: LoopKey<*>,
-        rhs: Expr<T>,
-        constraintsPile: ConstraintsOrPile,
-        assistant: EvaluatorAssistant
-    ): Bundle<*> {
-        // todo: We need to remember to remove all loop keys from constraintsPile here, otherwise
-        //       we'll end up with unrealistically tight constraints on the loop variables, which
-        //       cannot use the constraints they had when they entered the loop (which is what these are)
-        val evaluated = rhs.evaluate(constraintsPile, assistant.keyedPath("changePerStep").keyedPath("$loopKey"))
-
-        val changePerStep = evaluated.unaryMapSameType { variances, constraints ->
-            variances.into().calculateChangePerStep(loopKey, constraints)
-                ?: throw UnsupportedOperationException("The expression $rhs is too complex to solve for a change per step for $loopKey.")
-        }
-
-        return changePerStep
     }
 }

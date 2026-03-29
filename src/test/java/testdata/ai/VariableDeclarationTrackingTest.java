@@ -135,6 +135,8 @@ public class VariableDeclarationTrackingTest {
 	}
 	
 	// Testing variable state in loop iterations
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(8)
 	public static short loopVariable(short x) {
 		int a = 0;
 		int b = 0;

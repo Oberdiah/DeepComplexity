@@ -2064,7 +2064,9 @@ public class MyTestData {
 		return (short) a;
 	}
 	
-	public static short forLoops3(short x) {
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(9)
+	public static short forLoops3a(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
 			a = 5;
@@ -2072,6 +2074,18 @@ public class MyTestData {
 		return (short) a;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(10)
+	public static short forLoops3b(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			a = 5 + i;
+		}
+		return (short) a;
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(8)
 	public static short forLoops4(short x) {
 		int a = 0;
 		for (int i = 0; i < 10; i++) {
@@ -2132,6 +2146,8 @@ public class MyTestData {
 		return (short) a.x;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(8)
 	public static short forLoops10(short x) {
 		int p = 0;
 		for (int i = 0; i++ < 1; i++) {
@@ -2177,6 +2193,8 @@ public class MyTestData {
 		return (short) (a.x + b.x);
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(13)
 	public static short forLoops14(short x) {
 		int a = 0;
 		int b = 0;
@@ -2289,6 +2307,8 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(11)
 	public static short forLoops23(short x) {
 		int a = 0;
 		int b = 0;
@@ -2337,6 +2357,8 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(16)
 	public static short forLoops27(short x) {
 		int a = 2147483635;
 		int b = 0;
@@ -2495,6 +2517,30 @@ public class MyTestData {
 			}
 		}
 		return (short) 1;
+	}
+	
+	@RequiredScore(1.0)
+	@ExpectedExpressionSize(10)
+	public static short forLoops41(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			a = 5;
+			// At the very least, we should be able to come up with a bound on what this can
+			// be that's not too bad
+			a += i;
+		}
+		return (short) a;
+	}
+	
+	@ExpectedExpressionSize(10)
+	public static short forLoops42(short x) {
+		int a = 0;
+		for (int i = 0; i < 10; i++) {
+			// At the very least, we should be able to come up with a bound on what this can
+			// be that's not too bad
+			a += i;
+		}
+		return (short) a;
 	}
 	
 	@RequiredScore(1.0)

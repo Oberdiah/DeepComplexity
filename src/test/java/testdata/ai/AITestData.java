@@ -168,6 +168,7 @@ public class AITestData {
 	}
 	
 	// Test 7: Short value wrapping during incremental operations
+	@ExpectedExpressionSize(26)
 	public static short forLoopWrapping(short x) {
 		short count = 0;
 		
