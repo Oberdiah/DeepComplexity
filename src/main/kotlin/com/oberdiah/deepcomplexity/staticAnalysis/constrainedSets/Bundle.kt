@@ -60,7 +60,7 @@ data class Bundle<T : Any> private constructor(
         fun <T : Any> unconstrainedConstant(a: T): Bundle<T> =
             unconstrained(Indicator.fromValue(a).newConstantSet(a).toConstVariance())
 
-        fun <T : Any> unconstrainedKey(key: EvaluationKey, ind: Indicator<T>): Bundle<T> =
+        fun <T : Any> unconstrainedKey(key: EvaluationKey<*>, ind: Indicator<T>): Bundle<T> =
             unconstrained(ind.varianceRepresentingOneOf(key))
 
         private fun <T : Any> unconstrained(variances: Variances<T>): Bundle<T> {
@@ -83,7 +83,7 @@ data class Bundle<T : Any> private constructor(
                 return ConstrainedVariances(variances, constraints)
             }
 
-            fun <T : Any> fromKeyAndSet(evalKey: EvaluationKey, allowedValues: ISet<T>): ConstrainedVariances<T> {
+            fun <T : Any> fromKeyAndSet(evalKey: EvaluationKey<*>, allowedValues: ISet<T>): ConstrainedVariances<T> {
                 require(evalKey.ind == allowedValues.ind) {
                     "Indicator mismatch between evaluation key and allowed values ($evalKey vs $allowedValues)"
                 }

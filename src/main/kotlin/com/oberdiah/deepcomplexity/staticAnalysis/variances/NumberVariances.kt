@@ -52,7 +52,7 @@ data class NumberVariances<T : Number> private constructor(
      * The indicator of the key is important; it lets us know the underlying constraints of the types we're
      * dealing with.
      */
-    private val multipliers: Map<EvaluationKey, NumberSet<Long>> = mapOf()
+    private val multipliers: Map<EvaluationKey<*>, NumberSet<Long>> = mapOf()
 ) : Variances<T> {
     init {
         require(multipliers.size < 10) {
@@ -71,7 +71,7 @@ data class NumberVariances<T : Number> private constructor(
         fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
             NumberVariances(constant.ind, mapOf(EvaluationKey.ConstantKey to constant.castTo(LongIndicator).into()))
 
-        fun <T : Number> newFromVariance(ind: NumberIndicator<T>, key: EvaluationKey): NumberVariances<T> =
+        fun <T : Number> newFromVariance(ind: NumberIndicator<T>, key: EvaluationKey<*>): NumberVariances<T> =
             NumberVariances(ind, mapOf(key to LongIndicator.onlyOneSet()))
     }
 
@@ -91,11 +91,11 @@ data class NumberVariances<T : Number> private constructor(
         }
     }
 
-    override fun varsTracking(): Collection<EvaluationKey> {
+    override fun varsTracking(): Collection<EvaluationKey<*>> {
         return multipliers.keys.filter { !it.isConstant() }
     }
 
-    fun grabConstraint(constraints: Constraints, key: EvaluationKey): NumberSet<Long> {
+    fun grabConstraint(constraints: Constraints, key: EvaluationKey<*>): NumberSet<Long> {
         return if (key.isConstant()) {
             // Constants don't have any variance or constraints,
             // so the 'variable', if you can call it that, is always constrained to exactly 1.
@@ -186,7 +186,7 @@ data class NumberVariances<T : Number> private constructor(
             }
 
             MULTIPLICATION -> {
-                val newMultipliers = mutableMapOf<EvaluationKey, NumberSet<Long>>()
+                val newMultipliers = mutableMapOf<EvaluationKey<*>, NumberSet<Long>>()
 
                 for ((key, meMultiplier) in multipliers) {
                     for ((otherKey, otherMultiplier) in other.multipliers) {

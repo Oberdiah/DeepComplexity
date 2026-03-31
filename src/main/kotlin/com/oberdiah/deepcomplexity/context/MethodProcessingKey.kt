@@ -28,7 +28,7 @@ sealed interface MethodProcessingKey {
     fun isPlaceholder(): Boolean {
         return when (this) {
             is QualifiedFieldKey -> this.qualifier is ConstExpr && this.qualifier.isPlaceholder
-            is VariableKey -> false
+            is VariableKey<*> -> false
             is ThisKey -> false
             is ReturnKey -> false
         }
@@ -52,16 +52,33 @@ enum class Lifetime {
     FOREVER
 }
 
-sealed class VariableKey(val variable: PsiVariable) : MethodProcessingKey, EvaluationKey {
-    override val ind: Indicator<*> = Utilities.psiTypeToIndicator(variable.type)
+sealed class VariableKey<T : Any>(
+    val variable: PsiVariable,
+    override val ind: Indicator<T>
+) : MethodProcessingKey, EvaluationKey<T> {
     override fun toString(): String = variable.toStringPretty()
-    override fun equals(other: Any?): Boolean = other is VariableKey && this.variable == other.variable
+    override fun equals(other: Any?): Boolean = other is VariableKey<*> && this.variable == other.variable
     override fun hashCode(): Int = variable.hashCode()
 }
 
-class LocalVariableKey(variable: PsiLocalVariable) : VariableKey(variable)
-class ParameterKey(variable: PsiParameter, override val lifetime: Lifetime = Lifetime.FOREVER) :
-    VariableKey(variable)
+class LocalVariableKey<T : Any> private constructor(variable: PsiLocalVariable, ind: Indicator<T>) :
+    VariableKey<T>(variable, ind) {
+    companion object {
+        fun new(variable: PsiLocalVariable): LocalVariableKey<*> =
+            LocalVariableKey(variable, Utilities.psiTypeToIndicator(variable.type))
+    }
+}
+
+class ParameterKey<T : Any> private constructor(
+    variable: PsiParameter,
+    override val lifetime: Lifetime,
+    override val ind: Indicator<T>
+) : VariableKey<T>(variable, ind) {
+    companion object {
+        fun new(variable: PsiParameter, lifetime: Lifetime = Lifetime.FOREVER): ParameterKey<*> =
+            ParameterKey(variable, lifetime, Utilities.psiTypeToIndicator(variable.type))
+    }
+}
 
 data class ThisKey(val type: MyPsiType) : MethodProcessingKey {
     override val lifetime: Lifetime = Lifetime.METHOD

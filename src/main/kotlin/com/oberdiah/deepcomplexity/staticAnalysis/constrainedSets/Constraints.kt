@@ -24,7 +24,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 @ConsistentCopyVisibility
 data class Constraints private constructor(
     // A key not in the map can be considered unconstrained, so an empty map is completely unconstrained.
-    val constraints: Map<EvaluationKey, ISet<*>>,
+    val constraints: Map<EvaluationKey<*>, ISet<*>>,
 ) {
     init {
         require(constraints.size < 10) {
@@ -64,13 +64,13 @@ data class Constraints private constructor(
     /**
      * Returns how the key is constrained. The set returned will always match the key's indicator.
      */
-    fun getConstraint(key: EvaluationKey): ISet<*> {
+    fun getConstraint(key: EvaluationKey<*>): ISet<*> {
         val retVal = constraints[key] ?: key.ind.newFullSet()
         require(key.ind == retVal.ind)
         return retVal
     }
 
-    fun withConstraint(key: EvaluationKey, iSet: ISet<*>): Constraints {
+    fun withConstraint(key: EvaluationKey<*>, iSet: ISet<*>): Constraints {
         require(key !is EvaluationKey.ConstantKey) {
             "Constant keys shouldn't be allowed to be added to constraints."
         }

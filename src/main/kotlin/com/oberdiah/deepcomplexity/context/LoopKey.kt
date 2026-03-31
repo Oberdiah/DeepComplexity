@@ -7,7 +7,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
  */
 @ConsistentCopyVisibility
 data class LoopKey<T : Any> private constructor(val key: MethodProcessingKey, override val ind: Indicator<T>) :
-    EvaluationKey {
+    EvaluationKey<T> {
     // Some form of index/distinguishing feature may be needed at some point to tell keys apart,
     // I've not quite figured that out yet. For now, we'll do without.
     companion object {

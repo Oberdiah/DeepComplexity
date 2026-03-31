@@ -26,7 +26,7 @@ data class ObjectVariances(private val value: ObjectSet, override val ind: Objec
 
     override fun collapse(constraints: Constraints): ISet<HeapMarker> = value
 
-    override fun varsTracking(): Collection<EvaluationKey> = emptyList()
+    override fun varsTracking(): Collection<EvaluationKey<*>> = emptyList()
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 }

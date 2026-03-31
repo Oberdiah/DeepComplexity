@@ -32,7 +32,7 @@ interface Variances<T : Any> : HasIndicator<T> {
      * Returns true if this variance is currently tracking the given key, i.e. the variance would
      * return a different value if that key was constrained.
      */
-    fun varsTracking(): Collection<EvaluationKey>
+    fun varsTracking(): Collection<EvaluationKey<*>>
 
     /**
      * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,

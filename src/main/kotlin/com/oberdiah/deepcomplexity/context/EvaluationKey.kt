@@ -2,19 +2,18 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
+import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 
 /**
  * Used in constraints and evaluation.
  */
-sealed interface EvaluationKey {
-    val ind: Indicator<*>
-
+sealed interface EvaluationKey<T : Any> : HasIndicator<T> {
     /**
      * Used to allow us to equate expressions.
      */
-    data class ExpressionKey(val expr: Expr<*>) : EvaluationKey {
-        override val ind: Indicator<*>
+    data class ExpressionKey<T : Any>(val expr: Expr<T>) : EvaluationKey<T> {
+        override val ind: Indicator<T>
             get() = expr.ind
 
         override fun toString(): String = ExprToString.toExprKeyString(expr)
@@ -23,8 +22,8 @@ sealed interface EvaluationKey {
     /**
      * Purely used to represent the constant value in a NumberVariance
      */
-    object ConstantKey : EvaluationKey {
-        override val ind: Indicator<*>
+    object ConstantKey : EvaluationKey<Nothing> {
+        override val ind: Indicator<Nothing>
             get() = throw IllegalStateException("Constant keys don't have a type.")
 
         override fun toString(): String = "C"

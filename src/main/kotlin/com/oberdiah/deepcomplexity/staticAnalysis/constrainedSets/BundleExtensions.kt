@@ -19,7 +19,7 @@ import com.oberdiah.deepcomplexity.utilities.into
  * no reason), and only for numeric variances.
  */
 fun <T : Any> rescueVariances(
-    exprKey: EvaluationKey,
+    exprKey: EvaluationKey<*>,
     lhs: Variances<*>,
     rhs: Variances<*>,
     result: Variances<T>,
@@ -36,7 +36,7 @@ fun <T : Any> rescueVariances(
 fun <T : Number> Bundle<T>.arithmeticOperation(
     other: Bundle<T>,
     operation: BinaryNumberOp,
-    exprKey: EvaluationKey
+    exprKey: EvaluationKey<*>
 ): Bundle<T> =
     this.binaryMapSameType(other) { a, b, constraints ->
         val result = a.into().arithmeticOperation(b.into(), operation, constraints)
@@ -61,7 +61,7 @@ fun <T : Any> Bundle<T>.generateConstraintsFrom(
 fun Bundle<Boolean>.booleanOperation(
     other: Bundle<Boolean>,
     operation: BooleanOp,
-    exprKey: EvaluationKey
+    exprKey: EvaluationKey<*>
 ): Bundle<Boolean> =
     this.binaryMapSameType(other) { a, b, constraints ->
         val result = a.into().booleanOperation(b.into(), operation)
@@ -75,7 +75,7 @@ fun Bundle<Boolean>.booleanInvert() = unaryMapSameType { variances, _ ->
 fun <T : Any> Bundle<T>.comparisonOperation(
     other: Bundle<T>,
     comparisonOp: ComparisonOp,
-    exprKey: EvaluationKey
+    exprKey: EvaluationKey<*>
 ): Bundle<Boolean> {
     return this.binaryMap(BooleanIndicator, other) { a, b, constraints ->
         val result = a.comparisonOperation(b, comparisonOp, constraints)

@@ -28,7 +28,7 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
 
     override fun collapse(constraints: Constraints): ISet<Boolean> = value
 
-    override fun varsTracking(): Collection<EvaluationKey> = emptyList()
+    override fun varsTracking(): Collection<EvaluationKey<*>> = emptyList()
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 

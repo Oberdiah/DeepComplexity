@@ -24,7 +24,7 @@ object LoopSolver {
      */
     fun <T : Any> evaluateTarget(
         target: LoopKey<T>,
-        exprKey: EvaluationKey.ExpressionKey,
+        exprKey: EvaluationKey.ExpressionKey<*>,
         condition: Expr<Boolean>,
         variables: Map<LoopKey<*>, LoopExpr.LoopVar<*>>,
         constraints: ConstraintsOrPile,
@@ -94,7 +94,7 @@ object LoopSolver {
         numLoops: Bundle<Long>,
         solves: Map<LoopKey<*>, Solve>,
         target: LoopKey<T>,
-        exprKey: EvaluationKey.ExpressionKey
+        exprKey: EvaluationKey.ExpressionKey<*>
     ): Bundle<T> {
         val solve = solves[target]!!
 

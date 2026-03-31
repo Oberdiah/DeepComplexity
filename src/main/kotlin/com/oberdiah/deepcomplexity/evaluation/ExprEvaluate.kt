@@ -99,7 +99,7 @@ object ExprEvaluate {
                 // should have been resolved away. The only ones that should be left are Variable Keys.
                 // At least, for now?
                 // That may not turn out to be the case once we expand beyond our simple test setup.
-                val varKey = expr.key as VariableKey
+                val varKey = expr.key as VariableKey<*>
                 Bundle.unconstrainedKey(varKey, expr.ind).constrainWith(constraints)
             }
 

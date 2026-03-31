@@ -440,7 +440,7 @@ object MethodProcessing {
 
         for ((param, arg) in parameters.zip(arguments)) {
             methodCallSiteContext.addVar(
-                LValueKey.new(ParameterKey(param, Lifetime.METHOD)),
+                LValueKey.new(ParameterKey.new(param, Lifetime.METHOD)),
                 processPsiExpression(arg, methodCallSiteContext)
             )
         }

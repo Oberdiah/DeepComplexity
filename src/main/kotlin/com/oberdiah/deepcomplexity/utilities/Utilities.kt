@@ -125,8 +125,8 @@ object Utilities {
         }
     }
 
-    fun PsiLocalVariable.toKey(): LocalVariableKey = LocalVariableKey(this)
-    fun PsiParameter.toKey(): ParameterKey = ParameterKey(this)
+    fun PsiLocalVariable.toKey(): LocalVariableKey<*> = LocalVariableKey.new(this)
+    fun PsiParameter.toKey(): ParameterKey<*> = ParameterKey.new(this)
 
     fun PsiReturnStatement.toKey(): ReturnKey {
         val returnMethod = findContainingMethodOrLambda(this)
