@@ -100,14 +100,13 @@ object ExprEvaluate {
                 // At least, for now?
                 // That may not turn out to be the case once we expand beyond our simple test setup.
                 val varKey = expr.key as VariableKey<*>
-                Bundle.unconstrainedKey(varKey, expr.ind).constrainWith(constraints)
+                Bundle.unconstrainedKey(varKey).constrainWith(constraints)
             }
 
             is VarsExpr -> WONT_IMPLEMENT("VarsExpr should never reach the evaluation stage")
             is LoopExpr<*> -> {
                 LoopSolver.evaluateTarget(
                     expr.target,
-                    expr.exprKey,
                     expr.condition,
                     expr.variables,
                     constraints,
@@ -116,7 +115,7 @@ object ExprEvaluate {
             }
 
             is LoopExpr.LoopLeaf<*> -> {
-                Bundle.unconstrainedKey(expr.key, expr.ind).constrainWith(constraints)
+                Bundle.unconstrainedKey(expr.key).constrainWith(constraints)
             }
 
             is LoopExpr.ConstEvaluatedLeaf<*> -> expr.value.constrainWith(constraints)

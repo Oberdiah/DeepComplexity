@@ -1,12 +1,14 @@
 package com.oberdiah.deepcomplexity.solver
 
-import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.context.LoopKey
 import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.ConstEvaluatedLeaf
 import com.oberdiah.deepcomplexity.staticAnalysis.LongIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.arithmeticOperation
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberRange
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -24,7 +26,6 @@ object LoopSolver {
      */
     fun <T : Any> evaluateTarget(
         target: LoopKey<T>,
-        exprKey: EvaluationKey.ExpressionKey<*>,
         condition: Expr<Boolean>,
         variables: Map<LoopKey<*>, LoopExpr.LoopVar<*>>,
         constraints: ConstraintsOrPile,
@@ -58,12 +59,7 @@ object LoopSolver {
                                 initial as NumberSet<*>,
                                 constrainedIn as NumberSet<*>
                             )
-                            rescueVariances(
-                                exprKey,
-                                changeVariances, initialVariances,
-                                NumberVariances.newFromConstant(numLoops),
-                                constraints
-                            )
+                            Bundle.ConstrainedVariances.new(NumberVariances.newFromConstant(numLoops), constraints)
                         }
                     }
 
@@ -71,13 +67,11 @@ object LoopSolver {
                 maxNumLoopsHere = maxNumLoopsHere.arithmeticOperation(
                     numLoops,
                     BinaryNumberOp.MAXIMUM,
-                    exprKey
                 )
             }
             numLoopsOverall = maxNumLoopsHere.arithmeticOperation(
                 maxNumLoopsHere,
                 BinaryNumberOp.MINIMUM,
-                exprKey
             )
         }
 
@@ -87,14 +81,13 @@ object LoopSolver {
         // Safe because makeBundle returns the same type as it consumes.
         // This is not great, but will do for now while I'm working on it.
         // It obviously can't stay like this long-term.
-        return makeBundle(numLoopsOverall, solves, target as LoopKey<Number>, exprKey) as Bundle<T>
+        return makeBundle(numLoopsOverall, solves, target as LoopKey<Number>) as Bundle<T>
     }
 
     private fun <T : Number> makeBundle(
         numLoops: Bundle<Long>,
         solves: Map<LoopKey<*>, Solve>,
         target: LoopKey<T>,
-        exprKey: EvaluationKey.ExpressionKey<*>
     ): Bundle<T> {
         val solve = solves[target]!!
 
@@ -111,13 +104,11 @@ object LoopSolver {
         val totalChangeObserved = targetChangePerStep.castTo(LongIndicator).arithmeticOperation(
             numLoops,
             BinaryNumberOp.MULTIPLICATION,
-            exprKey
         )
 
         return targetInitial.castTo(LongIndicator).arithmeticOperation(
             totalChangeObserved,
             BinaryNumberOp.ADDITION,
-            exprKey
         ).castTo(target.ind)
     }
 

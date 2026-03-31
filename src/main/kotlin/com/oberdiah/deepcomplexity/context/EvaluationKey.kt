@@ -4,11 +4,14 @@ import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
 import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 /**
  * Used in constraints and evaluation.
  */
 sealed interface EvaluationKey<T : Any> : HasIndicator<T> {
+    fun makeVarianceRepresentingOneOf(): Variances<T> = this.ind.newVarianceRepresentingOneOf(this)
+
     /**
      * Used to allow us to equate expressions.
      */

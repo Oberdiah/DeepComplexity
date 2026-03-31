@@ -60,8 +60,8 @@ data class Bundle<T : Any> private constructor(
         fun <T : Any> unconstrainedConstant(a: T): Bundle<T> =
             unconstrained(Indicator.fromValue(a).newConstantSet(a).toConstVariance())
 
-        fun <T : Any> unconstrainedKey(key: EvaluationKey<*>, ind: Indicator<T>): Bundle<T> =
-            unconstrained(ind.varianceRepresentingOneOf(key))
+        fun <T : Any> unconstrainedKey(key: EvaluationKey<T>): Bundle<T> =
+            unconstrained(key.makeVarianceRepresentingOneOf())
 
         private fun <T : Any> unconstrained(variances: Variances<T>): Bundle<T> {
             return Bundle(
@@ -82,18 +82,7 @@ data class Bundle<T : Any> private constructor(
             fun <T : Any> new(variances: Variances<T>, constraints: Constraints): ConstrainedVariances<T> {
                 return ConstrainedVariances(variances, constraints)
             }
-
-            fun <T : Any> fromKeyAndSet(evalKey: EvaluationKey<*>, allowedValues: ISet<T>): ConstrainedVariances<T> {
-                require(evalKey.ind == allowedValues.ind) {
-                    "Indicator mismatch between evaluation key and allowed values ($evalKey vs $allowedValues)"
-                }
-                val newConstraints = Constraints.completelyUnconstrained().withConstraint(evalKey, allowedValues)
-                return ConstrainedVariances(allowedValues.ind.varianceRepresentingOneOf(evalKey), newConstraints)
-            }
         }
-
-        fun andAlsoWithConstraints(constraints: Constraints): ConstrainedVariances<T> =
-            ConstrainedVariances(variances, constraints.and(this.constraints))
 
         override fun toString(): String {
             return toDebugString()

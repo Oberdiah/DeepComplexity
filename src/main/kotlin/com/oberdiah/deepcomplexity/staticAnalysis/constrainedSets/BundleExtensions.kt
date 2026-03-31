@@ -19,16 +19,20 @@ import com.oberdiah.deepcomplexity.utilities.into
  * no reason), and only for numeric variances.
  */
 fun <T : Any> rescueVariances(
-    exprKey: EvaluationKey<*>,
+    exprKey: EvaluationKey<T>?,
     lhs: Variances<*>,
     rhs: Variances<*>,
     result: Variances<T>,
     constraints: Constraints,
 ): ConstrainedVariances<T> {
     val wereTrackingSomething = (lhs.varsTracking() + rhs.varsTracking()).isNotEmpty()
-    if (result.varsTracking().isEmpty() && wereTrackingSomething && result is NumberVariances<*>) {
-        return ConstrainedVariances.fromKeyAndSet<T>(exprKey, result.collapse(constraints))
-            .andAlsoWithConstraints(constraints)
+    if (result.varsTracking().isEmpty()
+        && wereTrackingSomething
+        && result is NumberVariances<*>
+        && exprKey != null
+    ) {
+        val newConstraints = constraints.withConstraint(exprKey, result.collapse(constraints))
+        return ConstrainedVariances.new(exprKey.makeVarianceRepresentingOneOf(), newConstraints)
     }
     return ConstrainedVariances.new(result, constraints)
 }
@@ -36,7 +40,7 @@ fun <T : Any> rescueVariances(
 fun <T : Number> Bundle<T>.arithmeticOperation(
     other: Bundle<T>,
     operation: BinaryNumberOp,
-    exprKey: EvaluationKey<*>
+    exprKey: EvaluationKey<T>? = null
 ): Bundle<T> =
     this.binaryMapSameType(other) { a, b, constraints ->
         val result = a.into().arithmeticOperation(b.into(), operation, constraints)
@@ -61,7 +65,7 @@ fun <T : Any> Bundle<T>.generateConstraintsFrom(
 fun Bundle<Boolean>.booleanOperation(
     other: Bundle<Boolean>,
     operation: BooleanOp,
-    exprKey: EvaluationKey<*>
+    exprKey: EvaluationKey<Boolean>? = null
 ): Bundle<Boolean> =
     this.binaryMapSameType(other) { a, b, constraints ->
         val result = a.into().booleanOperation(b.into(), operation)
@@ -75,7 +79,7 @@ fun Bundle<Boolean>.booleanInvert() = unaryMapSameType { variances, _ ->
 fun <T : Any> Bundle<T>.comparisonOperation(
     other: Bundle<T>,
     comparisonOp: ComparisonOp,
-    exprKey: EvaluationKey<*>
+    exprKey: EvaluationKey<Boolean>? = null
 ): Bundle<Boolean> {
     return this.binaryMap(BooleanIndicator, other) { a, b, constraints ->
         val result = a.comparisonOperation(b, comparisonOp, constraints)
