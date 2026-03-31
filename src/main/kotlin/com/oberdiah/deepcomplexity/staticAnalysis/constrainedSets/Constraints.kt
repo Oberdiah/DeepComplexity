@@ -75,7 +75,7 @@ data class Constraints private constructor(
             "Constant keys shouldn't be allowed to be added to constraints."
         }
         require(key.ind == iSet.ind) {
-            "Key and bundle must have the same type. (${key.ind} != ${iSet.ind})"
+            "Key and set must have the same type. (${key.ind} != ${iSet.ind})"
         }
         return and(Constraints(mapOf(key to iSet)))
     }
