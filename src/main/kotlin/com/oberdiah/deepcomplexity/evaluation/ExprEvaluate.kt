@@ -92,8 +92,7 @@ object ExprEvaluate {
                 CastSolver.castFrom(toCast, expr.ind, expr.explicit)
             }
 
-            is ConstExpr -> Bundle.unconstrained(expr.ind.newConstantSet(expr.value).toConstVariance())
-                .constrainWith(constraints)
+            is ConstExpr -> Bundle.unconstrainedConstant(expr.value).constrainWith(constraints)
 
             is VariableExpr -> {
                 // By the time we're at the point of evaluating a variable, all other forms of keys
@@ -101,7 +100,7 @@ object ExprEvaluate {
                 // At least, for now?
                 // That may not turn out to be the case once we expand beyond our simple test setup.
                 val varKey = expr.key as VariableKey
-                Bundle.unconstrained(expr.ind.newVariance(varKey)).constrainWith(constraints)
+                Bundle.unconstrainedKey(varKey, expr.ind).constrainWith(constraints)
             }
 
             is VarsExpr -> WONT_IMPLEMENT("VarsExpr should never reach the evaluation stage")
@@ -117,7 +116,7 @@ object ExprEvaluate {
             }
 
             is LoopExpr.LoopLeaf<*> -> {
-                Bundle.unconstrained(expr.ind.newVariance(expr.key)).constrainWith(constraints)
+                Bundle.unconstrainedKey(expr.key, expr.ind).constrainWith(constraints)
             }
 
             is LoopExpr.ConstEvaluatedLeaf<*> -> expr.value.constrainWith(constraints)

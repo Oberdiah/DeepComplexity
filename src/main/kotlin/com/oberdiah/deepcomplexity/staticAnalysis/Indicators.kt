@@ -36,7 +36,7 @@ sealed class Indicator<T : Any>(val clazz: KClass<T>) {
      */
     abstract fun newFullSet(): ISet<T>
 
-    abstract fun newVariance(key: EvaluationKey): Variances<T>
+    abstract fun varianceRepresentingOneOf(key: EvaluationKey): Variances<T>
 
     companion object {
         fun <T : Any> fromClass(clazz: KClass<T>): Indicator<T> {
@@ -104,7 +104,8 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
     override fun newFullSet(): NumberSet<T> = NumberSet.newFull(this)
     override fun newEmptySet(): NumberSet<T> = NumberSet.newEmpty(this)
     override fun newConstantSet(constant: T): NumberSet<T> = NumberSet.newFromConstant(constant)
-    override fun newVariance(key: EvaluationKey): Variances<T> = NumberVariances.newFromVariance(this, key)
+    override fun varianceRepresentingOneOf(key: EvaluationKey): Variances<T> =
+        NumberVariances.newFromVariance(this, key)
 
     /**
      * Returns a pair of the minimum and maximum values of this number type, in that order.
@@ -193,7 +194,7 @@ data object ByteIndicator : NumberIndicator<Byte>(Byte::class) {
 }
 
 data object BooleanIndicator : Indicator<Boolean>(Boolean::class) {
-    override fun newVariance(key: EvaluationKey): Variances<Boolean> = BooleanVariances(BooleanSet.EITHER)
+    override fun varianceRepresentingOneOf(key: EvaluationKey): Variances<Boolean> = BooleanVariances(BooleanSet.EITHER)
     override fun newFullSet(): ISet<Boolean> = BooleanSet.EITHER
     override fun newEmptySet(): BooleanSet = BooleanSet.NEITHER
     override fun newConstantSet(constant: Boolean): ISet<Boolean> =
@@ -203,7 +204,7 @@ data object BooleanIndicator : Indicator<Boolean>(Boolean::class) {
 data class ObjectIndicator(val type: MyPsiType) : Indicator<HeapMarker>(HeapMarker::class) {
     override fun toString(): String = "ObjectIndicator($type)"
 
-    override fun newVariance(key: EvaluationKey): Variances<HeapMarker> =
+    override fun varianceRepresentingOneOf(key: EvaluationKey): Variances<HeapMarker> =
         ObjectVariances(ObjectSet.newEmptySet(this), this)
 
     override fun newConstantSet(constant: HeapMarker): ISet<HeapMarker> =
@@ -219,5 +220,5 @@ object VarsIndicator : Indicator<VarsMarker>(VarsMarker::class) {
     override fun newEmptySet(): ISet<VarsMarker> = WONT_IMPLEMENT()
     override fun newConstantSet(constant: VarsMarker): ISet<VarsMarker> = WONT_IMPLEMENT()
     override fun newFullSet(): ISet<VarsMarker> = WONT_IMPLEMENT()
-    override fun newVariance(key: EvaluationKey): Variances<VarsMarker> = WONT_IMPLEMENT()
+    override fun varianceRepresentingOneOf(key: EvaluationKey): Variances<VarsMarker> = WONT_IMPLEMENT()
 }

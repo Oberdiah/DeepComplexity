@@ -60,17 +60,17 @@ data class Bundle<T : Any> private constructor(
         fun <T : Any> unconstrainedConstant(a: T): Bundle<T> =
             unconstrained(Indicator.fromValue(a).newConstantSet(a).toConstVariance())
 
-        fun <T : Any> unconstrained(bundle: Variances<T>): Bundle<T> {
+        fun <T : Any> unconstrainedKey(key: EvaluationKey, ind: Indicator<T>): Bundle<T> =
+            unconstrained(ind.varianceRepresentingOneOf(key))
+
+        private fun <T : Any> unconstrained(variances: Variances<T>): Bundle<T> {
             return Bundle(
-                bundle.ind,
+                variances.ind,
                 setOf(
-                    ConstrainedVariances.new(bundle, Constraints.completelyUnconstrained())
+                    ConstrainedVariances.new(variances, Constraints.completelyUnconstrained())
                 )
             )
         }
-
-        @Suppress("unused")
-        fun <T : Any> unreachable(ind: Indicator<T>): Bundle<T> = Bundle(ind, emptySet())
     }
 
     @ConsistentCopyVisibility
@@ -88,7 +88,7 @@ data class Bundle<T : Any> private constructor(
                     "Indicator mismatch between evaluation key and allowed values ($evalKey vs $allowedValues)"
                 }
                 val newConstraints = Constraints.completelyUnconstrained().withConstraint(evalKey, allowedValues)
-                return ConstrainedVariances(evalKey.asVariance().coerceTo(allowedValues.ind), newConstraints)
+                return ConstrainedVariances(allowedValues.ind.varianceRepresentingOneOf(evalKey), newConstraints)
             }
         }
 

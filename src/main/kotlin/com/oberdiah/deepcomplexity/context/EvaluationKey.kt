@@ -3,15 +3,12 @@ package com.oberdiah.deepcomplexity.context
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
-import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 
 /**
  * Used in constraints and evaluation.
  */
 sealed interface EvaluationKey {
     val ind: Indicator<*>
-
-    fun asVariance(): Variances<*> = ind.newVariance(this)
 
     /**
      * Used to allow us to equate expressions.
