@@ -19,6 +19,11 @@ interface Variances<T : Any> : HasIndicator<T> {
     override val ind: Indicator<T>
 
     fun <Q : Any> attemptHardCastTo(newInd: Indicator<Q>, constraints: Constraints): Variances<Q>?
+    fun <Q : Any> coerceTo(newInd: Indicator<Q>): Variances<Q> {
+        if (this.ind != newInd) throw IllegalStateException("Failed to cast to $newInd: $this ($ind)")
+        @Suppress("UNCHECKED_CAST")
+        return this as Variances<Q>
+    }
 
     fun collapse(constraints: Constraints): ISet<T>
     fun toDebugString(constraints: Constraints): String

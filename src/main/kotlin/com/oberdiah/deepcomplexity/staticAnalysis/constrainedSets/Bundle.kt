@@ -5,7 +5,6 @@ import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.staticAnalysis.CanBeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
-import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
@@ -70,6 +69,7 @@ data class Bundle<T : Any> private constructor(
             )
         }
 
+        @Suppress("unused")
         fun <T : Any> unreachable(ind: Indicator<T>): Bundle<T> = Bundle(ind, emptySet())
     }
 
@@ -82,7 +82,18 @@ data class Bundle<T : Any> private constructor(
             fun <T : Any> new(variances: Variances<T>, constraints: Constraints): ConstrainedVariances<T> {
                 return ConstrainedVariances(variances, constraints)
             }
+
+            fun <T : Any> fromKeyAndSet(evalKey: EvaluationKey, allowedValues: ISet<T>): ConstrainedVariances<T> {
+                require(evalKey.ind == allowedValues.ind) {
+                    "Indicator mismatch between evaluation key and allowed values ($evalKey vs $allowedValues)"
+                }
+                val newConstraints = Constraints.completelyUnconstrained().withConstraint(evalKey, allowedValues)
+                return ConstrainedVariances(evalKey.asVariance().coerceTo(allowedValues.ind), newConstraints)
+            }
         }
+
+        fun andAlsoWithConstraints(constraints: Constraints): ConstrainedVariances<T> =
+            ConstrainedVariances(variances, constraints.and(this.constraints))
 
         override fun toString(): String {
             return toDebugString()
@@ -181,15 +192,13 @@ data class Bundle<T : Any> private constructor(
 
     fun binaryMapSameType(
         other: Bundle<T>,
-        exprKey: EvaluationKey,
-        op: (Variances<T>, Variances<T>, Constraints) -> Variances<T>
-    ): Bundle<T> = binaryMap(ind, other, exprKey, op)
+        op: (Variances<T>, Variances<T>, Constraints) -> ConstrainedVariances<T>
+    ): Bundle<T> = binaryMap(ind, other, op)
 
     fun <Q : Any> binaryMap(
         newInd: Indicator<Q>,
         other: Bundle<T>,
-        exprKey: EvaluationKey,
-        op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
+        op: (Variances<T>, Variances<T>, Constraints) -> ConstrainedVariances<Q>
     ): Bundle<Q> {
         require(ind == other.ind) {
             "Cannot perform binary operation on bundles with different indicators: $ind vs ${other.ind}"
@@ -199,33 +208,8 @@ data class Bundle<T : Any> private constructor(
         for (myBundle in variances) {
             for (otherBundle in other.variances) {
                 val newConstraints = myBundle.constraints.and(otherBundle.constraints)
-
                 if (newConstraints.unreachable) continue
-
-                // Only do the fun optimization if we were tracking something beforehand, otherwise we're just
-                // going to start tracking a constant for no reason.
-                val wereTrackingSomething =
-                    (myBundle.variances.varsTracking() + otherBundle.variances.varsTracking()).isNotEmpty()
-
-                val newVariances = op(myBundle.variances, otherBundle.variances, newConstraints)
-
-                if (newVariances.varsTracking().isEmpty()
-                    && wereTrackingSomething
-                    && newVariances is NumberVariances<*>
-                ) {
-                    // If the new variance isn't tracking anything, we can help it out a bit
-                    // by creating a new constraint around it and making it track the
-                    // expression key itself. This allows us to continue tracking things to a
-                    // limited degree even when the operation demolished our typical variance
-                    // tracking.
-                    val newConstraints = newConstraints.withConstraint(
-                        exprKey,
-                        newVariances.collapse(newConstraints)
-                    )
-                    newBundles.add(ConstrainedVariances.new(newInd.newVariance(exprKey), newConstraints))
-                } else {
-                    newBundles.add(ConstrainedVariances.new(newVariances, newConstraints))
-                }
+                newBundles.add(op(myBundle.variances, otherBundle.variances, newConstraints))
             }
         }
 

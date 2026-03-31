@@ -6,10 +6,7 @@ import com.oberdiah.deepcomplexity.evaluation.*
 import com.oberdiah.deepcomplexity.evaluation.LoopExpr.ConstEvaluatedLeaf
 import com.oberdiah.deepcomplexity.staticAnalysis.LongIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrPile
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ExprConstrain
-import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.arithmeticOperation
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.*
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberRange
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
@@ -52,7 +49,6 @@ object LoopSolver {
                         change.binaryMap(
                             LongIndicator,
                             initial,
-                            exprKey
                         ) { changeVariances, initialVariances, constraints ->
                             val change = changeVariances.collapse(constraints)
                             val initial = initialVariances.collapse(constraints)
@@ -62,7 +58,12 @@ object LoopSolver {
                                 initial as NumberSet<*>,
                                 constrainedIn as NumberSet<*>
                             )
-                            NumberVariances.newFromConstant(numLoops)
+                            rescueVariances(
+                                exprKey,
+                                changeVariances, initialVariances,
+                                NumberVariances.newFromConstant(numLoops),
+                                constraints
+                            )
                         }
                     }
 
