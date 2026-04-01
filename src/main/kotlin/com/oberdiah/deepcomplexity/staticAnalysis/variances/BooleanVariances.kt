@@ -32,7 +32,8 @@ data class BooleanVariances(private val value: BooleanSet) : Variances<Boolean> 
 
     override fun toDebugString(constraints: Constraints): String = value.toString()
 
-    fun booleanOperation(other: BooleanVariances, operation: BooleanOp): BooleanVariances {
+    @Suppress("unused")
+    fun booleanOperation(other: BooleanVariances, operation: BooleanOp, constraints: Constraints): BooleanVariances {
         return BooleanVariances(value.booleanOperation(other.value, operation))
     }
 }
