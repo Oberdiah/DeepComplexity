@@ -5,6 +5,7 @@ import com.oberdiah.deepcomplexity.context.HeapMarker
 import com.oberdiah.deepcomplexity.staticAnalysis.CanBeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
+import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 
@@ -66,9 +67,7 @@ data class Bundle<T : Any> private constructor(
         private fun <T : Any> unconstrained(variances: Variances<T>): Bundle<T> {
             return Bundle(
                 variances.ind,
-                setOf(
-                    ConstrainedVariances.new(variances, Constraints.completelyUnconstrained())
-                )
+                setOf(variances.constrainedBy(Constraints.completelyUnconstrained()))
             )
         }
     }
@@ -147,7 +146,7 @@ data class Bundle<T : Any> private constructor(
                         // we can just return the new bundle
                         newVariances
                     } else {
-                        ConstrainedVariances.new(newVariances.variances, newConstraints)
+                        newVariances.variances.constrainedBy(newConstraints)
                     }
                 }
             }
@@ -175,14 +174,9 @@ data class Bundle<T : Any> private constructor(
         // it doesn't exist. If you find you need it, you should be able to add it similar
         // to how [binaryMap] does.
         return Bundle(newInd, variances.mapToSet {
-            ConstrainedVariances.new(op(it.variances, it.constraints), it.constraints)
+            op(it.variances, it.constraints).constrainedBy(it.constraints)
         })
     }
-
-    fun binaryMapSameType(
-        other: Bundle<T>,
-        op: (Variances<T>, Variances<T>, Constraints) -> ConstrainedVariances<T>
-    ): Bundle<T> = binaryMap(ind, other, op)
 
     fun <Q : Any> binaryMap(
         newInd: Indicator<Q>,
@@ -205,6 +199,36 @@ data class Bundle<T : Any> private constructor(
         return Bundle(newInd, newBundles)
     }
 
+    /**
+     * When a binary operation demolishes variance tracking (e.g. modulo, multiply of two tracked values),
+     * we can rescue the result by storing it as a constraint on the expression key. This allows us to
+     * continue tracking things to a limited degree even when the operation destroyed our typical variance tracking.
+     *
+     * Only rescues if we were tracking something beforehand (otherwise we'd just be tracking a constant for
+     * no reason) and [exprKey] is non-null.
+     */
+    fun <Q : Any> binaryMapWithRescue(
+        newInd: Indicator<Q>,
+        other: Bundle<T>,
+        exprKey: EvaluationKey<Q>?,
+        op: (Variances<T>, Variances<T>, Constraints) -> Variances<Q>
+    ): Bundle<Q> {
+        return binaryMap(newInd, other) { lhs: Variances<T>, rhs: Variances<T>, constraints: Constraints ->
+            val result = op(lhs, rhs, constraints)
+            val wereTrackingSomething = (lhs.varsTracking() + rhs.varsTracking()).isNotEmpty()
+            if (result.varsTracking().isEmpty()
+                && wereTrackingSomething
+                && result is NumberVariances<*>
+                && exprKey != null
+            ) {
+                val newConstraints = constraints.withConstraint(exprKey, result.collapse(constraints))
+                exprKey.makeVarianceRepresentingOneOf().constrainedBy(newConstraints)
+            } else {
+                result.constrainedBy(constraints)
+            }
+        }
+    }
+
     fun constrainWith(constraints: ConstraintsOrPile): Bundle<T> {
         return Bundle(ind, variances.flatMap { bundle ->
             constraints.pile.flatMap { constraint ->
@@ -212,7 +236,7 @@ data class Bundle<T : Any> private constructor(
                 if (newConstraints.unreachable) {
                     emptyList()
                 } else {
-                    listOf(ConstrainedVariances.new(bundle.variances, newConstraints))
+                    listOf(bundle.variances.constrainedBy(newConstraints))
                 }
             }
         }.toSet())
@@ -242,10 +266,8 @@ data class Bundle<T : Any> private constructor(
 
         val cast = Bundle(
             newInd, variances.mapToSet {
-                ConstrainedVariances.new(
-                    it.variances.attemptHardCastTo(newInd, it.constraints) ?: return null,
-                    it.constraints
-                )
+                val variances = it.variances.attemptHardCastTo(newInd, it.constraints) ?: return null
+                variances.constrainedBy(it.constraints)
             }
         )
         return cast

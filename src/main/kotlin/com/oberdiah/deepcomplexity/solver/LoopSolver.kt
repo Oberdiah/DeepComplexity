@@ -59,7 +59,7 @@ object LoopSolver {
                                 initial as NumberSet<*>,
                                 constrainedIn as NumberSet<*>
                             )
-                            Bundle.ConstrainedVariances.new(NumberVariances.newFromConstant(numLoops), constraints)
+                            NumberVariances.newFromConstant(numLoops).constrainedBy(constraints)
                         }
                     }
 

@@ -4,6 +4,7 @@ import com.oberdiah.deepcomplexity.context.EvaluationKey
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
+import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
@@ -27,6 +28,8 @@ interface Variances<T : Any> : HasIndicator<T> {
 
     fun collapse(constraints: Constraints): ISet<T>
     fun toDebugString(constraints: Constraints): String
+
+    fun constrainedBy(constraints: Constraints) = Bundle.ConstrainedVariances.new(this, constraints)
 
     /**
      * Returns true if this variance is currently tracking the given key, i.e. the variance would
