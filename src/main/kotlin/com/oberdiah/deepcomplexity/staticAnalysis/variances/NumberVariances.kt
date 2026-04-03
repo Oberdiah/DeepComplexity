@@ -316,8 +316,12 @@ class NumberVariances<T : Number> private constructor(
 
         if (!isSafelyWithinBounds(constraints) || !other.isSafelyWithinBounds(constraints)) {
             for (key in allKeys) {
-                val wrappedConstraint = tryGenerateWrappedSingleSidedConstraint(other, comparisonOp, constraints, key)
-                    ?: continue
+                val wrappedConstraint = tryGenerateWrappedSingleSidedConstraint(
+                    key.coerceToNumbers(),
+                    other,
+                    comparisonOp,
+                    constraints
+                ) ?: continue
                 constraints = constraints.withConstraint(key, wrappedConstraint)
             }
         } else {
@@ -370,100 +374,92 @@ class NumberVariances<T : Number> private constructor(
         return constraints
     }
 
-    private fun tryGenerateWrappedSingleSidedConstraint(
+    private fun <Q : Number> tryGenerateWrappedSingleSidedConstraint(
+        key: EvaluationKey<Q>,
         other: NumberVariances<T>,
         comparisonOp: ComparisonOp,
-        constraints: Constraints,
-        key: EvaluationKey<*>
-    ): NumberSet<*>? {
-        val keyInd = key.ind as? NumberIndicator<*> ?: return null
-        if (!keyInd.isWholeNum() || keyInd == BigIntegerIndicator || !ind.isWholeNum() || ind == BigIntegerIndicator) {
-            return null
+        constraints: Constraints
+    ): NumberSet<Q>? {
+        val typedKeyInd = key.ind as NumberIndicator
+
+        val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
+        val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
+        val currentConstraint = constraints.getConstraint(key).coerceTo(typedKeyInd).into()
+        if (currentConstraint.ranges.size != 1) return null
+
+        val (coefficient, constant, target) = when {
+            myKeyMultiplier.isSingleValue() && otherKeyMultiplier.isZero() -> Triple(
+                myKeyMultiplier.getSingleValue()!!,
+                NumberVariances(ind, multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
+                NumberVariances(ind, other.multipliers.filter { it.key != key }).collapse(constraints)
+                    .getSetSatisfying(comparisonOp)
+            )
+
+            myKeyMultiplier.isZero() && otherKeyMultiplier.isSingleValue() -> Triple(
+                otherKeyMultiplier.getSingleValue()!!,
+                NumberVariances(ind, other.multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
+                NumberVariances(ind, multipliers.filter { it.key != key }).collapse(constraints)
+                    .getSetSatisfying(comparisonOp.flip())
+            )
+
+            else -> return null
         }
 
-        fun <Q : Number> extra(typedKeyInd: NumberIndicator<Q>): NumberSet<Q>? {
-            val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
-            val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
-            val current = constraints.getConstraint(key).coerceTo(typedKeyInd).into()
-            if (current.ranges.size != 1) return null
+        if (target.isFull() || coefficient == BigInteger.ZERO || constant.ranges.size > 2 || target.ranges.size > 2) {
+            return currentConstraint
+        }
 
-            val (coefficient, constant, target) = when {
-                myKeyMultiplier.isSingleValue() && otherKeyMultiplier.isZero() -> Triple(
-                    myKeyMultiplier.getSingleValue()!!,
-                    NumberVariances(ind, multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
-                    NumberVariances(ind, other.multipliers.filter { it.key != key }).collapse(constraints)
-                        .getSetSatisfying(comparisonOp)
-                )
+        val xRange = currentConstraint.ranges.single()
+        val xMin = xRange.start.toBigInteger()
+        val xMax = xRange.end.toBigInteger()
+        val axMin = minOf(coefficient * xMin, coefficient * xMax)
+        val axMax = maxOf(coefficient * xMin, coefficient * xMax)
+        val modulus = ind.clazz.getSetSize()
+        var out = NumberSet.newEmpty(typedKeyInd)
 
-                myKeyMultiplier.isZero() && otherKeyMultiplier.isSingleValue() -> Triple(
-                    otherKeyMultiplier.getSingleValue()!!,
-                    NumberVariances(ind, other.multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
-                    NumberVariances(ind, multipliers.filter { it.key != key }).collapse(constraints)
-                        .getSetSatisfying(comparisonOp.flip())
-                )
+        for (constantRange in constant.ranges) for (targetRange in target.castToNumber(BigIntegerIndicator).ranges) {
+            val low = targetRange.start - constantRange.end
+            val high = targetRange.end - constantRange.start
+            val kStart = (axMin - high).ceilDiv(modulus)
+            val kEnd = (axMax - low).floorDiv(modulus)
 
-                else -> return null
-            }
+            var k = kStart
+            while (k <= kEnd) {
+                val shiftedLow = low + k * modulus
+                val shiftedHigh = high + k * modulus
+                val start =
+                    if (coefficient > BigInteger.ZERO)
+                        shiftedLow.ceilDiv(coefficient)
+                    else
+                        (-shiftedHigh).ceilDiv(-coefficient)
 
-            if (target.isFull() || coefficient == BigInteger.ZERO || constant.ranges.size > 2 || target.ranges.size > 2) {
-                return current
-            }
+                val end =
+                    if (coefficient > BigInteger.ZERO)
+                        shiftedHigh.floorDiv(coefficient)
+                    else
+                        (-shiftedLow).floorDiv(-coefficient)
 
-            val xRange = current.ranges.single()
-            val xMin = xRange.start.toBigInteger()
-            val xMax = xRange.end.toBigInteger()
-            val axMin = minOf(coefficient * xMin, coefficient * xMax)
-            val axMax = maxOf(coefficient * xMin, coefficient * xMax)
-            val modulus = ind.clazz.getSetSize()
-            var out = NumberSet.newEmpty(typedKeyInd)
-
-            for (constantRange in constant.ranges) for (targetRange in target.castToNumber(BigIntegerIndicator).ranges) {
-                val low = targetRange.start - constantRange.end
-                val high = targetRange.end - constantRange.start
-                val kStart = (axMin - high).ceilDiv(modulus)
-                val kEnd = (axMax - low).floorDiv(modulus)
-
-                var k = kStart
-                while (k <= kEnd) {
-                    val shiftedLow = low + k * modulus
-                    val shiftedHigh = high + k * modulus
-                    val start =
-                        if (coefficient > BigInteger.ZERO)
-                            shiftedLow.ceilDiv(coefficient)
-                        else
-                            (-shiftedHigh).ceilDiv(-coefficient)
-                    
-                    val end =
-                        if (coefficient > BigInteger.ZERO)
-                            shiftedHigh.floorDiv(coefficient)
-                        else
-                            (-shiftedLow).floorDiv(-coefficient)
-
-                    if (start <= end) {
-                        val clampedStart = maxOf(start, xMin)
-                        val clampedEnd = minOf(end, xMax)
-                        if (clampedStart <= clampedEnd) {
-                            if (out.ranges.size >= NumberSet.MAX_RANGES) {
-                                return current
-                            }
-                            out = out.union(
-                                NumberSet.newFromRange(
-                                    NumberRange.new(
-                                        clampedStart.castInto(typedKeyInd.clazz),
-                                        clampedEnd.castInto(typedKeyInd.clazz)
-                                    )
+                if (start <= end) {
+                    val clampedStart = maxOf(start, xMin)
+                    val clampedEnd = minOf(end, xMax)
+                    if (clampedStart <= clampedEnd) {
+                        if (out.ranges.size >= NumberSet.MAX_RANGES) {
+                            return currentConstraint
+                        }
+                        out = out.union(
+                            NumberSet.newFromRange(
+                                NumberRange.new(
+                                    clampedStart.castInto(typedKeyInd.clazz),
+                                    clampedEnd.castInto(typedKeyInd.clazz)
                                 )
                             )
-                        }
+                        )
                     }
-                    k += BigInteger.ONE
                 }
+                k += BigInteger.ONE
             }
-
-            return out
         }
 
-        @Suppress("UNCHECKED_CAST")
-        return extra(keyInd as NumberIndicator<Number>)
+        return out
     }
 }

@@ -2,15 +2,31 @@ package com.oberdiah.deepcomplexity.context
 
 import com.oberdiah.deepcomplexity.evaluation.Expr
 import com.oberdiah.deepcomplexity.evaluation.ExprToString
+import com.oberdiah.deepcomplexity.staticAnalysis.CanBeCast
 import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 /**
  * Used in constraints and evaluation.
  */
-sealed interface EvaluationKey<T : Any> : HasIndicator<T> {
+sealed interface EvaluationKey<T : Any> : CanBeCast<T> {
     fun makeVarianceRepresentingOneOf(): Variances<T> = this.ind.newVarianceRepresentingOneOf(this)
+
+    override fun coerceToNumbers(): EvaluationKey<out Number> = super.coerceToNumbers() as EvaluationKey
+    override fun coerceToObject(): EvaluationKey<HeapMarker> = super.coerceToObject() as EvaluationKey
+    override fun <Q : Any> coerceTo(newInd: Indicator<Q>): EvaluationKey<Q> = super.coerceTo(newInd) as EvaluationKey
+    override fun <Q : Any> castTo(newInd: Indicator<Q>): EvaluationKey<Q> = super.castTo(newInd) as EvaluationKey
+
+    override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): HasIndicator<Q>? {
+        if (newInd == ind) {
+            // Safety: newInd == ind.
+            @Suppress("UNCHECKED_CAST")
+            return this as HasIndicator<Q>?
+        }
+        WONT_IMPLEMENT("I'm not sure there's a way to cast Evaluation Keys")
+    }
 
     /**
      * Used to allow us to equate expressions.
