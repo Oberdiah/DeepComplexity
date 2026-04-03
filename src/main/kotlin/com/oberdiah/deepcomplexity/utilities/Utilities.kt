@@ -244,6 +244,17 @@ object Utilities {
         return this ?: block()
     }
 
+    fun BigInteger.floorDiv(b: BigInteger): BigInteger {
+        require(b > BigInteger.ZERO)
+        val (quotient, remainder) = divideAndRemainder(b)
+        return if (remainder.signum() < 0) quotient - BigInteger.ONE else quotient
+    }
+
+    fun BigInteger.ceilDiv(b: BigInteger): BigInteger {
+        require(b > BigInteger.ZERO)
+        return negate().floorDiv(b).negate()
+    }
+
     operator fun <T : Number> T.compareTo(other: T): Int {
         if (this is BigInteger && other is BigInteger) {
             return this.compareTo(other)

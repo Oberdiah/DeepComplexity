@@ -48,9 +48,12 @@ data class NumberRange<T : Number> private constructor(
         }
     }
 
-    fun contains(value: Number): Boolean {
-        return value >= start && value <= end
-    }
+    /**
+     * Returns true if this range can fit entirely within [other].
+     */
+    fun <T : Number> canFitWithin(other: NumberRange<T>): Boolean = other.contains(start) && other.contains(end)
+
+    fun contains(value: Number): Boolean = value >= start && value <= end
 
     private fun newRange(start: T, end: T): NumberRange<T> {
         return NumberRange(ind, start, end)

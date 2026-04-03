@@ -13,7 +13,8 @@ import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberRange
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.oberdiah.deepcomplexity.utilities.Functional
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
-import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
+import com.oberdiah.deepcomplexity.utilities.Utilities.ceilDiv
+import com.oberdiah.deepcomplexity.utilities.Utilities.floorDiv
 import com.oberdiah.deepcomplexity.utilities.Utilities.getSetSize
 import com.oberdiah.deepcomplexity.utilities.Utilities.toBigInteger
 import com.oberdiah.deepcomplexity.utilities.into
@@ -161,9 +162,7 @@ class NumberVariances<T : Number> private constructor(
                 // Ok, so we're being asked to grow (e.g. from a short to an int)
 
                 // Is it possible that our pre-cast setup could have overflowed its old bounds?
-                val totalRange = collapseWithoutLimits(constraints).getRange()
-                val indRange = ind.getTotalRange()
-                if (indRange.contains(totalRange.start) && indRange.contains(totalRange.end)) {
+                if (isSafelyWithinBounds(constraints)) {
                     // No risk of overflow, we can just do a type swap and be done with it.
                     return NumberVariances(newInd, multipliers)
                 } else {
@@ -176,6 +175,14 @@ class NumberVariances<T : Number> private constructor(
 
         @Suppress("UNCHECKED_CAST") // Safety: Trivially true by checking the signature of extra().
         return extra(newInd) as Variances<Q>?
+    }
+
+    /**
+     * Returns true if this variance has no chance of overflowing its indicator's bounds and can be
+     * safely cast to a larger indicator.
+     */
+    fun isSafelyWithinBounds(constraints: Constraints): Boolean {
+        return collapseWithoutLimits(constraints).getRange().canFitWithin(ind.getTotalRange())
     }
 
     fun isOne(constraints: Constraints): Boolean = collapse(constraints).isOne()
@@ -307,56 +314,56 @@ class NumberVariances<T : Number> private constructor(
 
         var constraints = constraints
 
-        if (!canSafelyUseLinearDividePath(other, constraints)) {
+        if (!isSafelyWithinBounds(constraints) || !other.isSafelyWithinBounds(constraints)) {
             for (key in allKeys) {
                 val wrappedConstraint = tryGenerateWrappedSingleSidedConstraint(other, comparisonOp, constraints, key)
                     ?: continue
                 constraints = constraints.withConstraint(key, wrappedConstraint)
             }
-            return constraints
-        }
+        } else {
+            for (key in allKeys) {
+                val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
+                val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
 
-        for (key in allKeys) {
-            val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
-            val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
+                // Move all of our key onto the left
+                val lhsCoefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
 
-            // Move all of our key onto the left
-            val lhsCoefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
+                // Collapse all non-our-key constants into a single value and move them to the right.
+                val collapsedLhsBeforeMove =
+                    NumberVariances(ind, multipliers.filter { it.key != key })
+                        .collapseWithoutLimits(constraints)
+                val collapsedRhsBeforeMove =
+                    NumberVariances(ind, other.multipliers.filter { it.key != key })
+                        .collapseWithoutLimits(constraints)
 
-            // Collapse all non-our-key constants into a single value and move them to the right.
-            val collapsedLhsBeforeMove =
-                NumberVariances(ind, multipliers.filter { it.key != key })
-                    .collapseWithoutLimits(constraints)
-            val collapsedRhsBeforeMove =
-                NumberVariances(ind, other.multipliers.filter { it.key != key })
-                    .collapseWithoutLimits(constraints)
+                val rhsConstant = collapsedRhsBeforeMove.subtract(collapsedLhsBeforeMove)
 
-            val rhsConstant = collapsedRhsBeforeMove.subtract(collapsedLhsBeforeMove)
+                if (lhsCoefficient.isZero()) {
+                    // The key has cancelled itself out, this is now an all-or-nothing situation:
+                    // either the constraint is met, or it isn't.
+                    // The equation at this point looks like `0x op constant`
+                    // So we can just check the constant against zero.
+                    val meetsConstraint =
+                        BigIntegerIndicator.onlyZeroSet().comparisonOperation(rhsConstant, comparisonOp)
+                    constraints = when (meetsConstraint) {
+                        BooleanSet.EITHER, BooleanSet.TRUE -> constraints.withConstraint(key, key.ind.newFullSet())
+                        BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, key.ind.newEmptySet())
+                    }
+                } else {
+                    val shouldFlip =
+                        lhsCoefficient.comparisonOperation(BigIntegerIndicator.onlyZeroSet(), ComparisonOp.LESS_THAN)
+                    val rhs = rhsConstant.divide(lhsCoefficient).castTo(ind).into()
+                    val constraint = when (shouldFlip) {
+                        BooleanSet.TRUE -> rhs.getSetSatisfying(comparisonOp.flip())
+                        BooleanSet.FALSE -> rhs.getSetSatisfying(comparisonOp)
+                        BooleanSet.EITHER -> rhs.getSetSatisfying(comparisonOp)
+                            .union(rhs.getSetSatisfying(comparisonOp.flip()))
 
-            if (lhsCoefficient.isZero()) {
-                // The key has cancelled itself out, this is now an all-or-nothing situation:
-                // either the constraint is met, or it isn't.
-                // The equation at this point looks like `0x op constant`
-                // So we can just check the constant against zero.
-                val meetsConstraint = BigIntegerIndicator.onlyZeroSet().comparisonOperation(rhsConstant, comparisonOp)
-                constraints = when (meetsConstraint) {
-                    BooleanSet.EITHER, BooleanSet.TRUE -> constraints.withConstraint(key, key.ind.newFullSet())
-                    BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, key.ind.newEmptySet())
+                        BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                    }
+
+                    constraints = constraints.withConstraint(key, constraint.clampCast(key.ind)!!)
                 }
-            } else {
-                val shouldFlip =
-                    lhsCoefficient.comparisonOperation(BigIntegerIndicator.onlyZeroSet(), ComparisonOp.LESS_THAN)
-                val rhs = rhsConstant.divide(lhsCoefficient).castTo(ind).into()
-                val constraint = when (shouldFlip) {
-                    BooleanSet.TRUE -> rhs.getSetSatisfying(comparisonOp.flip())
-                    BooleanSet.FALSE -> rhs.getSetSatisfying(comparisonOp)
-                    BooleanSet.EITHER -> rhs.getSetSatisfying(comparisonOp)
-                        .union(rhs.getSetSatisfying(comparisonOp.flip()))
-
-                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
-                }
-
-                constraints = constraints.withConstraint(key, constraint.clampCast(key.ind)!!)
             }
         }
 
@@ -413,21 +420,25 @@ class NumberVariances<T : Number> private constructor(
             for (constantRange in constant.ranges) for (targetRange in target.castToNumber(BigIntegerIndicator).ranges) {
                 val low = targetRange.start - constantRange.end
                 val high = targetRange.end - constantRange.start
-                val kStart = ceilDiv(axMin - high, modulus)
-                val kEnd = floorDiv(axMax - low, modulus)
+                val kStart = (axMin - high).ceilDiv(modulus)
+                val kEnd = (axMax - low).floorDiv(modulus)
 
                 var k = kStart
                 while (k <= kEnd) {
                     val shiftedLow = low + k * modulus
                     val shiftedHigh = high + k * modulus
-                    val start = if (coefficient > BigInteger.ZERO) ceilDiv(shiftedLow, coefficient) else ceilDiv(
-                        -shiftedHigh,
-                        -coefficient
-                    )
-                    val end = if (coefficient > BigInteger.ZERO) floorDiv(shiftedHigh, coefficient) else floorDiv(
-                        -shiftedLow,
-                        -coefficient
-                    )
+                    val start =
+                        if (coefficient > BigInteger.ZERO)
+                            shiftedLow.ceilDiv(coefficient)
+                        else
+                            (-shiftedHigh).ceilDiv(-coefficient)
+                    
+                    val end =
+                        if (coefficient > BigInteger.ZERO)
+                            shiftedHigh.floorDiv(coefficient)
+                        else
+                            (-shiftedLow).floorDiv(-coefficient)
+
                     if (start <= end) {
                         val clampedStart = maxOf(start, xMin)
                         val clampedEnd = minOf(end, xMax)
@@ -454,29 +465,5 @@ class NumberVariances<T : Number> private constructor(
 
         @Suppress("UNCHECKED_CAST")
         return extra(keyInd as NumberIndicator<Number>)
-    }
-
-    private fun canSafelyUseLinearDividePath(other: NumberVariances<T>, constraints: Constraints): Boolean {
-        if (!ind.isWholeNum()) return false
-
-        fun fitsWithoutWrapping(set: NumberSet<BigInteger>): Boolean {
-            val (_, smallest, largest) = set.getRange()
-            return smallest >= ind.getMinValue() && largest <= ind.getMaxValue()
-        }
-
-        return fitsWithoutWrapping(collapseWithoutLimits(constraints))
-                && fitsWithoutWrapping(other.collapseWithoutLimits(constraints))
-    }
-
-    private fun floorDiv(a: BigInteger, b: BigInteger): BigInteger {
-        require(b > BigInteger.ZERO)
-
-        val (quotient, remainder) = a.divideAndRemainder(b)
-        return if (remainder.signum() < 0) quotient.subtract(BigInteger.ONE) else quotient
-    }
-
-    private fun ceilDiv(a: BigInteger, b: BigInteger): BigInteger {
-        require(b > BigInteger.ZERO)
-        return floorDiv(a.negate(), b).negate()
     }
 }
