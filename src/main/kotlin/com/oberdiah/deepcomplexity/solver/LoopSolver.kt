@@ -238,9 +238,6 @@ object LoopSolver {
                     solve.changePerStep =
                         stepDifferenceExpr
                             .evaluate(constraints, assistant.keyedPath("final").keyedPath("$key"))
-                            .unaryMapSameType { variances, constraints ->
-                                variances.collapse(constraints).toConstVariance()
-                            }
 
                     val initialValue =
                         solve.updateExpression
@@ -249,9 +246,6 @@ object LoopSolver {
                             }
                             .subtractedFrom(stepDifferenceExpr)
                             .evaluate(constraints, assistant.keyedPath("firstIter").keyedPath("$key"))
-                            .unaryMapSameType { variances, c ->
-                                variances.collapse(c).toConstVariance()
-                            }
 
                     solve.initialState = initialValue
                 }

@@ -128,7 +128,7 @@ public class MyTestData {
 		return (short) (q + 100);
 	}
 	
-	//	public static short comparisonTest1(short x) {
+	@RequiredScore(1.0)
 	public static short comparisonTest1(short x) {
 		if ((0x7fffffff - 15) + x < 0) {
 			return x;
@@ -137,6 +137,7 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short comparisonTest2(short x) {
 		if ((0x7fffffff - 15) + 2 * x < 0) {
 			return x;
@@ -145,14 +146,16 @@ public class MyTestData {
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short comparisonTest3(short x) {
-		if ((0x7fffffff - 15) - 0xfffff * x < 0) {
+		if ((0x7fffffff - 15) - 15 * x < 0) {
 			return x;
 		} else {
 			return 0;
 		}
 	}
 	
+	@RequiredScore(1.0)
 	public static short comparisonTest4(short x) {
 		if (x == 1) {
 			if (0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x < 0) {
@@ -162,6 +165,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(1.0)
 	public static short comparisonTest5(short x) {
 		if (x == 3) {
 			if (0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x < 0) {
@@ -171,6 +175,7 @@ public class MyTestData {
 		return 0;
 	}
 	
+	@RequiredScore(0.5)
 	public static short comparisonTest6(short x) {
 		if (x > 0) {
 			if (0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x < 0) {
@@ -178,6 +183,19 @@ public class MyTestData {
 			}
 		}
 		return 0;
+	}
+	
+	@RequiredScore(1.0)
+	public static short comparisonTest7(short x) {
+		if (x == 1) {
+			if (4000 * x > 0x7fffffff - 15 + 4000 * x) {
+				return 1;
+			} else {
+				return 0;
+			}
+		} else {
+			return 0;
+		}
 	}
 	
 	@RequiredScore(1.0)

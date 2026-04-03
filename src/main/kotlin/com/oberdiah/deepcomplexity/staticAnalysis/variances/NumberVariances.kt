@@ -9,8 +9,12 @@ import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Constraints
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberRange
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.oberdiah.deepcomplexity.utilities.Functional
+import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.oberdiah.deepcomplexity.utilities.Utilities.getSetSize
+import com.oberdiah.deepcomplexity.utilities.Utilities.toBigInteger
 import com.oberdiah.deepcomplexity.utilities.into
 import java.math.BigInteger
 
@@ -302,6 +306,15 @@ class NumberVariances<T : Number> private constructor(
 
         var constraints = constraints
 
+        if (!canSafelyUseLinearDividePath(other, constraints)) {
+            for (key in allKeys) {
+                val wrappedConstraint = tryGenerateWrappedSingleSidedConstraint(other, comparisonOp, constraints, key)
+                    ?: continue
+                constraints = constraints.withConstraint(key, wrappedConstraint)
+            }
+            return constraints
+        }
+
         for (key in allKeys) {
             val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
             val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
@@ -342,11 +355,128 @@ class NumberVariances<T : Number> private constructor(
                     BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
 
-                // I'm slightly unsure about this cast.
                 constraints = constraints.withConstraint(key, constraint.clampCast(key.ind)!!)
             }
         }
 
         return constraints
+    }
+
+    private fun tryGenerateWrappedSingleSidedConstraint(
+        other: NumberVariances<T>,
+        comparisonOp: ComparisonOp,
+        constraints: Constraints,
+        key: EvaluationKey<*>
+    ): NumberSet<*>? {
+        val keyInd = key.ind as? NumberIndicator<*> ?: return null
+        if (!keyInd.isWholeNum() || keyInd == BigIntegerIndicator || !ind.isWholeNum() || ind == BigIntegerIndicator) {
+            return null
+        }
+
+        fun <Q : Number> extra(typedKeyInd: NumberIndicator<Q>): NumberSet<Q>? {
+            val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
+            val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
+            val current = constraints.getConstraint(key).coerceTo(typedKeyInd).into()
+            if (current.ranges.size != 1) return null
+
+            val (coefficient, constant, target) = when {
+                myKeyMultiplier.isSingleValue() && otherKeyMultiplier.isZero() -> Triple(
+                    myKeyMultiplier.getSingleValue()!!,
+                    NumberVariances(ind, multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
+                    NumberVariances(ind, other.multipliers.filter { it.key != key }).collapse(constraints)
+                        .getSetSatisfying(comparisonOp)
+                )
+
+                myKeyMultiplier.isZero() && otherKeyMultiplier.isSingleValue() -> Triple(
+                    otherKeyMultiplier.getSingleValue()!!,
+                    NumberVariances(ind, other.multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
+                    NumberVariances(ind, multipliers.filter { it.key != key }).collapse(constraints)
+                        .getSetSatisfying(comparisonOp.flip())
+                )
+
+                else -> return null
+            }
+
+            if (target.isFull() || coefficient == BigInteger.ZERO || constant.ranges.size > 2 || target.ranges.size > 2) {
+                return current
+            }
+
+            val xRange = current.ranges.single()
+            val xMin = xRange.start.toBigInteger()
+            val xMax = xRange.end.toBigInteger()
+            val axMin = minOf(coefficient * xMin, coefficient * xMax)
+            val axMax = maxOf(coefficient * xMin, coefficient * xMax)
+            val modulus = ind.clazz.getSetSize()
+            var out = NumberSet.newEmpty(typedKeyInd)
+
+            for (constantRange in constant.ranges) for (targetRange in target.castToNumber(BigIntegerIndicator).ranges) {
+                val low = targetRange.start - constantRange.end
+                val high = targetRange.end - constantRange.start
+                val kStart = ceilDiv(axMin - high, modulus)
+                val kEnd = floorDiv(axMax - low, modulus)
+
+                var k = kStart
+                while (k <= kEnd) {
+                    val shiftedLow = low + k * modulus
+                    val shiftedHigh = high + k * modulus
+                    val start = if (coefficient > BigInteger.ZERO) ceilDiv(shiftedLow, coefficient) else ceilDiv(
+                        -shiftedHigh,
+                        -coefficient
+                    )
+                    val end = if (coefficient > BigInteger.ZERO) floorDiv(shiftedHigh, coefficient) else floorDiv(
+                        -shiftedLow,
+                        -coefficient
+                    )
+                    if (start <= end) {
+                        val clampedStart = maxOf(start, xMin)
+                        val clampedEnd = minOf(end, xMax)
+                        if (clampedStart <= clampedEnd) {
+                            if (out.ranges.size >= NumberSet.MAX_RANGES) {
+                                return current
+                            }
+                            out = out.union(
+                                NumberSet.newFromRange(
+                                    NumberRange.new(
+                                        clampedStart.castInto(typedKeyInd.clazz),
+                                        clampedEnd.castInto(typedKeyInd.clazz)
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    k += BigInteger.ONE
+                }
+            }
+
+            return out
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        return extra(keyInd as NumberIndicator<Number>)
+    }
+
+    private fun canSafelyUseLinearDividePath(other: NumberVariances<T>, constraints: Constraints): Boolean {
+        if (!ind.isWholeNum()) return false
+
+        fun fitsWithoutWrapping(set: NumberSet<BigInteger>): Boolean {
+            if (set.isEmpty()) return true
+            val (smallest, largest) = set.getRange()
+            return smallest >= ind.getMinValue().toBigInteger() && largest <= ind.getMaxValue().toBigInteger()
+        }
+
+        return fitsWithoutWrapping(collapseWithoutLimits(constraints))
+                && fitsWithoutWrapping(other.collapseWithoutLimits(constraints))
+    }
+
+    private fun floorDiv(a: BigInteger, b: BigInteger): BigInteger {
+        require(b > BigInteger.ZERO)
+
+        val (quotient, remainder) = a.divideAndRemainder(b)
+        return if (remainder.signum() < 0) quotient.subtract(BigInteger.ONE) else quotient
+    }
+
+    private fun ceilDiv(a: BigInteger, b: BigInteger): BigInteger {
+        require(b > BigInteger.ZERO)
+        return floorDiv(a.negate(), b).negate()
     }
 }
