@@ -4,11 +4,13 @@ import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp
 import com.oberdiah.deepcomplexity.evaluation.BinaryNumberOp.*
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp
 import com.oberdiah.deepcomplexity.evaluation.ComparisonOp.*
+import com.oberdiah.deepcomplexity.staticAnalysis.BigIntegerIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.Indicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
+import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
@@ -44,6 +46,10 @@ data class NumberSet<T : Number> private constructor(
 
     override fun isFull(): Boolean {
         if (ranges.isEmpty()) {
+            return false
+        }
+        if (ind == BigIntegerIndicator) {
+            // A big integer set can never be full
             return false
         }
 
@@ -242,6 +248,10 @@ data class NumberSet<T : Number> private constructor(
      * We're the right-hand side of the equation.
      */
     fun getSetSatisfying(comp: ComparisonOp): NumberSet<T> {
+        if (ind == BigIntegerIndicator) {
+            WONT_IMPLEMENT("We can't do this; there are no upper or lower bounds for BigInteger.")
+        }
+
         if (ranges.isEmpty()) {
             return this
         }
@@ -290,6 +300,10 @@ data class NumberSet<T : Number> private constructor(
     override fun contains(element: T): Boolean = ranges.any { element >= it.start && element <= it.end }
 
     override fun invert(): ISet<T> {
+        if (ind == BigIntegerIndicator) {
+            WONT_IMPLEMENT("We can't do this; there are no upper or lower bounds for BigInteger.")
+        }
+
         if (ranges.isEmpty()) {
             return makeNew(listOf(ind.getTotalRange()), hasThrownDivideByZero)
         }

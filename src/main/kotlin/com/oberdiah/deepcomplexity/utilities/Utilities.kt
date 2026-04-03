@@ -184,6 +184,19 @@ object Utilities {
         }
     }
 
+    fun Number.toBigInteger(): BigInteger {
+        return when (this) {
+            is Byte -> BigInteger.valueOf(this.toLong())
+            is Short -> BigInteger.valueOf(this.toLong())
+            is Int -> BigInteger.valueOf(this.toLong())
+            is Long -> BigInteger.valueOf(this)
+            is BigInteger -> this
+            is Float -> WONT_IMPLEMENT()
+            is Double -> WONT_IMPLEMENT()
+            else -> throw IllegalArgumentException("Unsupported type for toBigInteger")
+        }
+    }
+
     fun Number.isOne(): Boolean {
         return when (this) {
             is Byte -> this == 1.toByte()
@@ -192,6 +205,7 @@ object Utilities {
             is Long -> this == 1L
             is Float -> this == 1.0f
             is Double -> this == 1.0
+            is BigInteger -> this == BigInteger.ONE
             else -> throw IllegalArgumentException("Unsupported type for isOne")
         }
     }
@@ -204,6 +218,7 @@ object Utilities {
             is Long -> this == 0L
             is Float -> this == 0.0f
             is Double -> this == 0.0
+            is BigInteger -> this == BigInteger.ZERO
             else -> throw IllegalArgumentException("Unsupported type for isZero")
         }
     }
@@ -217,6 +232,7 @@ object Utilities {
             Long::class -> this.toLong()
             Float::class -> this.toFloat()
             Double::class -> this.toDouble()
+            BigInteger::class -> this.toBigInteger()
             else -> throw IllegalArgumentException("Unsupported type for cast")
         } as T
     }
@@ -234,7 +250,7 @@ object Utilities {
         }
 
         if (this is BigInteger || other is BigInteger) {
-            throw IllegalArgumentException("Cannot compare BigInteger with non-BigInteger for now. $this $other")
+            return this.toBigInteger().compareTo(other.toBigInteger())
         }
 
         val thisIsWhole = this is Byte || this is Short || this is Int || this is Long
@@ -397,6 +413,7 @@ object Utilities {
             is Short -> if (this > Short.MIN_VALUE) (this - 1).toShort() else Short.MIN_VALUE
             is Int -> if (this > Int.MIN_VALUE) this - 1 else Int.MIN_VALUE
             is Long -> if (this > Long.MIN_VALUE) this - 1 else Long.MIN_VALUE
+            is BigInteger -> this.subtract(BigInteger.ONE)
             is Float -> this.nextDown()
             is Double -> this.nextDown()
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for downOneEpsilon")
@@ -413,6 +430,7 @@ object Utilities {
             is Short -> if (this < Short.MAX_VALUE) (this + 1).toShort() else Short.MAX_VALUE
             is Int -> if (this < Int.MAX_VALUE) this + 1 else Int.MAX_VALUE
             is Long -> if (this < Long.MAX_VALUE) this + 1 else Long.MAX_VALUE
+            is BigInteger -> this.add(BigInteger.ONE)
             is Float -> this.nextUp()
             is Double -> this.nextUp()
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for upOneEpsilon")

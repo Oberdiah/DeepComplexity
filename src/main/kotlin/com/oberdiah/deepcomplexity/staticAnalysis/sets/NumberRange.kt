@@ -1,5 +1,6 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.sets
 
+import com.oberdiah.deepcomplexity.staticAnalysis.BigIntegerIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
@@ -14,6 +15,7 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.min
 import com.oberdiah.deepcomplexity.utilities.Utilities.minus
 import com.oberdiah.deepcomplexity.utilities.Utilities.plus
 import com.oberdiah.deepcomplexity.utilities.Utilities.times
+import com.oberdiah.deepcomplexity.utilities.Utilities.toBigInteger
 import com.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -60,7 +62,7 @@ data class NumberRange<T : Number> private constructor(
             }
             TODO("Not implemented full FP size yet, not sure if we'll ever need it")
         } else {
-            return BigInteger.valueOf(end.toLong()) - BigInteger.valueOf(start.toLong()) + BigInteger.ONE
+            return end.toBigInteger() - start.toBigInteger() + BigInteger.ONE
         }
     }
 
@@ -70,10 +72,7 @@ data class NumberRange<T : Number> private constructor(
         }
 
         val baseline = fromConstant(newInd.getZero())
-        return baseline.resolvePotentialOverflow(
-            BigInteger.valueOf(start.toLong()),
-            BigInteger.valueOf(end.toLong())
-        )
+        return baseline.resolvePotentialOverflow(start.toBigInteger(), end.toBigInteger())
     }
 
     override fun toString(): String {
@@ -81,7 +80,7 @@ data class NumberRange<T : Number> private constructor(
             return "$start"
         }
 
-        return "${ind.stringify(start)}..${ind.stringify(end)}"
+        return "${ind.rangeStringify(start)}..${ind.rangeStringify(end)}"
     }
 
     fun add(other: NumberRange<T>): Iterable<NumberRange<T>> {
@@ -89,8 +88,8 @@ data class NumberRange<T : Number> private constructor(
             listOf(newRange(start + other.start, end + other.end))
         } else {
             resolvePotentialOverflow(
-                BigInteger.valueOf(start.toLong()).add(BigInteger.valueOf(other.start.toLong())),
-                BigInteger.valueOf(end.toLong()).add(BigInteger.valueOf(other.end.toLong())),
+                start.toBigInteger().add(other.start.toBigInteger()),
+                end.toBigInteger().add(other.end.toBigInteger()),
             )
         }
     }
@@ -100,8 +99,8 @@ data class NumberRange<T : Number> private constructor(
             listOf(newRange(start - other.end, end - other.start))
         } else {
             resolvePotentialOverflow(
-                BigInteger.valueOf(start.toLong()).subtract(BigInteger.valueOf(other.end.toLong())),
-                BigInteger.valueOf(end.toLong()).subtract(BigInteger.valueOf(other.start.toLong())),
+                start.toBigInteger().subtract(other.end.toBigInteger()),
+                end.toBigInteger().subtract(other.start.toBigInteger()),
             )
         }
     }
@@ -214,7 +213,7 @@ data class NumberRange<T : Number> private constructor(
     }
 
     private fun multiply(a: Number, b: Number): BigInteger {
-        return BigInteger.valueOf(a.toLong()).multiply(BigInteger.valueOf(b.toLong()))
+        return a.toBigInteger().multiply(b.toBigInteger())
     }
 
     private fun divide(a: Number, b: Number): BigInteger? {
@@ -222,29 +221,35 @@ data class NumberRange<T : Number> private constructor(
             return null
         }
 
-        return BigInteger.valueOf(a.toLong()).divide(BigInteger.valueOf(b.toLong()))
+        return a.toBigInteger().divide(b.toBigInteger())
     }
 
     private fun bigIntToT(v: BigInteger): T {
-        require(v >= BigInteger.valueOf(ind.getMinValue().toLong())) {
+        require(v >= ind.getMinValue().toBigInteger()) {
             "Value $v is below minimum value ${ind.getMinValue()}"
         }
-        require(v <= BigInteger.valueOf(ind.getMaxValue().toLong())) {
+        require(v <= ind.getMaxValue().toBigInteger()) {
             "Value $v is above maximum value ${ind.getMaxValue()}"
         }
-        return v.longValueExact().castInto(clazz)
+        return v.castInto(clazz)
     }
 
     private fun resolvePotentialOverflow(
         initialLower: BigInteger,
         initialUpper: BigInteger
     ): Iterable<NumberRange<T>> {
+        if (ind == BigIntegerIndicator) {
+            // Safety: We've verified that our indicator, and therefore T, is already BigInteger.
+            @Suppress("UNCHECKED_CAST")
+            return listOf(newRange(initialLower as T, initialUpper as T))
+        }
+
         require(initialLower <= initialUpper) {
             "Lower bound $initialLower is greater than upper bound $initialUpper"
         }
 
-        val indMin = BigInteger.valueOf(ind.getMinValue().toLong())
-        val indMax = BigInteger.valueOf(ind.getMaxValue().toLong())
+        val indMin = ind.getMinValue().toBigInteger()
+        val indMax = ind.getMaxValue().toBigInteger()
         val setSize = ind.clazz.getSetSize()
 
         val distanceToShunt = setSize * if (initialLower < indMin) {

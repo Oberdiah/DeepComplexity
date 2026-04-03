@@ -10,6 +10,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.ObjectVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
+import java.math.BigInteger
 import kotlin.reflect.KClass
 
 /**
@@ -89,6 +90,7 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
                 is Long -> LongIndicator
                 is Short -> ShortIndicator
                 is Byte -> ByteIndicator
+                is BigInteger -> BigIntegerIndicator
                 else -> TODO("No NumberIndicator for ${value::class}")
             }
 
@@ -121,13 +123,20 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
      * Returns a string representation of the number, or the empty string
      * if the number is the minimum or maximum value. Useful for printing ranges.
      */
-    fun stringify(i: T): String = if (i == getMaxValue() || i == getMinValue()) "" else i.toString()
+    fun rangeStringify(i: T): String {
+        return if (this is BigIntegerIndicator) {
+            i.toString()
+        } else {
+            if (i == getMaxValue() || i == getMinValue()) "" else i.toString()
+        }
+    }
 
     fun isWholeNum(): Boolean {
         return this is IntIndicator
                 || this is LongIndicator
                 || this is ShortIndicator
                 || this is ByteIndicator
+                || this is BigIntegerIndicator
     }
 
     /**
@@ -173,6 +182,12 @@ data object IntIndicator : NumberIndicator<Int>(Int::class) {
     override fun getMaxValue(): Int = Int.MAX_VALUE
     override fun getMinValue(): Int = Int.MIN_VALUE
     override fun getInt(int: Int): Int = int
+}
+
+data object BigIntegerIndicator : NumberIndicator<BigInteger>(BigInteger::class) {
+    override fun getMaxValue(): BigInteger = WONT_IMPLEMENT("BigInteger.MAX_VALUE is not a thing")
+    override fun getMinValue(): BigInteger = WONT_IMPLEMENT("BigInteger.MIN_VALUE is not a thing")
+    override fun getInt(int: Int): BigInteger = BigInteger.valueOf(int.toLong())
 }
 
 data object LongIndicator : NumberIndicator<Long>(Long::class) {
