@@ -42,6 +42,10 @@ data class NumberRange<T : Number> private constructor(
         fun <T : Number> new(lower: T, upper: T): NumberRange<T> {
             return NumberRange(NumberIndicator.fromValue(lower), lower, upper)
         }
+
+        fun <T : Number> fullRange(ind: NumberIndicator<T>): NumberRange<T> {
+            return NumberRange(ind, ind.getMinValue(), ind.getMaxValue())
+        }
     }
 
     fun contains(value: Number): Boolean {

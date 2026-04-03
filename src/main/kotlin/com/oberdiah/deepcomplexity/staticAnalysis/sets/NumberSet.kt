@@ -31,11 +31,22 @@ data class NumberSet<T : Number> private constructor(
     // In order, and non-overlapping
     val ranges: List<NumberRange<T>>
 ) : ISet<T> {
+    companion object {
+        const val MAX_RANGES = 10
+
+        fun <T : Number> zero(ind: NumberIndicator<T>): NumberSet<T> = newFromConstant(ind.getZero())
+        fun <T : Number> one(ind: NumberIndicator<T>): NumberSet<T> = newFromConstant(ind.getOne())
+        fun <T : Number> newFromConstant(constant: T): NumberSet<T> = newFromRange(NumberRange.fromConstant(constant))
+        fun <T : Number> newFromRange(range: NumberRange<T>): NumberSet<T> = NumberSet(range.ind, false, listOf(range))
+        fun <T : Number> newEmpty(ind: NumberIndicator<T>): NumberSet<T> = NumberSet(ind, false, emptyList())
+        fun <T : Number> newFull(ind: NumberIndicator<T>): NumberSet<T> = newFromRange(NumberRange.fullRange(ind))
+    }
+
     val clazz: KClass<T> = ind.clazz
 
     init {
-        require(ranges.size < 10) {
-            "NumberSet ($this) has more than 10 ranges (${ranges.size}), this may be slow."
+        require(ranges.size <= MAX_RANGES) {
+            "NumberSet ($this) has more than $MAX_RANGES ranges (${ranges.size}), this may be slow."
         }
     }
 
@@ -53,8 +64,12 @@ data class NumberSet<T : Number> private constructor(
             return false
         }
 
-        val range = getRange()
-        return range.first == ind.getMinValue() && range.second == ind.getMaxValue()
+        if (ranges.size != 1) {
+            return false
+        }
+
+        val range = ranges.first()
+        return range.start == ind.getMinValue() && range.end == ind.getMaxValue()
     }
 
     private fun makeNew(ranges: List<NumberRange<T>>, divByZero: Boolean = hasThrownDivideByZero) =
@@ -132,8 +147,8 @@ data class NumberSet<T : Number> private constructor(
             MODULO -> return doModulo(other)
         }
 
-        if (ranges.size > 10) {
-            throw RuntimeException("NumberSet has more than 10 ranges, this may be slow.")
+        if (ranges.size > MAX_RANGES || other.ranges.size > MAX_RANGES) {
+            throw RuntimeException("NumberSet has more than $MAX_RANGES ranges, this may be slow.")
         }
 
         var divByZero = hasThrownDivideByZero || other.hasThrownDivideByZero
@@ -242,7 +257,7 @@ data class NumberSet<T : Number> private constructor(
     }
 
     override fun toConstVariance(): Variances<T> = NumberVariances.newFromConstant(this)
-    
+
     /**
      * Returns a new set containing everything that could satisfy the comparison operation.
      * I.e. for equality, the entire range is returned as the entire range may return true.
@@ -291,7 +306,7 @@ data class NumberSet<T : Number> private constructor(
                         )
                     } else {
                         // In this case we can't say anything at all, we have to return the entire range :(
-                        listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue()))
+                        listOf(NumberRange.fullRange(ind))
                     }
                 }
             }
@@ -368,38 +383,4 @@ data class NumberSet<T : Number> private constructor(
 
     fun isOne(): Boolean = getSingleValue()?.isOne() ?: false
     fun isZero(): Boolean = getSingleValue()?.isZero() ?: false
-
-    companion object {
-        fun <T : Number> zero(ind: NumberIndicator<T>): NumberSet<T> = NumberSet(
-            ind,
-            false,
-            listOf(NumberRange.fromConstant(ind.getZero())),
-        )
-
-        fun <T : Number> one(ind: NumberIndicator<T>): NumberSet<T> = NumberSet(
-            ind,
-            false,
-            listOf(NumberRange.fromConstant(ind.getOne())),
-        )
-
-        fun <T : Number> newFromConstant(
-            constant: T
-        ): NumberSet<T> {
-            val ind = NumberIndicator.fromValue(constant)
-            return NumberSet(
-                ind,
-                false,
-                listOf(NumberRange.fromConstant(constant)),
-            )
-        }
-
-        fun <T : Number> newFromRange(range: NumberRange<T>): NumberSet<T> =
-            NumberSet(range.ind, false, listOf(range))
-
-        fun <T : Number> newEmpty(ind: NumberIndicator<T>): NumberSet<T> =
-            NumberSet(ind, false, emptyList())
-
-        fun <T : Number> newFull(ind: NumberIndicator<T>): NumberSet<T> =
-            NumberSet(ind, false, listOf(NumberRange.new(ind.getMinValue(), ind.getMaxValue())))
-    }
 }

@@ -112,7 +112,7 @@ sealed class NumberIndicator<T : Number>(clazz: KClass<T>) : Indicator<T>(clazz)
     /**
      * Returns a pair of the minimum and maximum values of this number type, in that order.
      */
-    fun getTotalRange(): NumberRange<T> = NumberRange.new(getMinValue(), getMaxValue())
+    fun getTotalRange(): NumberRange<T> = NumberRange.fullRange(this)
 
     abstract fun getMaxValue(): T
     abstract fun getMinValue(): T
