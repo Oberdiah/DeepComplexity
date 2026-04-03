@@ -6,6 +6,7 @@ import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiMethod
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase5
 import org.junit.jupiter.api.*
+import java.io.File
 import java.net.URI
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -15,6 +16,8 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
     companion object {
         val summaryDescription = mutableListOf<String>()
     }
+
+    data class TestResult(val summaryMsg: String, val msgBody: String, val passed: Boolean)
 
     class TestInfo(
         val testDisplayName: String,
@@ -27,8 +30,10 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
     data class TestSettings(
         val cloneContexts: Boolean,
         val updateAnnotations: Boolean,
-        val ignoreExpressionSize: Boolean
+        val ignoreExpressionSize: Boolean,
     )
+
+    fun shouldOnlyPrintFailures() = System.getenv("ONLY_PRINT_FAILURES") == "True"
 
     @Test
     @Order(1)
@@ -40,7 +45,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
     fun runTests(): Collection<DynamicTest> {
         // Find all files in the testdata/ai directory using standard Java I/O
         val testDirectory = "src/test/java/testdata/"
-        val allFiles = java.io.File(testDirectory).walk()
+        val allFiles = File(testDirectory).walk()
             .filter { it.isFile && it.extension == "java" }
             .map { it.invariantSeparatorsPath.replace(testDirectory, "") }
 
@@ -51,6 +56,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
         val fileToRun = System.getenv("FILE_FILTER")
         val ignoreExpressionSize = System.getenv("IGNORE_EXPRESSION_SIZE") == "True"
+        val onlyPrintFailures = shouldOnlyPrintFailures()
 
         val outputFiles = if (fileToRun != null) {
             outputFilesPreFilter.filter { it?.name?.contains(fileToRun) == true }
@@ -82,7 +88,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                                         TestSettings(
                                             cloneContexts = false,
                                             updateAnnotations = true,
-                                            ignoreExpressionSize = ignoreExpressionSize
+                                            ignoreExpressionSize = ignoreExpressionSize,
                                         )
                                     ), TestInfo(
                                         psiMethod.name + " C.",
@@ -92,7 +98,7 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
                                         TestSettings(
                                             cloneContexts = true,
                                             updateAnnotations = false,
-                                            ignoreExpressionSize = ignoreExpressionSize
+                                            ignoreExpressionSize = ignoreExpressionSize,
                                         )
                                     )
                                 )
@@ -129,8 +135,16 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
 
             tests.add(DynamicTest.dynamicTest(method.testDisplayName, testSourceUri) {
                 app.runReadAction {
-                    val (msg, passed) = TestUtilities.testMethod(method)
-                    summaryDescription.add("${method.testDisplayName.padEnd(32)}: $msg")
+                    val (summary, msgBody, passed) = TestUtilities.testMethod(method)
+                    summaryDescription.add("${method.testDisplayName.padEnd(32)}: $summary")
+                    if (onlyPrintFailures) {
+                        if (!passed) {
+                            println(msgBody)
+                        }
+                    } else {
+                        println(msgBody)
+                    }
+
                     if (!passed) {
                         throw AssertionError("Test ${method.testDisplayName} failed.")
                     }
@@ -144,6 +158,8 @@ class SimpleMustPassTest : LightJavaCodeInsightFixtureTestCase5() {
     @Test
     @Order(3)
     fun summary() {
+        if (shouldOnlyPrintFailures()) return
+
         println("###############################")
         println("##   Simple Must Pass Test   ##")
         println("###############################")

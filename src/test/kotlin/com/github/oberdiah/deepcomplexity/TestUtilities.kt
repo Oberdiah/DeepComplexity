@@ -10,6 +10,8 @@ import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.ConstraintsOrP
 import com.oberdiah.deepcomplexity.utilities.Utilities
 import com.oberdiah.deepcomplexity.utilities.into
 import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
@@ -48,19 +50,29 @@ object TestUtilities {
     val annotationInformation = mutableListOf<MethodAnnotationInfo>()
 
     /**
+     * Helper to capture stack traces as strings instead of printing to stderr.
+     */
+    private fun Throwable.stackTraceToString(): String {
+        val sw = StringWriter()
+        this.printStackTrace(PrintWriter(sw))
+        return sw.toString()
+    }
+
+    /**
      * Returns a string summary of the test results, to be printed in the summary test,
      * and if the test passed.
      */
-    fun testMethod(testInfo: SimpleMustPassTest.TestInfo): Pair<String, Boolean> {
+    fun testMethod(testInfo: SimpleMustPassTest.TestInfo): SimpleMustPassTest.TestResult {
+        val log = StringBuilder()
         Utilities.TEST_GLOBALS.SHOULD_CLONE_CONTEXTS = testInfo.testSettings.cloneContexts
 
-        println("Processing method ${testInfo.className}:")
+        log.appendLine("Processing method ${testInfo.className}:")
 
         val clazz = Class.forName(testInfo.psiMethod.containingClass?.qualifiedName)
         val reflectMethod = clazz.declaredMethods.find { it.name == testInfo.className }
             ?: throw NoSuchMethodException("Method ${testInfo.className} not found in class ${clazz.name}")
 
-        val scoreResults = getMethodScore(reflectMethod, testInfo)
+        val scoreResults = getMethodScore(reflectMethod, testInfo, log)
 
         // Track perfect-score methods for optional annotation updates in the summary phase.
         val filePath = testInfo
@@ -69,6 +81,7 @@ object TestUtilities {
             ?.virtualFile
             ?.path
             ?.replace("/src", "src/test/java/testdata")
+
         if (filePath != null && testInfo.testSettings.updateAnnotations) {
             annotationInformation.add(
                 MethodAnnotationInfo(
@@ -80,16 +93,18 @@ object TestUtilities {
             )
         }
 
-        val (columns, passed) = getSummaryTableRow(testInfo, scoreResults, reflectMethod)
+        val (columns, passed) = getSummaryTableRow(testInfo, scoreResults, reflectMethod, log)
         val columnSpacing = listOf(17, 11, 7, 1, 1)
         val summary = columns.mapIndexed { i, s -> s.padEnd(columnSpacing[i]) }.joinToString(" | ")
-        return summary to passed
+
+        return SimpleMustPassTest.TestResult(summary, log.toString(), passed)
     }
 
     private fun getSummaryTableRow(
         testInfo: SimpleMustPassTest.TestInfo,
         scoreResults: MethodScoreResults,
-        method: Method
+        method: Method,
+        log: StringBuilder
     ): Pair<List<String>, Boolean> {
         val requiredScoreAnnotation = method.getAnnotation(RequiredScore::class.java)
         val expressionSizeAnnotation = method.getAnnotation(ExpectedExpressionSize::class.java)
@@ -101,14 +116,14 @@ object TestUtilities {
             is MethodFailed -> scoreResults.failureMessage
             is MethodRan -> scoreResults.fraction
         }
-        println("\tExpression size: ${scoreResults.expressionSize}")
+        log.appendLine("\tExpression size: ${scoreResults.expressionSize}")
 
         // CloneContexts tests will have different expression sizes, so we skip expression size checks for those.
         if (!testInfo.testSettings.ignoreExpressionSize && !testInfo.testSettings.cloneContexts) {
             if (expressionSizeAnnotation != null) {
                 val requiredMaxExpressionSize = expressionSizeAnnotation.value
                 if (scoreResults.expressionSize > requiredMaxExpressionSize) {
-                    println("\tExpression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize")
+                    log.appendLine("\tExpression size ${scoreResults.expressionSize} exceeded the expected maximum of $requiredMaxExpressionSize")
                     return listOf(
                         "### Failed ###",
                         scoreReceivedColumn,
@@ -126,13 +141,13 @@ object TestUtilities {
 
             if (methodScoreStr.toDouble() < requiredScoreStr.toDouble()) {
                 if (scoreResults.score == 0.0) {
-                    println("\t$msg")
+                    log.appendLine("\t$msg")
                 } else {
-                    println("\tReceived a score of $msg ($methodScoreStr%) which was not sufficient (<$requiredScoreStr%)")
+                    log.appendLine("\tReceived a score of $msg ($methodScoreStr%) which was not sufficient (<$requiredScoreStr%)")
                 }
                 return listOf("### Failed ###", scoreReceivedColumn, "$requiredScoreStr%", "", extraInfoColumn) to false
             } else {
-                println("\tReceived a score of $msg ($methodScoreStr%) which was sufficient (>=$requiredScoreStr%)")
+                log.appendLine("\tReceived a score of $msg ($methodScoreStr%) which was sufficient (>=$requiredScoreStr%)")
                 val notes = if (methodScoreStr.toDouble() > requiredScoreStr.toDouble())
                     "Exceeded expectations" else ""
 
@@ -142,13 +157,17 @@ object TestUtilities {
                 return listOf("Passed", msg, "$methodScoreStr%", goldStar, notes) to true
             }
         } else {
-            println(if (scoreResults.score == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg ($methodScoreStr%)")
-            println("\tThis method was not required to reach a score threshold and as such it passed by default.")
+            log.appendLine(if (scoreResults.score == 0.0) "\t$extraInfoColumn" else "\tReceived a score of $msg ($methodScoreStr%)")
+            log.appendLine("\tThis method was not required to reach a score threshold and as such it passed by default.")
             return listOf("Passed by default", scoreReceivedColumn, "$methodScoreStr%", "", extraInfoColumn) to true
         }
     }
 
-    private fun getMethodScore(method: Method, testInfo: SimpleMustPassTest.TestInfo): MethodScoreResults {
+    private fun getMethodScore(
+        method: Method,
+        testInfo: SimpleMustPassTest.TestInfo,
+        log: StringBuilder
+    ): MethodScoreResults {
         val contextStartTime = System.nanoTime()
         val returnValue = try {
             repeat(System.getenv("NUM_EXTRA_RUNS")?.toIntOrNull() ?: 0) {
@@ -163,17 +182,17 @@ object TestUtilities {
                 throw e
             }
 
-            e.printStackTrace()
+            log.appendLine(e.stackTraceToString())
             return MethodFailed(
                 (e.message ?: "Failed to parse PSI")
                     .replace("An operation is not implemented: ", ""),
             )
         }.returnValue!!.optimise()
-        println("\tMethod processing took ${(System.nanoTime() - contextStartTime) / 1_000_000}ms")
+
+        log.appendLine("\tMethod processing took ${(System.nanoTime() - contextStartTime) / 1_000_000}ms")
 
         val range = try {
             val evaluationStartTime = System.nanoTime()
-
             val tags = ExpressionTagger.buildTags(returnValue)
 
             repeat(System.getenv("NUM_EXTRA_RUNS")?.toIntOrNull() ?: 0) {
@@ -183,12 +202,14 @@ object TestUtilities {
 
             val assistant = EvaluatorAssistant.createInitial(tags)
             val bundle: Bundle<*> = returnValue.evaluate(ConstraintsOrPile.unconstrained(), assistant)
-            println("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
-            println(assistant.getCacheReadout().prependIndent())
-            println((assistant.getTrace()).prependIndent())
+
+            log.appendLine("\tEvaluation took ${(System.nanoTime() - evaluationStartTime) / 1_000_000}ms")
+            log.appendLine(assistant.getCacheReadout().prependIndent())
+            log.appendLine((assistant.getTrace()).prependIndent())
 
             // Good to calculate this after we've done our debug printing, just so if this ends up throwing
             // we still get to see the expression tree.
+
             val unknownsInReturn = returnValue.allSubExprsOfType<VariableExpr<*>>().mapToSet { it.key }
 
             // For every test we have, there is no reason for unknowns to be present by the time we return.
@@ -201,14 +222,14 @@ object TestUtilities {
             val collapsedBundle = castBundle.collapse().into()
             collapsedBundle
         } catch (e: Throwable) {
-            e.printStackTrace()
+            log.appendLine(e.stackTraceToString())
             return MethodFailed(
                 (e.message ?: "Failed to parse PSI")
                     .replace("An operation is not implemented: ", "")
             )
         }
 
-        println("\tRange of return value: $range")
+        log.appendLine("\tRange of return value: $range")
 
         // For now, int-only. Short is the goal though.
         if (method.parameterCount != 1 ||
@@ -217,6 +238,7 @@ object TestUtilities {
         ) {
             return MethodFailed("Skipped method ${method.name} as it's not valid for testing.")
         }
+
         for (s in Short.MIN_VALUE..Short.MAX_VALUE) {
             predictedArray[s - Short.MIN_VALUE] = range.contains(s.toShort())
             actualArray[s - Short.MIN_VALUE] = false
@@ -246,7 +268,7 @@ object TestUtilities {
                 }
                 return MethodFailed("Failed for input $s, exception: ${e.targetException.message}")
             } catch (e: Throwable) {
-                e.printStackTrace()
+                log.appendLine(e.stackTraceToString())
                 return MethodFailed("Method ${method.name} threw an unexpected exception for input $s: ${e.message}")
             }
         }
@@ -255,31 +277,30 @@ object TestUtilities {
         val numEntriesPredicted = predictedArray.count { it }
 
         val printLen = 50
-        print("\n\t")
+        log.append("\n\t")
         for (i in 1..printLen) {
             val index = i - printLen / 2
-            print(if (index in 0..9) "$index" else ".")
+            log.append(if (index in 0..9) "$index" else ".")
         }
-        print("\n\t")
+        log.append("\n\t")
         for (i in 1..printLen) {
             val index = i - Short.MIN_VALUE - printLen / 2
-            print(if (actualArray[index]) "X" else " ")
+            log.append(if (actualArray[index]) "X" else " ")
         }
         if (numEntriesActual < 20) {
-            print("(" + actualArray.indices.filter { actualArray[it] }
+            log.append("(" + actualArray.indices.filter { actualArray[it] }
                 .joinToString(", ") { (it + Short.MIN_VALUE).toString() } + ")")
         }
-        print("\n\t")
+        log.append("\n\t")
         for (i in 1..printLen) {
             val index = i - Short.MIN_VALUE - printLen / 2
-            print(if (predictedArray[index]) "X" else " ")
+            log.append(if (predictedArray[index]) "X" else " ")
         }
         if (numEntriesPredicted < 20) {
-            print("(" + predictedArray.indices.filter { predictedArray[it] }
+            log.append("(" + predictedArray.indices.filter { predictedArray[it] }
                 .joinToString(", ") { (it + Short.MIN_VALUE).toString() } + ")")
         }
-        println()
-        println()
+        log.appendLine().appendLine()
 
         if (numEntriesPredicted == 0) {
             return MethodFailed("Didn't predict any valid values at all")
@@ -298,11 +319,11 @@ object TestUtilities {
             // Print out all values if there are few enough.
             val filtered = predictedArray.indices.filter { predictedArray[it] && !actualArray[it] }
             val joined = filtered.take(20).joinToString(", ") { (it + Short.MIN_VALUE).toString() }
-            print("\tLost score for: $joined")
+            log.append("\tLost score for: $joined")
             if (filtered.size > 20) {
-                println(" and ${filtered.size - 20} more")
+                log.appendLine(" and ${filtered.size - 20} more")
             } else {
-                println()
+                log.appendLine()
             }
         }
 
