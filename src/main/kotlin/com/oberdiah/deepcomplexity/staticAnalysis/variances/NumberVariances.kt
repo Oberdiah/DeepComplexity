@@ -48,10 +48,6 @@ import java.math.BigInteger
  */
 class NumberVariances<T : Number> private constructor(
     override val ind: NumberIndicator<T>,
-    /**
-     * The indicator of the key is important; it lets us know the underlying constraints of the types we're
-     * dealing with.
-     */
     multipliers: Map<EvaluationKey<*>, NumberSet<BigInteger>> = mapOf()
 ) : Variances<T> {
     private val multipliers: Map<EvaluationKey<*>, NumberSet<BigInteger>> =
@@ -85,7 +81,7 @@ class NumberVariances<T : Number> private constructor(
         fun <T : Number> newFromConstant(constant: NumberSet<T>): NumberVariances<T> =
             NumberVariances(
                 constant.ind,
-                mapOf(EvaluationKey.ConstantKey to constant.castTo(BigIntegerIndicator).into())
+                mapOf(EvaluationKey.ConstantKey to constant.castToNumber(BigIntegerIndicator))
             )
 
         fun <T : Number> newFromVariance(ind: NumberIndicator<T>, key: EvaluationKey<*>): NumberVariances<T> =
@@ -132,7 +128,7 @@ class NumberVariances<T : Number> private constructor(
      * all the information it needs alone.
      */
     override fun collapse(constraints: Constraints): NumberSet<T> =
-        collapseWithoutLimits(constraints).castTo(ind).into()
+        collapseWithoutLimits(constraints).castToNumber(ind)
 
     private fun collapseWithoutLimits(constraints: Constraints): NumberSet<BigInteger> =
         multipliers.entries.fold(BigIntegerIndicator.onlyZeroSet()) { acc, (key, multiplier) ->
@@ -290,6 +286,10 @@ class NumberVariances<T : Number> private constructor(
         comparisonOp: ComparisonOp,
         constraints: Constraints
     ): Constraints {
+        require(ind == other.ind) {
+            "Cannot generate constraints from a variance of a different type. ($ind vs ${other.ind})"
+        }
+
         // Note to self: This almost certainly contains bugs of the 'funky-number-edge-cases' variety.
         // The divide is especially suspect.
 

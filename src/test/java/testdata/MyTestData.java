@@ -128,6 +128,58 @@ public class MyTestData {
 		return (short) (q + 100);
 	}
 	
+	//	public static short comparisonTest1(short x) {
+	public static short comparisonTest1(short x) {
+		if ((0x7fffffff - 15) + x < 0) {
+			return x;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short comparisonTest2(short x) {
+		if ((0x7fffffff - 15) + 2 * x < 0) {
+			return x;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short comparisonTest3(short x) {
+		if ((0x7fffffff - 15) - 0xfffff * x < 0) {
+			return x;
+		} else {
+			return 0;
+		}
+	}
+	
+	public static short comparisonTest4(short x) {
+		if (x == 1) {
+			if (0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x < 0) {
+				return x;
+			}
+		}
+		return 0;
+	}
+	
+	public static short comparisonTest5(short x) {
+		if (x == 3) {
+			if (0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x < 0) {
+				return x;
+			}
+		}
+		return 0;
+	}
+	
+	public static short comparisonTest6(short x) {
+		if (x > 0) {
+			if (0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x + 0x3fffffffffffffffL * x < 0) {
+				return x;
+			}
+		}
+		return 0;
+	}
+	
 	@RequiredScore(1.0)
 	@ExpectedExpressionSize(4)
 	public static short negateTest(short x) {

@@ -77,6 +77,8 @@ data class NumberSet<T : Number> private constructor(
         return makeNew(ranges.flatMap { elem -> zero.subtract(elem) })
     }
 
+    fun <Q : Number> castToNumber(newInd: NumberIndicator<Q>): NumberSet<Q> = castTo(newInd).into()
+
     /**
      * Like a regular cast, but rather than wrapping it will clamp instead.
      */
@@ -240,7 +242,7 @@ data class NumberSet<T : Number> private constructor(
     }
 
     override fun toConstVariance(): Variances<T> = NumberVariances.newFromConstant(this)
-
+    
     /**
      * Returns a new set containing everything that could satisfy the comparison operation.
      * I.e. for equality, the entire range is returned as the entire range may return true.
