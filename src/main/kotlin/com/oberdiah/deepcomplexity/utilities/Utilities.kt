@@ -39,7 +39,7 @@ object Utilities {
     val DD_NEGATIVE_INFINITY: DD = DD.of(Double.NEGATIVE_INFINITY)
 
     operator fun DD.compareTo(other: DD): Int {
-        // First compare the high parts
+        // First, compare the high parts
         val hiComparison = this.hi().compareTo(other.hi())
         if (hiComparison != 0) {
             return hiComparison
@@ -381,6 +381,7 @@ object Utilities {
             is Long -> if (this < other.toLong()) this else other.toLong()
             is Float -> if (this < other.toFloat()) this else other.toFloat()
             is Double -> if (this < other.toDouble()) this else other.toDouble()
+            is BigInteger -> if (this < other) this else other
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for min")
         } as T
     }
@@ -398,6 +399,7 @@ object Utilities {
             is Long -> if (this > other.toLong()) this else other.toLong()
             is Float -> if (this > other.toFloat()) this else other.toFloat()
             is Double -> if (this > other.toDouble()) this else other.toDouble()
+            is BigInteger -> if (this > other) this else other
             else -> throw IllegalArgumentException("Unsupported type (${this::class}) for max")
         } as T
     }
