@@ -13,6 +13,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberRange
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.NumberSet
 import com.oberdiah.deepcomplexity.utilities.Functional
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.oberdiah.deepcomplexity.utilities.Utilities.getSetSize
 import com.oberdiah.deepcomplexity.utilities.Utilities.toBigInteger
 import com.oberdiah.deepcomplexity.utilities.into
@@ -162,7 +163,7 @@ class NumberVariances<T : Number> private constructor(
                 // Is it possible that our pre-cast setup could have overflowed its old bounds?
                 val totalRange = collapseWithoutLimits(constraints).getRange()
                 val indRange = ind.getTotalRange()
-                if (indRange.contains(totalRange.first) && indRange.contains(totalRange.second)) {
+                if (indRange.contains(totalRange.start) && indRange.contains(totalRange.end)) {
                     // No risk of overflow, we can just do a type swap and be done with it.
                     return NumberVariances(newInd, multipliers)
                 } else {
@@ -459,9 +460,8 @@ class NumberVariances<T : Number> private constructor(
         if (!ind.isWholeNum()) return false
 
         fun fitsWithoutWrapping(set: NumberSet<BigInteger>): Boolean {
-            if (set.isEmpty()) return true
-            val (smallest, largest) = set.getRange()
-            return smallest >= ind.getMinValue().toBigInteger() && largest <= ind.getMaxValue().toBigInteger()
+            val (_, smallest, largest) = set.getRange()
+            return smallest >= ind.getMinValue() && largest <= ind.getMaxValue()
         }
 
         return fitsWithoutWrapping(collapseWithoutLimits(constraints))

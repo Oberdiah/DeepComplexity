@@ -78,14 +78,14 @@ data class NumberSet<T : Number> private constructor(
     /**
      * Returns the full range of this number set (Smallest possible value to largest)
      */
-    fun getRange(): Pair<T, T> {
+    fun getRange(): NumberRange<T> {
         val smallest = ranges.first().start
         val largest = ranges.last().end
-        return Pair(smallest, largest)
+        return NumberRange.new(smallest, largest)
     }
 
-    fun smallestValue(): T = getRange().first
-    fun largestValue(): T = getRange().second
+    fun smallestValue(): T = getRange().start
+    fun largestValue(): T = getRange().end
 
     fun negate(): NumberSet<T> {
         val zero = NumberRange.fromConstant(ind.getZero())
@@ -166,7 +166,7 @@ data class NumberSet<T : Number> private constructor(
 
     private fun doModulo(other: NumberSet<T>): NumberSet<T> {
         val otherRange = other.getRange()
-        val maxOther = otherRange.first.negate().max(otherRange.second)
+        val maxOther = otherRange.start.negate().max(otherRange.end)
 
         val positiveSet = newFromConstant(maxOther).getSetSatisfying(LESS_THAN)
         val negativeSet = newFromConstant(maxOther.negate()).getSetSatisfying(GREATER_THAN)
@@ -188,8 +188,8 @@ data class NumberSet<T : Number> private constructor(
         val other = other.into()
 
         require(ind == other.ind)
-        val (mySmallestPossibleValue, myLargestPossibleValue) = getRange()
-        val (otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
+        val (_, mySmallestPossibleValue, myLargestPossibleValue) = getRange()
+        val (_, otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
 
         when (operation) {
             LESS_THAN -> {
@@ -274,8 +274,8 @@ data class NumberSet<T : Number> private constructor(
         }
 
         val range = getRange()
-        val smallestValue = range.first.castInto<T>(clazz)
-        val biggestValue = range.second.castInto<T>(clazz)
+        val smallestValue = range.start.castInto<T>(clazz)
+        val biggestValue = range.end.castInto<T>(clazz)
 
         val newData: List<NumberRange<T>> =
             when (comp) {
