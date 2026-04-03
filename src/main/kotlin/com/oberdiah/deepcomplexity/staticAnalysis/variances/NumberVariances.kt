@@ -302,9 +302,6 @@ class NumberVariances<T : Number> private constructor(
             "Cannot generate constraints from a variance of a different type. ($ind vs ${other.ind})"
         }
 
-        // Note to self: This almost certainly contains bugs of the 'funky-number-edge-cases' variety.
-        // The divide is especially suspect.
-
         val other = other.into()
         val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isConstant() }
 
@@ -312,97 +309,88 @@ class NumberVariances<T : Number> private constructor(
             return super.generateConstraintsFrom(other, comparisonOp, constraints)
         }
 
-        var constraints = constraints
-
-        if (!isSafelyWithinBounds(constraints) || !other.isSafelyWithinBounds(constraints)) {
-            for (key in allKeys) {
-                val wrappedConstraint = tryGenerateWrappedSingleSidedConstraint(
+        return allKeys.fold(constraints) { constraints, key ->
+            constraints.withConstraint(
+                key, generateConstraintFor(
                     key.coerceToNumbers(),
                     other,
                     comparisonOp,
                     constraints
-                ) ?: continue
-                constraints = constraints.withConstraint(key, wrappedConstraint)
-            }
-        } else {
-            for (key in allKeys) {
-                val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
-                val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
+                )
+            )
+        }
+    }
 
-                // Move all of our key onto the left
-                val lhsCoefficient = myKeyMultiplier.subtract(otherKeyMultiplier)
+    private fun <Q : Number> generateConstraintFor(
+        key: EvaluationKey<Q>,
+        other: NumberVariances<T>,
+        op: ComparisonOp,
+        constraints: Constraints
+    ): NumberSet<Q> {
+        val keyInd = key.ind.into()
+        val zeroSet = BigIntegerIndicator.onlyZeroSet()
 
-                // Collapse all non-our-key constants into a single value and move them to the right.
-                val collapsedLhsBeforeMove =
-                    NumberVariances(ind, multipliers.filter { it.key != key })
-                        .collapseWithoutLimits(constraints)
-                val collapsedRhsBeforeMove =
-                    NumberVariances(ind, other.multipliers.filter { it.key != key })
-                        .collapseWithoutLimits(constraints)
+        val leftKeyMultiplier = multipliers[key] ?: zeroSet
+        val rightKeyMultiplier = other.multipliers[key] ?: zeroSet
 
-                val rhsConstant = collapsedRhsBeforeMove.subtract(collapsedLhsBeforeMove)
+        val leftConstant =
+            NumberVariances(ind, multipliers.filter { it.key != key }).collapseWithoutLimits(constraints)
+        val rightConstant =
+            NumberVariances(ind, other.multipliers.filter { it.key != key }).collapseWithoutLimits(constraints)
 
-                if (lhsCoefficient.isZero()) {
-                    // The key has cancelled itself out, this is now an all-or-nothing situation:
-                    // either the constraint is met, or it isn't.
-                    // The equation at this point looks like `0x op constant`
-                    // So we can just check the constant against zero.
-                    val meetsConstraint =
-                        BigIntegerIndicator.onlyZeroSet().comparisonOperation(rhsConstant, comparisonOp)
-                    constraints = when (meetsConstraint) {
-                        BooleanSet.EITHER, BooleanSet.TRUE -> constraints.withConstraint(key, key.ind.newFullSet())
-                        BooleanSet.FALSE, BooleanSet.NEITHER -> constraints.withConstraint(key, key.ind.newEmptySet())
-                    }
-                } else {
-                    val shouldFlip =
-                        lhsCoefficient.comparisonOperation(BigIntegerIndicator.onlyZeroSet(), ComparisonOp.LESS_THAN)
-                    val rhs = rhsConstant.divide(lhsCoefficient).castTo(ind).into()
-                    val constraint = when (shouldFlip) {
-                        BooleanSet.TRUE -> rhs.getSetSatisfying(comparisonOp.flip())
-                        BooleanSet.FALSE -> rhs.getSetSatisfying(comparisonOp)
-                        BooleanSet.EITHER -> rhs.getSetSatisfying(comparisonOp)
-                            .union(rhs.getSetSatisfying(comparisonOp.flip()))
+        val isSimpleSolve = isSafelyWithinBounds(constraints) && other.isSafelyWithinBounds(constraints)
 
-                        BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
-                    }
+        if (isSimpleSolve) {
+            // Get into the form `a*x op c`. It is only OK to rearrange like this when there is definitely no wrapping
 
-                    constraints = constraints.withConstraint(key, constraint.clampCast(key.ind)!!)
+            // Move all of our keys to the left
+            val coefficient = leftKeyMultiplier.subtract(rightKeyMultiplier)
+            // Move all of our non-key 'constants' to the right.
+            val constant = rightConstant.subtract(leftConstant)
+
+            if (coefficient.isZero()) {
+                // This is now an all-or-nothing situation; either the constraint is met, or it isn't.
+                // The equation looks like `0x op c`, so we can just check the constant against zero.
+                return when (zeroSet.comparisonOperation(constant, op)) {
+                    BooleanSet.EITHER, BooleanSet.TRUE -> keyInd.newFullSet()
+                    BooleanSet.FALSE, BooleanSet.NEITHER -> keyInd.newEmptySet()
                 }
+            } else {
+                val shouldFlip = coefficient.comparisonOperation(zeroSet, ComparisonOp.LESS_THAN)
+                
+                val rhs = constant.divide(coefficient).castTo(ind).into()
+                val constraint = when (shouldFlip) {
+                    BooleanSet.TRUE -> rhs.getSetSatisfying(op.flip())
+                    BooleanSet.FALSE -> rhs.getSetSatisfying(op)
+                    BooleanSet.EITHER -> rhs.getSetSatisfying(op).union(rhs.getSetSatisfying(op.flip()))
+                    BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
+                }
+
+                return constraint.clampCast(keyInd)!!.into()
             }
         }
 
-        return constraints
-    }
-
-    private fun <Q : Number> tryGenerateWrappedSingleSidedConstraint(
-        key: EvaluationKey<Q>,
-        other: NumberVariances<T>,
-        comparisonOp: ComparisonOp,
-        constraints: Constraints
-    ): NumberSet<Q>? {
-        val typedKeyInd = key.ind as NumberIndicator
-
-        val myKeyMultiplier = multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
-        val otherKeyMultiplier = other.multipliers[key] ?: BigIntegerIndicator.onlyZeroSet()
-        val currentConstraint = constraints.getConstraint(key).coerceTo(typedKeyInd).into()
-        if (currentConstraint.ranges.size != 1) return null
+        val currentConstraint = constraints.getConstraint(key).coerceTo(keyInd).into()
+        if (currentConstraint.ranges.size != 1) {
+            return keyInd.newFullSet()
+        }
 
         val (coefficient, constant, target) = when {
-            myKeyMultiplier.isSingleValue() && otherKeyMultiplier.isZero() -> Triple(
-                myKeyMultiplier.getSingleValue()!!,
+            leftKeyMultiplier.isSingleValue() && rightKeyMultiplier.isZero() -> Triple(
+                leftKeyMultiplier.getSingleValue()!!,
                 NumberVariances(ind, multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
                 NumberVariances(ind, other.multipliers.filter { it.key != key }).collapse(constraints)
-                    .getSetSatisfying(comparisonOp)
+                    .getSetSatisfying(op)
             )
 
-            myKeyMultiplier.isZero() && otherKeyMultiplier.isSingleValue() -> Triple(
-                otherKeyMultiplier.getSingleValue()!!,
+            leftKeyMultiplier.isZero() && rightKeyMultiplier.isSingleValue() -> Triple(
+                rightKeyMultiplier.getSingleValue()!!,
                 NumberVariances(ind, other.multipliers.filter { it.key != key }).collapseWithoutLimits(constraints),
                 NumberVariances(ind, multipliers.filter { it.key != key }).collapse(constraints)
-                    .getSetSatisfying(comparisonOp.flip())
+                    .getSetSatisfying(op.flip())
             )
 
-            else -> return null
+            else -> return keyInd.newFullSet()
         }
 
         if (target.isFull() || coefficient == BigInteger.ZERO || constant.ranges.size > 2 || target.ranges.size > 2) {
@@ -415,7 +403,7 @@ class NumberVariances<T : Number> private constructor(
         val axMin = minOf(coefficient * xMin, coefficient * xMax)
         val axMax = maxOf(coefficient * xMin, coefficient * xMax)
         val modulus = ind.clazz.getSetSize()
-        var out = NumberSet.newEmpty(typedKeyInd)
+        var out = NumberSet.newEmpty(keyInd)
 
         for (constantRange in constant.ranges) for (targetRange in target.castToNumber(BigIntegerIndicator).ranges) {
             val low = targetRange.start - constantRange.end
@@ -449,8 +437,8 @@ class NumberVariances<T : Number> private constructor(
                         out = out.union(
                             NumberSet.newFromRange(
                                 NumberRange.new(
-                                    clampedStart.castInto(typedKeyInd.clazz),
-                                    clampedEnd.castInto(typedKeyInd.clazz)
+                                    clampedStart.castInto(keyInd.clazz),
+                                    clampedEnd.castInto(keyInd.clazz)
                                 )
                             )
                         )
