@@ -1,6 +1,7 @@
 package com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets
 
 import com.oberdiah.deepcomplexity.context.EvaluationKey
+import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.BooleanSet
 import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.utilities.Functional
@@ -97,14 +98,7 @@ data class Constraints private constructor(
         if (other.unreachable) return other
 
         val newConstraints = Functional.mergeMapsUnion(this.constraints, other.constraints) { lhs, rhs ->
-            fun <T : Any> ugly(l: ISet<T>): ISet<T> =
-                // Safety: We've required that the types are the same.
-                @Suppress("UNCHECKED_CAST")
-                l.intersect(rhs as ISet<T>)
-
-            require(lhs.ind == rhs.ind)
-
-            ugly(lhs)
+            ConversionsAndPromotion.coerceAToB(lhs, rhs).map { a, b -> a.intersect(b) }
         }
 
         return Constraints(newConstraints)

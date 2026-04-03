@@ -5,6 +5,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.*
 import com.oberdiah.deepcomplexity.staticAnalysis.constrainedSets.Bundle
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion.binaryPromotion
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.ConversionsAndPromotion.coerceAToB
+import com.oberdiah.deepcomplexity.staticAnalysis.sets.ISet
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
 
 object ConversionsAndPromotion {
@@ -14,6 +15,10 @@ object ConversionsAndPromotion {
 
     class TypedExprPair<T : Any>(val first: Expr<T>, val second: Expr<T>) {
         fun <R> map(operation: (Expr<T>, Expr<T>) -> R): R = operation(first, second)
+    }
+
+    class TypedSetPair<T : Any>(val first: ISet<T>, val second: ISet<T>) {
+        fun <R> map(operation: (ISet<T>, ISet<T>) -> R): R = operation(first, second)
     }
 
     /**
@@ -29,6 +34,12 @@ object ConversionsAndPromotion {
         return TypedBundlePair(coercedExprA, bundleB)
     }
 
+    fun <T : Any> coerceAToB(setA: ISet<*>, setB: ISet<T>): TypedSetPair<T> {
+        val coercedExprA: ISet<T> = setA.coerceTo(setB.ind)
+        return TypedSetPair(coercedExprA, setB)
+    }
+
+    @Suppress("unused")
     fun castAToB(exprA: Expr<*>, exprB: Expr<*>): TypedExprPair<*> {
         /**
          * Whenever you may want to use cast A to B, it's likely you should be using other tools
