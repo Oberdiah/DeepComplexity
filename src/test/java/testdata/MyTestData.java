@@ -199,6 +199,16 @@ public class MyTestData {
 	}
 	
 	@RequiredScore(1.0)
+	public static short comparisonTest8(short x) {
+		if (x > -13 && x < 13) {
+			if (x - 10 < (0x7fffffff - 5)) {
+				return 1;
+			}
+		}
+		return 0;
+	}
+	
+	@RequiredScore(1.0)
 	@ExpectedExpressionSize(4)
 	public static short negateTest(short x) {
 		return (short) (-x);

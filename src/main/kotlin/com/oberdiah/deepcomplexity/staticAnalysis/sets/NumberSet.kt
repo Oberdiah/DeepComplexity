@@ -11,7 +11,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUti
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.NumberVariances
 import com.oberdiah.deepcomplexity.staticAnalysis.variances.Variances
 import com.oberdiah.deepcomplexity.utilities.Utilities.WONT_IMPLEMENT
-import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.oberdiah.deepcomplexity.utilities.Utilities.clampCastInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
 import com.oberdiah.deepcomplexity.utilities.Utilities.isOne
@@ -22,7 +22,6 @@ import com.oberdiah.deepcomplexity.utilities.Utilities.negate
 import com.oberdiah.deepcomplexity.utilities.Utilities.upOneEpsilon
 import com.oberdiah.deepcomplexity.utilities.into
 import java.math.BigInteger
-import kotlin.reflect.KClass
 
 @ConsistentCopyVisibility
 data class NumberSet<T : Number> private constructor(
@@ -41,8 +40,6 @@ data class NumberSet<T : Number> private constructor(
         fun <T : Number> newEmpty(ind: NumberIndicator<T>): NumberSet<T> = NumberSet(ind, false, emptyList())
         fun <T : Number> newFull(ind: NumberIndicator<T>): NumberSet<T> = newFromRange(NumberRange.fullRange(ind))
     }
-
-    val clazz: KClass<T> = ind.clazz
 
     init {
         require(ranges.size <= MAX_RANGES) {
@@ -95,16 +92,6 @@ data class NumberSet<T : Number> private constructor(
     }
 
     fun <Q : Number> castToNumber(newInd: NumberIndicator<Q>): NumberSet<Q> = castTo(newInd).into()
-
-    /**
-     * Like a regular cast, but rather than wrapping it will clamp instead.
-     */
-    fun <Q : Any> clampCast(newInd: Indicator<Q>): ISet<Q>? {
-        // Intersect with the new indicator's full set, removing anything that might
-        // result in wrapping, and then cast to the new indicator, guaranteed wrap-free.
-        val newIndFullSet = newInd.newFullSet().tryCastTo(ind) ?: return null
-        return this.intersect(newIndFullSet).tryCastTo(newInd)
-    }
 
     override fun <Q : Any> tryCastTo(newInd: Indicator<Q>): ISet<Q>? {
         @Suppress("UNCHECKED_CAST")
@@ -266,54 +253,61 @@ data class NumberSet<T : Number> private constructor(
      * For inequality, all values are returned, unless we are a single value.
      * We're the right-hand side of the equation.
      */
-    fun getSetSatisfying(comp: ComparisonOp): NumberSet<T> {
-        if (ind == BigIntegerIndicator) {
-            WONT_IMPLEMENT("We can't do this; there are no upper or lower bounds for BigInteger.")
+    fun getSetSatisfying(comp: ComparisonOp): NumberSet<T> = getSetSatisfying(comp, ind)
+
+    /**
+     * [returnInd] is the indicator of the set we should return. It does not necessarily need to match the indicator of
+     * this set. This is primarily so you can call [getSetSatisfying] on a [BigInteger] set and receive
+     * a non-[BigInteger] set back (as getting a [BigInteger] set back is not possible as that type is not bounded).
+     */
+    fun <Q : Number> getSetSatisfying(comp: ComparisonOp, returnInd: NumberIndicator<Q>): NumberSet<Q> {
+        if (returnInd == BigIntegerIndicator) {
+            throw IllegalStateException("We can't do this; there are no upper or lower bounds for BigInteger.")
         }
 
         if (isEmpty()) {
-            return this
+            throw IllegalStateException("Cannot get set satisfying an empty set.")
         }
 
         val range = getRange()!!
-        val smallestValue = range.start.castInto<T>(clazz)
-        val biggestValue = range.end.castInto<T>(clazz)
+        val smallestValue = range.start.clampCastInto(returnInd.clazz)
+        val biggestValue = range.end.clampCastInto(returnInd.clazz)
 
-        val newData: List<NumberRange<T>> =
+        val newData: List<NumberRange<Q>> =
             when (comp) {
                 LESS_THAN_OR_EQUAL ->
-                    listOf(NumberRange.new(ind.getMinValue(), biggestValue))
+                    listOf(NumberRange.new(returnInd.getMinValue(), biggestValue))
 
                 LESS_THAN ->
-                    listOf(NumberRange.new(ind.getMinValue(), biggestValue.downOneEpsilon()))
+                    listOf(NumberRange.new(returnInd.getMinValue(), biggestValue.downOneEpsilon()))
 
                 GREATER_THAN_OR_EQUAL ->
-                    listOf(NumberRange.new(smallestValue, ind.getMaxValue()))
+                    listOf(NumberRange.new(smallestValue, returnInd.getMaxValue()))
 
                 GREATER_THAN ->
-                    listOf(NumberRange.new(smallestValue.upOneEpsilon(), ind.getMaxValue()))
+                    listOf(NumberRange.new(smallestValue.upOneEpsilon(), returnInd.getMaxValue()))
 
-                EQUAL -> ranges
+                EQUAL -> ranges.map { it.clampCastTo(returnInd) }
                 NOT_EQUAL -> {
                     if (smallestValue == biggestValue) {
                         listOf(
                             NumberRange.new(
-                                ind.getMinValue(),
+                                returnInd.getMinValue(),
                                 smallestValue.downOneEpsilon()
                             ),
                             NumberRange.new(
                                 biggestValue.upOneEpsilon(),
-                                ind.getMaxValue()
+                                returnInd.getMaxValue()
                             )
                         )
                     } else {
                         // In this case we can't say anything at all, we have to return the entire range :(
-                        listOf(NumberRange.fullRange(ind))
+                        listOf(NumberRange.fullRange(returnInd))
                     }
                 }
             }
 
-        return makeNew(newData)
+        return NumberSet(returnInd, hasThrownDivideByZero, NumberUtilities.mergeAndDeduplicate(newData))
     }
 
     override fun contains(element: T): Boolean = ranges.any { element >= it.start && element <= it.end }

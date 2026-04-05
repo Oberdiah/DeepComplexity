@@ -57,7 +57,7 @@ interface Variances<T : Any> : HasIndicator<T> {
     }
 
     /**
-     * Note: Only Numbers need to worry about handling [comparisonOp]s that aren't equality or inequality,
+     * Note: Only Numbers need to worry about handling [op]s that aren't equality or inequality,
      * all other types can throw if they receive one.
      *
      * Generate all constraints arising from a given comparison operation between this (lhs) and other (rhs).
@@ -66,12 +66,12 @@ interface Variances<T : Any> : HasIndicator<T> {
      */
     fun generateConstraintsFrom(
         other: Variances<T>,
-        comparisonOp: ComparisonOp,
+        op: ComparisonOp,
         constraints: Constraints
     ): Constraints {
         val thisCollapsed = collapse(constraints)
         val otherCollapsed = other.collapse(constraints)
-        return when (thisCollapsed.comparisonOperation(otherCollapsed, comparisonOp)) {
+        return when (thisCollapsed.comparisonOperation(otherCollapsed, op)) {
             BooleanSet.TRUE,
             BooleanSet.EITHER -> constraints
 

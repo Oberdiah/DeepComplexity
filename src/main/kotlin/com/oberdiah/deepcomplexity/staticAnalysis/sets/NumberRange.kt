@@ -5,6 +5,7 @@ import com.oberdiah.deepcomplexity.staticAnalysis.HasIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.NumberIndicator
 import com.oberdiah.deepcomplexity.staticAnalysis.numberSimplification.NumberUtilities
 import com.oberdiah.deepcomplexity.utilities.Utilities.castInto
+import com.oberdiah.deepcomplexity.utilities.Utilities.clampCastInto
 import com.oberdiah.deepcomplexity.utilities.Utilities.compareTo
 import com.oberdiah.deepcomplexity.utilities.Utilities.div
 import com.oberdiah.deepcomplexity.utilities.Utilities.downOneEpsilon
@@ -26,7 +27,7 @@ data class NumberRange<T : Number> private constructor(
     val start: T,
     val end: T
 ) : HasIndicator<T> {
-    private val clazz: KClass<*> = ind.clazz
+    private val clazz: KClass<T> = ind.clazz
 
     init {
         require(start <= end) {
@@ -81,6 +82,13 @@ data class NumberRange<T : Number> private constructor(
         val baseline = fromConstant(newInd.getZero())
         return baseline.resolvePotentialOverflow(start.toBigInteger(), end.toBigInteger())
     }
+
+    fun <Q : Number> clampCastTo(newInd: NumberIndicator<Q>): NumberRange<Q> =
+        NumberRange(
+            newInd,
+            this.start.clampCastInto(newInd.clazz),
+            this.end.clampCastInto(newInd.clazz)
+        )
 
     override fun toString(): String {
         if (start == end) {

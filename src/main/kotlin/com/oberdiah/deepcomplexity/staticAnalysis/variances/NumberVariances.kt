@@ -288,14 +288,10 @@ class NumberVariances<T : Number> private constructor(
     /**
      * Given a comparison e.g. 3x + 2y + 5 < 2x + 7,
      * generate constraints on x and y that would allow this comparison to be satisfied.
-     * It does this by rearranging the equation to the form `ax op c` for every key found, where `a` is the multiplier
-     * of one of the keys, and `c` is a constant representing the rest. All variables in this equation are sets.
-     * Once we have that form, we divide both sides by `a` to get `x op c/a`, and then we can generate a
-     * constraint for x based on the result of that division.
      */
     override fun generateConstraintsFrom(
         other: Variances<T>,
-        comparisonOp: ComparisonOp,
+        op: ComparisonOp,
         constraints: Constraints
     ): Constraints {
         require(ind == other.ind) {
@@ -306,22 +302,15 @@ class NumberVariances<T : Number> private constructor(
         val allKeys = (multipliers.keys + other.multipliers.keys).filter { !it.isConstant() }
 
         if (allKeys.isEmpty()) {
-            return super.generateConstraintsFrom(other, comparisonOp, constraints)
+            return super.generateConstraintsFrom(other, op, constraints)
         }
 
         return allKeys.fold(constraints) { constraints, key ->
-            constraints.withConstraint(
-                key, generateConstraintFor(
-                    key.coerceToNumbers(),
-                    other,
-                    comparisonOp,
-                    constraints
-                )
-            )
+            constraints.withConstraint(key, findConstraintForKey(key.coerceToNumbers(), other, op, constraints))
         }
     }
 
-    private fun <Q : Number> generateConstraintFor(
+    private fun <Q : Number> findConstraintForKey(
         key: EvaluationKey<Q>,
         other: NumberVariances<T>,
         op: ComparisonOp,
@@ -350,23 +339,22 @@ class NumberVariances<T : Number> private constructor(
 
             if (coefficient.isZero()) {
                 // This is now an all-or-nothing situation; either the constraint is met, or it isn't.
-                // The equation looks like `0x op c`, so we can just check the constant against zero.
+                // The equation looks like `0*x op c`, so we can just check the constant against zero.
                 return when (zeroSet.comparisonOperation(constant, op)) {
                     BooleanSet.EITHER, BooleanSet.TRUE -> keyInd.newFullSet()
                     BooleanSet.FALSE, BooleanSet.NEITHER -> keyInd.newEmptySet()
                 }
             } else {
                 val shouldFlip = coefficient.comparisonOperation(zeroSet, ComparisonOp.LESS_THAN)
+                val rhs = constant.divide(coefficient)
+                return when (shouldFlip) {
+                    BooleanSet.TRUE -> rhs.getSetSatisfying(op.flip(), keyInd)
+                    BooleanSet.FALSE -> rhs.getSetSatisfying(op, keyInd)
+                    BooleanSet.EITHER -> rhs.getSetSatisfying(op, keyInd)
+                        .union(rhs.getSetSatisfying(op.flip(), keyInd))
 
-                val rhs = constant.divide(coefficient).castTo(ind).into()
-                val constraint = when (shouldFlip) {
-                    BooleanSet.TRUE -> rhs.getSetSatisfying(op.flip())
-                    BooleanSet.FALSE -> rhs.getSetSatisfying(op)
-                    BooleanSet.EITHER -> rhs.getSetSatisfying(op).union(rhs.getSetSatisfying(op.flip()))
                     BooleanSet.NEITHER -> throw IllegalStateException("Condition is neither true nor false!")
                 }
-
-                return constraint.clampCast(keyInd)!!.into()
             }
         }
 
@@ -405,46 +393,48 @@ class NumberVariances<T : Number> private constructor(
         val modulus = ind.clazz.getSetSize()
         var out = NumberSet.newEmpty(keyInd)
 
-        for (constantRange in constant.ranges) for (targetRange in target.castToNumber(BigIntegerIndicator).ranges) {
-            val low = targetRange.start - constantRange.end
-            val high = targetRange.end - constantRange.start
-            val kStart = (axMin - high).ceilDiv(modulus)
-            val kEnd = (axMax - low).floorDiv(modulus)
+        for (constantRange in constant.ranges) {
+            for (targetRange in target.castToNumber(BigIntegerIndicator).ranges) {
+                val low = targetRange.start - constantRange.end
+                val high = targetRange.end - constantRange.start
+                val kStart = (axMin - high).ceilDiv(modulus)
+                val kEnd = (axMax - low).floorDiv(modulus)
 
-            var k = kStart
-            while (k <= kEnd) {
-                val shiftedLow = low + k * modulus
-                val shiftedHigh = high + k * modulus
-                val start =
-                    if (coefficient > BigInteger.ZERO)
-                        shiftedLow.ceilDiv(coefficient)
-                    else
-                        (-shiftedHigh).ceilDiv(-coefficient)
+                var k = kStart
+                while (k <= kEnd) {
+                    val shiftedLow = low + k * modulus
+                    val shiftedHigh = high + k * modulus
+                    val start =
+                        if (coefficient > BigInteger.ZERO)
+                            shiftedLow.ceilDiv(coefficient)
+                        else
+                            (-shiftedHigh).ceilDiv(-coefficient)
 
-                val end =
-                    if (coefficient > BigInteger.ZERO)
-                        shiftedHigh.floorDiv(coefficient)
-                    else
-                        (-shiftedLow).floorDiv(-coefficient)
+                    val end =
+                        if (coefficient > BigInteger.ZERO)
+                            shiftedHigh.floorDiv(coefficient)
+                        else
+                            (-shiftedLow).floorDiv(-coefficient)
 
-                if (start <= end) {
-                    val clampedStart = maxOf(start, xMin)
-                    val clampedEnd = minOf(end, xMax)
-                    if (clampedStart <= clampedEnd) {
-                        if (out.ranges.size >= NumberSet.MAX_RANGES) {
-                            return currentConstraint
-                        }
-                        out = out.union(
-                            NumberSet.newFromRange(
-                                NumberRange.new(
-                                    clampedStart.castInto(keyInd.clazz),
-                                    clampedEnd.castInto(keyInd.clazz)
+                    if (start <= end) {
+                        val clampedStart = maxOf(start, xMin)
+                        val clampedEnd = minOf(end, xMax)
+                        if (clampedStart <= clampedEnd) {
+                            if (out.ranges.size >= NumberSet.MAX_RANGES) {
+                                return currentConstraint
+                            }
+                            out = out.union(
+                                NumberSet.newFromRange(
+                                    NumberRange.new(
+                                        clampedStart.castInto(keyInd.clazz),
+                                        clampedEnd.castInto(keyInd.clazz)
+                                    )
                                 )
                             )
-                        )
+                        }
                     }
+                    k += BigInteger.ONE
                 }
-                k += BigInteger.ONE
             }
         }
 

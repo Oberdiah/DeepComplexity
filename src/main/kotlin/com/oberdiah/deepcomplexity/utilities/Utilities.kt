@@ -186,14 +186,11 @@ object Utilities {
 
     fun Number.toBigInteger(): BigInteger {
         return when (this) {
-            is Byte -> BigInteger.valueOf(this.toLong())
-            is Short -> BigInteger.valueOf(this.toLong())
-            is Int -> BigInteger.valueOf(this.toLong())
-            is Long -> BigInteger.valueOf(this)
+            is Byte, is Short, is Int, is Long -> BigInteger.valueOf(this.toLong())
             is BigInteger -> this
             is Float -> WONT_IMPLEMENT()
             is Double -> WONT_IMPLEMENT()
-            else -> throw IllegalArgumentException("Unsupported type for toBigInteger")
+            else -> throw IllegalArgumentException("Unsupported type for toBigInteger ${this::class.simpleName}")
         }
     }
 
@@ -206,7 +203,7 @@ object Utilities {
             is Float -> this == 1.0f
             is Double -> this == 1.0
             is BigInteger -> this == BigInteger.ONE
-            else -> throw IllegalArgumentException("Unsupported type for isOne")
+            else -> throw IllegalArgumentException("Unsupported type for isOne ${this::class.simpleName}")
         }
     }
 
@@ -219,11 +216,11 @@ object Utilities {
             is Float -> this == 0.0f
             is Double -> this == 0.0
             is BigInteger -> this == BigInteger.ZERO
-            else -> throw IllegalArgumentException("Unsupported type for isZero")
+            else -> throw IllegalArgumentException("Unsupported type for isZero ${this::class.simpleName}")
         }
     }
 
-    fun <T : Number> Number.castInto(target: KClass<*>): T {
+    fun <T : Number> Number.castInto(target: KClass<T>): T {
         @Suppress("UNCHECKED_CAST")
         return when (target) {
             Byte::class -> this.toByte()
@@ -234,6 +231,32 @@ object Utilities {
             Double::class -> this.toDouble()
             BigInteger::class -> this.toBigInteger()
             else -> throw IllegalArgumentException("Unsupported type for cast")
+        } as T
+    }
+
+    fun <T : Number> Number.clampCastInto(target: KClass<T>): T {
+        val value = this.toBigInteger()
+        @Suppress("UNCHECKED_CAST")
+        return when (target) {
+            Byte::class -> value
+                .coerceIn(BigInteger.valueOf(Byte.MIN_VALUE.toLong()), BigInteger.valueOf(Byte.MAX_VALUE.toLong()))
+                .toByte()
+
+            Short::class -> value
+                .coerceIn(BigInteger.valueOf(Short.MIN_VALUE.toLong()), BigInteger.valueOf(Short.MAX_VALUE.toLong()))
+                .toShort()
+
+            Int::class -> value
+                .coerceIn(BigInteger.valueOf(Int.MIN_VALUE.toLong()), BigInteger.valueOf(Int.MAX_VALUE.toLong()))
+                .toInt()
+
+            Long::class -> value
+                .coerceIn(BigInteger.valueOf(Long.MIN_VALUE), BigInteger.valueOf(Long.MAX_VALUE))
+                .toLong()
+
+            BigInteger::class -> value
+
+            else -> throw IllegalArgumentException("Unsupported type for clamp cast")
         } as T
     }
 
