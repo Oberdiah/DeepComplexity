@@ -182,7 +182,7 @@ class NumberVariances<T : Number> private constructor(
      * safely cast to a larger indicator.
      */
     fun isSafelyWithinBounds(constraints: Constraints): Boolean {
-        return collapseWithoutLimits(constraints).getRange().canFitWithin(ind.getTotalRange())
+        return collapseWithoutLimits(constraints).getRange()?.canFitWithin(ind.getTotalRange()) ?: true
     }
 
     fun isOne(constraints: Constraints): Boolean = collapse(constraints).isOne()
@@ -357,7 +357,7 @@ class NumberVariances<T : Number> private constructor(
                 }
             } else {
                 val shouldFlip = coefficient.comparisonOperation(zeroSet, ComparisonOp.LESS_THAN)
-                
+
                 val rhs = constant.divide(coefficient).castTo(ind).into()
                 val constraint = when (shouldFlip) {
                     BooleanSet.TRUE -> rhs.getSetSatisfying(op.flip())

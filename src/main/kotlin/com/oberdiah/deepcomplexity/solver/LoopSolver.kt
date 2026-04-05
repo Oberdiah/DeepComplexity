@@ -169,8 +169,8 @@ object LoopSolver {
 
         for (range in constrainedWithin.ranges) {
             val possibleStarts = initial.intersect(NumberSet.newFromRange(range))
-            val smallestDistance = range.end - possibleStarts.largestValue()
-            val largestDistance = range.end - possibleStarts.smallestValue()
+            val smallestDistance = range.end - possibleStarts.largestValue()!!
+            val largestDistance = range.end - possibleStarts.smallestValue()!!
 
             minimum = minimum.min(smallestDistance)
             maximum = maximum.max(largestDistance)

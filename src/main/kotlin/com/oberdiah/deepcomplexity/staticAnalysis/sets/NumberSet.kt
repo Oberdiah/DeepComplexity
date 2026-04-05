@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
 data class NumberSet<T : Number> private constructor(
     override val ind: NumberIndicator<T>,
     val hasThrownDivideByZero: Boolean,
-    // In order, and non-overlapping
+    // In order, and non-overlapping. May be empty.
     val ranges: List<NumberRange<T>>
 ) : ISet<T> {
     companion object {
@@ -56,7 +56,7 @@ data class NumberSet<T : Number> private constructor(
     override fun isEmpty(): Boolean = ranges.isEmpty()
 
     override fun isFull(): Boolean {
-        if (ranges.isEmpty()) {
+        if (isEmpty()) {
             return false
         }
         if (ind == BigIntegerIndicator) {
@@ -77,15 +77,17 @@ data class NumberSet<T : Number> private constructor(
 
     /**
      * Returns the full range of this number set (Smallest possible value to largest)
+     * Returns null if the set is empty.
      */
-    fun getRange(): NumberRange<T> {
+    fun getRange(): NumberRange<T>? {
+        if (isEmpty()) return null
         val smallest = ranges.first().start
         val largest = ranges.last().end
         return NumberRange.new(smallest, largest)
     }
 
-    fun smallestValue(): T = getRange().start
-    fun largestValue(): T = getRange().end
+    fun smallestValue(): T? = getRange()?.start
+    fun largestValue(): T? = getRange()?.end
 
     fun negate(): NumberSet<T> {
         val zero = NumberRange.fromConstant(ind.getZero())
@@ -165,7 +167,7 @@ data class NumberSet<T : Number> private constructor(
     }
 
     private fun doModulo(other: NumberSet<T>): NumberSet<T> {
-        val otherRange = other.getRange()
+        val otherRange = other.getRange() ?: return this
         val maxOther = otherRange.start.negate().max(otherRange.end)
 
         val positiveSet = newFromConstant(maxOther).getSetSatisfying(LESS_THAN)
@@ -188,8 +190,8 @@ data class NumberSet<T : Number> private constructor(
         val other = other.into()
 
         require(ind == other.ind)
-        val (_, mySmallestPossibleValue, myLargestPossibleValue) = getRange()
-        val (_, otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()
+        val (_, mySmallestPossibleValue, myLargestPossibleValue) = getRange()!!
+        val (_, otherSmallestPossibleValue, otherLargestPossibleValue) = other.getRange()!!
 
         when (operation) {
             LESS_THAN -> {
@@ -269,11 +271,11 @@ data class NumberSet<T : Number> private constructor(
             WONT_IMPLEMENT("We can't do this; there are no upper or lower bounds for BigInteger.")
         }
 
-        if (ranges.isEmpty()) {
+        if (isEmpty()) {
             return this
         }
 
-        val range = getRange()
+        val range = getRange()!!
         val smallestValue = range.start.castInto<T>(clazz)
         val biggestValue = range.end.castInto<T>(clazz)
 
@@ -321,7 +323,7 @@ data class NumberSet<T : Number> private constructor(
             WONT_IMPLEMENT("We can't do this; there are no upper or lower bounds for BigInteger.")
         }
 
-        if (ranges.isEmpty()) {
+        if (isEmpty()) {
             return makeNew(listOf(ind.getTotalRange()), hasThrownDivideByZero)
         }
 
